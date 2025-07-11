@@ -1,4 +1,0 @@
-# snn-block
-
-
-snn-block
