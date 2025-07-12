@@ -6,6 +6,7 @@ define( 'SNN_URL', trailingslashit( get_stylesheet_directory_uri() ) );
 define( 'SNN_URL_ASSETS', trailingslashit( SNN_URL . 'assets' ) );  
 
 
+require_once SNN_PATH . 'includes/settings-page.php';
 
 require_once __DIR__ . '/includes/301-redirect.php';
 require_once __DIR__ . '/includes/404-logging.php';
