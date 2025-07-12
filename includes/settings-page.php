@@ -16,10 +16,10 @@ function snn_add_menu_page() {
 add_action('admin_menu', 'snn_add_menu_page');
 
 function snn_settings_page_callback() {
-    $dynamic_title = get_option('snn_menu_title', __('SNN Settings', 'snn'));
+    $dynamic_title = get_option('snn_menu_title', __('SNN-BLOCK', 'snn'));
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html($dynamic_title); ?> - <?php _e('Bricks Builder Child Theme Settings', 'snn'); ?></h1>
+        <h1><?php echo esc_html($dynamic_title); ?> <?php _e(' Settings', 'snn'); ?></h1>
         
         <!-- Dashboard-like grid of big square buttons -->
         <div class="snn-dashboard-buttons">
@@ -27,6 +27,7 @@ function snn_settings_page_callback() {
             $menu_items = array(
                 array('slug' => 'snn-settings',               'label' => $dynamic_title.' '.__('Settings', 'snn'),            'dashicon' => 'dashicons-admin-home'),
                 array('slug' => 'snn-block-editor-settings',  'label' => __('Block Editor Settings', 'snn'),                        'dashicon' => 'dashicons-edit'),
+                array('slug' => 'snn-ai-settings',            'label' => __('AI Settings', 'snn'),                            'dashicon' => 'dashicons-nametag'),
                 array('slug' => 'snn-security',               'label' => __('Security Settings', 'snn'),                      'dashicon' => 'dashicons-shield'),
                 array('slug' => 'snn-custom-post-types',      'label' => __('Post Types', 'snn'),                             'dashicon' => 'dashicons-admin-post'),
                 array('slug' => 'snn-custom-fields',          'label' => __('Custom Fields', 'snn'),                          'dashicon' => 'dashicons-admin-page'),
@@ -39,7 +40,6 @@ function snn_settings_page_callback() {
                 array('slug' => 'snn-role-management',        'label' => __('Role Manager', 'snn'),                           'dashicon' => 'dashicons-admin-users'),
                 array('slug' => 'snn-cookie-settings',        'label' => __('Cookie Settings', 'snn'),                        'dashicon' => 'dashicons-admin-site'),
                 array('slug' => 'snn-accessibility-settings', 'label' => __('Accessibility Settings', 'snn'),                 'dashicon' => 'dashicons-universal-access'),
-                array('slug' => 'snn-ai-settings',            'label' => __('AI Settings', 'snn'),                            'dashicon' => 'dashicons-nametag'),
                 array('slug' => 'snn-search-logs',            'label' => __('Search Logs', 'snn'),                            'dashicon' => 'dashicons-search'),
                 array('slug' => 'snn-block-editor-settings',  'label' => __('Block Editor Settings', 'snn'),                  'dashicon' => 'dashicons-admin-customizer'),
                 array('slug' => 'snn-media-settings',         'label' => __('Media Settings', 'snn'),                         'dashicon' => 'dashicons-format-image'),
@@ -64,15 +64,15 @@ function snn_settings_page_callback() {
                 <?php _e('This theme is designed to give you the tools and solutions for', 'snn'); ?>
                 <a href="https://wordpress.org/" target="_blank"><?php _e('WordPress', 'snn'); ?></a>
                 <?php _e('and', 'snn'); ?>
-                <a href="https://bricksbuilder.io/" target="_blank"><?php _e('Bricks Builder', 'snn'); ?></a>.
+                <a href="https://wordpress.org/documentation/article/wordpress-block-editor/" target="_blank"><?php _e('Block Editor', 'snn'); ?></a>.
                 <?php _e('Post Types, Custom Fields, Taxonomies, SMTP Mail Setting, Custom Login Design,
                 Math Chaptcha for Login/Register, Security Features, 404 Logs, 301 Redirects and some Block Editor Features.
                 Everything is straightforward and ready to use.', 'snn'); ?>
                 <br><br>
                 <?php _e('Enjoy building your site.', 'snn'); ?><br><br>
     
-                <a href="https://academy.bricksbuilder.io/topic/getting-started/" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Docs ➤', 'snn'); ?></a><br>
+                <a href="https://wordpress.org/documentation/article/wordpress-block-editor/" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Block Editor Docs ➤', 'snn'); ?></a><br>
     
                 <a href="https://www.youtube.com/@bricksbuilder/videos" target="_blank"
                 style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Videos ➤', 'snn'); ?></a><br>
@@ -93,14 +93,14 @@ function snn_settings_page_callback() {
         .snn-dashboard-buttons {
             max-width:1000px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 10px;
             margin-bottom: 40px;
         }
         .snn-dashboard-button {
             background: #fff;
             border: 1px solid #ccc;
-            padding: 20px 10px;
+            padding: 10px 10px;
             text-align: center;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
