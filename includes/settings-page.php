@@ -26,7 +26,8 @@ function snn_settings_page_callback() {
             <?php
             $menu_items = array(
                 array('slug' => 'snn-settings',               'label' => $dynamic_title.' '.__('Settings', 'snn'),            'dashicon' => 'dashicons-admin-home'),
-                array('slug' => 'block-editor-settings',            'label' => __('Block Editor Settings', 'snn'),                        'dashicon' => 'dashicons-edit'),
+                array('slug' => 'snn-other-settings',         'label' => __('GSAP, Lottie & Other Settings', 'snn'),          'dashicon' => 'dashicons-admin-generic'),
+                array('slug' => 'editor-settings',            'label' => __('Editor Settings', 'snn'),                        'dashicon' => 'dashicons-edit'),
                 array('slug' => 'snn-security',               'label' => __('Security Settings', 'snn'),                      'dashicon' => 'dashicons-shield'),
                 array('slug' => 'snn-custom-post-types',      'label' => __('Post Types', 'snn'),                             'dashicon' => 'dashicons-admin-post'),
                 array('slug' => 'snn-custom-fields',          'label' => __('Custom Fields', 'snn'),                          'dashicon' => 'dashicons-admin-page'),
