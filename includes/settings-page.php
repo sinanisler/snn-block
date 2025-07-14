@@ -74,8 +74,8 @@ function snn_settings_page_callback() {
                 <a href="https://wordpress.org/documentation/article/wordpress-block-editor/" target="_blank"
                 style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Block Editor Docs ➤', 'snn'); ?></a><br>
     
-                <a href="https://www.youtube.com/@bricksbuilder/videos" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Videos ➤', 'snn'); ?></a><br>
+                <a href="https://learn.wordpress.org/" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Learn WordPress Videos ➤', 'snn'); ?></a><br>
             </p>
         </div>
     
