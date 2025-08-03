@@ -23,6 +23,7 @@ require_once __DIR__ . '/includes/search-loggins.php';
 require_once __DIR__ . '/includes/security-page.php';
 require_once __DIR__ . '/includes/smtp-settings.php';
 require_once __DIR__ . '/includes/taxonomy-settings.php';
+require_once __DIR__ . '/includes/activity-logs.php';
 
 
 
