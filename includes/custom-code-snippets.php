@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+//  define( 'SNN_CODE_DISABLE', true );
+
+
 define('SNN_CUSTOM_CODES_LOG_OPTION', 'snn_custom_codes_error_log');
 define('SNN_CUSTOM_CODES_MAX_LOG_ENTRIES', 150);
 define('SNN_FATAL_ERROR_NOTICE_TRANSIENT', 'snn_fatal_error_admin_notice');
@@ -282,7 +285,7 @@ function snn_custom_codes_snippets_admin_styles() {
         /* General styling for the settings page */
         h3{margin-top:10px} /* Reset margin for h3 if needed */
         th,td{padding:0 !important} /* Reset padding for th,td if needed by theme */
-        .CodeMirror { min-height: 620px !important; border: 1px solid #ddd; }
+        .CodeMirror { min-height: 600px !important; border: 1px solid #ddd; }
         .snn-snippet-nav-tab-wrapper { margin-bottom: 15px; }
         .snn-snippet-description { margin-bottom: 10px; font-style: italic; color: #555; }
         .form-table th { width: 200px; } /* Consistent width for settings labels */
@@ -535,6 +538,9 @@ function snn_custom_codes_snippets_page() {
         wp_die( __( 'You do not have sufficient permissions to access this page.', 'snn' ) );
     }
 
+    // Check for the emergency disable constant
+    $is_disabled_by_constant = defined( 'SNN_CODE_DISABLE' ) && SNN_CODE_DISABLE;
+
     // Definitions for each snippet location
     $snippet_defs = array(
         'frontend' => array(
@@ -737,8 +743,25 @@ function snn_custom_codes_snippets_page() {
     ?>
     <div class="wrap">
         <h1> <?php esc_html_e( 'Manage Code Snippets', 'snn' ); ?> </h1>
+
+        <?php if ( $is_disabled_by_constant ) : ?>
+            <div class="notice notice-error">
+                <p>
+                    <strong><?php esc_html_e( 'Execution Disabled by Constant:', 'snn' ); ?></strong>
+                    <?php
+                    printf(
+                        // translators: %s: The name of the constant, e.g., SNN_CODE_DISABLE
+                        esc_html__( 'All snippet execution is currently disabled by the %s constant. To re-enable execution, you must remove or set this constant to false.', 'snn' ),
+                        '<code>SNN_CODE_DISABLE</code>'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
         <div class="notice notice-warning inline snn-php-execution-warning">
             <p><strong>Warning:</strong> <?php esc_html_e( 'ATTENTION PLEASE! These settings are not for normal users! If you don’t have at least some basic knowledge of HTML, CSS, and FTP login, DO NOT USE IT!', 'snn' ); ?></p>
+            <p><strong>INFO:</strong> <?php esc_html_e( 'If needed use define( ‘SNN_CODE_DISABLE’, true ); in functions.php or wp-config.php file to disable the code snippets feature temporarly. ', 'snn' ); ?></p>
         </div>
 
         <form method="post" action="admin.php?page=snn-custom-codes-snippets&tab=<?php echo esc_attr($current_tab_key); ?>">
@@ -982,6 +1005,11 @@ function snn_custom_codes_snippets_page() {
  * Initialize snippet execution hooks based on saved content and global setting.
  */
 function snn_custom_codes_snippets_init_execution() {
+    // Emergency override: if the constant is defined and true in wp-config.php, do nothing.
+    if ( defined( 'SNN_CODE_DISABLE' ) && SNN_CODE_DISABLE ) {
+        return;
+    }
+
     // Only proceed if snippets are globally enabled
     if ( ! get_option( 'snn_codes_snippets_enabled', 0 ) ) {
         return;
