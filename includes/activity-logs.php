@@ -643,9 +643,9 @@ function snn_activity_log_page_html() {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th scope="col" style="width:150px;"><?php _e( 'Date', 'snn-activity-log' ); ?></th>
-                    <th scope="col"><?php _e( 'User', 'snn-activity-log' ); ?></th>
-                    <th scope="col"><?php _e( 'Action', 'snn-activity-log' ); ?></th>
+                    <th scope="col" style="width:140px;"><?php _e( 'Date', 'snn-activity-log' ); ?></th>
+                    <th scope="col" style="width:140px;"><?php _e( 'User', 'snn-activity-log' ); ?></th>
+                    <th scope="col" style="width:250px;"><?php _e( 'Action', 'snn-activity-log' ); ?></th>
                     <th scope="col"><?php _e( 'Details', 'snn-activity-log' ); ?></th>
                 </tr>
             </thead>
