@@ -27,6 +27,8 @@ require_once SNN_PATH . '/includes/smtp-settings.php';
 require_once SNN_PATH . '/includes/taxonomy-settings.php';
 
 
+require_once SNN_PATH . '/includes/block-editor-utils.php';
+
 
 // Custom Blocks
 require_once SNN_PATH . '/blocks/section.php';
