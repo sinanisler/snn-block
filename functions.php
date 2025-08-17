@@ -30,9 +30,7 @@ require_once SNN_PATH . '/includes/block-editor-utils.php';
 
 
 // Custom Blocks
-require_once SNN_PATH . '/blocks/section.php';
-require_once SNN_PATH . '/blocks/container.php';
-require_once SNN_PATH . '/blocks/heading.php';
+// require_once SNN_PATH . '/blocks/section.php';
 
 
 
