@@ -5,6 +5,12 @@ define( 'SNN_URL', trailingslashit( get_stylesheet_directory_uri() ) );
 define( 'SNN_URL_ASSETS', trailingslashit( SNN_URL . 'assets' ) );  
 
 
+function snn_block_enqueue_assets() {
+	wp_enqueue_style( 'snn-block-style', get_stylesheet_uri(), array(), wp_get_theme()->get('Version') );
+}
+add_action( 'wp_enqueue_scripts', 'snn_block_enqueue_assets' );
+
+
 require_once SNN_PATH . '/includes/settings-page.php';
 
 require_once __DIR__ . '/includes/301-redirect.php';
