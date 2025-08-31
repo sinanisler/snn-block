@@ -329,7 +329,142 @@
 			"defaultFontSizes": false,
 			"dropCap": false,
 			"fluid": true,
-			"fontFamilies": [],
+			"fontFamilies": [
+				{
+					"fontFace": [
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "300",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-300-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "400",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-400-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "500",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-500-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "600",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-600-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "700",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-700-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "normal",
+							"fontWeight": "800",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-800-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "300",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-300-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "400",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-400-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "500",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-500-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "600",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-600-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "700",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-700-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "\"Open Sans\"",
+							"fontStyle": "italic",
+							"fontWeight": "800",
+							"src": [
+								"file:./assets/fonts/open-sans/open-sans-800-italic.woff2"
+							]
+						}
+					],
+					"fontFamily": "\"Open Sans\", sans-serif",
+					"name": "Open Sans",
+					"slug": "open-sans"
+				},
+				{
+					"fontFace": [
+						{
+							"fontFamily": "Oswald",
+							"fontStyle": "normal",
+							"fontWeight": "300",
+							"src": [
+								"file:./assets/fonts/oswald/oswald-300-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Oswald",
+							"fontStyle": "normal",
+							"fontWeight": "400",
+							"src": [
+								"file:./assets/fonts/oswald/oswald-400-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Oswald",
+							"fontStyle": "normal",
+							"fontWeight": "700",
+							"src": [
+								"file:./assets/fonts/oswald/oswald-700-normal.woff2"
+							]
+						}
+					],
+					"fontFamily": "Oswald, sans-serif",
+					"name": "Oswald",
+					"slug": "oswald"
+				}
+			],
 			"fontSizes": [],
 			"writingMode": true
 		},
@@ -703,45 +838,51 @@
 			},
 			"h4": {
 				"typography": {
-					"fontSize": "var(--wp--preset--font-size--base)"
+					"fontSize": "18px"
 				}
 			},
 			"h5": {
 				"typography": {
-					"fontSize": "var(--wp--preset--font-size--small)"
+					"fontSize": "16px"
 				}
 			},
 			"h6": {
 				"typography": {
-					"fontSize": "var(--wp--preset--font-size--x-small)"
+					"fontSize": "14px"
 				}
 			},
 			"heading": {
 				"typography": {
-					"fontFamily": "var(--wp--preset--font-family--primary)",
-					"fontWeight": "600",
+					"fontFamily": "var(--wp--preset--font-family--oswald)",
+					"fontStyle": "normal",
+					"fontWeight": "700",
 					"lineHeight": "var(--wp--custom--line-height--body)"
 				}
 			},
 			"link": {
 				"color": {
 					"text": "var(--wp--preset--color--main)"
+				},
+				"typography": {
+					"fontFamily": "var(--wp--preset--font-family--open-sans)"
 				}
 			}
 		},
 		"spacing": {
-			"blockGap": "var(--wp--preset--spacing--medium)",
+			"blockGap": "0",
 			"padding": {
 				"bottom": "0",
-				"left": "var(--wp--preset--spacing--medium)",
-				"right": "var(--wp--preset--spacing--medium)",
+				"left": "0",
+				"right": "0",
 				"top": "0"
 			}
 		},
 		"typography": {
-			"fontFamily": "var(--wp--preset--font-family--primary)",
-			"fontSize": "var(--wp--preset--font-size--base)",
-			"fontWeight": "430",
+			"fontFamily": "var(--wp--preset--font-family--open-sans)",
+			"fontSize": "16px",
+			"fontStyle": "normal",
+			"fontWeight": "400",
+			"letterSpacing": "px",
 			"lineHeight": "var(--wp--custom--line-height--body)"
 		}
 	},
@@ -755,11 +896,6 @@
 			"area": "footer",
 			"name": "footer",
 			"title": "Footer"
-		},
-		{
-			"area": "sidebar",
-			"name": "sidebar",
-			"title": "Sidebar"
 		}
 	],
 	"version": 3,
