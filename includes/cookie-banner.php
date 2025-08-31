@@ -32,8 +32,14 @@ function snn_options_page() {
         $options = array();
         $options['snn_cookie_settings_enable_cookie_banner'] = isset($_POST['snn_cookie_settings_enable_cookie_banner']) ? 'yes' : 'no';
         $options['snn_cookie_settings_disable_for_logged_in']  = isset($_POST['snn_cookie_settings_disable_for_logged_in']) ? 'yes' : 'no';
-        // NEW: Disable Scripts for Logged-In Users option
+    // NEW: Disable Scripts for Logged-In Users option
         $options['snn_cookie_settings_disable_scripts_for_logged_in'] = isset($_POST['snn_cookie_settings_disable_scripts_for_logged_in']) ? 'yes' : 'no';
+    // NEW: Google Analytics Consent Mode
+        $options['snn_cookie_settings_enable_ga_consent'] = isset($_POST['snn_cookie_settings_enable_ga_consent']) ? 'yes' : 'no';
+    // NEW: Microsoft Clarity Consent Mode
+        $options['snn_cookie_settings_enable_clarity_consent'] = isset($_POST['snn_cookie_settings_enable_clarity_consent']) ? 'yes' : 'no';
+    // NEW: Preferences Title
+    $options['snn_cookie_settings_preferences_title'] = isset($_POST['snn_cookie_settings_preferences_title']) ? sanitize_text_field( wp_unslash($_POST['snn_cookie_settings_preferences_title']) ) : '';
 
         // Allow <p> tags with style and class, plus basic tags.
         $allowed = array(
@@ -73,17 +79,32 @@ function snn_options_page() {
         
         $services = array();
         if ( isset($_POST['snn_cookie_settings_services']) && is_array($_POST['snn_cookie_settings_services']) ) {
-            foreach( $_POST['snn_cookie_settings_services'] as $service ) {
-                if ( empty( $service['name'] ) ) {
+            // Sort by key to handle sparse arrays properly
+            ksort($_POST['snn_cookie_settings_services']);
+            
+            foreach( $_POST['snn_cookie_settings_services'] as $index => $service ) {
+                // Only skip if ALL fields are completely empty (trim whitespace)
+                if ( empty( trim($service['name']) ) && 
+                     empty( trim($service['description']) ) && 
+                     empty( trim($service['script']) ) ) {
                     continue;
                 }
+                
                 $service_data = array();
-                $service_data['name'] = sanitize_text_field( wp_unslash($service['name']) );
-                $service_data['description'] = isset($service['description']) ? wp_unslash($service['description']) : ''; // NEW: Service Description
+                $service_data['name'] = isset($service['name']) ? sanitize_text_field( wp_unslash($service['name']) ) : '';
+                $service_data['description'] = isset($service['description']) ? wp_unslash($service['description']) : '';
                 $service_data['script'] = isset($service['script']) ? wp_unslash($service['script']) : '';
                 $service_data['position'] = isset($service['position']) ? sanitize_text_field( wp_unslash($service['position']) ) : 'body_bottom';
                 $service_data['mandatory'] = isset($service['mandatory']) ? 'yes' : 'no';
+                
+                // Always add the service to preserve data
                 $services[] = $service_data;
+            }
+        } else {
+            // If no services are posted, preserve existing services to prevent data loss
+            $existing_options = get_option( SNN_OPTIONS );
+            if ( isset($existing_options['snn_cookie_settings_services']) && is_array($existing_options['snn_cookie_settings_services']) ) {
+                $services = $existing_options['snn_cookie_settings_services'];
             }
         }
         $options['snn_cookie_settings_services'] = $services;
@@ -100,6 +121,9 @@ function snn_options_page() {
             'snn_cookie_settings_enable_cookie_banner' => 'no',
             'snn_cookie_settings_disable_for_logged_in'  => 'no',
             'snn_cookie_settings_disable_scripts_for_logged_in' => 'no',
+            'snn_cookie_settings_enable_ga_consent' => 'no',
+            'snn_cookie_settings_enable_clarity_consent' => 'no',
+            'snn_cookie_settings_preferences_title' => __('Cookie Preferences', 'snn'),
             'snn_cookie_settings_banner_description'   => __('This website uses cookies for analytics and functionality.', 'snn'),
             'snn_cookie_settings_additional_description' => '<p style="text-align: center;"><a href="#">Imprint</a> - <a href="#">Privacy Policy</a></p>',
             'snn_cookie_settings_enable_legal_text' => 'no',
@@ -125,7 +149,7 @@ function snn_options_page() {
             'snn_cookie_settings_banner_text_color'    => '#000000',
             'snn_cookie_settings_button_bg_color'      => '#000000',
             'snn_cookie_settings_button_text_color'    => '#ffffff',
-            'snn_cookie_settings_banner_width'         => '400',
+            'snn_cookie_settings_banner_width'         => '500',
             'snn_cookie_settings_banner_border_radius' => '0',
             'snn_cookie_settings_button_border_radius' => '0'
         );
@@ -137,7 +161,10 @@ function snn_options_page() {
             .snn-textarea { width: 500px; }
             .snn-input { width: 300px; }
             .snn-color-picker { }
-            .snn-services-repeater .snn-service-item { margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; max-width:600px }
+            .snn-services-repeater .snn-service-item { margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; max-width:600px; position: relative; }
+            .snn-service-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+            .snn-move-btn { background: transparent; border: none; padding: 2px 4px; line-height: 1; cursor: pointer; color: #555; font-size: 14px; }
+            .snn-move-btn:hover { color: #000; }
             .snn-custom-css-textarea { width: 500px; }
             .snn-tab { cursor:pointer; display: inline-block; margin-right: 10px; padding: 8px 12px; border: 1px solid #ccc; border-bottom: none; background: #f1f1f1; }
             .snn-tab.active { background: #fff; font-weight: bold; }
@@ -176,6 +203,27 @@ function snn_options_page() {
                         <td>
                             <input type="checkbox" name="snn_cookie_settings_disable_scripts_for_logged_in" value="yes" <?php checked((isset($options['snn_cookie_settings_disable_scripts_for_logged_in']) ? $options['snn_cookie_settings_disable_scripts_for_logged_in'] : 'no'), 'yes'); ?>>
                             <span class="description"><?php _e('Check to disable the scripts loading for logged-in users.', 'snn'); ?></span>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><?php _e('Enable Google Analytics Consent Mode', 'snn'); ?></th>
+                        <td>
+                            <input type="checkbox" name="snn_cookie_settings_enable_ga_consent" value="yes" <?php checked((isset($options['snn_cookie_settings_enable_ga_consent']) ? $options['snn_cookie_settings_enable_ga_consent'] : 'no'), 'yes'); ?>>
+                            <span class="description"><?php _e('Check to enable Google Analytics Consent Mode v2. This will automatically send consent status to Google Analytics when users accept/deny cookies.', 'snn'); ?></span>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><?php _e('Enable Microsoft Clarity Consent Mode', 'snn'); ?></th>
+                        <td>
+                            <input type="checkbox" name="snn_cookie_settings_enable_clarity_consent" value="yes" <?php checked((isset($options['snn_cookie_settings_enable_clarity_consent']) ? $options['snn_cookie_settings_enable_clarity_consent'] : 'no'), 'yes'); ?>>
+                            <span class="description"><?php _e('Check to enable Microsoft Clarity Consent Mode v2. This will automatically send consent status to Clarity when users accept/deny cookies.', 'snn'); ?></span>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><?php _e('Preferences Title', 'snn'); ?></th>
+                        <td>
+                            <input type="text" name="snn_cookie_settings_preferences_title" value="<?php echo isset($options['snn_cookie_settings_preferences_title']) ? esc_attr($options['snn_cookie_settings_preferences_title']) : ''; ?>" class="snn-input">
+                            <p class="description"><?php _e('Preferences title text in the cookie banner.', 'snn'); ?></p>
                         </td>
                     </tr>
                     <tr valign="top">
@@ -259,6 +307,10 @@ function snn_options_page() {
                                     foreach ( $options['snn_cookie_settings_services'] as $service ) {
                                         ?>
                                     <div class="snn-service-item">
+                                        <div class="snn-service-actions" aria-label="Reorder service">
+                                            <button type="button" class="snn-move-btn snn-move-up" title="Move up">▲</button>
+                                            <button type="button" class="snn-move-btn snn-move-down" title="Move down">▼</button>
+                                        </div>
                                         <label><?php _e('Service Name:', 'snn'); ?>
                                             <input type="text" name="snn_cookie_settings_services[<?php echo $service_index; ?>][name]" value="<?php echo isset($service['name']) ? esc_attr($service['name']) : ''; ?>" class="snn-input snn-service-name">
                                         </label>
@@ -285,6 +337,10 @@ function snn_options_page() {
                                 } else {
                                     ?>
                                     <div class="snn-service-item">
+                                        <div class="snn-service-actions" aria-label="Reorder service">
+                                            <button type="button" class="snn-move-btn snn-move-up" title="Move up">▲</button>
+                                            <button type="button" class="snn-move-btn snn-move-down" title="Move down">▼</button>
+                                        </div>
                                         <label><?php _e('Service Name:', 'snn'); ?>
                                             <input type="text" name="snn_cookie_settings_services[0][name]" value="" class="snn-input snn-service-name">
                                         </label>
@@ -315,9 +371,31 @@ function snn_options_page() {
                             (function($){
                                 $(document).ready(function(){
                                     var serviceIndex = <?php echo $service_index; ?>;
+                                    
+                                    // Function to reindex all services to prevent gaps
+                                    function reindexServices() {
+                                        $('#services-repeater .snn-service-item').each(function(index) {
+                                            $(this).find('input, textarea, select').each(function() {
+                                                var name = $(this).attr('name');
+                                                if (name && name.includes('snn_cookie_settings_services[')) {
+                                                    var newName = name.replace(/snn_cookie_settings_services\[\d+\]/, 'snn_cookie_settings_services[' + index + ']');
+                                                    $(this).attr('name', newName);
+                                                }
+                                            });
+                                        });
+                                        serviceIndex = $('#services-repeater .snn-service-item').length;
+                                    }
+                                    
                                     $('#add-service').click(function(e){
                                         e.preventDefault();
+                                        // Reindex before adding new service to prevent gaps
+                                        reindexServices();
+                                        
                                         var newService = '<div class="snn-service-item">' +
+                                            '<div class="snn-service-actions" aria-label="Reorder service">' +
+                                                '<button type="button" class="snn-move-btn snn-move-up" title="Move up">▲</button>' +
+                                                '<button type="button" class="snn-move-btn snn-move-down" title="Move down">▼</button>' +
+                                            '</div>' +
                                             '<label><?php _e('Service Name:', 'snn'); ?>' +
                                                 '<input type="text" name="snn_cookie_settings_services[' + serviceIndex + '][name]" value="" class="snn-input snn-service-name">' +
                                             '</label>' +
@@ -339,10 +417,39 @@ function snn_options_page() {
                                         $('#services-repeater').append(newService);
                                         serviceIndex++;
                                     });
+                                    
                                     $('#services-repeater').on('click', '.remove-service', function(e){
                                         e.preventDefault();
                                         $(this).closest('.snn-service-item').remove();
+                                        // Reindex after removal to prevent gaps
+                                        reindexServices();
                                     });
+                                    
+                                    // Reordering handlers (delegate to container)
+                                    $('#services-repeater').on('click', '.snn-move-up', function(e){
+                                        e.preventDefault();
+                                        var $item = $(this).closest('.snn-service-item');
+                                        var $prev = $item.prev('.snn-service-item');
+                                        if ($prev.length) {
+                                            $item.insertBefore($prev);
+                                            // Reindex after reordering
+                                            reindexServices();
+                                        }
+                                    });
+                                    
+                                    $('#services-repeater').on('click', '.snn-move-down', function(e){
+                                        e.preventDefault();
+                                        var $item = $(this).closest('.snn-service-item');
+                                        var $next = $item.next('.snn-service-item');
+                                        if ($next.length) {
+                                            $item.insertAfter($next);
+                                            // Reindex after reordering
+                                            reindexServices();
+                                        }
+                                    });
+                                    
+                                    // Initial reindex on page load to fix any existing gaps
+                                    reindexServices();
                                 });
                             })(jQuery);
                             </script>
@@ -548,8 +655,8 @@ function snn_output_cookie_banner() {
         }
     </style>
     <div id="snn-cookie-banner" class="snn-cookie-banner <?php echo esc_attr($position); ?>"<?php echo $banner_style; ?>>
-        <div class="snn-preferences-content">
-            <div class="snn-preferences-title"><?php _e('Cookie Preferences', 'snn'); ?></div>
+    <div class="snn-preferences-title"><?php echo esc_html( isset($options['snn_cookie_settings_preferences_title']) ? $options['snn_cookie_settings_preferences_title'] : __('Cookie Preferences', 'snn') ); ?></div>
+    <div class="snn-preferences-content">
             <?php if ( ! empty($options['snn_cookie_settings_services']) && is_array($options['snn_cookie_settings_services']) ) { ?>
                 <ul class="snn-services-list" style="list-style: none; padding: 0;">
                 <?php foreach ( $options['snn_cookie_settings_services'] as $index => $service ) { ?>
@@ -569,7 +676,7 @@ function snn_output_cookie_banner() {
                             </label>
                         </div>
                         <?php if ( !empty($service['description']) ) { ?>
-                            <p class="snn-service-description-text" style="margin-top: 5px; margin-bottom: 0; font-size: 0.9em;"><?php echo esc_html( $service['description'] ); ?></p>
+                            <p class="snn-service-description-text" style="margin-top: 5px; margin-bottom: 0;  "><?php echo esc_html( $service['description'] ); ?></p>
                         <?php } ?>
                     </li>
                 <?php } ?>
@@ -650,6 +757,8 @@ function snn_output_banner_js() {
          return;
     }
     $cookie_banner_enabled = ( isset($options['snn_cookie_settings_enable_cookie_banner']) && $options['snn_cookie_settings_enable_cookie_banner'] === 'yes' ) ? 'true' : 'false';
+    $ga_consent_enabled = ( isset($options['snn_cookie_settings_enable_ga_consent']) && $options['snn_cookie_settings_enable_ga_consent'] === 'yes' ) ? 'true' : 'false';
+    $clarity_consent_enabled = ( isset($options['snn_cookie_settings_enable_clarity_consent']) && $options['snn_cookie_settings_enable_clarity_consent'] === 'yes' ) ? 'true' : 'false';
     ?>
 
 <script>
@@ -658,17 +767,83 @@ function snn_output_banner_js() {
         function getCookie(n){for(var e=n+"=",t=document.cookie.split(";"),i=0;i<t.length;i++){for(var o=t[i];" "==o.charAt(0);)o=o.substring(1,o.length);if(0==o.indexOf(e))return o.substring(e.length,o.length)}return null}
         function eraseCookie(n){document.cookie=n+"=; Max-Age=-99999999; path=/"}
         var cookieBannerEnabled=<?php echo $cookie_banner_enabled; ?>;
+        var gaConsentEnabled=<?php echo $ga_consent_enabled; ?>;
+        var clarityConsentEnabled=<?php echo $clarity_consent_enabled; ?>;
+        
+        function updateGoogleAnalyticsConsent(accepted){
+            if(gaConsentEnabled && typeof gtag !== 'undefined'){
+                gtag('consent', 'update', {
+                    'analytics_storage': accepted ? 'granted' : 'denied',
+                    'ad_storage': accepted ? 'granted' : 'denied',
+                    'ad_user_data': accepted ? 'granted' : 'denied',
+                    'ad_personalization': accepted ? 'granted' : 'denied'
+                });
+            }
+        }
+        
+        function updateClarityConsent(accepted){
+            if(clarityConsentEnabled && typeof window.clarity !== 'undefined'){
+                window.clarity('consentv2', {
+                    ad_Storage: accepted ? "granted" : "denied",
+                    analytics_Storage: accepted ? "granted" : "denied"
+                });
+            }
+        }
+        
         function injectScript(c,p){var d=document.createElement("div");d.innerHTML=c;d.querySelectorAll("script").forEach(function(s){var n=document.createElement("script");for(var i=0;i<s.attributes.length;i++){var a=s.attributes[i];n.setAttribute(a.name,a.value)}n.text=s.text||"";"head"===p?document.head.appendChild(n):"body_top"===p?document.body.firstChild?document.body.insertBefore(n,document.body.firstChild):document.body.appendChild(n):document.body.appendChild(n)})}
         function injectMandatoryScripts(){document.querySelectorAll('.snn-service-script[data-mandatory="yes"]').forEach(function(d){var e=d.getAttribute("data-script"),p=d.getAttribute("data-position")||"body_bottom";e&&injectScript(atob(e),p)})}
         function injectAllConsentScripts(){document.querySelectorAll('.snn-service-script[data-script]').forEach(function(d){if("yes"!==d.getAttribute("data-mandatory")){var e=d.getAttribute("data-script"),p=d.getAttribute("data-position")||"body_bottom";e&&injectScript(atob(e),p)}})}
         function injectCustomConsentScripts(){var p=getCookie("snn_cookie_services");if(p){var s=JSON.parse(p);document.querySelectorAll('.snn-service-script[data-script]').forEach(function(d){if("yes"!==d.getAttribute("data-mandatory")){var i=d.getAttribute("id").split("-").pop();if(s[i]){var e=d.getAttribute("data-script"),p=d.getAttribute("data-position")||"body_bottom";e&&injectScript(atob(e),p)}}})}}
         injectMandatoryScripts();
         var a=document.querySelector('.snn-accept'),y=document.querySelector('.snn-deny'),r=document.querySelector('.snn-preferences'),b=document.getElementById('snn-cookie-banner'),o=document.getElementById('snn-cookie-overlay');
-        a&&a.addEventListener('click',function(){var t=document.querySelectorAll('.snn-service-toggle');if(t.length>0){var s={};t.forEach(function(g){s[g.getAttribute('data-service-index')]=g.checked}),setCookie('snn_cookie_services',JSON.stringify(s),365),setCookie('snn_cookie_accepted','custom',365),injectCustomConsentScripts()}else setCookie('snn_cookie_accepted','true',365),eraseCookie('snn_cookie_services'),injectAllConsentScripts();b&&(b.style.display='none'),o&&(o.style.display='none')});
-        y&&y.addEventListener('click',function(){setCookie('snn_cookie_accepted','false',365),eraseCookie('snn_cookie_services'),b&&(b.style.display='none'),o&&(o.style.display='none')});
+        a&&a.addEventListener('click',function(){
+            var t=document.querySelectorAll('.snn-service-toggle');
+            if(t.length>0){
+                var s={};
+                t.forEach(function(g){s[g.getAttribute('data-service-index')]=g.checked});
+                setCookie('snn_cookie_services',JSON.stringify(s),365);
+                setCookie('snn_cookie_accepted','custom',365);
+                injectCustomConsentScripts();
+                updateGoogleAnalyticsConsent(true);
+                updateClarityConsent(true);
+            }else{
+                setCookie('snn_cookie_accepted','true',365);
+                eraseCookie('snn_cookie_services');
+                injectAllConsentScripts();
+                updateGoogleAnalyticsConsent(true);
+                updateClarityConsent(true);
+            }
+            b&&(b.style.display='none');
+            o&&(o.style.display='none');
+        });
+        y&&y.addEventListener('click',function(){
+            setCookie('snn_cookie_accepted','false',365);
+            eraseCookie('snn_cookie_services');
+            updateGoogleAnalyticsConsent(false);
+            updateClarityConsent(false);
+            b&&(b.style.display='none');
+            o&&(o.style.display='none');
+        });
         r&&r.addEventListener('click',function(){var t=document.querySelector('.snn-preferences-content');t.style.display==='none'||t.style.display===''?t.style.display='block':t.style.display='none'});
         var s=getCookie('snn_cookie_accepted');
-        if('true'===s)injectAllConsentScripts(),b&&(b.style.display='none'),o&&(o.style.display='none');else if('false'===s)b&&(b.style.display='none'),o&&(o.style.display='none');else if('custom'===s)injectCustomConsentScripts(),b&&(b.style.display='none'),o&&(o.style.display='none')
+        if('true'===s){
+            injectAllConsentScripts();
+            updateGoogleAnalyticsConsent(true);
+            updateClarityConsent(true);
+            b&&(b.style.display='none');
+            o&&(o.style.display='none');
+        }else if('false'===s){
+            updateGoogleAnalyticsConsent(false);
+            updateClarityConsent(false);
+            b&&(b.style.display='none');
+            o&&(o.style.display='none');
+        }else if('custom'===s){
+            injectCustomConsentScripts();
+            updateGoogleAnalyticsConsent(true);
+            updateClarityConsent(true);
+            b&&(b.style.display='none');
+            o&&(o.style.display='none');
+        }
     })();
 </script>
     <?php
