@@ -1,0 +1,11 @@
+{
+  "apiVersion": 2,
+  "name": "snn-block/section",
+  "title": "Section",
+  "category": "design",
+  "icon": "layout",
+  "description": "A custom section block for layout purposes.",
+  "keywords": ["container", "section", "layout"],
+  "editorScript": "snn-block-section-editor",
+  "style": "snn-block-section-style"
+}

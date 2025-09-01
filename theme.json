@@ -465,7 +465,62 @@
 					"slug": "oswald"
 				}
 			],
-			"fontSizes": [],
+			"fontSizes": [
+				{
+					"fluid": {
+						"max": "16px",
+						"min": "16px"
+					},
+					"name": "16px",
+					"size": "16px",
+					"slug": "custom-1"
+				},
+				{
+					"fluid": {
+						"max": "24px",
+						"min": "24px"
+					},
+					"name": "24px",
+					"size": "20px",
+					"slug": "custom-2"
+				},
+				{
+					"fluid": {
+						"max": "32px",
+						"min": "20px"
+					},
+					"name": "32px",
+					"size": "32px",
+					"slug": "custom-3"
+				},
+				{
+					"fluid": {
+						"max": "64px",
+						"min": "24px"
+					},
+					"name": "64px",
+					"size": "64px",
+					"slug": "custom-4"
+				},
+				{
+					"fluid": {
+						"max": "96px",
+						"min": "32px"
+					},
+					"name": "96px",
+					"size": "96px",
+					"slug": "custom-5"
+				},
+				{
+					"fluid": {
+						"max": "128px",
+						"min": "32px"
+					},
+					"name": "128px",
+					"size": "128px",
+					"slug": "custom-6"
+				}
+			],
 			"writingMode": true
 		},
 		"useRootPaddingAwareAlignments": true
@@ -872,8 +927,8 @@
 			"blockGap": "0",
 			"padding": {
 				"bottom": "0",
-				"left": "0",
-				"right": "0",
+				"left": "10px",
+				"right": "10px",
 				"top": "0"
 			}
 		},
