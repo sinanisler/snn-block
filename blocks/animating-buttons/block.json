@@ -1,0 +1,226 @@
+{
+  "apiVersion": 2,
+  "name": "snn-block/animating-buttons",
+  "title": "Animating Buttons",
+  "description": "A customizable animating button block with extensive controls for styling and animations.",
+  "category": "widgets",
+  "icon": "button",
+  "keywords": ["button", "animation", "interactive"],
+  "attributes": {
+    "text": {
+      "type": "string",
+      "default": "Click Me"
+    },
+    "url": {
+      "type": "string",
+      "default": ""
+    },
+    "target": {
+      "type": "string",
+      "default": "_self"
+    },
+    "rel": {
+      "type": "string",
+      "default": ""
+    },
+    "animationType": {
+      "type": "string",
+      "default": "none"
+    },
+    "animationDuration": {
+      "type": "number",
+      "default": 1000
+    },
+    "animationDelay": {
+      "type": "number",
+      "default": 0
+    },
+    "animationEasing": {
+      "type": "string",
+      "default": "ease"
+    },
+    "hoverAnimation": {
+      "type": "string",
+      "default": "none"
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": "#007cba"
+    },
+    "textColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "borderColor": {
+      "type": "string",
+      "default": "#007cba"
+    },
+    "borderWidth": {
+      "type": "number",
+      "default": 0
+    },
+    "borderRadius": {
+      "type": "number",
+      "default": 4
+    },
+    "borderStyle": {
+      "type": "string",
+      "default": "solid"
+    },
+    "paddingTop": {
+      "type": "string",
+      "default": "12px"
+    },
+    "paddingRight": {
+      "type": "string",
+      "default": "24px"
+    },
+    "paddingBottom": {
+      "type": "string",
+      "default": "12px"
+    },
+    "paddingLeft": {
+      "type": "string",
+      "default": "24px"
+    },
+    "marginTop": {
+      "type": "string",
+      "default": "0px"
+    },
+    "marginRight": {
+      "type": "string",
+      "default": "0px"
+    },
+    "marginBottom": {
+      "type": "string",
+      "default": "0px"
+    },
+    "marginLeft": {
+      "type": "string",
+      "default": "0px"
+    },
+    "fontSize": {
+      "type": "string",
+      "default": "16px"
+    },
+    "fontWeight": {
+      "type": "string",
+      "default": "400"
+    },
+    "fontFamily": {
+      "type": "string",
+      "default": "inherit"
+    },
+    "textTransform": {
+      "type": "string",
+      "default": "none"
+    },
+    "letterSpacing": {
+      "type": "string",
+      "default": "0px"
+    },
+    "lineHeight": {
+      "type": "string",
+      "default": "1.5"
+    },
+    "shadowColor": {
+      "type": "string",
+      "default": "#000000"
+    },
+    "shadowOpacity": {
+      "type": "number",
+      "default": 0.2
+    },
+    "shadowBlur": {
+      "type": "number",
+      "default": 4
+    },
+    "shadowSpread": {
+      "type": "number",
+      "default": 0
+    },
+    "shadowHorizontal": {
+      "type": "number",
+      "default": 0
+    },
+    "shadowVertical": {
+      "type": "number",
+      "default": 2
+    },
+    "width": {
+      "type": "string",
+      "default": "auto"
+    },
+    "height": {
+      "type": "string",
+      "default": "auto"
+    },
+    "align": {
+      "type": "string",
+      "default": "left"
+    },
+    "customClass": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "align": ["left", "center", "right", "wide", "full"],
+    "anchor": true,
+    "color": {
+      "background": true,
+      "text": true,
+      "gradients": true,
+      "__experimentalDefaultControls": {
+        "background": true,
+        "text": true
+      }
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "__experimentalDefaultControls": {
+        "margin": false,
+        "padding": false
+      }
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontWeight": true,
+      "__experimentalFontStyle": true,
+      "__experimentalTextTransform": true,
+      "__experimentalLetterSpacing": true,
+      "__experimentalDefaultControls": {
+        "fontSize": true,
+        "fontAppearance": true,
+        "textTransform": true
+      }
+    },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true,
+      "__experimentalDefaultControls": {
+        "color": true,
+        "radius": true,
+        "style": true,
+        "width": true
+      }
+    },
+    "shadow": true,
+    "customClassName": true,
+    "html": false,
+    "__experimentalSelector": ".snn-animating-button",
+    "__experimentalLayout": {
+      "allowSwitching": false,
+      "allowInheriting": false,
+      "allowVerticalAlignment": false,
+      "allowSizingOnChildren": false
+    }
+  },
+  "textdomain": "snn-block",
+  "editorScript": "file:./editor.js"
+}

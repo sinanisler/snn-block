@@ -36,7 +36,7 @@ require_once SNN_PATH . '/includes/block-editor-utils.php';
 
 
 // Custom Blocks
-// require_once SNN_PATH . '/blocks/section.php';
+require_once SNN_PATH . '/blocks/animating-buttons/block.php';
 
 
 
