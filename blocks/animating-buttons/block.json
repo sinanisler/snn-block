@@ -222,5 +222,6 @@
     }
   },
   "textdomain": "snn-block",
-  "editorScript": "file:./editor.js"
+  "editorScript": "file:./editor.js",
+  "style": "file:./block.css"
 }
