@@ -52,7 +52,7 @@ window.addEventListener('DOMContentLoaded', function() {
       edit: function() {
         const blockProps = useBlockProps({ className: 'snn-section' });
         const template = [
-          ['core/paragraph', { placeholder: 'Add your content...' }]
+          ['snn-block/container']
         ];
         return createElement(
           'section',
