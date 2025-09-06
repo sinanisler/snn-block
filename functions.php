@@ -32,10 +32,9 @@ require_once SNN_PATH . '/includes/block-editor-utils.php';
 
 
 // Custom Blocks
-// require_once SNN_PATH . '/blocks/example/block.php';
 
-require_once SNN_PATH . '/blocks/section/block.php';
-require_once SNN_PATH . '/blocks/container/block.php';
+require_once SNN_PATH . '/blocks/blocks.php';
+require_once SNN_PATH . '/blocks/flip-card/block.php';
 
 
 

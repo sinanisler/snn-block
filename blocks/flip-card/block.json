@@ -1,0 +1,18 @@
+{
+  "apiVersion": 2,
+  "name": "snn/flip-card",
+  "title": "Flip Card",
+  "category": "widgets",
+  "icon": "image-flip-horizontal",
+  "description": "A simple flip card block with custom controls.",
+  "editorScript": "blocks/flip-card/editor.jsx",
+  "style": "blocks/flip-card/block.css",
+  "attributes": {
+    "frontText": { "type": "string", "default": "Front Side" },
+    "backText": { "type": "string", "default": "Back Side" },
+    "flipDirection": { "type": "string", "default": "horizontal" }
+  },
+  "supports": {
+    "html": false
+  }
+}
