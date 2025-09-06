@@ -1,5 +1,4 @@
 <?php
-// Global block assets and Babel Standalone enqueue for all custom blocks
 add_action('enqueue_block_editor_assets', function() {
     // Enqueue Babel Standalone for JSX support in editor
     wp_enqueue_script(
