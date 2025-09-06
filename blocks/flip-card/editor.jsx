@@ -1,4 +1,3 @@
-// Flip Card Block Editor (JSX, Babel Standalone)
 const { useBlockProps, InspectorControls } = wp.blockEditor;
 const { PanelBody, TextControl, SelectControl } = wp.components;
 
