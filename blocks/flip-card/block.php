@@ -7,8 +7,8 @@ add_action('init', function() {
 });
 
 function snn_flip_card_render($attributes) {
-    $front = esc_html($attributes['frontText'] ?? 'Front');
-    $back = esc_html($attributes['backText'] ?? 'Back');
+    $front = $attributes['frontText'] ?? 'Front';
+    $back = $attributes['backText'] ?? 'Back';
     $direction = esc_html($attributes['flipDirection'] ?? 'horizontal');
     ob_start();
     ?>
