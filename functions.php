@@ -32,9 +32,18 @@ require_once SNN_PATH . '/includes/block-editor-utils.php';
 
 
 // Custom Blocks
-
-require_once SNN_PATH . '/blocks/blocks.php';
 require_once SNN_PATH . '/blocks/flip-card/block.php';
 
 
 
+
+
+// Load Babel Tower
+add_action('enqueue_block_editor_assets', function() {
+wp_enqueue_script(
+'babel-standalone', 'https://unpkg.com/@babel/standalone/babel.min.js',
+[
+    'wp-blocks','wp-element','wp-components','wp-block-editor','wp-i18n','wp-editor',      
+    'wp-data','wp-compose','wp-rich-text','wp-api-fetch','wp-url','wp-dom-ready',   
+    'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
+],null,true); });
