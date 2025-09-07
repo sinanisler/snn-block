@@ -7,9 +7,26 @@ add_action('init', function() {
 });
 
 function snn_section_render($attributes, $content) {
+    $layoutType = $attributes['layoutType'] ?? 'flex';
+    $style = '';
+    if ($layoutType === 'flex') {
+        $style .= 'display:flex;';
+        $style .= 'flex-direction:' . ($attributes['flexDirection'] ?? 'row') . ';';
+        $style .= 'flex-wrap:' . ($attributes['flexWrap'] ?? 'nowrap') . ';';
+        $style .= 'justify-content:' . ($attributes['justifyContent'] ?? 'flex-start') . ';';
+        $style .= 'align-items:' . ($attributes['alignItems'] ?? 'stretch') . ';';
+        $style .= 'gap:' . (isset($attributes['gap']) ? intval($attributes['gap']) . 'px' : '0px') . ';';
+    } else {
+        $style .= 'display:grid;';
+        $style .= 'grid-template-columns:repeat(' . ($attributes['gridColumns'] ?? 2) . ',1fr);';
+        $style .= 'grid-template-rows:repeat(' . ($attributes['gridRows'] ?? 1) . ',1fr);';
+        $style .= 'gap:' . (isset($attributes['gridGap']) ? intval($attributes['gridGap']) . 'px' : '0px') . ';';
+        $style .= 'align-items:' . ($attributes['gridAlign'] ?? 'stretch') . ';';
+        $style .= 'justify-items:' . ($attributes['gridJustify'] ?? 'stretch') . ';';
+    }
     ob_start();
     ?>
-    <section class="snn-section">
+    <section class="snn-section" style="<?php echo esc_attr($style); ?>">
         <?php echo $content; ?>
     </section>
     <?php
