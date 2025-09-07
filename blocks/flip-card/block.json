@@ -2,7 +2,7 @@
   "apiVersion": 2,
   "name": "snn/flip-card",
   "title": "Flip Card",
-  "category": "widgets",
+  "category": "snn",
   "icon": "image-flip-horizontal",
   "description": "A simple flip card block with custom controls.",
   "editorScript": "blocks/flip-card/editor.jsx",

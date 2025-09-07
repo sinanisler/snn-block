@@ -33,6 +33,7 @@ require_once SNN_PATH . '/includes/block-editor-utils.php';
 
 // Custom Blocks
 require_once SNN_PATH . '/blocks/flip-card/block.php';
+require_once SNN_PATH . '/blocks/section/block.php';
 
 
 
@@ -45,3 +46,16 @@ add_action('enqueue_block_editor_assets', function() { wp_enqueue_script(
     'wp-data','wp-compose','wp-rich-text','wp-api-fetch','wp-url','wp-dom-ready',   
     'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
 ], wp_get_theme()->get('Version') , true ); });
+
+
+
+// Add new Block Inserter Category
+add_filter( 'block_categories_all', function( $categories ) {
+    return array_merge(        array(            array(
+                'slug'  => 'snn',
+                'title' => __( 'SNN', 'snn' ),
+                'icon'  => 'arrow-down-alt2',
+            ),        ),        $categories
+    );
+}, 10, 1 );
+

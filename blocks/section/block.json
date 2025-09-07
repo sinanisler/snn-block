@@ -1,0 +1,14 @@
+{
+  "apiVersion": 2,
+  "name": "snn/section",
+  "title": "Section",
+  "category": "snn",
+  "icon": "layout",
+  "description": "A container section block for inner blocks.",
+  "editorScript": "blocks/section/editor.jsx",
+  "style": "blocks/section/block.css",
+  "supports": {
+    "html": false,
+    "innerBlocks": true
+  }
+}
