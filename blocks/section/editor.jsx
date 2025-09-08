@@ -1,5 +1,5 @@
 
-const { useBlockProps, InnerBlocks } = wp.blockEditor;
+const { useBlockProps, useInnerBlocksProps, InnerBlocks } = wp.blockEditor;
 const { InspectorControls } = wp.blockEditor;
 const {
     PanelBody,
@@ -153,41 +153,85 @@ wp.blocks.registerBlockType('snn/section', {
                                         onChange={val => setAttributes({ flexDirection: val })}
                                     />
                                 )}
-                                <SelectControl
-                                    label="Wrap"
-                                    value={flexWrap}
-                                    options={[
-                                        { label: 'No Wrap', value: 'nowrap' },
-                                        { label: 'Wrap', value: 'wrap' },
-                                        { label: 'Wrap Reverse', value: 'wrap-reverse' },
-                                    ]}
-                                    onChange={val => setAttributes({ flexWrap: val })}
-                                />
-                                <SelectControl
-                                    label="Justify Content"
-                                    value={justifyContent}
-                                    options={[
-                                        { label: 'Flex Start', value: 'flex-start' },
-                                        { label: 'Center', value: 'center' },
-                                        { label: 'Flex End', value: 'flex-end' },
-                                        { label: 'Space Between', value: 'space-between' },
-                                        { label: 'Space Around', value: 'space-around' },
-                                        { label: 'Space Evenly', value: 'space-evenly' },
-                                    ]}
-                                    onChange={val => setAttributes({ justifyContent: val })}
-                                />
-                                <SelectControl
-                                    label="Align Items"
-                                    value={alignItems}
-                                    options={[
-                                        { label: 'Stretch', value: 'stretch' },
-                                        { label: 'Flex Start', value: 'flex-start' },
-                                        { label: 'Center', value: 'center' },
-                                        { label: 'Flex End', value: 'flex-end' },
-                                        { label: 'Baseline', value: 'baseline' },
-                                    ]}
-                                    onChange={val => setAttributes({ alignItems: val })}
-                                />
+                                {hasToggleGroup ? (
+                                    <ToggleGroupControl
+                                        label="Wrap"
+                                        value={flexWrap}
+                                        onChange={val => setAttributes({ flexWrap: val })}
+                                        isBlock
+                                    >
+                                        <ToggleGroupControlOption key="nowrap" label="No Wrap" value="nowrap" />
+                                        <ToggleGroupControlOption key="wrap" label="Wrap" value="wrap" />
+                                        <ToggleGroupControlOption key="wrap-reverse" label="Wrap Reverse" value="wrap-reverse" />
+                                    </ToggleGroupControl>
+                                ) : (
+                                    <SelectControl
+                                        label="Wrap"
+                                        value={flexWrap}
+                                        options={[
+                                            { label: 'No Wrap', value: 'nowrap' },
+                                            { label: 'Wrap', value: 'wrap' },
+                                            { label: 'Wrap Reverse', value: 'wrap-reverse' },
+                                        ]}
+                                        onChange={val => setAttributes({ flexWrap: val })}
+                                    />
+                                )}
+                                {hasToggleGroup ? (
+                                    <ToggleGroupControl
+                                        label="Justify Content"
+                                        value={justifyContent}
+                                        onChange={val => setAttributes({ justifyContent: val })}
+                                        isBlock
+                                    >
+                                        <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
+                                        <ToggleGroupControlOption key="center" label="Center" value="center" />
+                                        <ToggleGroupControlOption key="flex-end" label="Flex End" value="flex-end" />
+                                        <ToggleGroupControlOption key="space-between" label="Space Between" value="space-between" />
+                                        <ToggleGroupControlOption key="space-around" label="Space Around" value="space-around" />
+                                        <ToggleGroupControlOption key="space-evenly" label="Space Evenly" value="space-evenly" />
+                                    </ToggleGroupControl>
+                                ) : (
+                                    <SelectControl
+                                        label="Justify Content"
+                                        value={justifyContent}
+                                        options={[
+                                            { label: 'Flex Start', value: 'flex-start' },
+                                            { label: 'Center', value: 'center' },
+                                            { label: 'Flex End', value: 'flex-end' },
+                                            { label: 'Space Between', value: 'space-between' },
+                                            { label: 'Space Around', value: 'space-around' },
+                                            { label: 'Space Evenly', value: 'space-evenly' },
+                                        ]}
+                                        onChange={val => setAttributes({ justifyContent: val })}
+                                    />
+                                )}
+                                {hasToggleGroup ? (
+                                    <ToggleGroupControl
+                                        label="Align Items"
+                                        value={alignItems}
+                                        onChange={val => setAttributes({ alignItems: val })}
+                                        isBlock
+                                    >
+                                        <ToggleGroupControlOption key="stretch" label="Stretch" value="stretch" />
+                                        <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
+                                        <ToggleGroupControlOption key="center" label="Center" value="center" />
+                                        <ToggleGroupControlOption key="flex-end" label="Flex End" value="flex-end" />
+                                        <ToggleGroupControlOption key="baseline" label="Baseline" value="baseline" />
+                                    </ToggleGroupControl>
+                                ) : (
+                                    <SelectControl
+                                        label="Align Items"
+                                        value={alignItems}
+                                        options={[
+                                            { label: 'Stretch', value: 'stretch' },
+                                            { label: 'Flex Start', value: 'flex-start' },
+                                            { label: 'Center', value: 'center' },
+                                            { label: 'Flex End', value: 'flex-end' },
+                                            { label: 'Baseline', value: 'baseline' },
+                                        ]}
+                                        onChange={val => setAttributes({ alignItems: val })}
+                                    />
+                                )}
                                 <RangeControl
                                     label="Gap (px)"
                                     value={gap}
@@ -246,11 +290,14 @@ wp.blocks.registerBlockType('snn/section', {
                         )}
                     </PanelBody>
                 </InspectorControls>
-                <section {...useBlockProps({ className: 'snn-section', style })}>
-                    <InnerBlocks />
-                </section>
+                {/* Use useInnerBlocksProps to eliminate the wrapper divs */}
+                <section {...useInnerBlocksProps(
+                    useBlockProps({ className: 'snn-section', style })
+                )}></section>
             </>
         );
     },
-    save: () => null
+    save: () => {
+        return <InnerBlocks.Content />;
+    }
 });

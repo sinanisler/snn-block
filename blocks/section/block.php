@@ -6,7 +6,7 @@ add_action('init', function() {
     ]);
 });
 
-function snn_section_render($attributes, $content) {
+function snn_section_render($attributes, $content, $block) {
     $layoutType = $attributes['layoutType'] ?? 'flex';
     $style = '';
     if ($layoutType === 'flex') {
@@ -24,6 +24,15 @@ function snn_section_render($attributes, $content) {
         $style .= 'align-items:' . ($attributes['gridAlign'] ?? 'stretch') . ';';
         $style .= 'justify-items:' . ($attributes['gridJustify'] ?? 'stretch') . ';';
     }
+    
+    // Render inner blocks if content is empty
+    if (empty($content) && !empty($block->inner_blocks)) {
+        $content = '';
+        foreach ($block->inner_blocks as $inner_block) {
+            $content .= render_block($inner_block);
+        }
+    }
+    
     ob_start();
     ?>
     <section class="snn-section" style="<?php echo esc_attr($style); ?>">
