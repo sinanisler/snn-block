@@ -40,22 +40,53 @@ require_once SNN_PATH . '/blocks/section/block.php';
 
 
 // Load Babel Tower
-add_action('enqueue_block_editor_assets', function() { wp_enqueue_script(
-'babel-standalone', SNN_URL_ASSETS . 'js/babel.min.js',[
-    'wp-blocks','wp-element','wp-components','wp-block-editor','wp-i18n','wp-editor',      
-    'wp-data','wp-compose','wp-rich-text','wp-api-fetch','wp-url','wp-dom-ready',   
-    'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
-], wp_get_theme()->get('Version') , true ); });
-
-
-
-// Add new Block Inserter Category
-add_filter( 'block_categories_all', function( $categories ) {
-    return array_merge(        array(            array(
-                'slug'  => 'snn',
-                'title' => __( 'SNN', 'snn' ),
-                'icon'  => 'arrow-down-alt2',
-            ),        ),        $categories
+add_action('enqueue_block_editor_assets', function() { 
+    wp_enqueue_script(
+        'babel-standalone', SNN_URL_ASSETS . 'js/babel.min.js',[
+            'wp-blocks','wp-element','wp-components','wp-block-editor','wp-i18n','wp-editor',      
+            'wp-data','wp-compose','wp-rich-text','wp-api-fetch','wp-url','wp-dom-ready',   
+            'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
+        ], wp_get_theme()->get('Version') , true );
+    
+    // Enqueue global classes modal styles
+    wp_enqueue_style(
+        'snn-global-classes-modal-styles',
+        SNN_URL . 'editor/global-classes-modal.css',
+        [],
+        wp_get_theme()->get('Version')
     );
-}, 10, 1 );
+    
+    // Enqueue global classes modal
+    wp_enqueue_script(
+        'snn-global-classes-modal',
+        SNN_URL . 'editor/global-classes-modal.js',
+        [
+            'wp-element',
+            'wp-components',
+            'wp-i18n'
+        ],
+        wp_get_theme()->get('Version'),
+        true
+    );
+    
+    // Enqueue editor filter for core block attributes
+    wp_enqueue_script(
+        'snn-core-attributes',
+        SNN_URL . 'editor/global-class-control.js',
+        [
+            'wp-blocks',
+            'wp-hooks',
+            'wp-element',
+            'wp-components',
+            'wp-compose',
+            'wp-block-editor',
+            'wp-editor',
+            'snn-global-classes-modal'
+        ],
+        wp_get_theme()->get('Version'),
+        true
+    );
+});
+
+
 

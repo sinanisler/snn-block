@@ -111,6 +111,8 @@ wp.blocks.registerBlockType('snn/section', {
                                 value={layoutType}
                                 onChange={val => setAttributes({ layoutType: val })}
                                 isBlock
+                                __next40pxDefaultSize={true}
+                                __nextHasNoMarginBottom={true}
                             >
                                 <ToggleGroupControlOption key="flex" label="Flex" value="flex" />
                                 <ToggleGroupControlOption key="grid" label="Grid" value="grid" />
@@ -134,6 +136,8 @@ wp.blocks.registerBlockType('snn/section', {
                                         value={flexDirection}
                                         onChange={val => setAttributes({ flexDirection: val })}
                                         isBlock
+                                        __next40pxDefaultSize={true}
+                                        __nextHasNoMarginBottom={true}
                                     >
                                         <ToggleGroupControlOption key="row" label="Row" value="row" />
                                         <ToggleGroupControlOption key="row-reverse" label="Row Reverse" value="row-reverse" />
@@ -159,6 +163,8 @@ wp.blocks.registerBlockType('snn/section', {
                                         value={flexWrap}
                                         onChange={val => setAttributes({ flexWrap: val })}
                                         isBlock
+                                        __next40pxDefaultSize={true}
+                                        __nextHasNoMarginBottom={true}
                                     >
                                         <ToggleGroupControlOption key="nowrap" label="No Wrap" value="nowrap" />
                                         <ToggleGroupControlOption key="wrap" label="Wrap" value="wrap" />
@@ -182,6 +188,8 @@ wp.blocks.registerBlockType('snn/section', {
                                         value={justifyContent}
                                         onChange={val => setAttributes({ justifyContent: val })}
                                         isBlock
+                                        __next40pxDefaultSize={true}
+                                        __nextHasNoMarginBottom={true}
                                     >
                                         <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
                                         <ToggleGroupControlOption key="center" label="Center" value="center" />
@@ -211,6 +219,8 @@ wp.blocks.registerBlockType('snn/section', {
                                         value={alignItems}
                                         onChange={val => setAttributes({ alignItems: val })}
                                         isBlock
+                                        __next40pxDefaultSize={true}
+                                        __nextHasNoMarginBottom={true}
                                     >
                                         <ToggleGroupControlOption key="stretch" label="Stretch" value="stretch" />
                                         <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
@@ -238,6 +248,8 @@ wp.blocks.registerBlockType('snn/section', {
                                     min={0}
                                     max={100}
                                     onChange={val => setAttributes({ gap: val })}
+                                    __next40pxDefaultSize={true}
+                                    __nextHasNoMarginBottom={true}
                                 />
                             </>
                         )}
@@ -249,6 +261,8 @@ wp.blocks.registerBlockType('snn/section', {
                                     min={1}
                                     max={12}
                                     onChange={val => setAttributes({ gridColumns: val })}
+                                    __next40pxDefaultSize={true}
+                                    __nextHasNoMarginBottom={true}
                                 />
                                 <RangeControl
                                     label="Rows"
@@ -256,6 +270,8 @@ wp.blocks.registerBlockType('snn/section', {
                                     min={1}
                                     max={12}
                                     onChange={val => setAttributes({ gridRows: val })}
+                                    __next40pxDefaultSize={true}
+                                    __nextHasNoMarginBottom={true}
                                 />
                                 <RangeControl
                                     label="Gap (px)"
@@ -263,6 +279,8 @@ wp.blocks.registerBlockType('snn/section', {
                                     min={0}
                                     max={100}
                                     onChange={val => setAttributes({ gridGap: val })}
+                                    __next40pxDefaultSize={true}
+                                    __nextHasNoMarginBottom={true}
                                 />
                                 <SelectControl
                                     label="Align Items"
