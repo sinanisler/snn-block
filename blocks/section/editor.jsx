@@ -5,12 +5,9 @@ const {
     PanelBody,
     SelectControl,
     RangeControl,
-    __experimentalToggleGroupControl: ToggleGroupControl,
-    __experimentalToggleGroupControlOption: ToggleGroupControlOption
+    ButtonGroup,
+    Button
 } = wp.components;
-
-// Fallback check for components availability
-const hasToggleGroup = typeof ToggleGroupControl !== 'undefined';
 
 wp.blocks.registerBlockType('snn/section', {
     title: 'Section',
@@ -105,143 +102,153 @@ wp.blocks.registerBlockType('snn/section', {
             <>
                 <InspectorControls>
                     <PanelBody title="Layout Settings" initialOpen={true}>
-                        {hasToggleGroup ? (
-                            <ToggleGroupControl
-                                label="Layout Type"
-                                value={layoutType}
-                                onChange={val => setAttributes({ layoutType: val })}
-                                isBlock
-                                __next40pxDefaultSize={true}
-                                __nextHasNoMarginBottom={true}
-                            >
-                                <ToggleGroupControlOption key="flex" label="Flex" value="flex" />
-                                <ToggleGroupControlOption key="grid" label="Grid" value="grid" />
-                            </ToggleGroupControl>
-                        ) : (
-                            <SelectControl
-                                label="Layout Type"
-                                value={layoutType}
-                                options={[
-                                    { label: 'Flex', value: 'flex' },
-                                    { label: 'Grid', value: 'grid' },
-                                ]}
-                                onChange={val => setAttributes({ layoutType: val })}
-                            />
-                        )}
+                        <div>
+                            <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>Layout Type</label>
+                            <ButtonGroup style={{ marginBottom: '16px' }}>
+                                <Button
+                                    variant={layoutType === 'flex' ? 'primary' : 'secondary'}
+                                    onClick={() => setAttributes({ layoutType: 'flex' })}
+                                >
+                                    Flex
+                                </Button>
+                                <Button
+                                    variant={layoutType === 'grid' ? 'primary' : 'secondary'}
+                                    onClick={() => setAttributes({ layoutType: 'grid' })}
+                                >
+                                    Grid
+                                </Button>
+                            </ButtonGroup>
+                        </div>
                         {layoutType === 'flex' && (
                             <>
-                                {hasToggleGroup ? (
-                                    <ToggleGroupControl
-                                        label="Direction"
-                                        value={flexDirection}
-                                        onChange={val => setAttributes({ flexDirection: val })}
-                                        isBlock
-                                        __next40pxDefaultSize={true}
-                                        __nextHasNoMarginBottom={true}
-                                    >
-                                        <ToggleGroupControlOption key="row" label="Row" value="row" />
-                                        <ToggleGroupControlOption key="row-reverse" label="Row Reverse" value="row-reverse" />
-                                        <ToggleGroupControlOption key="column" label="Column" value="column" />
-                                        <ToggleGroupControlOption key="column-reverse" label="Column Reverse" value="column-reverse" />
-                                    </ToggleGroupControl>
-                                ) : (
-                                    <SelectControl
-                                        label="Direction"
-                                        value={flexDirection}
-                                        options={[
-                                            { label: 'Row', value: 'row' },
-                                            { label: 'Row Reverse', value: 'row-reverse' },
-                                            { label: 'Column', value: 'column' },
-                                            { label: 'Column Reverse', value: 'column-reverse' },
-                                        ]}
-                                        onChange={val => setAttributes({ flexDirection: val })}
-                                    />
-                                )}
-                                {hasToggleGroup ? (
-                                    <ToggleGroupControl
-                                        label="Wrap"
-                                        value={flexWrap}
-                                        onChange={val => setAttributes({ flexWrap: val })}
-                                        isBlock
-                                        __next40pxDefaultSize={true}
-                                        __nextHasNoMarginBottom={true}
-                                    >
-                                        <ToggleGroupControlOption key="nowrap" label="No Wrap" value="nowrap" />
-                                        <ToggleGroupControlOption key="wrap" label="Wrap" value="wrap" />
-                                        <ToggleGroupControlOption key="wrap-reverse" label="Wrap Reverse" value="wrap-reverse" />
-                                    </ToggleGroupControl>
-                                ) : (
-                                    <SelectControl
-                                        label="Wrap"
-                                        value={flexWrap}
-                                        options={[
-                                            { label: 'No Wrap', value: 'nowrap' },
-                                            { label: 'Wrap', value: 'wrap' },
-                                            { label: 'Wrap Reverse', value: 'wrap-reverse' },
-                                        ]}
-                                        onChange={val => setAttributes({ flexWrap: val })}
-                                    />
-                                )}
-                                {hasToggleGroup ? (
-                                    <ToggleGroupControl
-                                        label="Justify Content"
-                                        value={justifyContent}
-                                        onChange={val => setAttributes({ justifyContent: val })}
-                                        isBlock
-                                        __next40pxDefaultSize={true}
-                                        __nextHasNoMarginBottom={true}
-                                    >
-                                        <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
-                                        <ToggleGroupControlOption key="center" label="Center" value="center" />
-                                        <ToggleGroupControlOption key="flex-end" label="Flex End" value="flex-end" />
-                                        <ToggleGroupControlOption key="space-between" label="Space Between" value="space-between" />
-                                        <ToggleGroupControlOption key="space-around" label="Space Around" value="space-around" />
-                                        <ToggleGroupControlOption key="space-evenly" label="Space Evenly" value="space-evenly" />
-                                    </ToggleGroupControl>
-                                ) : (
-                                    <SelectControl
-                                        label="Justify Content"
-                                        value={justifyContent}
-                                        options={[
-                                            { label: 'Flex Start', value: 'flex-start' },
-                                            { label: 'Center', value: 'center' },
-                                            { label: 'Flex End', value: 'flex-end' },
-                                            { label: 'Space Between', value: 'space-between' },
-                                            { label: 'Space Around', value: 'space-around' },
-                                            { label: 'Space Evenly', value: 'space-evenly' },
-                                        ]}
-                                        onChange={val => setAttributes({ justifyContent: val })}
-                                    />
-                                )}
-                                {hasToggleGroup ? (
-                                    <ToggleGroupControl
-                                        label="Align Items"
-                                        value={alignItems}
-                                        onChange={val => setAttributes({ alignItems: val })}
-                                        isBlock
-                                        __next40pxDefaultSize={true}
-                                        __nextHasNoMarginBottom={true}
-                                    >
-                                        <ToggleGroupControlOption key="stretch" label="Stretch" value="stretch" />
-                                        <ToggleGroupControlOption key="flex-start" label="Flex Start" value="flex-start" />
-                                        <ToggleGroupControlOption key="center" label="Center" value="center" />
-                                        <ToggleGroupControlOption key="flex-end" label="Flex End" value="flex-end" />
-                                        <ToggleGroupControlOption key="baseline" label="Baseline" value="baseline" />
-                                    </ToggleGroupControl>
-                                ) : (
-                                    <SelectControl
-                                        label="Align Items"
-                                        value={alignItems}
-                                        options={[
-                                            { label: 'Stretch', value: 'stretch' },
-                                            { label: 'Flex Start', value: 'flex-start' },
-                                            { label: 'Center', value: 'center' },
-                                            { label: 'Flex End', value: 'flex-end' },
-                                            { label: 'Baseline', value: 'baseline' },
-                                        ]}
-                                        onChange={val => setAttributes({ alignItems: val })}
-                                    />
-                                )}
+                                <div>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>Direction</label>
+                                    <ButtonGroup style={{ marginBottom: '16px' }}>
+                                        <Button
+                                            variant={flexDirection === 'row' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexDirection: 'row' })}
+                                        >
+                                            Row
+                                        </Button>
+                                        <Button
+                                            variant={flexDirection === 'row-reverse' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexDirection: 'row-reverse' })}
+                                        >
+                                            Row Reverse
+                                        </Button>
+                                        <Button
+                                            variant={flexDirection === 'column' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexDirection: 'column' })}
+                                        >
+                                            Column
+                                        </Button>
+                                        <Button
+                                            variant={flexDirection === 'column-reverse' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexDirection: 'column-reverse' })}
+                                        >
+                                            Column Reverse
+                                        </Button>
+                                    </ButtonGroup>
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>Wrap</label>
+                                    <ButtonGroup style={{ marginBottom: '16px' }}>
+                                        <Button
+                                            variant={flexWrap === 'nowrap' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexWrap: 'nowrap' })}
+                                        >
+                                            No Wrap
+                                        </Button>
+                                        <Button
+                                            variant={flexWrap === 'wrap' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexWrap: 'wrap' })}
+                                        >
+                                            Wrap
+                                        </Button>
+                                        <Button
+                                            variant={flexWrap === 'wrap-reverse' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ flexWrap: 'wrap-reverse' })}
+                                        >
+                                            Wrap Reverse
+                                        </Button>
+                                    </ButtonGroup>
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>Justify Content</label>
+                                    <ButtonGroup style={{ marginBottom: '16px' }}>
+                                        <Button
+                                            variant={justifyContent === 'flex-start' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'flex-start' })}
+                                        >
+                                            Flex Start
+                                        </Button>
+                                        <Button
+                                            variant={justifyContent === 'center' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'center' })}
+                                        >
+                                            Center
+                                        </Button>
+                                        <Button
+                                            variant={justifyContent === 'flex-end' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'flex-end' })}
+                                        >
+                                            Flex End
+                                        </Button>
+                                        <Button
+                                            variant={justifyContent === 'space-between' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'space-between' })}
+                                        >
+                                            Space Between
+                                        </Button>
+                                        <Button
+                                            variant={justifyContent === 'space-around' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'space-around' })}
+                                        >
+                                            Space Around
+                                        </Button>
+                                        <Button
+                                            variant={justifyContent === 'space-evenly' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ justifyContent: 'space-evenly' })}
+                                        >
+                                            Space Evenly
+                                        </Button>
+                                    </ButtonGroup>
+                                </div>
+                                <div>
+                                    <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>Align Items</label>
+                                    <ButtonGroup style={{ marginBottom: '16px' }}>
+                                        <Button
+                                            variant={alignItems === 'stretch' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ alignItems: 'stretch' })}
+                                        >
+                                            Stretch
+                                        </Button>
+                                        <Button
+                                            variant={alignItems === 'flex-start' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ alignItems: 'flex-start' })}
+                                        >
+                                            Flex Start
+                                        </Button>
+                                        <Button
+                                            variant={alignItems === 'center' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ alignItems: 'center' })}
+                                        >
+                                            Center
+                                        </Button>
+                                        <Button
+                                            variant={alignItems === 'flex-end' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ alignItems: 'flex-end' })}
+                                        >
+                                            Flex End
+                                        </Button>
+                                        <Button
+                                            variant={alignItems === 'baseline' ? 'primary' : 'secondary'}
+                                            onClick={() => setAttributes({ alignItems: 'baseline' })}
+                                        >
+                                            Baseline
+                                        </Button>
+                                    </ButtonGroup>
+                                </div>
                                 <RangeControl
                                     label="Gap (px)"
                                     value={gap}
