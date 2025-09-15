@@ -48,18 +48,18 @@ add_action('enqueue_block_editor_assets', function() {
             'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
         ], wp_get_theme()->get('Version') , true );
     
-    // Enqueue global classes modal styles
+    // Enqueue global style modal styles
     wp_enqueue_style(
-        'snn-global-classes-modal-styles',
-        SNN_URL . 'editor/global-classes-modal.css',
+        'snn-global-style-modal-styles',
+        SNN_URL . 'editor/global-style-modal.css',
         [],
         wp_get_theme()->get('Version')
     );
     
-    // Enqueue global classes modal
+    // Enqueue global style modal
     wp_enqueue_script(
-        'snn-global-classes-modal',
-        SNN_URL . 'editor/global-classes-modal.js',
+        'snn-global-style-modal',
+        SNN_URL . 'editor/global-style-modal.js',
         [
             'wp-element',
             'wp-components',
@@ -72,7 +72,7 @@ add_action('enqueue_block_editor_assets', function() {
     // Enqueue editor filter for core block attributes
     wp_enqueue_script(
         'snn-core-attributes',
-        SNN_URL . 'editor/global-class-control.js',
+        SNN_URL . 'editor/global-style-control.js',
         [
             'wp-blocks',
             'wp-hooks',
@@ -81,7 +81,7 @@ add_action('enqueue_block_editor_assets', function() {
             'wp-compose',
             'wp-block-editor',
             'wp-editor',
-            'snn-global-classes-modal'
+            'snn-global-style-modal'
         ],
         wp_get_theme()->get('Version'),
         true

@@ -3,30 +3,30 @@
     const { Modal, Button, TextControl, TextareaControl, PanelBody, PanelRow, Icon, Notice, Flex, FlexItem, Card, CardBody } = wp.components;
     const { __ } = wp.i18n;
 
-    // Global Classes Manager
-    const GlobalClassesModal = ({ isOpen, onClose }) => {
-        const [classes, setClasses] = useState([]);
-        const [editingClass, setEditingClass] = useState(null);
-        const [newClassName, setNewClassName] = useState('');
-        const [newClassCSS, setNewClassCSS] = useState('');
+    // Global Style Manager
+    const GlobalStyleModal = ({ isOpen, onClose }) => {
+        const [styles, setStyles] = useState([]);
+        const [editingStyle, setEditingStyle] = useState(null);
+        const [newStyleSelector, setNewStyleSelector] = useState('');
+        const [newStyleCSS, setNewStyleCSS] = useState('');
         const [notice, setNotice] = useState(null);
         const [searchTerm, setSearchTerm] = useState('');
-        const [activeTab, setActiveTab] = useState('classes');
+        const [activeTab, setActiveTab] = useState('styles');
         const [isLoading, setIsLoading] = useState(false);
         const resizerRef = useRef(null);
         const leftPanelRef = useRef(null);
         const rightPanelRef = useRef(null);
 
-        // Load classes from localStorage on mount
+        // Load styles from localStorage on mount
         useEffect(() => {
             setIsLoading(true);
-            const savedClasses = localStorage.getItem('snn_global_classes');
-            if (savedClasses) {
+            const savedStyles = localStorage.getItem('snn_global_styles');
+            if (savedStyles) {
                 try {
-                    setClasses(JSON.parse(savedClasses));
+                    setStyles(JSON.parse(savedStyles));
                 } catch (e) {
-                    console.error('Error parsing global classes:', e);
-                    showNotice('Error loading saved classes', 'error');
+                    console.error('Error parsing global styles:', e);
+                    showNotice('Error loading saved styles', 'error');
                 }
             }
             setIsLoading(false);
@@ -74,43 +74,53 @@
             };
         }, [isOpen]);
 
-        // Save classes to localStorage
-        const saveClasses = (newClasses) => {
-            setClasses(newClasses);
-            localStorage.setItem('snn_global_classes', JSON.stringify(newClasses));
-            updateStyleSheet(newClasses);
+        // Save styles to localStorage
+        const saveStyles = (newStyles) => {
+            setStyles(newStyles);
+            localStorage.setItem('snn_global_styles', JSON.stringify(newStyles));
+            updateStyleSheet(newStyles);
         };
 
         // Update the dynamic stylesheet
-        const updateStyleSheet = (classList) => {
-            let styleElement = document.getElementById('snn-global-classes-styles');
+        const updateStyleSheet = (styleList) => {
+            let styleElement = document.getElementById('snn-global-styles');
             if (!styleElement) {
                 styleElement = document.createElement('style');
-                styleElement.id = 'snn-global-classes-styles';
+                styleElement.id = 'snn-global-styles';
                 document.head.appendChild(styleElement);
             }
             
-            const css = classList.map(cls => `.${cls.name} { ${cls.css} }`).join('\n');
+            const css = styleList.map(style => `${style.selector} { ${style.css} }`).join('\n');
             styleElement.textContent = css;
         };
 
         // Initialize stylesheet on load
         useEffect(() => {
-            updateStyleSheet(classes);
-        }, [classes]);
+            updateStyleSheet(styles);
+        }, [styles]);
 
         const showNotice = (message, type = 'success') => {
             setNotice({ message, type });
             setTimeout(() => setNotice(null), 4000);
         };
 
-        const validateClassName = (name) => {
-            if (!name.trim()) return 'Class name is required';
-            if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) return 'Invalid class name format';
-            if (classes.some(cls => cls.name === name && cls.id !== editingClass?.id)) {
-                return 'Class name already exists';
+        const validateSelector = (selector) => {
+            if (!selector.trim()) return 'CSS selector is required';
+            
+            // Validate CSS selector format
+            try {
+                // Test if it's a valid CSS selector by trying to use it with querySelector
+                document.querySelector(selector);
+                
+                // Check if selector already exists (but not for current editing style)
+                if (styles.some(style => style.selector === selector && style.id !== editingStyle?.id)) {
+                    return 'Selector already exists';
+                }
+                
+                return null;
+            } catch (e) {
+                return 'Invalid CSS selector format';
             }
-            return null;
         };
 
         const validateCSS = (css) => {
@@ -125,89 +135,89 @@
             }
         };
 
-        const handleSaveClass = async () => {
+        const handleSaveStyle = async () => {
             setIsLoading(true);
-            const nameError = validateClassName(newClassName);
-            const cssError = validateCSS(newClassCSS);
+            const selectorError = validateSelector(newStyleSelector);
+            const cssError = validateCSS(newStyleCSS);
 
-            if (nameError || cssError) {
-                showNotice(nameError || cssError, 'error');
+            if (selectorError || cssError) {
+                showNotice(selectorError || cssError, 'error');
                 setIsLoading(false);
                 return;
             }
 
-            const classData = {
-                id: editingClass?.id || Date.now(),
-                name: newClassName.trim(),
-                css: newClassCSS.trim(),
-                created: editingClass?.created || new Date().toISOString(),
+            const styleData = {
+                id: editingStyle?.id || Date.now(),
+                selector: newStyleSelector.trim(),
+                css: newStyleCSS.trim(),
+                created: editingStyle?.created || new Date().toISOString(),
                 modified: new Date().toISOString()
             };
 
-            let newClasses;
-            if (editingClass) {
-                newClasses = classes.map(cls => cls.id === editingClass.id ? classData : cls);
-                showNotice('Class updated successfully!');
+            let newStyles;
+            if (editingStyle) {
+                newStyles = styles.map(style => style.id === editingStyle.id ? styleData : style);
+                showNotice('Style updated successfully!');
             } else {
-                newClasses = [...classes, classData];
-                showNotice('Class created successfully!');
+                newStyles = [...styles, styleData];
+                showNotice('Style created successfully!');
             }
 
-            saveClasses(newClasses);
+            saveStyles(newStyles);
             resetForm();
             setIsLoading(false);
         };
 
-        const handleEditClass = (classItem) => {
-            setEditingClass(classItem);
-            setNewClassName(classItem.name);
-            setNewClassCSS(classItem.css);
+        const handleEditStyle = (styleItem) => {
+            setEditingStyle(styleItem);
+            setNewStyleSelector(styleItem.selector);
+            setNewStyleCSS(styleItem.css);
             setActiveTab('editor');
         };
 
-        const handleDeleteClass = (classId) => {
-            if (confirm('Are you sure you want to delete this class?')) {
-                const newClasses = classes.filter(cls => cls.id !== classId);
-                saveClasses(newClasses);
-                showNotice('Class deleted successfully!');
-                if (editingClass?.id === classId) {
+        const handleDeleteStyle = (styleId) => {
+            if (confirm('Are you sure you want to delete this style?')) {
+                const newStyles = styles.filter(style => style.id !== styleId);
+                saveStyles(newStyles);
+                showNotice('Style deleted successfully!');
+                if (editingStyle?.id === styleId) {
                     resetForm();
                 }
             }
         };
 
-        const handleDuplicateClass = (classItem) => {
-            const duplicatedClass = {
-                ...classItem,
+        const handleDuplicateStyle = (styleItem) => {
+            const duplicatedStyle = {
+                ...styleItem,
                 id: Date.now(),
-                name: `${classItem.name}-copy`,
+                selector: `${styleItem.selector}-copy`,
                 created: new Date().toISOString(),
                 modified: new Date().toISOString()
             };
-            const newClasses = [...classes, duplicatedClass];
-            saveClasses(newClasses);
-            showNotice('Class duplicated successfully!');
+            const newStyles = [...styles, duplicatedStyle];
+            saveStyles(newStyles);
+            showNotice('Style duplicated successfully!');
         };
 
         const resetForm = () => {
-            setEditingClass(null);
-            setNewClassName('');
-            setNewClassCSS('');
+            setEditingStyle(null);
+            setNewStyleSelector('');
+            setNewStyleCSS('');
         };
 
-        const exportClasses = () => {
-            const dataStr = JSON.stringify(classes, null, 2);
+        const exportStyles = () => {
+            const dataStr = JSON.stringify(styles, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            const exportFileDefaultName = `global-classes-${new Date().toISOString().split('T')[0]}.json`;
+            const exportFileDefaultName = `global-styles-${new Date().toISOString().split('T')[0]}.json`;
             
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
-            showNotice('Classes exported successfully!');
+            showNotice('Styles exported successfully!');
         };
 
-        const importClasses = (event) => {
+        const importStyles = (event) => {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -215,15 +225,15 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const importedClasses = JSON.parse(e.target.result);
-                    if (Array.isArray(importedClasses)) {
-                        const mergedClasses = [...classes];
+                    const importedStyles = JSON.parse(e.target.result);
+                    if (Array.isArray(importedStyles)) {
+                        const mergedStyles = [...styles];
                         let importCount = 0;
                         
-                        importedClasses.forEach(importedClass => {
-                            if (!mergedClasses.some(cls => cls.name === importedClass.name)) {
-                                mergedClasses.push({
-                                    ...importedClass,
+                        importedStyles.forEach(importedStyle => {
+                            if (!mergedStyles.some(style => style.selector === importedStyle.selector)) {
+                                mergedStyles.push({
+                                    ...importedStyle,
                                     id: Date.now() + Math.random(),
                                     modified: new Date().toISOString()
                                 });
@@ -231,13 +241,13 @@
                             }
                         });
                         
-                        saveClasses(mergedClasses);
-                        showNotice(`${importCount} classes imported successfully!`);
+                        saveStyles(mergedStyles);
+                        showNotice(`${importCount} styles imported successfully!`);
                     } else {
                         showNotice('Invalid file format', 'error');
                     }
                 } catch (error) {
-                    showNotice('Error importing classes', 'error');
+                    showNotice('Error importing styles', 'error');
                 }
                 setIsLoading(false);
             };
@@ -245,9 +255,9 @@
             event.target.value = '';
         };
 
-        const filteredClasses = classes.filter(cls => 
-            cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cls.css.toLowerCase().includes(searchTerm.toLowerCase())
+        const filteredStyles = styles.filter(style => 
+            style.selector.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            style.css.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
         // Keyboard shortcuts
@@ -258,8 +268,8 @@
                 // Ctrl/Cmd + S to save
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
-                    if (activeTab === 'editor' && (newClassName || newClassCSS)) {
-                        handleSaveClass();
+                    if (activeTab === 'editor' && (newStyleSelector || newStyleCSS)) {
+                        handleSaveStyle();
                     }
                 }
                 // Escape to close modal
@@ -269,7 +279,7 @@
                 // Tab navigation
                 if (e.key === '1' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
-                    setActiveTab('classes');
+                    setActiveTab('styles');
                 }
                 if (e.key === '2' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
@@ -279,25 +289,25 @@
 
             document.addEventListener('keydown', handleKeyDown);
             return () => document.removeEventListener('keydown', handleKeyDown);
-        }, [isOpen, activeTab, newClassName, newClassCSS]);
+        }, [isOpen, activeTab, newStyleSelector, newStyleCSS]);
 
         // Render tab content
         const renderTabContent = () => {
             switch (activeTab) {
-                case 'classes':
-                    return renderClassesList();
+                case 'styles':
+                    return renderStylesList();
                 case 'editor':
                     return renderEditor();
                 default:
-                    return renderClassesList();
+                    return renderStylesList();
             }
         };
 
-        const renderClassesList = () => el('div', { className: 'snn-tab-panel active' },
+        const renderStylesList = () => el('div', { className: 'snn-tab-panel active' },
             el('div', { className: 'quick-actions' },
                 el('div', { className: 'search-container' },
                     el(TextControl, {
-                        placeholder: __('Search classes...', 'snn-block'),
+                        placeholder: __('Search styles...', 'snn-block'),
                         value: searchTerm,
                         onChange: setSearchTerm,
                         className: 'search-input'
@@ -305,82 +315,84 @@
                 ),
                 el(Button, {
                     variant: 'secondary',
-                    onClick: exportClasses,
+                    onClick: exportStyles,
                     size: 'small'
                 }, __('Export', 'snn-block')),
                 el('input', {
                     type: 'file',
                     accept: '.json',
-                    onChange: importClasses,
+                    onChange: importStyles,
                     style: { display: 'none' },
-                    id: 'import-classes'
+                    id: 'import-styles'
                 }),
                 el(Button, {
                     variant: 'secondary',
-                    onClick: () => document.getElementById('import-classes').click(),
+                    onClick: () => document.getElementById('import-styles').click(),
                     size: 'small'
                 }, __('Import', 'snn-block'))
             ),
 
             el('div', { 
-                className: `classes-list ${isLoading ? 'snn-loading' : ''}` 
+                className: `styles-list ${isLoading ? 'snn-loading' : ''}` 
             },
-                filteredClasses.length === 0 ? 
+                filteredStyles.length === 0 ? 
                     el('div', { className: 'empty-state' },
-                        el('div', { className: 'empty-state-icon' }, '📝'),
-                        el('h3', {}, searchTerm ? __('No classes found', 'snn-block') : __('No classes yet', 'snn-block')),
+                        el('div', { className: 'empty-state-icon' }, '🎨'),
+                        el('h3', {}, searchTerm ? __('No styles found', 'snn-block') : __('No styles yet', 'snn-block')),
                         el('p', {}, searchTerm ? 
                             __('Try adjusting your search terms.', 'snn-block') :
-                            __('Create your first class!', 'snn-block')
+                            __('Create your first style!', 'snn-block')
                         ),
                         !searchTerm && el(Button, {
                             variant: 'primary',
                             onClick: () => setActiveTab('editor')
-                        }, __('Create First Class', 'snn-block'))
+                        }, __('Create First Style', 'snn-block'))
                     ) :
-                    filteredClasses.map(classItem => 
+                    filteredStyles.map(styleItem => 
                         el('div', { 
-                            key: classItem.id, 
-                            className: `class-item ${editingClass?.id === classItem.id ? 'active' : ''}`,
-                            onClick: () => handleEditClass(classItem)
+                            key: styleItem.id, 
+                            className: `style-item ${editingStyle?.id === styleItem.id ? 'active' : ''}`,
+                            onClick: () => handleEditStyle(styleItem)
                         },
-                            el('div', { className: 'class-name' }, classItem.name),
-                            el('div', { className: 'class-css' }, 
-                                classItem.css.length > 50 ? 
-                                    classItem.css.substring(0, 50) + '...' : 
-                                    classItem.css
+                            el('div', { 
+                                className: `style-selector ${styleItem.selector.startsWith('.') ? 'class-selector' : ''}` 
+                            }, styleItem.selector),
+                            el('div', { className: 'style-css' }, 
+                                styleItem.css.length > 50 ? 
+                                    styleItem.css.substring(0, 50) + '...' : 
+                                    styleItem.css
                             ),
-                            el('div', { className: 'class-actions' },
+                            el('div', { className: 'style-actions' },
                                 el(Button, {
                                     variant: 'tertiary',
                                     size: 'small',
                                     onClick: (e) => {
                                         e.stopPropagation();
-                                        handleEditClass(classItem);
+                                        handleEditStyle(styleItem);
                                     },
                                     icon: 'edit',
-                                    title: __('Edit class', 'snn-block')
+                                    title: __('Edit style', 'snn-block')
                                 }),
                                 el(Button, {
                                     variant: 'tertiary',
                                     size: 'small',
                                     onClick: (e) => {
                                         e.stopPropagation();
-                                        handleDuplicateClass(classItem);
+                                        handleDuplicateStyle(styleItem);
                                     },
                                     icon: 'admin-page',
-                                    title: __('Duplicate class', 'snn-block')
+                                    title: __('Duplicate style', 'snn-block')
                                 }),
                                 el(Button, {
                                     variant: 'tertiary',
                                     size: 'small',
                                     onClick: (e) => {
                                         e.stopPropagation();
-                                        handleDeleteClass(classItem.id);
+                                        handleDeleteStyle(styleItem.id);
                                     },
                                     icon: 'trash',
                                     className: 'delete-button',
-                                    title: __('Delete class', 'snn-block')
+                                    title: __('Delete style', 'snn-block')
                                 })
                             )
                         )
@@ -389,41 +401,41 @@
         );
 
         const renderEditor = () => el('div', { className: 'snn-tab-panel active form-section' },
-            el('h3', {}, editingClass ? __('Edit Class', 'snn-block') : __('Add New Class', 'snn-block')),
+            el('h3', {}, editingStyle ? __('Edit Style', 'snn-block') : __('Add New Style', 'snn-block')),
             
             el(TextControl, {
-                label: __('Class Name', 'snn-block'),
-                value: newClassName,
-                onChange: setNewClassName,
-                placeholder: 'e.g., my-custom-class',
-                help: __('Use only letters, numbers, hyphens, and underscores', 'snn-block')
+                label: __('CSS Selector', 'snn-block'),
+                value: newStyleSelector,
+                onChange: setNewStyleSelector,
+                placeholder: 'e.g., .my-class, #my-id, h2, p:hover, .btn::before',
+                help: __('Enter any valid CSS selector: classes (.class), IDs (#id), tags (h1), pseudo-selectors (:hover), pseudo-elements (::before)', 'snn-block')
             }),
 
             el(TextareaControl, {
                 label: __('CSS Styles', 'snn-block'),
-                value: newClassCSS,
-                onChange: setNewClassCSS,
+                value: newStyleCSS,
+                onChange: setNewStyleCSS,
                 placeholder: 'color: red;\nfont-size: 16px;\nmargin: 10px;',
                 rows: 8,
                 help: __('Enter CSS properties without the selector. Use Ctrl+S to save.', 'snn-block')
             }),
 
             // Live Preview
-            newClassName && newClassCSS && el('div', { className: 'snn-global-class-preview' },
-                el('div', { className: 'snn-global-class-preview-title' }, __('Preview', 'snn-block')),
-                el('div', { className: 'snn-global-class-preview-css' }, `.${newClassName} {\n  ${newClassCSS.split('\n').join('\n  ')}\n}`)
+            newStyleSelector && newStyleCSS && el('div', { className: 'snn-global-style-preview' },
+                el('div', { className: 'snn-global-style-preview-title' }, __('Preview', 'snn-block')),
+                el('div', { className: 'snn-global-style-preview-css' }, `${newStyleSelector} {\n  ${newStyleCSS.split('\n').join('\n  ')}\n}`)
             ),
 
             el(Flex, { justify: 'flex-start', style: { marginTop: '16px' } },
                 el(FlexItem, {},
                     el(Button, {
                         variant: 'primary',
-                        onClick: handleSaveClass,
+                        onClick: handleSaveStyle,
                         isBusy: isLoading,
-                        disabled: !newClassName.trim() || !newClassCSS.trim()
-                    }, editingClass ? __('Update Class', 'snn-block') : __('Add Class', 'snn-block'))
+                        disabled: !newStyleSelector.trim() || !newStyleCSS.trim()
+                    }, editingStyle ? __('Update Style', 'snn-block') : __('Add Style', 'snn-block'))
                 ),
-                editingClass && el(FlexItem, {},
+                editingStyle && el(FlexItem, {},
                     el(Button, {
                         variant: 'secondary',
                         onClick: resetForm,
@@ -436,9 +448,9 @@
         if (!isOpen) return null;
 
         return el(Modal, {
-            title: __('Global Classes Manager', 'snn-block'),
+            title: __('Global Style Manager', 'snn-block'),
             onRequestClose: onClose,
-            className: 'snn-global-classes-modal',
+            className: 'snn-global-style-modal',
             style: { maxWidth: '90vw', width: '1200px' }
         },
             notice && el(Notice, {
@@ -452,41 +464,41 @@
             el('div', { className: 'snn-tabs-container' },
                 el('div', { className: 'snn-tabs-list' },
                     el(Button, {
-                        className: `snn-tab-button ${activeTab === 'classes' ? 'active' : ''}`,
-                        onClick: () => setActiveTab('classes')
-                    }, __('Classes', 'snn-block'), ` (${classes.length})`),
+                        className: `snn-tab-button ${activeTab === 'styles' ? 'active' : ''}`,
+                        onClick: () => setActiveTab('styles')
+                    }, __('Styles', 'snn-block'), ` (${styles.length})`),
                     el(Button, {
                         className: `snn-tab-button ${activeTab === 'editor' ? 'active' : ''}`,
                         onClick: () => setActiveTab('editor')
-                    }, editingClass ? __('Edit', 'snn-block') : __('Create', 'snn-block'))
+                    }, editingStyle ? __('Edit', 'snn-block') : __('Create', 'snn-block'))
                 )
             ),
 
             // Main Layout
             el('div', { className: 'snn-modal-layout' },
                 // Left Panel
-                activeTab === 'classes' ? el('div', { 
+                activeTab === 'styles' ? el('div', { 
                     className: 'snn-modal-panel snn-modal-panel-left',
                     ref: leftPanelRef 
                 }, renderTabContent()) : null,
                 
                 // Resizer (only show when both panels are visible)
-                activeTab === 'classes' ? el('div', { 
+                activeTab === 'styles' ? el('div', { 
                     className: 'snn-panel-resizer',
                     ref: resizerRef 
                 }) : null,
                 
                 // Right Panel or Full Width
                 el('div', { 
-                    className: `snn-modal-panel ${activeTab === 'classes' ? 'snn-modal-panel-right' : ''}`,
+                    className: `snn-modal-panel ${activeTab === 'styles' ? 'snn-modal-panel-right' : ''}`,
                     ref: rightPanelRef,
-                    style: activeTab !== 'classes' ? { gridColumn: '1 / -1' } : {}
-                }, activeTab === 'classes' ? renderEditor() : renderTabContent())
+                    style: activeTab !== 'styles' ? { gridColumn: '1 / -1' } : {}
+                }, activeTab === 'styles' ? renderEditor() : renderTabContent())
             )
         );
     };
 
     // Make the modal available globally
-    window.SnnGlobalClassesModal = GlobalClassesModal;
+    window.SnnGlobalStyleModal = GlobalStyleModal;
 
 })();
