@@ -9,23 +9,33 @@ function snn_block_enqueue_assets() { wp_enqueue_style( 'snn-block-style', get_s
 
 require_once SNN_PATH . '/includes/settings-page.php';
 
-require_once __DIR__ . '/includes/301-redirect.php';
-require_once __DIR__ . '/includes/404-logging.php';
-require_once __DIR__ . '/includes/accessibility-settings.php';
-require_once __DIR__ . '/includes/block-editor-settings.php';
-require_once __DIR__ . '/includes/cookie-banner.php';
-require_once __DIR__ . '/includes/custom-code-snippets.php';
-require_once __DIR__ . '/includes/custom-field-settings.php';
-require_once __DIR__ . '/includes/login-math-captcha.php';
-require_once __DIR__ . '/includes/login-settings.php';
-require_once __DIR__ . '/includes/mail-logging.php';
-require_once __DIR__ . '/includes/media-settings.php';
-require_once __DIR__ . '/includes/post-types-settings.php';
-require_once __DIR__ . '/includes/search-loggins.php';
-require_once __DIR__ . '/includes/security-page.php';
-require_once __DIR__ . '/includes/smtp-settings.php';
-require_once __DIR__ . '/includes/taxonomy-settings.php';
-require_once __DIR__ . '/includes/activity-logs.php';
+require_once SNN_PATH . '/includes/301-redirect.php';
+require_once SNN_PATH . '/includes/404-logging.php';
+require_once SNN_PATH . '/includes/accessibility-settings.php';
+require_once SNN_PATH . '/includes/block-editor-settings.php';
+require_once SNN_PATH . '/includes/cookie-banner.php';
+require_once SNN_PATH . '/includes/custom-code-snippets.php';
+require_once SNN_PATH . '/includes/custom-field-settings.php';
+require_once SNN_PATH . '/includes/login-math-captcha.php';
+require_once SNN_PATH . '/includes/login-settings.php';
+require_once SNN_PATH . '/includes/mail-logging.php';
+require_once SNN_PATH . '/includes/media-settings.php';
+require_once SNN_PATH . '/includes/post-types-settings.php';
+require_once SNN_PATH . '/includes/search-loggins.php';
+require_once SNN_PATH . '/includes/security-page.php';
+require_once SNN_PATH . '/includes/smtp-settings.php';
+require_once SNN_PATH . '/includes/taxonomy-settings.php';
+require_once SNN_PATH . '/includes/activity-logs.php';
+require_once SNN_PATH . '/includes/seo.php';
+
+
+
+// AI
+require_once SNN_PATH . 'ai/ai-api.php';
+require_once SNN_PATH . 'ai/ai-settings.php';
+require_once SNN_PATH . 'ai/ai-block-editor.php';
+
+
 
 
 require_once SNN_PATH . '/includes/block-editor-utils.php';

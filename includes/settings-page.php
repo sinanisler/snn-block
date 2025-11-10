@@ -45,6 +45,7 @@ function snn_settings_page_callback() {
                 array('slug' => 'snn-block-editor-settings',  'label' => __('Block Editor Settings', 'snn'),                  'dashicon' => 'dashicons-admin-customizer'),
                 array('slug' => 'snn-media-settings',         'label' => __('Media Settings', 'snn'),                         'dashicon' => 'dashicons-format-image'),
                 array('slug' => 'snn-custom-codes-snippets',  'label' => __('Code Snippets', 'snn'),                          'dashicon' => 'dashicons-editor-code'),
+                array('slug' => 'snn-seo-settings',  'label' => __('SEO Settings', 'snn'),                          'dashicon' => 'dashicons-editor-code'),
             );
             
             foreach ($menu_items as $item) {
@@ -94,7 +95,7 @@ function snn_settings_page_callback() {
         .snn-dashboard-buttons {
             max-width:1000px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 10px;
             margin-bottom: 40px;
         }
