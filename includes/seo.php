@@ -1,4 +1,25 @@
 <?php
+/**
+ * SEO Plugin - WordPress Template Hierarchy Compatible
+ * 
+ * This SEO plugin is fully compatible with WordPress template hierarchy:
+ * - Single Posts/Pages/CPTs (single.php, page.php, single-{post-type}.php)
+ * - Post Type Archives (archive-{post-type}.php, archive.php)
+ * - Taxonomies (taxonomy-{taxonomy}.php, category.php, tag.php, archive.php)
+ * - Author Archives (author.php, archive.php)
+ * - Date Archives (date.php, archive.php)
+ * - Search Results (search.php)
+ * - 404 Pages (404.php)
+ * - Front Page (front-page.php)
+ * - Home Page (home.php)
+ * 
+ * Filters available for developers:
+ * - snn_seo_title: Modify the SEO title output
+ * - snn_seo_description: Modify the SEO description output
+ * - snn_seo_canonical_url: Modify the canonical URL
+ * 
+ * Template hierarchy is respected - SEO works regardless of which template file WordPress loads.
+ */
 
 // Exit if accessed directly
 if (!defined('ABSPATH')) exit;
@@ -87,6 +108,15 @@ function snn_seo_register_settings() {
     register_setting('snn_seo_settings_group', 'snn_seo_taxonomy_descriptions', ['type' => 'array', 'default' => [], 'sanitize_callback' => $sanitize_array]);
     register_setting('snn_seo_settings_group', 'snn_seo_author_title', ['type' => 'string', 'default' => '{author_name} - {site_title}', 'sanitize_callback' => 'sanitize_text_field']);
     register_setting('snn_seo_settings_group', 'snn_seo_author_description', ['type' => 'string', 'default' => 'Author archive for {author_name}', 'sanitize_callback' => 'sanitize_textarea_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_search_enabled', ['type' => 'boolean', 'default' => true, 'sanitize_callback' => 'rest_sanitize_boolean']);
+    register_setting('snn_seo_settings_group', 'snn_seo_search_title', ['type' => 'string', 'default' => 'Search Results for "{search_query}" - {site_title}', 'sanitize_callback' => 'sanitize_text_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_search_description', ['type' => 'string', 'default' => 'Search results for "{search_query}"', 'sanitize_callback' => 'sanitize_textarea_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_date_enabled', ['type' => 'boolean', 'default' => true, 'sanitize_callback' => 'rest_sanitize_boolean']);
+    register_setting('snn_seo_settings_group', 'snn_seo_date_title', ['type' => 'string', 'default' => '{date} - {site_title}', 'sanitize_callback' => 'sanitize_text_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_date_description', ['type' => 'string', 'default' => 'Posts from {date}', 'sanitize_callback' => 'sanitize_textarea_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_404_enabled', ['type' => 'boolean', 'default' => true, 'sanitize_callback' => 'rest_sanitize_boolean']);
+    register_setting('snn_seo_settings_group', 'snn_seo_404_title', ['type' => 'string', 'default' => 'Page Not Found - {site_title}', 'sanitize_callback' => 'sanitize_text_field']);
+    register_setting('snn_seo_settings_group', 'snn_seo_404_description', ['type' => 'string', 'default' => 'The page you are looking for could not be found.', 'sanitize_callback' => 'sanitize_textarea_field']);
     register_setting('snn_seo_settings_group', 'snn_seo_sitemap_enabled', ['type' => 'boolean', 'default' => true, 'sanitize_callback' => 'rest_sanitize_boolean']);
     register_setting('snn_seo_settings_group', 'snn_seo_sitemap_post_types', ['type' => 'array', 'default' => [], 'sanitize_callback' => $sanitize_array]);
     register_setting('snn_seo_settings_group', 'snn_seo_sitemap_taxonomies', ['type' => 'array', 'default' => [], 'sanitize_callback' => $sanitize_array]);
@@ -114,6 +144,15 @@ function snn_seo_handle_reset() {
         delete_option('snn_seo_taxonomy_descriptions');
         delete_option('snn_seo_author_title');
         delete_option('snn_seo_author_description');
+        delete_option('snn_seo_search_enabled');
+        delete_option('snn_seo_search_title');
+        delete_option('snn_seo_search_description');
+        delete_option('snn_seo_date_enabled');
+        delete_option('snn_seo_date_title');
+        delete_option('snn_seo_date_description');
+        delete_option('snn_seo_404_enabled');
+        delete_option('snn_seo_404_title');
+        delete_option('snn_seo_404_description');
         delete_option('snn_seo_sitemap_enabled');
         delete_option('snn_seo_sitemap_post_types');
         delete_option('snn_seo_sitemap_taxonomies');
@@ -310,12 +349,21 @@ function snn_seo_settings_page_callback() {
             <!-- Post Type Archive Templates -->
             <div class="snn-seo-section">
                 <h2><?php _e('Archive Templates', 'snn'); ?></h2>
+                <p class="description" style="margin-bottom: 15px;"><?php _e('Configure SEO templates for post type archive pages. Note: Some post types may not have archives enabled.', 'snn'); ?></p>
                 <?php foreach ($post_types as $post_type): ?>
                     <?php if (!isset($post_types_enabled[$post_type->name]) || !$post_types_enabled[$post_type->name]) continue; ?>
-                    <?php if (!$post_type->has_archive) continue; ?>
+                    <?php 
+                    // Skip attachment post type from archives
+                    if ($post_type->name === 'attachment') continue;
+                    ?>
                     <div class="snn-accordion-item" style="margin: 15px 0; border: 1px solid #ddd; border-radius: 4px;">
                         <button type="button" class="snn-accordion-header" style="width: 100%; padding: 12px 15px; background: #f9f9f9; border: none; text-align: left; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
-                            <span><?php echo esc_html($post_type->label); ?> <?php _e('Archive', 'snn'); ?></span>
+                            <span>
+                                <?php echo esc_html($post_type->label); ?> <?php _e('Archive', 'snn'); ?>
+                                <?php if (!$post_type->has_archive): ?>
+                                    <span style="font-size: 11px; color: #999; font-weight: normal;">(<?php _e('may not have archive', 'snn'); ?>)</span>
+                                <?php endif; ?>
+                            </span>
                             <span class="snn-accordion-icon">▼</span>
                         </button>
                         <div class="snn-accordion-content" style="display: none; padding: 15px; background: #fff;">
@@ -697,6 +745,16 @@ function snn_seo_replace_tags($template, $context = []) {
         }
     }
     
+    // Search tags
+    if (isset($context['search_query'])) {
+        $template = str_replace('{search_query}', $context['search_query'], $template);
+    }
+    
+    // Date tags
+    if (isset($context['date'])) {
+        $template = str_replace('{date}', $context['date'], $template);
+    }
+    
     // Clean up any remaining unreplaced tags
     $template = preg_replace('/{[^}]+}/', '', $template);
     
@@ -739,6 +797,10 @@ function snn_seo_output_meta_tags() {
     $description = '';
     $context = [];
     $canonical_url = snn_seo_get_current_url();
+    
+    // Debug mode - enable temporarily by uncommenting the line below
+    // $debug = true;
+    $debug = false;
     
     // Single post/page/CPT
     if (is_singular()) {
@@ -783,46 +845,70 @@ function snn_seo_output_meta_tags() {
     }
     // Post type archive
     elseif (is_post_type_archive()) {
-        $post_type = get_post_type();
-        if (empty($post_type)) {
-            $post_type = get_query_var('post_type');
+        // Try multiple methods to get the post type
+        $post_type = get_query_var('post_type');
+        
+        // Handle array case (sometimes WP returns an array)
+        if (is_array($post_type)) {
+            $post_type = reset($post_type);
         }
         
-        $post_types_enabled = get_option('snn_seo_post_types_enabled', []);
-        $post_types_enabled = is_array($post_types_enabled) ? $post_types_enabled : [];
+        // Fallback to get_post_type() if query_var is empty
+        if (empty($post_type)) {
+            global $wp_query;
+            $post_type = $wp_query->get('post_type');
+        }
         
-        if (!empty($post_type) && isset($post_types_enabled[$post_type]) && $post_types_enabled[$post_type]) {
-            $post_type_obj = get_post_type_object($post_type);
-            $archive_name = $post_type_obj ? $post_type_obj->labels->name : ucfirst($post_type);
+        // Last resort: try to get from queried object
+        if (empty($post_type)) {
+            $queried_object = get_queried_object();
+            if ($queried_object && isset($queried_object->name)) {
+                $post_type = $queried_object->name;
+            }
+        }
+        
+        // Final validation
+        if (!empty($post_type) && is_string($post_type)) {
+            $post_types_enabled = get_option('snn_seo_post_types_enabled', []);
+            $post_types_enabled = is_array($post_types_enabled) ? $post_types_enabled : [];
             
-            $context = ['archive_title' => $archive_name];
-            
-            $archive_titles = get_option('snn_seo_archive_titles', []);
-            $archive_descriptions = get_option('snn_seo_archive_descriptions', []);
-            $archive_titles = is_array($archive_titles) ? $archive_titles : [];
-            $archive_descriptions = is_array($archive_descriptions) ? $archive_descriptions : [];
-            
-            $title_template = isset($archive_titles[$post_type]) && !empty($archive_titles[$post_type]) 
-                ? $archive_titles[$post_type] 
-                : '{archive_title} - {site_title}';
-            $desc_template = isset($archive_descriptions[$post_type]) && !empty($archive_descriptions[$post_type]) 
-                ? $archive_descriptions[$post_type] 
-                : __('Browse all', 'snn') . ' {archive_title}';
-            
-            $title = snn_seo_replace_tags($title_template, $context);
-            $description = snn_seo_replace_tags($desc_template, $context);
+            // Check if this post type has SEO enabled
+            if (isset($post_types_enabled[$post_type]) && $post_types_enabled[$post_type]) {
+                $post_type_obj = get_post_type_object($post_type);
+                $archive_name = $post_type_obj ? $post_type_obj->labels->name : ucfirst($post_type);
+                
+                $context = ['archive_title' => $archive_name];
+                
+                $archive_titles = get_option('snn_seo_archive_titles', []);
+                $archive_descriptions = get_option('snn_seo_archive_descriptions', []);
+                $archive_titles = is_array($archive_titles) ? $archive_titles : [];
+                $archive_descriptions = is_array($archive_descriptions) ? $archive_descriptions : [];
+                
+                $title_template = isset($archive_titles[$post_type]) && !empty($archive_titles[$post_type]) 
+                    ? $archive_titles[$post_type] 
+                    : '{archive_title} - {site_title}';
+                $desc_template = isset($archive_descriptions[$post_type]) && !empty($archive_descriptions[$post_type]) 
+                    ? $archive_descriptions[$post_type] 
+                    : __('Browse all', 'snn') . ' {archive_title}';
+                
+                $title = snn_seo_replace_tags($title_template, $context);
+                $description = snn_seo_replace_tags($desc_template, $context);
+            }
         }
     }
     // Taxonomy archive (category, tag, custom taxonomy)
     elseif (is_tax() || is_category() || is_tag()) {
         $term = get_queried_object();
-        if (!$term || is_wp_error($term)) {
+        
+        // Validate term object
+        if (!$term || is_wp_error($term) || !isset($term->taxonomy) || !isset($term->term_id)) {
             return;
         }
         
         $taxonomies_enabled = get_option('snn_seo_taxonomies_enabled', []);
         $taxonomies_enabled = is_array($taxonomies_enabled) ? $taxonomies_enabled : [];
         
+        // Check if this taxonomy has SEO enabled
         if (isset($taxonomies_enabled[$term->taxonomy]) && $taxonomies_enabled[$term->taxonomy]) {
             $context = [
                 'term_id' => $term->term_id, 
@@ -863,6 +949,67 @@ function snn_seo_output_meta_tags() {
             }
         }
     }
+    // Search results
+    elseif (is_search()) {
+        $search_enabled = get_option('snn_seo_search_enabled', true);
+        
+        if ($search_enabled) {
+            $search_query = get_search_query();
+            $context = ['search_query' => $search_query];
+            
+            $search_title = get_option('snn_seo_search_title', 'Search Results for "{search_query}" - {site_title}');
+            $search_description = get_option('snn_seo_search_description', 'Search results for "{search_query}"');
+            
+            $title = snn_seo_replace_tags($search_title, $context);
+            $description = snn_seo_replace_tags($search_description, $context);
+        }
+    }
+    // Date archive
+    elseif (is_date()) {
+        $date_enabled = get_option('snn_seo_date_enabled', true);
+        
+        if ($date_enabled) {
+            $date_string = '';
+            if (is_year()) {
+                $date_string = get_the_date('Y');
+            } elseif (is_month()) {
+                $date_string = get_the_date('F Y');
+            } elseif (is_day()) {
+                $date_string = get_the_date('F j, Y');
+            }
+            
+            $context = ['date' => $date_string];
+            
+            $date_title = get_option('snn_seo_date_title', '{date} - {site_title}');
+            $date_description = get_option('snn_seo_date_description', 'Posts from {date}');
+            
+            $title = snn_seo_replace_tags($date_title, $context);
+            $description = snn_seo_replace_tags($date_description, $context);
+        }
+    }
+    // 404 page
+    elseif (is_404()) {
+        $notfound_enabled = get_option('snn_seo_404_enabled', true);
+        
+        if ($notfound_enabled) {
+            $notfound_title = get_option('snn_seo_404_title', 'Page Not Found - {site_title}');
+            $notfound_description = get_option('snn_seo_404_description', 'The page you are looking for could not be found.');
+            
+            $title = snn_seo_replace_tags($notfound_title, []);
+            $description = snn_seo_replace_tags($notfound_description, []);
+        }
+    }
+    // Front page / Home page
+    elseif (is_front_page() || is_home()) {
+        // Use site title and tagline for homepage
+        $title = get_bloginfo('name') . ' - ' . get_bloginfo('description');
+        $description = get_bloginfo('description');
+    }
+    
+    // Apply filters - allows themes and plugins to modify SEO output
+    $title = apply_filters('snn_seo_title', $title);
+    $description = apply_filters('snn_seo_description', $description);
+    $canonical_url = apply_filters('snn_seo_canonical_url', $canonical_url);
     
     // Output meta tags
     if (!empty($title)) {
@@ -891,6 +1038,38 @@ function snn_seo_output_meta_tags() {
     // Open Graph tags
     if (get_option('snn_seo_opengraph_enabled')) {
         snn_seo_output_opengraph_tags($title, $description, $canonical_url);
+    }
+    
+    // Debug output (only visible in HTML source when $debug is true)
+    if (isset($debug) && $debug && current_user_can('manage_options')) {
+        echo "\n<!-- SNN SEO Debug Info:\n";
+        echo "Page Type: ";
+        if (is_singular()) echo "Singular (Post/Page/CPT)\n";
+        if (is_post_type_archive()) {
+            echo "Post Type Archive\n";
+            $pt = get_query_var('post_type');
+            if (is_array($pt)) $pt = reset($pt);
+            echo "Post Type: " . $pt . "\n";
+            global $wp_query;
+            echo "WP_Query Post Type: " . $wp_query->get('post_type') . "\n";
+            $qo = get_queried_object();
+            if ($qo) echo "Queried Object: " . print_r($qo, true) . "\n";
+        }
+        if (is_tax() || is_category() || is_tag()) {
+            echo "Taxonomy Archive\n";
+            $term = get_queried_object();
+            if ($term) {
+                echo "Taxonomy: " . $term->taxonomy . "\n";
+                echo "Term ID: " . $term->term_id . "\n";
+                echo "Term Name: " . $term->name . "\n";
+            }
+        }
+        if (is_author()) echo "Author Archive\n";
+        echo "Title Generated: " . ($title ? 'Yes' : 'No') . "\n";
+        echo "Description Generated: " . ($description ? 'Yes' : 'No') . "\n";
+        if ($title) echo "Title: " . $title . "\n";
+        if ($description) echo "Description: " . $description . "\n";
+        echo "-->\n";
     }
 }
 add_action('wp_head', 'snn_seo_output_meta_tags', 1);
