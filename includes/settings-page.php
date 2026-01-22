@@ -1,7 +1,7 @@
 <?php
 
 function snn_add_menu_page() {
-    $dynamic_title = get_option('snn_menu_title', __('SNN Settings', 'snn'));
+    $dynamic_title = get_option('snn_menu_title', __('SNN-BLOCK', 'snn'));
 
     add_menu_page(
         $dynamic_title,

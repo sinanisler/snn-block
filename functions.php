@@ -23,7 +23,6 @@ require_once SNN_PATH . 'includes/disable-file-editing.php';
 require_once SNN_PATH . 'includes/remove-rss.php';
 require_once SNN_PATH . 'includes/disable-wp-json-if-not-logged-in.php';
 require_once SNN_PATH . 'includes/login-logo-change-url-change.php';
-require_once SNN_PATH . 'includes/enqueue-scripts.php';
 require_once SNN_PATH . 'includes/file-size-column-media.php';
 require_once SNN_PATH . 'includes/404-logging.php';
 require_once SNN_PATH . 'includes/search-loggins.php';
