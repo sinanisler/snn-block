@@ -82,7 +82,6 @@ function snn_block_enqueue_assets() { wp_enqueue_style( 'snn-block-style', get_s
 
 
 // Blocks
-require_once SNN_PATH . '/blocks/flip-card/block.php';
 require_once SNN_PATH . '/blocks/section/block.php';
 
 
