@@ -4,8 +4,8 @@ Theme URI: https://sinanisler.com/
 Author: sinanisler
 Author URI: https://sinanisler.com/
 Description: The essential building suite for agencies and professionals, streamlining your Block Editor WordPress and WooCommerce projects.
-Requires at least: 6.8
-Tested up to: 6.8
+Requires at least: 6.9
+Tested up to: 6.9
 Requires PHP: 
 Version: 0.1
 License: GNU General Public License v2 or later
@@ -13,8 +13,3 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: snn-block
 Tags: Blog, E-Commerce, Education, Entertainment, Photography, News
 */
-
-::selection{
-    background:black;
-    color:gray;
-}
