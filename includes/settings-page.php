@@ -19,7 +19,7 @@ function snn_settings_page_callback() {
     $dynamic_title = get_option('snn_menu_title', __('SNN Settings', 'snn'));
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html($dynamic_title); ?> - <?php _e('Bricks Builder Child Theme Settings', 'snn'); ?></h1>
+        <h1><?php echo esc_html($dynamic_title); ?> - <?php _e('Theme Settings', 'snn'); ?></h1>
         
         <!-- Dashboard-like grid of big square buttons -->
         <div class="snn-dashboard-buttons">
@@ -66,18 +66,18 @@ function snn_settings_page_callback() {
                 <?php _e('This theme is designed to give you the tools and solutions for', 'snn'); ?>
                 <a href="https://wordpress.org/" target="_blank"><?php _e('WordPress', 'snn'); ?></a>
                 <?php _e('and', 'snn'); ?>
-                <a href="https://bricksbuilder.io/" target="_blank"><?php _e('Bricks Builder', 'snn'); ?></a>.
+                <a href="https://woocommerce.com/" target="_blank"><?php _e('WooCommerce', 'snn'); ?></a>.
                 <?php _e('Post Types, Custom Fields, Taxonomies, SMTP Mail Setting, Custom Login Design,
                 Math Chaptcha for Login/Register, Security Features, 404 Logs, 301 Redirects and some Block Editor Features.
                 Everything is straightforward and ready to use.', 'snn'); ?>
                 <br><br>
                 <?php _e('Enjoy building your site.', 'snn'); ?><br><br>
     
-                <a href="https://academy.bricksbuilder.io/topic/getting-started/" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Docs ➤', 'snn'); ?></a><br>
+                <a href="https://wordpress.org/documentation/" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Where to Start WordPress ➤', 'snn'); ?></a><br>
     
-                <a href="https://www.youtube.com/@bricksbuilder/videos" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Videos ➤', 'snn'); ?></a><br>
+                <a href="https://learn.wordpress.org/" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Learn WordPress ➤', 'snn'); ?></a><br>
             </p>
         </div>
     
