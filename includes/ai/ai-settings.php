@@ -57,6 +57,7 @@ function snn_register_ai_settings() {
     register_setting('snn_ai_settings_group', 'snn_openai_model');
     register_setting('snn_ai_settings_group', 'snn_openrouter_api_key');
     register_setting('snn_ai_settings_group', 'snn_openrouter_model');
+    register_setting('snn_ai_settings_group', 'snn_openrouter_image_model');
     register_setting('snn_ai_settings_group', 'snn_system_prompt');
     register_setting('snn_ai_settings_group', 'snn_ai_action_presets', [
         'type' => 'array',
@@ -71,7 +72,7 @@ function snn_register_ai_settings() {
     // 2. Register multimodal configuration settings
     register_setting('snn_ai_settings_group', 'snn_ai_image_aspect_ratio', [
         'type' => 'string',
-        'default' => '1:1',
+        'default' => '16:9',
     ]);
     register_setting('snn_ai_settings_group', 'snn_ai_image_size', [
         'type' => 'string',
@@ -87,13 +88,14 @@ function snn_render_ai_settings() {
     $openai_model         = get_option('snn_openai_model', 'google/gemini-2.5-flash-lite');
     $openrouter_api_key   = get_option('snn_openrouter_api_key', '');
     $openrouter_model     = get_option('snn_openrouter_model', '');
+    $openrouter_image_model = get_option('snn_openrouter_image_model', 'google/gemini-2.5-flash-image');
     $system_prompt        = get_option(
         'snn_system_prompt',
         'You are a helpful assistant that helps with content creation or manipulation. You work inside a wordpress visual builder. User usually changes a website content. Keep the content length as similar the existing content when you are editing or follow the users instructions accordingly. Only respond with the needed content and nothing else always!'
     );
 
     // Multimodal configuration settings
-    $image_aspect_ratio = get_option('snn_ai_image_aspect_ratio', '1:1');
+    $image_aspect_ratio = get_option('snn_ai_image_aspect_ratio', '16:9');
     $image_size         = get_option('snn_ai_image_size', '1K');
 
     $default_presets = [
@@ -168,43 +170,6 @@ function snn_render_ai_settings() {
                         ><?php echo esc_textarea($system_prompt); ?></textarea>
                         <p class="description">
                             <?php esc_html_e('Enter the system prompt for AI interactions.', 'snn'); ?>
-                        </p>
-                    </td>
-                </tr>
-            </table>
-
-            <h2><?php esc_html_e('Multimodal Configuration', 'snn'); ?></h2>
-            <p class="description">
-                <?php esc_html_e('Configure settings for multimodal AI features. The frontend will automatically detect and use these settings based on the model capabilities and user actions.', 'snn'); ?>
-            </p>
-            <table class="form-table">
-                <tr>
-                    <th scope="row">
-                        <label for="snn_ai_image_aspect_ratio"><?php esc_html_e('Image Generation Settings', 'snn'); ?></label>
-                    </th>
-                    <td>
-                        <label for="snn_ai_image_aspect_ratio" style="display: inline-block; min-width: 100px;"><?php esc_html_e('Aspect Ratio:', 'snn'); ?></label>
-                        <select name="snn_ai_image_aspect_ratio" id="snn_ai_image_aspect_ratio" style="width: 150px;">
-                            <option value="1:1" <?php selected($image_aspect_ratio, '1:1'); ?>>1:1 (1024×1024)</option>
-                            <option value="2:3" <?php selected($image_aspect_ratio, '2:3'); ?>>2:3 (832×1248)</option>
-                            <option value="3:2" <?php selected($image_aspect_ratio, '3:2'); ?>>3:2 (1248×832)</option>
-                            <option value="3:4" <?php selected($image_aspect_ratio, '3:4'); ?>>3:4 (864×1184)</option>
-                            <option value="4:3" <?php selected($image_aspect_ratio, '4:3'); ?>>4:3 (1184×864)</option>
-                            <option value="4:5" <?php selected($image_aspect_ratio, '4:5'); ?>>4:5 (896×1152)</option>
-                            <option value="5:4" <?php selected($image_aspect_ratio, '5:4'); ?>>5:4 (1152×896)</option>
-                            <option value="9:16" <?php selected($image_aspect_ratio, '9:16'); ?>>9:16 (768×1344)</option>
-                            <option value="16:9" <?php selected($image_aspect_ratio, '16:9'); ?>>16:9 (1344×768)</option>
-                            <option value="21:9" <?php selected($image_aspect_ratio, '21:9'); ?>>21:9 (1536×672)</option>
-                        </select>
-                        <br><br>
-                        <label for="snn_ai_image_size" style="display: inline-block; min-width: 100px;"><?php esc_html_e('Image Size:', 'snn'); ?></label>
-                        <select name="snn_ai_image_size" id="snn_ai_image_size" style="width: 150px;">
-                            <option value="1K" <?php selected($image_size, '1K'); ?>>1K (Standard)</option>
-                            <option value="2K" <?php selected($image_size, '2K'); ?>>2K (Higher Resolution)</option>
-                            <option value="4K" <?php selected($image_size, '4K'); ?>>4K (Highest Resolution)</option>
-                        </select>
-                        <p class="description">
-                            <?php esc_html_e('Default settings for image generation. Applied when generating images with compatible models. Note: Image size options are currently only supported by Gemini models.', 'snn'); ?>
                         </p>
                     </td>
                 </tr>
@@ -323,6 +288,66 @@ function snn_render_ai_settings() {
                                 <strong><?php esc_html_e('Selected Model Features:', 'snn'); ?></strong>
                                 <ul style="list-style-type: disc; margin-left: 20px;"></ul>
                             </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="snn_openrouter_image_model"><?php esc_html_e('OpenRouter Image Model', 'snn'); ?></label>
+                        </th>
+                        <td>
+                            <input
+                                type="text"
+                                name="snn_openrouter_image_model"
+                                id="snn_openrouter_image_model"
+                                class="regular-text"
+                                value="<?php echo esc_attr($openrouter_image_model); ?>"
+                                placeholder="<?php esc_attr_e('Search for image model...', 'snn'); ?>"
+                                list="openrouter-image-models"
+                                autocomplete="off"
+                            >
+                            <datalist id="openrouter-image-models">
+                                <option value=""><?php esc_html_e('Loading image models...', 'snn'); ?></option>
+                            </datalist>
+                            <p class="description">
+                                <?php esc_html_e('Select an OpenRouter model with image output capabilities. Start typing to search.', 'snn'); ?>
+                            </p>
+                            <div id="openrouter-image-model-capabilities" class="model-capabilities-tags" style="margin-top: 10px; display: none;">
+                                <div class="capabilities-tags" style="margin-top: 5px;"></div>
+                            </div>
+                            <div id="openrouter-image-selected-model-features" class="selected-model-features" style="margin-top: 10px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; display: none; max-width: 410px; height: 220px; overflow: auto;">
+                                <strong><?php esc_html_e('Selected Image Model Features:', 'snn'); ?></strong>
+                                <ul style="list-style-type: disc; margin-left: 20px;"></ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="snn_ai_image_aspect_ratio"><?php esc_html_e('Image Generation Settings', 'snn'); ?></label>
+                        </th>
+                        <td>
+                            <label for="snn_ai_image_aspect_ratio" style="display: inline-block; min-width: 100px;"><?php esc_html_e('Aspect Ratio:', 'snn'); ?></label>
+                            <select name="snn_ai_image_aspect_ratio" id="snn_ai_image_aspect_ratio" style="width: 150px;">
+                                <option value="1:1" <?php selected($image_aspect_ratio, '1:1'); ?>>1:1 (1024×1024)</option>
+                                <option value="2:3" <?php selected($image_aspect_ratio, '2:3'); ?>>2:3 (832×1248)</option>
+                                <option value="3:2" <?php selected($image_aspect_ratio, '3:2'); ?>>3:2 (1248×832)</option>
+                                <option value="3:4" <?php selected($image_aspect_ratio, '3:4'); ?>>3:4 (864×1184)</option>
+                                <option value="4:3" <?php selected($image_aspect_ratio, '4:3'); ?>>4:3 (1184×864)</option>
+                                <option value="4:5" <?php selected($image_aspect_ratio, '4:5'); ?>>4:5 (896×1152)</option>
+                                <option value="5:4" <?php selected($image_aspect_ratio, '5:4'); ?>>5:4 (1152×896)</option>
+                                <option value="9:16" <?php selected($image_aspect_ratio, '9:16'); ?>>9:16 (768×1344)</option>
+                                <option value="16:9" <?php selected($image_aspect_ratio, '16:9'); ?>>16:9 (1344×768)</option>
+                                <option value="21:9" <?php selected($image_aspect_ratio, '21:9'); ?>>21:9 (1536×672)</option>
+                            </select>
+                            <br><br>
+                            <label for="snn_ai_image_size" style="display: inline-block; min-width: 100px;"><?php esc_html_e('Image Size:', 'snn'); ?></label>
+                            <select name="snn_ai_image_size" id="snn_ai_image_size" style="width: 150px;">
+                                <option value="1K" <?php selected($image_size, '1K'); ?>>1K (Standard)</option>
+                                <option value="2K" <?php selected($image_size, '2K'); ?>>2K (Higher Resolution)</option>
+                                <option value="4K" <?php selected($image_size, '4K'); ?>>4K (Highest Resolution)</option>
+                            </select>
+                            <p class="description">
+                                <?php esc_html_e('Default settings for image generation. Applied when generating images with compatible models. Note: Image size options are currently only supported by Gemini models.', 'snn'); ?>
+                            </p>
                         </td>
                     </tr>
                 </table>
@@ -456,7 +481,8 @@ function snn_render_ai_settings() {
             #openai-settings #snn_openai_model,
             #openai-settings #snn_openai_api_key,
             #openrouter-settings #snn_openrouter_api_key,
-            #openrouter-settings #snn_openrouter_model {
+            #openrouter-settings #snn_openrouter_model,
+            #openrouter-settings #snn_openrouter_image_model {
                 width: 430px;
                 max-width: 430px;
             }
@@ -513,8 +539,15 @@ function snn_render_ai_settings() {
             const openrouterCapabilitiesDiv = document.getElementById('openrouter-model-capabilities');
             const openrouterCapabilitiesContainer = openrouterCapabilitiesDiv ? openrouterCapabilitiesDiv.querySelector('.capabilities-tags') : null;
 
+            const openrouterImageModelInput = document.getElementById('snn_openrouter_image_model');
+            const openrouterImageFeaturesDiv = document.getElementById('openrouter-image-selected-model-features');
+            const openrouterImageFeaturesList = openrouterImageFeaturesDiv ? openrouterImageFeaturesDiv.querySelector('ul') : null;
+            const openrouterImageCapabilitiesDiv = document.getElementById('openrouter-image-model-capabilities');
+            const openrouterImageCapabilitiesContainer = openrouterImageCapabilitiesDiv ? openrouterImageCapabilitiesDiv.querySelector('.capabilities-tags') : null;
+
             let allOpenAiModels = [];
             let allOpenRouterModels = [];
+            let allOpenRouterImageModels = [];
 
             function toggleSettingsVisibility() {
                 const isEnabled = enableCheckbox.checked;
@@ -526,6 +559,8 @@ function snn_render_ai_settings() {
                 if (openaiFeaturesDiv) openaiFeaturesDiv.style.display = 'none';
                 if (openrouterFeaturesDiv) openrouterFeaturesDiv.style.display = 'none';
                 if (openrouterCapabilitiesDiv) openrouterCapabilitiesDiv.style.display = 'none';
+                if (openrouterImageFeaturesDiv) openrouterImageFeaturesDiv.style.display = 'none';
+                if (openrouterImageCapabilitiesDiv) openrouterImageCapabilitiesDiv.style.display = 'none';
 
                 if (isEnabled) {
                     if (providerSelect.value === 'openai') {
@@ -534,6 +569,7 @@ function snn_render_ai_settings() {
                     } else if (providerSelect.value === 'openrouter') {
                         openrouterSettingsDiv.style.display = 'block';
                         fetchOpenRouterModels();
+                        fetchOpenRouterImageModels();
                     } else if (providerSelect.value === 'custom') {
                         customSettingsDiv.style.display = 'block';
                     }
@@ -751,6 +787,89 @@ function snn_render_ai_settings() {
                 });
             }
 
+            function displayOpenRouterImageModelFeatures(modelId) {
+                if (!openrouterImageFeaturesList) return;
+                openrouterImageFeaturesDiv.style.display = 'none';
+                if (openrouterImageCapabilitiesDiv) openrouterImageCapabilitiesDiv.style.display = 'none';
+
+                const selectedModel = allOpenRouterImageModels.find(model => model.id === modelId);
+
+                if (selectedModel) {
+                    // Display capability tags if architecture data exists
+                    if (selectedModel.architecture && openrouterImageCapabilitiesContainer) {
+                        openrouterImageCapabilitiesDiv.style.display = 'block';
+                        displayCapabilityTags(openrouterImageCapabilitiesContainer, selectedModel.architecture);
+                    }
+
+                    // Display full features list
+                    openrouterImageFeaturesDiv.style.display = 'block';
+                    displayFeatures(openrouterImageFeaturesList, selectedModel);
+                }
+            }
+
+            function fetchOpenRouterImageModels() {
+                const dataListEl = document.getElementById('openrouter-image-models');
+                if (!dataListEl) return;
+                const openrouterKeyEl = document.getElementById('snn_openrouter_api_key');
+                const openrouterKey = openrouterKeyEl ? openrouterKeyEl.value.trim() : '';
+
+                // Static list of image models
+                const staticImageModels = [
+                    'sourceful/riverflow-v2-pro',
+                    'sourceful/riverflow-v2-fast',
+                    'black-forest-labs/flux.2-klein-4b',
+                    'bytedance-seed/seedream-4.5',
+                    'black-forest-labs/flux.2-max',
+                    'sourceful/riverflow-v2-max-preview',
+                    'sourceful/riverflow-v2-standard-preview',
+                    'sourceful/riverflow-v2-fast-preview',
+                    'black-forest-labs/flux.2-flex',
+                    'black-forest-labs/flux.2-pro',
+                    'google/gemini-3-pro-image-preview',
+                    'openai/gpt-5-image-mini',
+                    'openai/gpt-5-image',
+                    'google/gemini-2.5-flash-image',
+                    'google/gemini-2.5-flash-image-preview'
+                ];
+
+                // Populate datalist with static options immediately
+                dataListEl.innerHTML = '';
+                staticImageModels.forEach(modelId => {
+                    const option = document.createElement('option');
+                    option.value = modelId;
+                    option.text = modelId;
+                    dataListEl.appendChild(option);
+                });
+
+                // If no API key, stop here
+                if (!openrouterKey) {
+                    return;
+                }
+
+                // Fetch full model data in background for feature display
+                fetch('https://openrouter.ai/api/v1/models', {
+                    headers: { 'Authorization': 'Bearer ' + openrouterKey }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('OpenRouter models API error: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.data) {
+                        // Store all models for feature lookup
+                        allOpenRouterImageModels = data.data;
+
+                        // Display features for the currently selected image model if any
+                        displayOpenRouterImageModelFeatures(openrouterImageModelInput.value);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching OpenRouter image models data:', error);
+                });
+            }
+
             function fetchOpenAiModels() {
                 const dataListEl = document.getElementById('openai-models');
                 if (!dataListEl) return;
@@ -827,6 +946,11 @@ function snn_render_ai_settings() {
             if (openrouterModelInput) {
                 openrouterModelInput.addEventListener('input', (e) => {
                     displayOpenRouterModelFeatures(e.target.value);
+                });
+            }
+            if (openrouterImageModelInput) {
+                openrouterImageModelInput.addEventListener('input', (e) => {
+                    displayOpenRouterImageModelFeatures(e.target.value);
                 });
             }
 

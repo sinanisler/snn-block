@@ -4,8 +4,8 @@
 function snn_add_other_settings_submenu() {
     add_submenu_page(
         'snn-settings',
-        __('Other Settings', 'snn'),
-        __('Other Settings', 'snn'),
+        __('Dashboard Settings', 'snn'),
+        __('Dashboard Settings', 'snn'),
         'manage_options',
         'snn-other-settings',
         'snn_render_other_settings',
@@ -41,14 +41,6 @@ function snn_register_other_settings() {
         __('Other Settings', 'snn'),
         'snn_other_settings_section_callback',
         'snn-other-settings'
-    );
-
-    add_settings_field(
-        'enqueue_gsap',
-        __('Enable GSAP and GSAP Elements', 'snn'),
-        'snn_enqueue_gsap_callback',
-        'snn-other-settings',
-        'snn_other_settings_section'
     );
 
     add_settings_field(
@@ -91,6 +83,29 @@ function snn_register_other_settings() {
         'snn_other_settings_section'
     );
 
+
+    // Register revision settings separately
+    register_setting(
+        'snn_other_settings_group',
+        'snn_revision_settings'
+    );
+
+    add_settings_field(
+        'enable_draft_revision',
+        __('Enable Draft Revision System', 'snn'),
+        'snn_enable_draft_revision_callback',
+        'snn-other-settings',
+        'snn_other_settings_section'
+    );
+
+    add_settings_field(
+        'enable_admin_bar_toggle',
+        __('Enable Admin Bar Toggle on Frontend', 'snn'),
+        'snn_enable_admin_bar_toggle_callback',
+        'snn-other-settings',
+        'snn_other_settings_section'
+    );
+
     add_settings_field(
         'disable_dashboard_widgets',
         __('Disable Default Dashboard Widgets', 'snn'),
@@ -106,13 +121,12 @@ function snn_register_other_settings() {
         'snn-other-settings',
         'snn_other_settings_section'
     );
+
 }
 add_action('admin_init', 'snn_register_other_settings');
 
 function snn_sanitize_other_settings($input) {
     $sanitized = array();
-
-    $sanitized['enqueue_gsap'] = isset($input['enqueue_gsap']) && $input['enqueue_gsap'] ? 1 : 0;
 
     if (isset($input['revisions_limit']) && $input['revisions_limit'] !== '') {
         $sanitized['revisions_limit'] = intval($input['revisions_limit']);
@@ -124,6 +138,7 @@ function snn_sanitize_other_settings($input) {
     $sanitized['disable_comments'] = isset($input['disable_comments']) && $input['disable_comments'] ? 1 : 0;
     $sanitized['disable_comments_completely'] = isset($input['disable_comments_completely']) && $input['disable_comments_completely'] ? 1 : 0;
     $sanitized['enable_thumbnail_column'] = isset($input['enable_thumbnail_column']) && $input['enable_thumbnail_column'] ? 1 : 0;
+    $sanitized['enable_admin_bar_toggle'] = isset($input['enable_admin_bar_toggle']) && $input['enable_admin_bar_toggle'] ? 1 : 0;
     $sanitized['disable_dashboard_widgets'] = isset($input['disable_dashboard_widgets']) && $input['disable_dashboard_widgets'] ? 1 : 0;
 
     if (isset($input['dashboard_custom_metabox_content'])) {
@@ -145,21 +160,6 @@ function snn_sanitize_other_settings($input) {
 
 function snn_other_settings_section_callback() {
     echo '<p>' . esc_html__( 'Configure additional settings for your site below.', 'snn' ) . '</p>';
-}
-
-function snn_enqueue_gsap_callback() {
-    $options = get_option('snn_other_settings');
-    ?>
-    <input type="checkbox" name="snn_other_settings[enqueue_gsap]" value="1" <?php checked(1, isset($options['enqueue_gsap']) ? $options['enqueue_gsap'] : 0); ?>>
-    <p>
-        <?php _e('Enabling this setting will enqueue the GSAP library and its associated scripts on your website.', 'snn'); ?><br>
-        <?php _e('GSAP is a powerful JavaScript animation library that allows you to create complex and interactive animations.', 'snn'); ?><br><br>
-        - <?php _e('Ability to create GSAP animations with just data-animate attributes.', 'snn'); ?><br>
-        - <?php _e('gsap.min.php: The core GSAP library.', 'snn'); ?><br>
-        - <?php _e('ScrollTrigger.min.php: A GSAP plugin that enables scroll-based animations.', 'snn'); ?><br>
-        - <?php _e('gsap-data-animate.php: A custom script that utilizes GSAP and ScrollTrigger for animating elements based on data attributes.', 'snn'); ?><br>
-    </p>
-    <?php
 }
 
 function snn_revisions_limit_callback() {
@@ -216,6 +216,36 @@ function snn_enable_thumbnail_column_callback() {
     <?php
 }
 
+
+function snn_enable_draft_revision_callback() {
+    $options = get_option('snn_revision_settings');
+    ?>
+    <label>
+        <input type="checkbox" name="snn_revision_settings[enable_draft_revision]" value="1" <?php checked(1, isset($options['enable_draft_revision']) ? $options['enable_draft_revision'] : 0); ?>>
+        <?php _e('Enable draft revision system for all post types', 'snn'); ?>
+    </label>
+    <p>
+        <?php _e('Enabling this will add "Create Revision" and "Sync with Original" quick links to your posts.', 'snn'); ?><br>
+        <?php _e('This allows you to create draft revisions of posts, edit them, and sync them back to the original when ready.', 'snn'); ?>
+    </p>
+    <?php
+}
+
+function snn_enable_admin_bar_toggle_callback() {
+    $options = get_option('snn_other_settings');
+    ?>
+    <label>
+        <input type="checkbox" name="snn_other_settings[enable_admin_bar_toggle]" value="1" <?php checked(1, isset($options['enable_admin_bar_toggle']) ? $options['enable_admin_bar_toggle'] : 0); ?>>
+        <?php _e('Enable admin bar toggle functionality on frontend', 'snn'); ?>
+    </label>
+    <p>
+        <?php _e('Enabling this adds a toggle button to the admin bar and keyboard shortcut (Ctrl+I) to show/hide the admin bar on the frontend.', 'snn'); ?><br>
+        <?php _e('The visibility state is saved in your browser and persists across page loads. Useful for taking screenshots or viewing the site without the admin bar.', 'snn'); ?><br>
+        <?php _e('<strong>Important:</strong> Once hidden, you can only show it again using the Ctrl+I keyboard shortcut, so make sure to remember it!', 'snn'); ?>
+    </p>
+    <?php
+}
+
 function snn_disable_dashboard_widgets_callback() {
     $options = get_option('snn_other_settings');
     ?>
@@ -248,16 +278,6 @@ function snn_dashboard_custom_metabox_content_callback() {
     <?php
 }
 
-function snn_enqueue_gsap_scripts() {
-    $options = get_option('snn_other_settings');
-    if (isset($options['enqueue_gsap']) && $options['enqueue_gsap']) {
-        wp_enqueue_script('gsap-js', SNN_URL_ASSETS . 'js/gsap.min.js', array(), null, true);
-        wp_enqueue_script('gsap-st-js', SNN_URL_ASSETS . 'js/ScrollTrigger.min.js', array('gsap-js'), null, true);
-        wp_enqueue_script('gsap-data-js', SNN_URL_ASSETS . 'js/gsap-data-animate.js?v0.05', array(), null, true);
-    }
-}
-add_action('wp_enqueue_scripts', 'snn_enqueue_gsap_scripts');
-add_action('admin_enqueue_scripts', 'snn_enqueue_gsap_scripts');
 
 function snn_limit_post_revisions($num, $post) {
     $options = get_option('snn_other_settings');
@@ -453,3 +473,73 @@ function snn_display_custom_dashboard_metabox() {
         echo do_shortcode($content);
     }
 }
+
+/**
+ * Add admin bar toggle script to frontend footer.
+ */
+function snn_admin_bar_toggle_script() {
+    $options = get_option('snn_other_settings');
+    if (!isset($options['enable_admin_bar_toggle']) || !$options['enable_admin_bar_toggle']) {
+        return;
+    }
+
+    if (!is_admin() && is_user_logged_in()) {
+        ?>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const hideButton = document.querySelector('#wp-admin-bar-hide-admin-bar');
+          const STORAGE_KEY = 'wp_admin_bar_hidden';
+
+          // Add tooltip to the button
+          if (hideButton) {
+            hideButton.setAttribute('title', 'Toggle Admin Bar (Ctrl+I)');
+          }
+
+          // Function to toggle admin bar visibility
+          function toggleAdminBar(hide) {
+            const adminBar = document.querySelector('#wpadminbar');
+            const html = document.documentElement;
+
+            if (adminBar) {
+              if (hide) {
+                adminBar.style.display = 'none';
+                html.style.setProperty('margin-top', '0px', 'important');
+                html.style.setProperty('--wp-admin--admin-bar--height', '0px');
+                localStorage.setItem(STORAGE_KEY, 'true');
+              } else {
+                adminBar.style.display = '';
+                html.style.removeProperty('margin-top');
+                html.style.removeProperty('--wp-admin--admin-bar--height');
+                localStorage.setItem(STORAGE_KEY, 'false');
+              }
+            }
+          }
+
+          // Check localStorage on page load and apply saved state
+          const isHidden = localStorage.getItem(STORAGE_KEY) === 'true';
+          if (isHidden) {
+            toggleAdminBar(true);
+          }
+
+          // Button click handler
+          if (hideButton) {
+            hideButton.addEventListener('click', function() {
+              const currentlyHidden = localStorage.getItem(STORAGE_KEY) === 'true';
+              toggleAdminBar(!currentlyHidden);
+            });
+          }
+
+          // Ctrl+I keyboard shortcut
+          document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'i') {
+              e.preventDefault();
+              const currentlyHidden = localStorage.getItem(STORAGE_KEY) === 'true';
+              toggleAdminBar(!currentlyHidden);
+            }
+          });
+        });
+        </script>
+        <?php
+    }
+}
+add_action('wp_footer', 'snn_admin_bar_toggle_script');

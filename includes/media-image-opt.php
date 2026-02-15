@@ -1232,7 +1232,7 @@ function snn_render_optimize_existing_media_tab() {
     // Import @jsquash libraries from ESM (WebAssembly libwebp)
     import { decode as decodeJpeg } from "https://esm.sh/@jsquash/jpeg@1.4.0";
     import { decode as decodePng } from "https://esm.sh/@jsquash/png@3.0.1";
-    import { encode as encodeWebp } from "https://esm.sh/@jsquash/webp@1.4.0";
+    import { decode as decodeWebp, encode as encodeWebp } from "https://esm.sh/@jsquash/webp@1.4.0";
     
     const $ = jQuery;
     let scannedImages = [];
@@ -1620,12 +1620,14 @@ function snn_render_optimize_existing_media_tab() {
                 return await decodeJpeg(arrayBuffer);
             } else if (normalizedMime === 'image/png') {
                 return await decodePng(arrayBuffer);
+            } else if (normalizedMime === 'image/webp') {
+                return await decodeWebp(arrayBuffer);
             }
             throw new Error(`Unsupported mime type: ${mimeType}`);
         } catch (error) {
             // If decoder fails, try to detect format from file signature
             const uint8Array = new Uint8Array(arrayBuffer);
-            const signature = Array.from(uint8Array.slice(0, 4));
+            const signature = Array.from(uint8Array.slice(0, 12));
             
             // PNG signature: 89 50 4E 47
             if (signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4E && signature[3] === 0x47) {
@@ -1637,6 +1639,13 @@ function snn_render_optimize_existing_media_tab() {
             if (signature[0] === 0xFF && signature[1] === 0xD8 && signature[2] === 0xFF) {
                 console.log(`File signature detected as JPEG, but mime type was ${mimeType}. Retrying with JPEG decoder...`);
                 return await decodeJpeg(arrayBuffer);
+            }
+            
+            // WebP signature: 52 49 46 46 (RIFF) at 0-3, 57 45 42 50 (WEBP) at 8-11
+            if (signature[0] === 0x52 && signature[1] === 0x49 && signature[2] === 0x46 && signature[3] === 0x46 &&
+                signature[8] === 0x57 && signature[9] === 0x45 && signature[10] === 0x42 && signature[11] === 0x50) {
+                console.log(`File signature detected as WebP, but mime type was ${mimeType}. Retrying with WebP decoder...`);
+                return await decodeWebp(arrayBuffer);
             }
             
             // Re-throw original error if we can't detect format
@@ -2823,7 +2832,7 @@ function snn_scan_unoptimized_images() {
     
     $base_args = array(
         'post_type' => 'attachment',
-        'post_mime_type' => array('image/jpeg', 'image/png'),
+        'post_mime_type' => array('image/jpeg', 'image/png', 'image/webp'),
         'posts_per_page' => $per_page,
         'paged' => $page,
         'post_status' => 'inherit'
@@ -2949,6 +2958,26 @@ function snn_save_optimized_existing_image() {
     // Determine new file path
     $path_info = pathinfo($original_file);
     $webp_path = $path_info['dirname'] . '/' . $path_info['filename'] . '.webp';
+    
+    // CRITICAL: If original is already WebP, rename it first (like JPG→JPG, PNG→PNG)
+    // This ensures original and current URLs are different for proper restore functionality
+    if (strtolower($path_info['extension']) === 'webp') {
+        $original_renamed = $path_info['dirname'] . '/' . $path_info['filename'] . '-original.webp';
+        
+        // Only rename if not already optimized (first optimization)
+        if (!$is_already_optimized && file_exists($original_file)) {
+            if (!@rename($original_file, $original_renamed)) {
+                wp_send_json_error(__('Failed to rename original WebP file.', 'snn'));
+            }
+            // Update the original file path to the renamed version
+            $original_file = $original_renamed;
+            $original_url = str_replace(basename($path_info['basename']), basename($original_renamed), $original_url);
+            
+            // Update stored metadata with new paths
+            update_post_meta($attachment_id, '_snn_original_url', $original_url);
+            update_post_meta($attachment_id, '_snn_original_file', $original_file);
+        }
+    }
     
     // Move uploaded file
     if (!move_uploaded_file($uploaded_file, $webp_path)) {
