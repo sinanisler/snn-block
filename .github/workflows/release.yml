@@ -14,29 +14,41 @@ jobs:
         with:
           fetch-depth: '0'
 
-      - name: Debug commit message
-        run: |
-          echo "HEAD commit message: ${{ github.event.head_commit.message }}"
-
-      - name: Check if commit message contains alphatag
-        id: checkmsg
+      - name: Check if this is a release commit
+        id: check_release
         run: |
           msg="${{ github.event.head_commit.message }}"
+          echo "Commit message: $msg"
+
+          is_release=false
+          is_prerelease=false
+
           if echo "$msg" | grep -iq 'alphatag'; then
+            is_prerelease=true
             echo "commit_message_contains_alphatag=true" >> $GITHUB_ENV
           else
             echo "commit_message_contains_alphatag=false" >> $GITHUB_ENV
           fi
 
+          if echo "$msg" | grep -iq 'release'; then
+            is_release=true
+          fi
+
+          # Exit gracefully if not a release commit
+          if [ "$is_release" = "false" ] && [ "$is_prerelease" = "false" ]; then
+            echo "⏭️ Not a release commit. Skipping release workflow."
+            echo "is_release_workflow=false" >> $GITHUB_ENV
+          else
+            echo "✅ Release workflow triggered"
+            echo "is_release_workflow=true" >> $GITHUB_ENV
+          fi
+
       - name: Display current style.css before update
+        if: env.is_release_workflow == 'true'
         run: cat style.css
 
-      - name: Check last commit message
-        id: check_last_commit
-        run: |
-          echo "last_commit_message=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
-
       - name: Get commit messages since last release
+        if: env.is_release_workflow == 'true'
         id: get_commits
         run: |
           current_version=$(grep -oP 'Version:\s*\K[0-9.]+' style.css)
@@ -56,6 +68,7 @@ jobs:
           echo "previous_tag=$last_tag" >> $GITHUB_ENV
 
       - name: Set sponsor message
+        if: env.is_release_workflow == 'true'
         id: set_sponsors
         run: |
           {
@@ -71,7 +84,7 @@ jobs:
 
       # Handle PRERELEASE: does NOT bump version, just reuses current
       - name: Set current version for prerelease and unique prerelease tag
-        if: env.commit_message_contains_alphatag == 'true'
+        if: env.is_release_workflow == 'true' && env.commit_message_contains_alphatag == 'true'
         id: prerelease_tag
         run: |
           current_version=$(grep -oP 'Version:\s*\K[0-9.]+' style.css)
@@ -89,7 +102,7 @@ jobs:
 
       # Handle RELEASE: bump version, update style.css
       - name: Bump version in style.css
-        if: contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
+        if: env.is_release_workflow == 'true' && contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
         id: bump_version
         run: |
           current_version=$(grep -oP 'Version:\s*\K[0-9.]+' style.css)
@@ -116,11 +129,11 @@ jobs:
           echo "new_version=$new_version" >> $GITHUB_ENV
 
       - name: Display current style.css after update
-        if: always()
+        if: env.is_release_workflow == 'true'
         run: cat style.css
 
       - name: Commit changes
-        if: contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
+        if: env.is_release_workflow == 'true' && contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -129,25 +142,25 @@ jobs:
           git push
 
       - name: Set Git user for tagging
-        if: env.commit_message_contains_alphatag == 'true'
+        if: env.is_release_workflow == 'true' && env.commit_message_contains_alphatag == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Create new GitHub tag
-        if: contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
+        if: env.is_release_workflow == 'true' && contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
         run: |
           git tag -a "v${{ env.new_version }}" -m "Version ${{ env.new_version }}"
           git push origin "v${{ env.new_version }}"
 
       - name: Create new GitHub prerelease tag
-        if: env.commit_message_contains_alphatag == 'true'
+        if: env.is_release_workflow == 'true' && env.commit_message_contains_alphatag == 'true'
         run: |
           git tag -a "${{ env.prerelease_tag }}" -m "Prerelease ${{ env.prerelease_tag }}"
           git push origin "${{ env.prerelease_tag }}"
 
       - name: Create zip file of the repository
-        if: contains(github.event.head_commit.message, 'release') || env.commit_message_contains_alphatag == 'true'
+        if: env.is_release_workflow == 'true' && (contains(github.event.head_commit.message, 'release') || env.commit_message_contains_alphatag == 'true')
         run: |
           shopt -s extglob
           mkdir snn-block
@@ -159,7 +172,7 @@ jobs:
           new_version: ${{ env.new_version }}
 
       - name: Create GitHub release
-        if: contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
+        if: env.is_release_workflow == 'true' && contains(github.event.head_commit.message, 'release') && env.commit_message_contains_alphatag != 'true'
         uses: softprops/action-gh-release@v1
         with:
           files: snn-block.zip
@@ -170,12 +183,12 @@ jobs:
 
             ## Changelog
             ${{ env.commit_messages }}
-            
+
             ---
             **Full Changelog**: ${{ env.previous_tag != '' && format('https://github.com/sinanisler/snn-block/compare/{0}...v{1}', env.previous_tag, env.new_version) || format('https://github.com/sinanisler/snn-block/commits/v{0}', env.new_version) }}
 
       - name: Create GitHub prerelease
-        if: env.commit_message_contains_alphatag == 'true'
+        if: env.is_release_workflow == 'true' && env.commit_message_contains_alphatag == 'true'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -187,7 +200,7 @@ jobs:
 
             ## Changelog
             ${{ env.commit_messages }}
-            
+
             ---
             **Note**: This is a pre-release version for testing purposes.
             **Full Changelog**: ${{ env.previous_tag != '' && format('https://github.com/sinanisler/snn-block/compare/{0}...{1}', env.previous_tag, env.prerelease_tag) || format('https://github.com/sinanisler/snn-block/commits/{0}', env.prerelease_tag) }}
