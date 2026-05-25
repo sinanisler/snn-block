@@ -39,7 +39,6 @@ require_once SNN_PATH . 'includes/features/cookie-banner.php';
 require_once SNN_PATH . 'includes/features/accessibility-settings.php';
 require_once SNN_PATH . 'includes/features/activity-logs.php';
 require_once SNN_PATH . 'includes/features/seo.php';
-require_once SNN_PATH . 'includes/features/seo-bricks-setting.php';
 require_once SNN_PATH . 'includes/features/interactions.php';
 require_once SNN_PATH . 'includes/features/draft-revision.php';
 
@@ -104,41 +103,6 @@ require_once SNN_PATH . 'includes/features/block-editor-settings.php';
 require_once SNN_PATH . 'includes/features/media-image-opt.php';
 require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 
-// Register Custom Dynamic Data Tags
-require_once SNN_PATH . 'includes/dynamic-data-tags/estimated-post-read-time.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/get-contextual-id.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/contextual-slug.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/get-contextual-content.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/parent-link.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/parent-id.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/parent-detection.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/child-link.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/first-child-post.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/post-term-count.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/user-author-fields.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/custom-field-repeater-first-item.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/attachment-metadata.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/raw-all-custom-fields.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/day-count-since-the-current-post-published.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/current-loop-item-count.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/total-video-duration.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/single-video-duration.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/options-and-fields.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/average-comment-rating.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/comment-count-current-user.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/child-post-count.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/comment-count-current-post.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/get-parent-and-child-posts-list.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/current-post-custom-field-output.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/current-author.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/get_id_from_url_output_content.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/parent-child-count.php';
-require_once SNN_PATH . 'includes/dynamic-data-tags/parent-post-count.php';
-
-
-
-require_once SNN_PATH . 'includes/query/snn-repeaters-and-queries.php';
-require_once SNN_PATH . 'includes/query/snn-double-repeaters-and-queries.php';
 
 
 
