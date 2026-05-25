@@ -84,6 +84,8 @@ require_once SNN_PATH . 'includes/ai/abilities/analyze-post-seo.php';
 require_once SNN_PATH . 'includes/features/utils.php';
 //require_once SNN_PATH . 'includes/features/auto-update-snn-brx-github.php';
 
+// Block Patterns
+require_once SNN_PATH . 'includes/features/block-patterns.php';
 
 
 // Load Translations

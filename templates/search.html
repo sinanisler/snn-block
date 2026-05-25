@@ -1,13 +1,13 @@
 <!-- wp:template-part {"slug":"header","tagName":"header","area":"header"} /-->
 
-<!-- wp:group {"tagName":"main","style":{"spacing":{"padding":{"top":"var:preset|spacing|xxx-large","bottom":"var:preset|spacing|xxx-large"}}},"layout":{"type":"constrained"}} -->
-<main class="wp-block-group" style="padding-top:var(--wp--preset--spacing--xxx-large);padding-bottom:var(--wp--preset--spacing--xxx-large)"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|small","margin":{"bottom":"var:preset|spacing|x-large"}}},"layout":{"type":"constrained","contentSize":"700px"}} -->
-<div class="wp-block-group" style="margin-bottom:var(--wp--preset--spacing--x-large)"><!-- wp:query-title {"type":"archive","style":{"typography":{"fontSize":"var:preset|font-size|custom-4","lineHeight":"1.15"}},"textColor":"main"} /-->
+<!-- wp:group {"tagName":"main","style":{"spacing":{"padding":{"top":"var:preset|spacing|x-large","bottom":"var:preset|spacing|xxx-large"}}},"layout":{"type":"constrained"}} -->
+<main class="wp-block-group" style="padding-top:var(--wp--preset--spacing--x-large);padding-bottom:var(--wp--preset--spacing--xxx-large)"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|small","margin":{"bottom":"var:preset|spacing|x-large"}}},"layout":{"type":"constrained","contentSize":"700px"}} -->
+<div class="wp-block-group" style="margin-bottom:var(--wp--preset--spacing--x-large)"><!-- wp:query-title {"type":"search","style":{"typography":{"fontSize":"var:preset|font-size|custom-4","lineHeight":"1.15"}},"textColor":"main"} /-->
 
-<!-- wp:term-description {"style":{"typography":{"lineHeight":"1.6"},"color":{"text":"#545473"}}} /--></div>
+<!-- wp:search {"label":"<?php esc_attr_e( 'Search', 'snn' ); ?>","placeholder":"<?php esc_attr_e( 'Search...', 'snn' ); ?>","buttonText":"<?php esc_attr_e( 'Search', 'snn' ); ?>","buttonPosition":"button-inside","style":{"border":{"radius":"8px"}}} /--></div>
 <!-- /wp:group -->
 
-<!-- wp:query {"queryId":0,"query":{"perPage":10,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":true},"displayLayout":{"type":"flex","columns":3},"align":"wide","layout":{"type":"default"}} -->
+<!-- wp:query {"queryId":2,"query":{"perPage":10,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":true},"displayLayout":{"type":"flex","columns":3},"align":"wide","layout":{"type":"default"}} -->
 <div class="wp-block-query alignwide"><!-- wp:post-template -->
 <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|small","padding":{"top":"0","bottom":"var:preset|spacing|medium","left":"0","right":"0"}},"border":{"radius":"12px"},"color":{"background":"#ffffff"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group has-background" style="border-radius:12px;background-color:#ffffff;padding-top:0;padding-right:0;padding-bottom:var(--wp--preset--spacing--medium);padding-left:0"><!-- wp:post-featured-image {"isLink":true,"height":"220px","style":{"border":{"radius":"12px"}}} /-->
@@ -43,14 +43,12 @@
 <!-- wp:query-no-results -->
 <!-- wp:group {"style":{"spacing":{"padding":{"top":"var:preset|spacing|xx-large","bottom":"var:preset|spacing|xx-large"}}},"layout":{"type":"constrained","contentSize":"500px"}} -->
 <div class="wp-block-group" style="padding-top:var(--wp--preset--spacing--xx-large);padding-bottom:var(--wp--preset--spacing--xx-large)"><!-- wp:heading {"textAlign":"center","level":2,"textColor":"main"} -->
-<h2 class="wp-block-heading has-text-align-center has-main-color has-text-color"><?php esc_html_e( 'No Posts Found', 'snn' ); ?></h2>
+<h2 class="wp-block-heading has-text-align-center has-main-color has-text-color"><?php esc_html_e( 'Nothing Found', 'snn' ); ?></h2>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"align":"center","style":{"color":{"text":"#545473"}}} -->
-<p class="has-text-align-center has-text-color" style="color:#545473"><?php esc_html_e( 'It seems we can\'t find what you\'re looking for. Try searching or browse the archives.', 'snn' ); ?></p>
-<!-- /wp:paragraph -->
-
-<!-- wp:search {"label":"<?php esc_attr_e( 'Search', 'snn' ); ?>","placeholder":"<?php esc_attr_e( 'Search...', 'snn' ); ?>","buttonText":"<?php esc_attr_e( 'Search', 'snn' ); ?>","style":{"border":{"radius":"8px"}}} /--></div>
+<p class="has-text-align-center has-text-color" style="color:#545473"><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with some different keywords.', 'snn' ); ?></p>
+<!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 <!-- /wp:query-no-results --></div>
 <!-- /wp:query --></main>
