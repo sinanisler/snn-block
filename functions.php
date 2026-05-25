@@ -23,7 +23,6 @@ require_once SNN_PATH . 'includes/features/disable-file-editing.php';
 require_once SNN_PATH . 'includes/features/remove-rss.php';
 require_once SNN_PATH . 'includes/features/disable-wp-json-if-not-logged-in.php';
 require_once SNN_PATH . 'includes/features/login-logo-change-url-change.php';
-require_once SNN_PATH . 'includes/features/enqueue-scripts.php';
 require_once SNN_PATH . 'includes/features/file-size-column-media.php';
 require_once SNN_PATH . 'includes/features/404-logging.php';
 require_once SNN_PATH . 'includes/features/search-loggins.php';
@@ -83,7 +82,7 @@ require_once SNN_PATH . 'includes/ai/abilities/analyze-post-seo.php';
 
 // Utils
 require_once SNN_PATH . 'includes/features/utils.php';
-require_once SNN_PATH . 'includes/features/auto-update-snn-brx-github.php';
+//require_once SNN_PATH . 'includes/features/auto-update-snn-brx-github.php';
 
 
 
