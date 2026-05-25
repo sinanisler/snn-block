@@ -19,13 +19,15 @@ function snn_settings_page_callback() {
     $dynamic_title = get_option('snn_menu_title', __('SNN Settings', 'snn'));
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html($dynamic_title); ?> - <?php _e('Theme Settings', 'snn'); ?></h1>
+        <h1><?php echo esc_html($dynamic_title); ?> - <?php _e('Bricks Builder Child Theme Settings', 'snn'); ?></h1>
         
         <!-- Dashboard-like grid of big square buttons -->
         <div class="snn-dashboard-buttons">
             <?php
             $menu_items = array(
                 array('slug' => 'snn-settings',               'label' => $dynamic_title.' '.__('Settings', 'snn'),      'dashicon' => 'dashicons-admin-home'),
+                array('slug' => 'snn-other-settings',         'label' => __('Dashboard Settings', 'snn'),               'dashicon' => 'dashicons-dashboard'),
+                array('slug' => 'editor-settings',            'label' => __('Editor Settings', 'snn'),                  'dashicon' => 'dashicons-edit'),
                 array('slug' => 'snn-security',               'label' => __('Security Settings', 'snn'),                'dashicon' => 'dashicons-shield'),
                 array('slug' => 'snn-custom-post-types',      'label' => __('Post Types', 'snn'),                       'dashicon' => 'dashicons-admin-post'),
                 array('slug' => 'snn-custom-fields',          'label' => __('Custom Fields', 'snn'),                    'dashicon' => 'dashicons-admin-page'),
@@ -39,9 +41,10 @@ function snn_settings_page_callback() {
                 array('slug' => 'snn-role-management',        'label' => __('Role Manager', 'snn'),                     'dashicon' => 'dashicons-admin-users'),
                 array('slug' => 'snn-cookie-settings',        'label' => __('Cookie Settings', 'snn'),                  'dashicon' => 'dashicons-admin-site'),
                 array('slug' => 'snn-accessibility-settings', 'label' => __('Accessibility Settings', 'snn'),           'dashicon' => 'dashicons-universal-access'),
-                array('slug' => 'snn-search-logs',            'label' => __('Search Logs', 'snn'),                      'dashicon' => 'dashicons-search'),
                 array('slug' => 'snn-ai-settings',            'label' => __('AI Settings', 'snn'),                      'dashicon' => 'dashicons-nametag'),
                 array('slug' => 'snn-ai-agent-settings',      'label' => __('AI Agent and Chat', 'snn'),                'dashicon' => 'dashicons-nametag'),
+                array('slug' => 'snn-interactions',           'label' => __('Interactions', 'snn'),                     'dashicon' => 'dashicons-table-col-after'),
+                array('slug' => 'snn-search-logs',            'label' => __('Search Logs', 'snn'),                      'dashicon' => 'dashicons-search'),
                 array('slug' => 'snn-media-settings',         'label' => __('Media Settings', 'snn'),                   'dashicon' => 'dashicons-format-image'),
                 array('slug' => 'snn-activity-log',           'label' => __('Activity Logs', 'snn'),                    'dashicon' => 'dashicons-text'),
                 array('slug' => 'snn-custom-codes-snippets',  'label' => __('Code Snippets', 'snn'),                    'dashicon' => 'dashicons-editor-code'),
@@ -66,18 +69,18 @@ function snn_settings_page_callback() {
                 <?php _e('This theme is designed to give you the tools and solutions for', 'snn'); ?>
                 <a href="https://wordpress.org/" target="_blank"><?php _e('WordPress', 'snn'); ?></a>
                 <?php _e('and', 'snn'); ?>
-                <a href="https://woocommerce.com/" target="_blank"><?php _e('WooCommerce', 'snn'); ?></a>.
+                <a href="https://bricksbuilder.io/" target="_blank"><?php _e('Bricks Builder', 'snn'); ?></a>.
                 <?php _e('Post Types, Custom Fields, Taxonomies, SMTP Mail Setting, Custom Login Design,
                 Math Chaptcha for Login/Register, Security Features, 404 Logs, 301 Redirects and some Block Editor Features.
                 Everything is straightforward and ready to use.', 'snn'); ?>
                 <br><br>
                 <?php _e('Enjoy building your site.', 'snn'); ?><br><br>
     
-                <a href="https://wordpress.org/documentation/" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Where to Start WordPress ➤', 'snn'); ?></a><br>
+                <a href="https://academy.bricksbuilder.io/topic/getting-started/" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Docs ➤', 'snn'); ?></a><br>
     
-                <a href="https://learn.wordpress.org/" target="_blank"
-                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Learn WordPress ➤', 'snn'); ?></a><br>
+                <a href="https://www.youtube.com/@bricksbuilder/videos" target="_blank"
+                style="font-size: 16px; text-decoration:none; line-height:40px"><?php _e('Bricks Builder Videos ➤', 'snn'); ?></a><br>
             </p>
         </div>
     
