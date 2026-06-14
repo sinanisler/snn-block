@@ -25,6 +25,8 @@ Every block consists of exactly 4 files inside its directory:
 3. `editor.jsx`: The block's visual interface in the Gutenberg editor.
 4. `block.css`: Styles applied to both the editor and frontend.
 
+Blocks wil live inside the /blocks folder. Register them in the functions.php
+
 ---
 
 ## 🛡️ 3. DATA FLOW & SECURITY (PHP OUTPUT)
