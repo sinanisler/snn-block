@@ -126,6 +126,7 @@ require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 require_once SNN_PATH . 'blocks/simple-gallery/block.php';
 require_once SNN_PATH . 'blocks/section/block.php';
 require_once SNN_PATH . 'blocks/container/block.php';
+require_once SNN_PATH . 'blocks/text/block.php';
 
 
 

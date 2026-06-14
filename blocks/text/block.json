@@ -1,0 +1,29 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "snn/text",
+    "version": "1.0.0",
+    "title": "Text",
+    "category": "text",
+    "icon": "text",
+    "description": "A text block with responsive typography and color controls. Supports p, h1-h4, and div tags.",
+    "keywords": ["text", "paragraph", "heading", "typography"],
+    "attributes": {
+        "content": { "type": "string", "source": "html", "selector": "p,h1,h2,h3,h4,div" },
+        "tagName": { "type": "string", "default": "p" },
+        "textColor": { "type": "object", "default": {} },
+        "bgColor": { "type": "object", "default": {} },
+        "fontSize": { "type": "object", "default": {} },
+        "lineHeight": { "type": "object", "default": {} },
+        "letterSpacing": { "type": "object", "default": {} },
+        "fontWeight": { "type": "object", "default": {} },
+        "textTransform": { "type": "string" },
+        "textAlign": { "type": "object", "default": {} },
+        "padding": { "type": "object", "default": {} }
+    },
+    "supports": {
+        "html": false,
+        "anchor": true
+    },
+    "style": "file:./block.css"
+}

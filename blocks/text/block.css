@@ -1,0 +1,23 @@
+/* ─── Text Block ─── */
+
+.snn-text {
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* ─── Editor Styles ─── */
+
+.editor-styles-wrapper .snn-text {
+    min-height: 20px;
+}
+
+/* Give a subtle dashed outline in editor */
+.editor-styles-wrapper .snn-text {
+    outline: 1px dashed rgba(0, 0, 0, 0.06);
+    outline-offset: -1px;
+}
+
+.editor-styles-wrapper .block-editor-block-list__block.is-selected > .snn-text,
+.editor-styles-wrapper .block-editor-block-list__block.is-hovered > .snn-text {
+    outline-color: rgba(0, 0, 0, 0.15);
+}
