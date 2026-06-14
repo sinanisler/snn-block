@@ -1,0 +1,364 @@
+/* ─── Simple Gallery Block ─── */
+
+.snn-simple-gallery {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Gallery Grid */
+.snn-simple-gallery .snn-gallery-grid,
+.snn-simple-gallery[class*="wp-block-"] .snn-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--snn-gallery-columns, 3), 1fr);
+    gap: var(--snn-gallery-gap, 16px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Gallery Item */
+.snn-gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: inherit;
+    aspect-ratio: var(--snn-gallery-aspect-ratio, 4/3);
+}
+
+.snn-gallery-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+/* Hover zoom only when lightbox is enabled (shows image is clickable) */
+.snn-simple-gallery.has-lightbox .snn-gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+/* Lightbox link covers the whole item for easy clicking */
+.snn-gallery-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Gallery Caption */
+.snn-gallery-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 8px 8px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* ─── Editor Placeholder ─── */
+.snn-gallery-placeholder {
+    width: 100%;
+}
+
+/* Remove Button (Editor) */
+.snn-gallery-item .snn-gallery-remove-btn {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.snn-gallery-item:hover .snn-gallery-remove-btn {
+    opacity: 1;
+}
+
+/* ─── Responsive ─── */
+
+/* Tablet: switch to 2 columns (if user chose 3+) */
+@media (max-width: 1024px) {
+    .snn-simple-gallery .snn-gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Small tablet: 2 columns */
+@media (max-width: 768px) {
+    .snn-simple-gallery .snn-gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile: single column */
+@media (max-width: 480px) {
+    .snn-simple-gallery .snn-gallery-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ════════════════════════════════════════════
+   LIGHTBOX
+   ════════════════════════════════════════════ */
+
+.snn-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.snn-lightbox.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Overlay */
+.snn-lightbox-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* Content */
+.snn-lightbox-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 48px 64px;
+    box-sizing: border-box;
+}
+
+/* Figure wrapper */
+.snn-lightbox-figure {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 95vw;
+    max-height: 85vh;
+}
+
+.snn-lightbox-img {
+    display: block;
+    max-width: 100%;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Caption */
+.snn-lightbox-caption {
+    margin-top: 12px;
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    max-width: 600px;
+}
+
+/* Counter */
+.snn-lightbox-counter {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    user-select: none;
+    z-index: 2;
+}
+
+/* ─── Close button (top right) ─── */
+
+.snn-lightbox-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.snn-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.snn-lightbox-close svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* ─── Navigation arrows ─── */
+
+.snn-lightbox-prev,
+.snn-lightbox-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.snn-lightbox-prev:hover,
+.snn-lightbox-next:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.snn-lightbox-prev {
+    left: 12px;
+}
+
+.snn-lightbox-next {
+    right: 12px;
+}
+
+/* ─── Fullscreen button ─── */
+
+.snn-lightbox-fullscreen {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 3;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.snn-lightbox-fullscreen:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Responsive lightbox ─── */
+
+@media (max-width: 768px) {
+    .snn-lightbox-content {
+        padding: 56px 16px 24px;
+    }
+
+    .snn-lightbox-prev,
+    .snn-lightbox-next {
+        width: 40px;
+        height: 40px;
+    }
+
+    .snn-lightbox-prev {
+        left: 6px;
+    }
+
+    .snn-lightbox-next {
+        right: 6px;
+    }
+
+    .snn-lightbox-close {
+        top: 8px;
+        right: 8px;
+    }
+
+    .snn-lightbox-img {
+        max-height: 70vh;
+    }
+}
+
+@media (max-width: 480px) {
+    .snn-lightbox-content {
+        padding: 48px 8px 16px;
+    }
+
+    .snn-lightbox-prev,
+    .snn-lightbox-next {
+        width: 36px;
+        height: 36px;
+    }
+
+    .snn-lightbox-prev svg,
+    .snn-lightbox-next svg {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+/* ─── Fullscreen state ─── */
+
+.snn-lightbox-content:fullscreen {
+    background: #000;
+    padding: 48px 80px;
+}
+
+.snn-lightbox-content:fullscreen .snn-lightbox-img {
+    max-height: 90vh;
+}
+
+.snn-lightbox-content:-webkit-full-screen {
+    background: #000;
+    padding: 48px 80px;
+}
+
+.snn-lightbox-content:-webkit-full-screen .snn-lightbox-img {
+    max-height: 90vh;
+}
+
+/* ─── Entrance animation ─── */
+
+.snn-lightbox.active .snn-lightbox-img {
+    animation: snnLightboxFadeIn 0.3s ease;
+}
+
+@keyframes snnLightboxFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

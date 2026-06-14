@@ -113,11 +113,7 @@ require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 
 
 // Register Blocks
-
-
-
-
-
+require_once SNN_PATH . 'blocks/simple-gallery/block.php';
 
 
 
