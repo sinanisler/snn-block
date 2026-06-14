@@ -13,58 +13,19 @@ function snn_register_section_block() {
 add_action('init', 'snn_register_section_block');
 
 /**
- * Get desktop-only inline style for a responsive attribute.
+ * Get fully responsive CSS for a single property — desktop (base) + tablet/mobile (media queries).
+ * Used inside a <style> tag so all breakpoints can override each other properly.
  */
-function snn_section_inline_style($attr, $property, $unit = '') {
-    if (empty($attr) || !is_array($attr)) {
-        return '';
-    }
-    $value = $attr['desktop'] ?? '';
-    if ($value === '' || $value === null || $value === false) {
-        return '';
-    }
-    return "{$property}: {$value}{$unit};";
-}
-
-/**
- * Get desktop-only inline padding styles.
- */
-function snn_section_inline_padding($padding) {
-    if (empty($padding) || !is_array($padding)) {
-        return '';
-    }
-    $device_padding = $padding['desktop'] ?? [];
-    if (empty($device_padding) || !is_array($device_padding)) {
-        return '';
-    }
-    $css = '';
-    $sides = [
-        'top'    => 'padding-top',
-        'right'  => 'padding-right',
-        'bottom' => 'padding-bottom',
-        'left'   => 'padding-left',
-    ];
-    foreach ($sides as $side => $prop) {
-        $val = $device_padding[$side] ?? '';
-        if ($val !== '') {
-            $css .= "{$prop}: {$val};";
-        }
-    }
-    return $css;
-}
-
-/**
- * Get responsive (tablet/mobile) CSS for <style> tag.
- */
-function snn_section_responsive_style($attr, $property, $selector, $unit = '') {
+function snn_section_all_style($attr, $property, $selector, $unit = '') {
     if (empty($attr) || !is_array($attr)) {
         return '';
     }
     $css = '';
-    $devices = ['tablet', 'mobile'];
+    $devices = ['desktop', 'tablet', 'mobile'];
     $breakpoints = [
-        'tablet' => 'max-width: 1023px',
-        'mobile' => 'max-width: 767px',
+        'desktop' => '',
+        'tablet'  => 'max-width: 1023px',
+        'mobile'  => 'max-width: 767px',
     ];
 
     foreach ($devices as $device) {
@@ -72,17 +33,21 @@ function snn_section_responsive_style($attr, $property, $selector, $unit = '') {
         if ($value === '' || $value === null || $value === false) {
             continue;
         }
-        $css .= "@media ({$breakpoints[$device]}) {\n";
-        $css .= "\t{$selector} {{$property}: {$value}{$unit};}\n";
-        $css .= "}\n";
+        if ($device === 'desktop') {
+            $css .= "{$selector} {{$property}: {$value}{$unit};}\n";
+        } else {
+            $css .= "@media ({$breakpoints[$device]}) {\n";
+            $css .= "\t{$selector} {{$property}: {$value}{$unit};}\n";
+            $css .= "}\n";
+        }
     }
     return $css;
 }
 
 /**
- * Get responsive (tablet/mobile) padding CSS for <style> tag.
+ * Get fully responsive padding CSS — desktop (base) + tablet/mobile (media queries).
  */
-function snn_section_responsive_padding($padding, $selector) {
+function snn_section_all_padding($padding, $selector) {
     if (empty($padding) || !is_array($padding)) {
         return '';
     }
@@ -92,10 +57,11 @@ function snn_section_responsive_padding($padding, $selector) {
         'bottom' => 'padding-bottom',
         'left'   => 'padding-left',
     ];
-    $devices = ['tablet', 'mobile'];
+    $devices = ['desktop', 'tablet', 'mobile'];
     $breakpoints = [
-        'tablet' => 'max-width: 1023px',
-        'mobile' => 'max-width: 767px',
+        'desktop' => '',
+        'tablet'  => 'max-width: 1023px',
+        'mobile'  => 'max-width: 767px',
     ];
     $css = '';
 
@@ -114,9 +80,13 @@ function snn_section_responsive_padding($padding, $selector) {
         if (empty($rules)) {
             continue;
         }
-        $css .= "@media ({$breakpoints[$device]}) {\n";
-        $css .= "\t{$selector} {{$rules}}\n";
-        $css .= "}\n";
+        if ($device === 'desktop') {
+            $css .= "{$selector} {{$rules}}\n";
+        } else {
+            $css .= "@media ({$breakpoints[$device]}) {\n";
+            $css .= "\t{$selector} {{$rules}}\n";
+            $css .= "}\n";
+        }
     }
     return $css;
 }
@@ -143,11 +113,10 @@ function snn_render_section_block($attributes, $content, $block) {
         $classes[] = $class_name;
     }
 
-    // ── 1. Build inline styles (desktop values only) ──
+    // ── 1. Build inline styles (only non-responsive properties) ──
     $inline_styles = '';
 
-    // Background (responsive)
-    $inline_styles .= snn_section_inline_style($bg_color, 'background-color');
+    // Background image (non-responsive — single value)
     if (!empty($bg_image['url'])) {
         $inline_styles .= 'background-image: url(' . esc_url($bg_image['url']) . ');';
         $inline_styles .= "background-size: {$bg_size};";
@@ -155,42 +124,27 @@ function snn_render_section_block($attributes, $content, $block) {
         $inline_styles .= "background-repeat: {$bg_repeat};";
     }
 
-    // Text color (responsive)
-    $inline_styles .= snn_section_inline_style($text_color, 'color');
-
-    // Overflow
+    // Overflow (non-responsive — single value)
     if ($overflow) {
         $inline_styles .= "overflow: {$overflow};";
     }
 
-    // Desktop-only responsive properties
-    $inline_styles .= snn_section_inline_style($attributes['display'] ?? [], 'display');
-    $inline_styles .= snn_section_inline_style($attributes['flexDirection'] ?? [], 'flex-direction');
-    $inline_styles .= snn_section_inline_style($attributes['flexWrap'] ?? [], 'flex-wrap');
-    $inline_styles .= snn_section_inline_style($attributes['justifyContent'] ?? [], 'justify-content');
-    $inline_styles .= snn_section_inline_style($attributes['alignItems'] ?? [], 'align-items');
-    $inline_styles .= snn_section_inline_style($attributes['gap'] ?? [], 'gap');
-    $inline_styles .= snn_section_inline_style($attributes['gridColumns'] ?? [], 'grid-template-columns');
-    $inline_styles .= snn_section_inline_style($attributes['textAlign'] ?? [], 'text-align');
-    $inline_styles .= snn_section_inline_style($attributes['minHeight'] ?? [], 'min-height');
-    $inline_styles .= snn_section_inline_padding($attributes['padding'] ?? []);
-
-    // ── 2. Build responsive CSS for <style> tag ──
+    // ── 2. Build all-device CSS for <style> tag ──
+    // Desktop values go in as a base rule (no media query).
+    // Tablet/mobile values go in media queries so they can properly override.
     $responsive_css = '';
-    // Responsive colors
-    $responsive_css .= snn_section_responsive_style($bg_color, 'background-color', $selector);
-    $responsive_css .= snn_section_responsive_style($text_color, 'color', $selector);
-    // Responsive layout
-    $responsive_css .= snn_section_responsive_style($attributes['display'] ?? [], 'display', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['flexDirection'] ?? [], 'flex-direction', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['flexWrap'] ?? [], 'flex-wrap', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['justifyContent'] ?? [], 'justify-content', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['alignItems'] ?? [], 'align-items', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['gap'] ?? [], 'gap', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['gridColumns'] ?? [], 'grid-template-columns', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['textAlign'] ?? [], 'text-align', $selector);
-    $responsive_css .= snn_section_responsive_style($attributes['minHeight'] ?? [], 'min-height', $selector);
-    $responsive_css .= snn_section_responsive_padding($attributes['padding'] ?? [], $selector);
+    $responsive_css .= snn_section_all_style($bg_color, 'background-color', $selector);
+    $responsive_css .= snn_section_all_style($text_color, 'color', $selector);
+    $responsive_css .= snn_section_all_style($attributes['display'] ?? [], 'display', $selector);
+    $responsive_css .= snn_section_all_style($attributes['flexDirection'] ?? [], 'flex-direction', $selector);
+    $responsive_css .= snn_section_all_style($attributes['flexWrap'] ?? [], 'flex-wrap', $selector);
+    $responsive_css .= snn_section_all_style($attributes['justifyContent'] ?? [], 'justify-content', $selector);
+    $responsive_css .= snn_section_all_style($attributes['alignItems'] ?? [], 'align-items', $selector);
+    $responsive_css .= snn_section_all_style($attributes['gap'] ?? [], 'gap', $selector);
+    $responsive_css .= snn_section_all_style($attributes['gridColumns'] ?? [], 'grid-template-columns', $selector);
+    $responsive_css .= snn_section_all_style($attributes['textAlign'] ?? [], 'text-align', $selector);
+    $responsive_css .= snn_section_all_style($attributes['minHeight'] ?? [], 'min-height', $selector);
+    $responsive_css .= snn_section_all_padding($attributes['padding'] ?? [], $selector);
 
     // ── 3. Build wrapper attributes ──
     $wrapper_attrs = [

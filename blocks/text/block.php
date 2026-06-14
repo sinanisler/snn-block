@@ -13,58 +13,19 @@ function snn_register_text_block() {
 add_action('init', 'snn_register_text_block');
 
 /**
- * Get desktop-only inline style.
+ * Get fully responsive CSS for a single property — desktop (base) + tablet/mobile (media queries).
+ * Used inside a <style> tag so all breakpoints can override each other properly.
  */
-function snn_text_inline_style($attr, $property, $unit = '') {
-    if (empty($attr) || !is_array($attr)) {
-        return '';
-    }
-    $value = $attr['desktop'] ?? '';
-    if ($value === '' || $value === null || $value === false) {
-        return '';
-    }
-    return "{$property}: {$value}{$unit};";
-}
-
-/**
- * Get desktop-only inline padding.
- */
-function snn_text_inline_padding($padding) {
-    if (empty($padding) || !is_array($padding)) {
-        return '';
-    }
-    $device_padding = $padding['desktop'] ?? [];
-    if (empty($device_padding) || !is_array($device_padding)) {
-        return '';
-    }
-    $css = '';
-    $sides = [
-        'top'    => 'padding-top',
-        'right'  => 'padding-right',
-        'bottom' => 'padding-bottom',
-        'left'   => 'padding-left',
-    ];
-    foreach ($sides as $side => $prop) {
-        $val = $device_padding[$side] ?? '';
-        if ($val !== '') {
-            $css .= "{$prop}: {$val};";
-        }
-    }
-    return $css;
-}
-
-/**
- * Get responsive (tablet/mobile) CSS for <style> tag.
- */
-function snn_text_responsive_style($attr, $property, $selector, $unit = '') {
+function snn_text_all_style($attr, $property, $selector, $unit = '') {
     if (empty($attr) || !is_array($attr)) {
         return '';
     }
     $css = '';
-    $devices = ['tablet', 'mobile'];
+    $devices = ['desktop', 'tablet', 'mobile'];
     $breakpoints = [
-        'tablet' => 'max-width: 1023px',
-        'mobile' => 'max-width: 767px',
+        'desktop' => '',
+        'tablet'  => 'max-width: 1023px',
+        'mobile'  => 'max-width: 767px',
     ];
 
     foreach ($devices as $device) {
@@ -72,17 +33,21 @@ function snn_text_responsive_style($attr, $property, $selector, $unit = '') {
         if ($value === '' || $value === null || $value === false) {
             continue;
         }
-        $css .= "@media ({$breakpoints[$device]}) {\n";
-        $css .= "\t{$selector} {{$property}: {$value}{$unit};}\n";
-        $css .= "}\n";
+        if ($device === 'desktop') {
+            $css .= "{$selector} {{$property}: {$value}{$unit};}\n";
+        } else {
+            $css .= "@media ({$breakpoints[$device]}) {\n";
+            $css .= "\t{$selector} {{$property}: {$value}{$unit};}\n";
+            $css .= "}\n";
+        }
     }
     return $css;
 }
 
 /**
- * Get responsive padding CSS for <style> tag.
+ * Get fully responsive padding CSS — desktop (base) + tablet/mobile (media queries).
  */
-function snn_text_responsive_padding($padding, $selector) {
+function snn_text_all_padding($padding, $selector) {
     if (empty($padding) || !is_array($padding)) {
         return '';
     }
@@ -92,10 +57,11 @@ function snn_text_responsive_padding($padding, $selector) {
         'bottom' => 'padding-bottom',
         'left'   => 'padding-left',
     ];
-    $devices = ['tablet', 'mobile'];
+    $devices = ['desktop', 'tablet', 'mobile'];
     $breakpoints = [
-        'tablet' => 'max-width: 1023px',
-        'mobile' => 'max-width: 767px',
+        'desktop' => '',
+        'tablet'  => 'max-width: 1023px',
+        'mobile'  => 'max-width: 767px',
     ];
     $css = '';
 
@@ -114,9 +80,13 @@ function snn_text_responsive_padding($padding, $selector) {
         if (empty($rules)) {
             continue;
         }
-        $css .= "@media ({$breakpoints[$device]}) {\n";
-        $css .= "\t{$selector} {{$rules}}\n";
-        $css .= "}\n";
+        if ($device === 'desktop') {
+            $css .= "{$selector} {{$rules}}\n";
+        } else {
+            $css .= "@media ({$breakpoints[$device]}) {\n";
+            $css .= "\t{$selector} {{$rules}}\n";
+            $css .= "}\n";
+        }
     }
     return $css;
 }
@@ -153,30 +123,24 @@ function snn_render_text_block($attributes, $content, $block) {
         $classes[] = $class_name;
     }
 
-    // ── 1. Inline styles (desktop) ──
+    // ── 1. Inline styles (only non-responsive properties) ──
     $inline = '';
-    $inline .= snn_text_inline_style($text_color, 'color');
-    $inline .= snn_text_inline_style($bg_color, 'background-color');
-    $inline .= snn_text_inline_style($font_size, 'font-size');
-    $inline .= snn_text_inline_style($line_height, 'line-height');
-    $inline .= snn_text_inline_style($letter_spacing, 'letter-spacing');
-    $inline .= snn_text_inline_style($font_weight, 'font-weight');
-    $inline .= snn_text_inline_style($text_align, 'text-align');
+    // text-transform is a single string value — not responsive
     if ($text_transform) {
         $inline .= "text-transform: {$text_transform};";
     }
-    $inline .= snn_text_inline_padding($padding);
 
-    // ── 2. Responsive CSS ──
+    // ── 2. All-device CSS for <style> tag ──
+    // Desktop values as base rule (no media query), tablet/mobile in media queries.
     $resp = '';
-    $resp .= snn_text_responsive_style($text_color, 'color', $selector);
-    $resp .= snn_text_responsive_style($bg_color, 'background-color', $selector);
-    $resp .= snn_text_responsive_style($font_size, 'font-size', $selector);
-    $resp .= snn_text_responsive_style($line_height, 'line-height', $selector);
-    $resp .= snn_text_responsive_style($letter_spacing, 'letter-spacing', $selector);
-    $resp .= snn_text_responsive_style($font_weight, 'font-weight', $selector);
-    $resp .= snn_text_responsive_style($text_align, 'text-align', $selector);
-    $resp .= snn_text_responsive_padding($padding, $selector);
+    $resp .= snn_text_all_style($text_color, 'color', $selector);
+    $resp .= snn_text_all_style($bg_color, 'background-color', $selector);
+    $resp .= snn_text_all_style($font_size, 'font-size', $selector);
+    $resp .= snn_text_all_style($line_height, 'line-height', $selector);
+    $resp .= snn_text_all_style($letter_spacing, 'letter-spacing', $selector);
+    $resp .= snn_text_all_style($font_weight, 'font-weight', $selector);
+    $resp .= snn_text_all_style($text_align, 'text-align', $selector);
+    $resp .= snn_text_all_padding($padding, $selector);
 
     // ── 3. Build attributes ──
     $wrapper_attrs = [

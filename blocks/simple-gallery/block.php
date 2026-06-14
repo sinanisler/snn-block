@@ -13,40 +13,32 @@ function snn_register_simple_gallery_block() {
 add_action('init', 'snn_register_simple_gallery_block');
 
 /**
- * Get desktop-only inline style for a responsive attribute.
+ * Get fully responsive CSS custom property — desktop (base) + tablet/mobile (media queries).
+ * Used inside a <style> tag so all breakpoints can override each other properly.
  */
-function snn_gallery_inline_val($attr, $property, $prefix = '', $suffix = '') {
-    if (empty($attr) || !is_array($attr)) {
-        return '';
-    }
-    $value = $attr['desktop'] ?? '';
-    if ($value === '' || $value === null) {
-        return '';
-    }
-    return "{$prefix}{$value}{$suffix}";
-}
-
-/**
- * Get responsive (tablet/mobile) CSS for <style> tag.
- */
-function snn_gallery_responsive_val($attr, $property, $selector, $prefix = '', $suffix = '') {
+function snn_gallery_all_val($attr, $property, $selector, $prefix = '', $suffix = '') {
     if (empty($attr) || !is_array($attr)) {
         return '';
     }
     $css = '';
-    $devices = ['tablet', 'mobile'];
+    $devices = ['desktop', 'tablet', 'mobile'];
     $breakpoints = [
-        'tablet' => 'max-width: 1023px',
-        'mobile' => 'max-width: 767px',
+        'desktop' => '',
+        'tablet'  => 'max-width: 1023px',
+        'mobile'  => 'max-width: 767px',
     ];
     foreach ($devices as $device) {
         $value = $attr[$device] ?? '';
         if ($value === '' || $value === null) {
             continue;
         }
-        $css .= "@media ({$breakpoints[$device]}) {\n";
-        $css .= "\t{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
-        $css .= "}\n";
+        if ($device === 'desktop') {
+            $css .= "{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
+        } else {
+            $css .= "@media ({$breakpoints[$device]}) {\n";
+            $css .= "\t{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
+            $css .= "}\n";
+        }
     }
     return $css;
 }
@@ -81,32 +73,19 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $classes[] = 'has-lightbox';
     }
 
-    // ── 1. Build inline CSS custom properties (desktop values) ──
+    // ── 1. Build all-device CSS for <style> tag ──
+    // Desktop values as base rule, tablet/mobile in media queries.
+    // No inline styles — they would override the <style> tag's media queries.
+    $responsive_css = '';
+    $responsive_css .= snn_gallery_all_val($columns, '--snn-gallery-columns', $selector);
+    $responsive_css .= snn_gallery_all_val($gap, '--snn-gallery-gap', $selector, '', 'px');
+    $responsive_css .= snn_gallery_all_val($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
+
+    // If no responsive values at all, provide fallback defaults via inline style
     $inline_css = '';
-
-    $col_val = snn_gallery_inline_val($columns, '--snn-gallery-columns');
-    if ($col_val) {
-        $inline_css .= "--snn-gallery-columns: {$col_val};";
-    }
-    $gap_val = snn_gallery_inline_val($gap, '--snn-gallery-gap', '', 'px');
-    if ($gap_val) {
-        $inline_css .= "--snn-gallery-gap: {$gap_val};";
-    }
-    $ar_val = snn_gallery_inline_val($aspect_ratio, '--snn-gallery-aspect-ratio');
-    if ($ar_val) {
-        $inline_css .= "--snn-gallery-aspect-ratio: {$ar_val};";
-    }
-
-    // Fallback defaults if nothing set on desktop
-    if (empty($inline_css)) {
+    if (empty($responsive_css)) {
         $inline_css = '--snn-gallery-columns: 3;--snn-gallery-gap: 16px;--snn-gallery-aspect-ratio: 4/3;';
     }
-
-    // ── 2. Build responsive CSS for <style> tag ──
-    $responsive_css = '';
-    $responsive_css .= snn_gallery_responsive_val($columns, '--snn-gallery-columns', $selector);
-    $responsive_css .= snn_gallery_responsive_val($gap, '--snn-gallery-gap', $selector, '', 'px');
-    $responsive_css .= snn_gallery_responsive_val($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
 
     // ── 3. Build attributes ──
     $wrapper_attributes = array(
