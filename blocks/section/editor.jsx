@@ -162,13 +162,36 @@ registerBlockType('snn/section', {
         const setPad = (obj) => {
             setAttributes({ padding: { ...(attributes.padding || {}), [activeDevice]: obj } });
         };
+        // Inherited value: current device → tablet → desktop → ''
+        const inheritVal = (attr) => {
+            const val = attributes[attr];
+            if (!val || typeof val !== 'object') return '';
+            if (val[activeDevice]) return val[activeDevice];
+            if (activeDevice === 'mobile' && val.tablet) return val.tablet;
+            if (val.desktop) return val.desktop;
+            return '';
+        };
+        // Inherited padding
+        const inheritPad = () => {
+            const pad = attributes.padding;
+            if (!pad || typeof pad !== 'object') return {};
+            // Try device-specific, then cascade
+            const tryDevices = ['mobile', 'tablet', 'desktop'];
+            const start = tryDevices.indexOf(activeDevice);
+            for (let i = start; i < tryDevices.length; i++) {
+                const d = tryDevices[i];
+                if (pad[d] && Object.values(pad[d]).some(v => v)) return pad[d];
+            }
+            return {};
+        };
 
-        // ── Preview styles (fallback: device → desktop) ──
-        const pBgColor = getVal('bgColor') || attributes.bgColor?.desktop || '';
-        const pTextColor = getVal('textColor') || attributes.textColor?.desktop || '';
+        // ── Preview styles with full inheritance cascade ──
         const previewStyles = {};
-        if (pBgColor) previewStyles.backgroundColor = pBgColor;
-        if (pTextColor) previewStyles.color = pTextColor;
+
+        const invBg = inheritVal('bgColor');
+        if (invBg) previewStyles.backgroundColor = invBg;
+        const invText = inheritVal('textColor');
+        if (invText) previewStyles.color = invText;
 
         const bgImg = attributes.bgImage?.url;
         if (bgImg) {
@@ -178,34 +201,34 @@ registerBlockType('snn/section', {
             previewStyles.backgroundRepeat = attributes.bgRepeat || 'no-repeat';
         }
 
-        const disp = getVal('display');
+        const disp = inheritVal('display');
         if (disp) previewStyles.display = disp;
-        const fd = getVal('flexDirection');
+        const fd = inheritVal('flexDirection');
         if (fd) previewStyles.flexDirection = fd;
-        const fw = getVal('flexWrap');
+        const fw = inheritVal('flexWrap');
         if (fw) previewStyles.flexWrap = fw;
-        const jc = getVal('justifyContent');
+        const jc = inheritVal('justifyContent');
         if (jc) previewStyles.justifyContent = jc;
-        const ai = getVal('alignItems');
+        const ai = inheritVal('alignItems');
         if (ai) previewStyles.alignItems = ai;
-        const gap = getVal('gap');
+        const gap = inheritVal('gap');
         if (gap) previewStyles.gap = gap;
-        const gc = getVal('gridColumns');
+        const gc = inheritVal('gridColumns');
         if (gc) previewStyles.gridTemplateColumns = gc;
-        const ta = getVal('textAlign');
+        const ta = inheritVal('textAlign');
         if (ta) previewStyles.textAlign = ta;
-        const mh = getVal('minHeight');
+        const mh = inheritVal('minHeight');
         if (mh) previewStyles.minHeight = mh;
         if (attributes.overflow) previewStyles.overflow = attributes.overflow;
 
-        const pad = getPad();
-        if (pad.top) previewStyles.paddingTop = pad.top;
-        if (pad.right) previewStyles.paddingRight = pad.right;
-        if (pad.bottom) previewStyles.paddingBottom = pad.bottom;
-        if (pad.left) previewStyles.paddingLeft = pad.left;
+        const inPad = inheritPad();
+        if (inPad.top) previewStyles.paddingTop = inPad.top;
+        if (inPad.right) previewStyles.paddingRight = inPad.right;
+        if (inPad.bottom) previewStyles.paddingBottom = inPad.bottom;
+        if (inPad.left) previewStyles.paddingLeft = inPad.left;
 
-        // ── Contextual layout ──
-        const displayVal = getVal('display');
+        // ── Contextual layout (inherits so flex/grid controls show on all devices) ──
+        const displayVal = inheritVal('display');
         const isFlex = displayVal === 'flex';
         const isGrid = displayVal === 'grid';
 
