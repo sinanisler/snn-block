@@ -1,0 +1,413 @@
+const { registerBlockType } = wp.blocks;
+const { InspectorControls, useBlockProps, useInnerBlocksProps, InnerBlocks, MediaUpload } = wp.blockEditor;
+const { PanelBody, Button, SelectControl, TextControl, ColorPalette, RangeControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { Fragment } = wp.element;
+const { useSelect } = wp.data;
+const { __ } = wp.i18n;
+
+/* ═══════════════════════════════════════════════
+   SHARED HELPER COMPONENTS
+   ═══════════════════════════════════════════════ */
+
+/* ─── Device badge ─── */
+const DeviceBadge = ({ device }) => (
+    <span style={{
+        display: 'inline-block', fontSize: '10px', fontWeight: 600,
+        textTransform: 'uppercase', letterSpacing: '0.5px',
+        background: device === 'desktop' ? '#3858e9' : device === 'tablet' ? '#7b5cf0' : '#f59e0b',
+        color: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '6px', verticalAlign: 'middle',
+    }}>{device}</span>
+);
+
+/* ─── Device-aware label row ─── */
+const RespLabel = ({ label, device }) => (
+    <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '4px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e',
+    }}>
+        <span>{label} <DeviceBadge device={device} /></span>
+    </div>
+);
+
+/* ─── ToggleGroupControl with SelectControl fallback ─── */
+const ToggleField = ({ label, value, options, onChange }) => {
+    const hasToggle = typeof __experimentalToggleGroupControl !== 'undefined';
+
+    if (hasToggle) {
+        return (
+            <div style={{ marginBottom: '14px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 500, display: 'block', marginBottom: '4px', color: '#1e1e1e' }}>
+                    {label}
+                </label>
+                <__experimentalToggleGroupControl
+                    value={value}
+                    onChange={onChange}
+                    isBlock
+                    __next40pxDefaultSize={true}
+                    __nextHasNoMarginBottom={true}
+                >
+                    {options.filter(o => o.value !== '' || o.label === 'Default').map(opt => (
+                        <__experimentalToggleGroupControlOption key={opt.value} label={opt.label} value={opt.value} />
+                    ))}
+                </__experimentalToggleGroupControl>
+            </div>
+        );
+    }
+
+    return (
+        <SelectControl label={label} value={value} options={options} onChange={onChange} />
+    );
+};
+
+/* ─── Padding input (4-side grid) ─── */
+const PaddingInput = ({ values, onChange, device }) => {
+    const sides = [
+        { key: 'top', label: 'T' },
+        { key: 'right', label: 'R' },
+        { key: 'bottom', label: 'B' },
+        { key: 'left', label: 'L' },
+    ];
+    return (
+        <div style={{ marginBottom: '14px' }}>
+            <RespLabel label={__('Padding', 'snn')} device={device} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                {sides.map(s => (
+                    <div key={s.key}>
+                        <span style={{ fontSize: '9px', color: '#757575', display: 'block' }}>{s.label}</span>
+                        <input
+                            type="text"
+                            value={values?.[s.key] || ''}
+                            onChange={e => onChange({ ...values, [s.key]: e.target.value })}
+                            placeholder="0"
+                            style={{
+                                width: '100%', padding: '4px 6px', fontSize: '12px',
+                                border: '1px solid #ddd', borderRadius: '2px', boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+/* ─── Range slider + smart text input (defaults to px) ─── */
+const RangeUnitField = ({ label, value, onChange, min = 0, max = 500, step = 1 }) => {
+    const strVal = String(value || '');
+    const match = strVal.match(/^(-?[\d.]+)(.*)$/);
+    const numVal = match ? parseFloat(match[1]) : '';
+    const unitVal = match ? match[2] : '';
+    const isPureNum = match && !match[2];
+
+    const handleSlider = (v) => {
+        onChange(String(v) + (isPureNum ? '' : unitVal));
+    };
+
+    return (
+        <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>{label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    <input
+                        type="text"
+                        value={strVal}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder="0"
+                        style={{
+                            width: '70px', padding: '2px 6px', fontSize: '11px', fontFamily: 'monospace',
+                            border: '1px solid #ddd', borderRadius: '2px', textAlign: 'right',
+                        }}
+                    />
+                    {isPureNum && strVal !== '' && (
+                        <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>px</span>
+                    )}
+                </div>
+            </div>
+            {(numVal !== '' || strVal === '') && (
+                <RangeControl
+                    value={numVal !== '' ? numVal : 0}
+                    onChange={handleSlider}
+                    min={min} max={max} step={step}
+                    withInputField={false}
+                    __next40pxDefaultSize={true}
+                    __nextHasNoMarginBottom={true}
+                />
+            )}
+        </div>
+    );
+};
+
+/* ═══════════════════════════════════════════════
+   CONTAINER BLOCK
+   ═══════════════════════════════════════════════ */
+
+registerBlockType('snn/container', {
+    edit: function (props) {
+        const { attributes, setAttributes } = props;
+
+        // ── Device state ──
+        const deviceType = useSelect(select => {
+            const store = select('core/edit-post') || select('core/editor');
+            const getDevice = store?.__experimentalGetPreviewDeviceType;
+            return getDevice ? getDevice() : 'Desktop';
+        }, []);
+        const activeDevice = (deviceType || 'Desktop').toLowerCase();
+
+        // Get theme contentSize
+        const themeContentSize = useSelect(select => {
+            const settings = select('core/editor')?.getEditorSettings();
+            return settings?.__experimentalFeatures?.layout?.contentSize || '1200px';
+        }, []);
+
+        // ── Responsive helpers ──
+        const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
+        const setVal = (attr, value) => {
+            setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
+        };
+        const getPad = () => attributes.padding?.[activeDevice] || {};
+        const setPad = (obj) => {
+            setAttributes({ padding: { ...(attributes.padding || {}), [activeDevice]: obj } });
+        };
+
+        // ── Preview styles (fallback: device → desktop) ──
+        const pBgColor = getVal('bgColor') || attributes.bgColor?.desktop || '';
+        const pTextColor = getVal('textColor') || attributes.textColor?.desktop || '';
+        const previewStyles = {};
+
+        const maxW = attributes.maxWidth || themeContentSize;
+        previewStyles.maxWidth = maxW;
+        previewStyles.marginLeft = 'auto';
+        previewStyles.marginRight = 'auto';
+
+        if (pBgColor) previewStyles.backgroundColor = pBgColor;
+        if (pTextColor) previewStyles.color = pTextColor;
+
+        const bgImg = attributes.bgImage?.url;
+        if (bgImg) {
+            previewStyles.backgroundImage = `url(${bgImg})`;
+            previewStyles.backgroundSize = attributes.bgSize || 'cover';
+            previewStyles.backgroundPosition = attributes.bgPosition || 'center center';
+            previewStyles.backgroundRepeat = attributes.bgRepeat || 'no-repeat';
+        }
+
+        const disp = getVal('display');
+        if (disp) previewStyles.display = disp;
+        const fd = getVal('flexDirection');
+        if (fd) previewStyles.flexDirection = fd;
+        const fw = getVal('flexWrap');
+        if (fw) previewStyles.flexWrap = fw;
+        const jc = getVal('justifyContent');
+        if (jc) previewStyles.justifyContent = jc;
+        const ai = getVal('alignItems');
+        if (ai) previewStyles.alignItems = ai;
+        const gap = getVal('gap');
+        if (gap) previewStyles.gap = gap;
+        const gc = getVal('gridColumns');
+        if (gc) previewStyles.gridTemplateColumns = gc;
+        const ta = getVal('textAlign');
+        if (ta) previewStyles.textAlign = ta;
+        const mh = getVal('minHeight');
+        if (mh) previewStyles.minHeight = mh;
+        if (attributes.overflow) previewStyles.overflow = attributes.overflow;
+
+        const pad = getPad();
+        if (pad.top) previewStyles.paddingTop = pad.top;
+        if (pad.right) previewStyles.paddingRight = pad.right;
+        if (pad.bottom) previewStyles.paddingBottom = pad.bottom;
+        if (pad.left) previewStyles.paddingLeft = pad.left;
+
+        // ── Contextual layout ──
+        const displayVal = getVal('display');
+        const isFlex = displayVal === 'flex';
+        const isGrid = displayVal === 'grid';
+
+        // ── Options ──
+        const displayOptions = [
+            { label: __('Default', 'snn'), value: '' },
+            { label: __('Flex', 'snn'), value: 'flex' },
+            { label: __('Grid', 'snn'), value: 'grid' },
+            { label: __('Block', 'snn'), value: 'block' },
+        ];
+        const flexDirOptions = [
+            { label: __('Row', 'snn'), value: 'row' },
+            { label: __('Column', 'snn'), value: 'column' },
+            { label: __('Row Rev', 'snn'), value: 'row-reverse' },
+            { label: __('Col Rev', 'snn'), value: 'column-reverse' },
+        ];
+        const wrapOptions = [
+            { label: __('Wrap', 'snn'), value: 'wrap' },
+            { label: __('Nowrap', 'snn'), value: 'nowrap' },
+            { label: __('Wrap Rev', 'snn'), value: 'wrap-reverse' },
+        ];
+        const alignOptions = [
+            { label: __('Default', 'snn'), value: '' },
+            { label: __('Start', 'snn'), value: 'flex-start' },
+            { label: __('Center', 'snn'), value: 'center' },
+            { label: __('End', 'snn'), value: 'flex-end' },
+            { label: __('Stretch', 'snn'), value: 'stretch' },
+            { label: __('Between', 'snn'), value: 'space-between' },
+            { label: __('Around', 'snn'), value: 'space-around' },
+        ];
+        const textAlignOptions = [
+            { label: __('Default', 'snn'), value: '' },
+            { label: __('Left', 'snn'), value: 'left' },
+            { label: __('Center', 'snn'), value: 'center' },
+            { label: __('Right', 'snn'), value: 'right' },
+        ];
+        const overflowOptions = [
+            { label: __('Default', 'snn'), value: '' },
+            { label: __('Hidden', 'snn'), value: 'hidden' },
+            { label: __('Visible', 'snn'), value: 'visible' },
+            { label: __('Auto', 'snn'), value: 'auto' },
+            { label: __('Scroll', 'snn'), value: 'scroll' },
+        ];
+
+        // ── Theme colors ──
+        const themeColors = useSelect(select => {
+            const settings = select('core/editor')?.getEditorSettings();
+            const palette = settings?.__experimentalFeatures?.color?.palette?.theme ||
+                settings?.__experimentalFeatures?.color?.palette?.default ||
+                settings?.colors || [];
+            return palette.map(c => ({ name: c.name, color: c.color }));
+        }, []);
+
+        // ── Block props ──
+        const blockProps = useBlockProps({
+            className: 'snn-container',
+            style: previewStyles,
+        });
+
+        const innerBlocksProps = useInnerBlocksProps(blockProps, {
+            template: [['core/paragraph', { placeholder: __('Add content...', 'snn') }]],
+        });
+
+        // ── BG image handler ──
+        const onBgImageSelect = (media) => {
+            setAttributes({ bgImage: { id: media.id, url: media.url, alt: media.alt || '' } });
+        };
+
+        return (
+            <Fragment>
+                <InspectorControls>
+                    {/* ═══════ CONTAINER ═══════ */}
+                    <PanelBody title={__('Container Settings', 'snn')} initialOpen={true}>
+                        <TextControl
+                            label={__('Max Width', 'snn')}
+                            value={attributes.maxWidth || ''}
+                            onChange={val => setAttributes({ maxWidth: val })}
+                            placeholder={themeContentSize}
+                            help={__('Leave empty to inherit: ', 'snn') + themeContentSize}
+                        />
+                    </PanelBody>
+
+                    {/* ═══════ BACKGROUND ═══════ */}
+                    <PanelBody title={__('Background', 'snn')} initialOpen={false}>
+                        <RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
+                        <ColorPalette
+                            colors={themeColors}
+                            value={getVal('bgColor')}
+                            onChange={v => setVal('bgColor', v || '')}
+                            clearable
+                        />
+
+                        <MediaUpload
+                            onSelect={onBgImageSelect}
+                            allowedTypes={['image']}
+                            value={attributes.bgImage?.id}
+                            render={({ open }) => (
+                                <div style={{ marginTop: '12px' }}>
+                                    <Button variant="secondary" onClick={open} style={{ width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
+                                        {attributes.bgImage?.url ? __('Change Image', 'snn') : __('Background Image', 'snn')}
+                                    </Button>
+                                    {attributes.bgImage?.url && (
+                                        <div style={{ marginBottom: '8px' }}>
+                                            <img src={attributes.bgImage.url} alt="" style={{ maxWidth: '100%', maxHeight: '80px', objectFit: 'cover', borderRadius: '2px' }} />
+                                            <Button
+                                                onClick={() => setAttributes({ bgImage: { id: 0, url: '', alt: '' } })}
+                                                style={{ display: 'block', marginTop: '4px', color: '#cc1818', fontSize: '11px', padding: '0' }}
+                                                variant="link"
+                                            >{__('Remove', 'snn')}</Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        />
+
+                        {attributes.bgImage?.url && (
+                            <Fragment>
+                                <SelectControl label={__('Size', 'snn')} value={attributes.bgSize} options={[
+                                    { label: 'Cover', value: 'cover' }, { label: 'Contain', value: 'contain' }, { label: 'Auto', value: 'auto' },
+                                ]} onChange={v => setAttributes({ bgSize: v })} />
+                                <SelectControl label={__('Position', 'snn')} value={attributes.bgPosition} options={[
+                                    { label: 'Center', value: 'center center' }, { label: 'Top', value: 'top center' },
+                                    { label: 'Bottom', value: 'bottom center' }, { label: 'Left', value: 'left center' },
+                                    { label: 'Right', value: 'right center' },
+                                ]} onChange={v => setAttributes({ bgPosition: v })} />
+                                <SelectControl label={__('Repeat', 'snn')} value={attributes.bgRepeat} options={[
+                                    { label: 'No Repeat', value: 'no-repeat' }, { label: 'Repeat', value: 'repeat' },
+                                    { label: 'Repeat X', value: 'repeat-x' }, { label: 'Repeat Y', value: 'repeat-y' },
+                                ]} onChange={v => setAttributes({ bgRepeat: v })} />
+                            </Fragment>
+                        )}
+                    </PanelBody>
+
+                    {/* ═══════ LAYOUT ═══════ */}
+                    <PanelBody title={__('Layout', 'snn')} initialOpen={false}>
+                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
+                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
+                        </div>
+
+                        <ToggleField label={__('Display', 'snn')} value={displayVal} options={displayOptions} onChange={v => setVal('display', v)} />
+
+                        {isFlex && (
+                            <Fragment>
+                                <ToggleField label={__('Direction', 'snn')} value={getVal('flexDirection')} options={flexDirOptions} onChange={v => setVal('flexDirection', v)} />
+                                <ToggleField label={__('Wrap', 'snn')} value={getVal('flexWrap')} options={wrapOptions} onChange={v => setVal('flexWrap', v)} />
+                                <ToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={alignOptions} onChange={v => setVal('justifyContent', v)} />
+                                <ToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
+                                <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
+                            </Fragment>
+                        )}
+
+                        {isGrid && (
+                            <Fragment>
+                                <ToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={alignOptions} onChange={v => setVal('justifyContent', v)} />
+                                <ToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
+                                <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
+                                <RespLabel label={__('Grid Columns', 'snn')} device={activeDevice} />
+                                <TextControl value={getVal('gridColumns')} onChange={v => setVal('gridColumns', v)} placeholder={__('e.g. 1fr 1fr 1fr', 'snn')} />
+                            </Fragment>
+                        )}
+                    </PanelBody>
+
+                    {/* ═══════ SPACING ═══════ */}
+                    <PanelBody title={__('Spacing', 'snn')} initialOpen={false}>
+                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
+                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
+                        </div>
+                        <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
+                    </PanelBody>
+
+                    {/* ═══════ SIZING ═══════ */}
+                    <PanelBody title={__('Sizing', 'snn')} initialOpen={false}>
+                        <RangeUnitField label={__('Min Height', 'snn')} value={getVal('minHeight')} onChange={v => setVal('minHeight', v)} min={0} max={1000} step={10} />
+                        <SelectControl label={__('Overflow', 'snn')} value={attributes.overflow || ''} options={overflowOptions} onChange={v => setAttributes({ overflow: v })} />
+                    </PanelBody>
+
+                    {/* ═══════ TEXT ═══════ */}
+                    <PanelBody title={__('Text', 'snn')} initialOpen={false}>
+                        <RespLabel label={__('Text Color', 'snn')} device={activeDevice} />
+                        <ColorPalette colors={themeColors} value={getVal('textColor')} onChange={v => setVal('textColor', v || '')} clearable />
+                        <ToggleField label={__('Text Align', 'snn')} value={getVal('textAlign')} options={textAlignOptions} onChange={v => setVal('textAlign', v)} />
+                    </PanelBody>
+                </InspectorControls>
+
+                <div {...innerBlocksProps} />
+            </Fragment>
+        );
+    },
+
+    save: function () {
+        return <InnerBlocks.Content />;
+    },
+});

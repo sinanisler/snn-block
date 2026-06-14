@@ -1,0 +1,37 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "snn/container",
+    "version": "1.0.0",
+    "title": "Container",
+    "category": "design",
+    "icon": "align-center",
+    "description": "A centered container block with responsive flex/grid and styling controls. Meant to live inside a Section block.",
+    "keywords": ["container", "wrapper", "centered"],
+    "attributes": {
+        "maxWidth": { "type": "string" },
+        "bgColor": { "type": "object", "default": {} },
+        "bgImage": { "type": "object", "default": { "id": 0, "url": "", "alt": "" } },
+        "bgSize": { "type": "string", "default": "cover" },
+        "bgPosition": { "type": "string", "default": "center center" },
+        "bgRepeat": { "type": "string", "default": "no-repeat" },
+        "textColor": { "type": "object", "default": {} },
+        "display": { "type": "object", "default": {} },
+        "flexDirection": { "type": "object", "default": {} },
+        "flexWrap": { "type": "object", "default": {} },
+        "justifyContent": { "type": "object", "default": {} },
+        "alignItems": { "type": "object", "default": {} },
+        "gap": { "type": "object", "default": {} },
+        "gridColumns": { "type": "object", "default": {} },
+        "padding": { "type": "object", "default": {} },
+        "textAlign": { "type": "object", "default": {} },
+        "minHeight": { "type": "object", "default": {} },
+        "overflow": { "type": "string" }
+    },
+    "supports": {
+        "html": false,
+        "anchor": true,
+        "align": false
+    },
+    "style": "file:./block.css"
+}

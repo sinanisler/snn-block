@@ -1,0 +1,24 @@
+/* ─── Section Block ─── */
+
+.snn-section {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ─── Editor Styles ─── */
+
+/* Make section visible in editor */
+.editor-styles-wrapper .snn-section {
+    min-height: 40px;
+}
+
+/* Section placeholder when empty */
+.editor-styles-wrapper .snn-section > .block-editor-inner-blocks > .block-editor-block-list__layout > .wp-block:first-child:last-child {
+    min-height: 40px;
+}
+
+/* Responsive preview hint */
+.snn-section::before {
+    display: none;
+}

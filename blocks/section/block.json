@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "snn/section",
+    "version": "1.0.0",
+    "title": "Section",
+    "category": "design",
+    "icon": "align-full-width",
+    "description": "A full-width section block with responsive flex/grid and styling controls. Automatically contains a Container block.",
+    "keywords": ["section", "wrapper", "full-width"],
+    "attributes": {
+        "bgColor": { "type": "object", "default": {} },
+        "bgImage": { "type": "object", "default": { "id": 0, "url": "", "alt": "" } },
+        "bgSize": { "type": "string", "default": "cover" },
+        "bgPosition": { "type": "string", "default": "center center" },
+        "bgRepeat": { "type": "string", "default": "no-repeat" },
+        "textColor": { "type": "object", "default": {} },
+        "display": { "type": "object", "default": {} },
+        "flexDirection": { "type": "object", "default": {} },
+        "flexWrap": { "type": "object", "default": {} },
+        "justifyContent": { "type": "object", "default": {} },
+        "alignItems": { "type": "object", "default": {} },
+        "gap": { "type": "object", "default": {} },
+        "gridColumns": { "type": "object", "default": {} },
+        "padding": { "type": "object", "default": {} },
+        "textAlign": { "type": "object", "default": {} },
+        "minHeight": { "type": "object", "default": {} },
+        "overflow": { "type": "string" }
+    },
+    "supports": {
+        "html": false,
+        "anchor": true,
+        "align": false
+    },
+    "style": "file:./block.css"
+}
