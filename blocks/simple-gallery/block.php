@@ -12,12 +12,51 @@ function snn_register_simple_gallery_block() {
 }
 add_action('init', 'snn_register_simple_gallery_block');
 
+/**
+ * Get desktop-only inline style for a responsive attribute.
+ */
+function snn_gallery_inline_val($attr, $property, $prefix = '', $suffix = '') {
+    if (empty($attr) || !is_array($attr)) {
+        return '';
+    }
+    $value = $attr['desktop'] ?? '';
+    if ($value === '' || $value === null) {
+        return '';
+    }
+    return "{$prefix}{$value}{$suffix}";
+}
+
+/**
+ * Get responsive (tablet/mobile) CSS for <style> tag.
+ */
+function snn_gallery_responsive_val($attr, $property, $selector, $prefix = '', $suffix = '') {
+    if (empty($attr) || !is_array($attr)) {
+        return '';
+    }
+    $css = '';
+    $devices = ['tablet', 'mobile'];
+    $breakpoints = [
+        'tablet' => 'max-width: 1023px',
+        'mobile' => 'max-width: 767px',
+    ];
+    foreach ($devices as $device) {
+        $value = $attr[$device] ?? '';
+        if ($value === '' || $value === null) {
+            continue;
+        }
+        $css .= "@media ({$breakpoints[$device]}) {\n";
+        $css .= "\t{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
+        $css .= "}\n";
+    }
+    return $css;
+}
+
 // Render callback
 function snn_render_simple_gallery_block($attributes, $content, $block) {
     $images = $attributes['images'] ?? [];
-    $columns = $attributes['columns'] ?? 3;
-    $gap = $attributes['gap'] ?? 16;
-    $aspect_ratio = $attributes['aspectRatio'] ?? '4/3';
+    $columns = $attributes['columns'] ?? [];
+    $gap = $attributes['gap'] ?? [];
+    $aspect_ratio = $attributes['aspectRatio'] ?? [];
     $enable_lightbox = $attributes['enableLightbox'] ?? false;
     $anchor = $attributes['anchor'] ?? '';
     $class_name = $attributes['className'] ?? '';
@@ -27,7 +66,11 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         return '';
     }
 
-    $classes = array('snn-simple-gallery');
+    // Generate unique class for responsive CSS targeting
+    $uid = 'snn-ssl-' . uniqid();
+    $selector = '.' . $uid;
+
+    $classes = array('snn-simple-gallery', $uid);
     if ($class_name) {
         $classes[] = $class_name;
     }
@@ -38,14 +81,37 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $classes[] = 'has-lightbox';
     }
 
+    // ── 1. Build inline CSS custom properties (desktop values) ──
+    $inline_css = '';
+
+    $col_val = snn_gallery_inline_val($columns, '--snn-gallery-columns');
+    if ($col_val) {
+        $inline_css .= "--snn-gallery-columns: {$col_val};";
+    }
+    $gap_val = snn_gallery_inline_val($gap, '--snn-gallery-gap', '', 'px');
+    if ($gap_val) {
+        $inline_css .= "--snn-gallery-gap: {$gap_val};";
+    }
+    $ar_val = snn_gallery_inline_val($aspect_ratio, '--snn-gallery-aspect-ratio');
+    if ($ar_val) {
+        $inline_css .= "--snn-gallery-aspect-ratio: {$ar_val};";
+    }
+
+    // Fallback defaults if nothing set on desktop
+    if (empty($inline_css)) {
+        $inline_css = '--snn-gallery-columns: 3;--snn-gallery-gap: 16px;--snn-gallery-aspect-ratio: 4/3;';
+    }
+
+    // ── 2. Build responsive CSS for <style> tag ──
+    $responsive_css = '';
+    $responsive_css .= snn_gallery_responsive_val($columns, '--snn-gallery-columns', $selector);
+    $responsive_css .= snn_gallery_responsive_val($gap, '--snn-gallery-gap', $selector, '', 'px');
+    $responsive_css .= snn_gallery_responsive_val($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
+
+    // ── 3. Build attributes ──
     $wrapper_attributes = array(
         'class' => esc_attr(implode(' ', $classes)),
-        'style' => sprintf(
-            '--snn-gallery-columns: %d; --snn-gallery-gap: %dpx; --snn-gallery-aspect-ratio: %s;',
-            absint($columns),
-            absint($gap),
-            esc_attr($aspect_ratio)
-        ),
+        'style' => $inline_css,
     );
 
     if ($anchor) {
@@ -67,11 +133,15 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         wp_enqueue_style('snn-simple-gallery-lightbox');
     }
 
+    // ── 4. Build output ──
     $output = '<div';
     foreach ($wrapper_attributes as $key => $value) {
-        $output .= ' ' . $key . '="' . $value . '"';
+        $output .= ' ' . $key . '="' . esc_attr($value) . '"';
     }
     $output .= '>';
+    if ($responsive_css) {
+        $output .= '<style>' . $responsive_css . '</style>';
+    }
     $output .= '<div class="snn-gallery-grid">';
 
     foreach ($images as $index => $image) {

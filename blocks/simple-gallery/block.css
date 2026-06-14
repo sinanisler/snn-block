@@ -76,27 +76,8 @@
 }
 
 /* ─── Responsive ─── */
-
-/* Tablet: switch to 2 columns (if user chose 3+) */
-@media (max-width: 1024px) {
-    .snn-simple-gallery .snn-gallery-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* Small tablet: 2 columns */
-@media (max-width: 768px) {
-    .snn-simple-gallery .snn-gallery-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* Mobile: single column */
-@media (max-width: 480px) {
-    .snn-simple-gallery .snn-gallery-grid {
-        grid-template-columns: 1fr;
-    }
-}
+/* Responsive column overrides are now handled via the block's PHP
+   inline styles and <style> tag using user-set values per device. */
 
 /* ════════════════════════════════════════════
    LIGHTBOX

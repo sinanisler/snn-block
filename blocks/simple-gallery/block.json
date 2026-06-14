@@ -23,16 +23,16 @@
             }
         },
         "columns": {
-            "type": "number",
-            "default": 3
+            "type": "object",
+            "default": {}
         },
         "gap": {
-            "type": "number",
-            "default": 16
+            "type": "object",
+            "default": {}
         },
         "aspectRatio": {
-            "type": "string",
-            "default": "4/3"
+            "type": "object",
+            "default": {}
         },
         "enableLightbox": {
             "type": "boolean",
