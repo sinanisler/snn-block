@@ -9,7 +9,7 @@
     "description": "A text block with responsive typography and color controls. Supports p, h1-h4, and div tags.",
     "keywords": ["text", "paragraph", "heading", "typography"],
     "attributes": {
-        "content": { "type": "string", "source": "html", "selector": "p,h1,h2,h3,h4,div" },
+        "content": { "type": "string", "default": "" },
         "tagName": { "type": "string", "default": "p" },
         "textColor": { "type": "object", "default": {} },
         "bgColor": { "type": "object", "default": {} },
