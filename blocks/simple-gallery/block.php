@@ -72,6 +72,7 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $output .= ' ' . $key . '="' . $value . '"';
     }
     $output .= '>';
+    $output .= '<div class="snn-gallery-grid">';
 
     foreach ($images as $index => $image) {
         $url = $image['url'] ?? '';
@@ -105,7 +106,8 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $output .= '</div>';
     }
 
-    $output .= '</div>';
+    $output .= '</div>'; // .snn-gallery-grid
+    $output .= '</div>'; // .snn-simple-gallery
 
     return $output;
 }
