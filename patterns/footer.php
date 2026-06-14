@@ -6,4 +6,5 @@
  */
 ?>
 
-<!-- /wp:paragraph -->
+<!-- wp:site-title /-->
+<!-- wp:site-tagline /-->
