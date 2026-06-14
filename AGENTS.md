@@ -1,21 +1,16 @@
-Here is the ultimate, fully loaded `AGENTS.md` file, packaged into a single markdown code block for one-click copying.
-
-I have significantly beefed up the constraints, adding sections on **Data Flow & Security (PHP Escaping)**, strict **Save function rules**, and enhanced the **Output Protocol** so that future AI agents generate bulletproof, production-ready code with exactly zero hallucinations.
-
-```markdown
 # 🤖 AI Agent System Prompt & Reference for WordPress Block Development
 
-**ATTENTION AI AGENT:** You are assisting a developer in building custom WordPress Gutenberg Blocks. 
+**ATTENTION AI AGENT:** You are assisting a developer in building custom WordPress Gutenberg Blocks.
 Read this document carefully before generating any code. It dictates the exact architecture, constraints, security practices, and coding style required for this project.
 
 ---
 
 ## 🛑 1. CORE ARCHITECTURAL RULES (NON-NEGOTIABLE)
 
-1. **NO BUILD PROCESS:** We do **NOT** use Webpack, Babel build steps, `@wordpress/scripts`, or `npm run build`. 
+1. **NO BUILD PROCESS:** We do **NOT** use Webpack, Babel build steps, `@wordpress/scripts`, or `npm run build`.
 2. **JSX COMPILATION:** JSX is written in an `editor.jsx` file and loaded directly in the WordPress admin footer using `<script type="text/babel">`. It relies on an in-browser Babel compiler.
 3. **NO IMPORTS:** Because there is no build process, you **CANNOT** use `import` statements. All React and WordPress dependencies must be destructured from the global `wp` object (e.g., `const { useBlockProps } = wp.blockEditor;`).
-4. **DYNAMIC RENDERING (SSR):** We rely entirely on Server-Side Rendering via PHP for the frontend output (`render_callback`). 
+4. **DYNAMIC RENDERING (SSR):** We rely entirely on Server-Side Rendering via PHP for the frontend output (`render_callback`).
 5. **THE `SAVE` FUNCTION:** Because we use PHP for the frontend, the `save` function in JS must ONLY return `<InnerBlocks.Content />` (if using inner blocks) or `null` (if it's a closed/standalone block). Do not write JSX frontend markup in the `save` function.
 6. **NO WRAPPER DIV SOUP:** Use `useInnerBlocksProps(useBlockProps({ ... }))` on the main semantic tag to avoid unnecessary nested `div`s in the editor.
 
@@ -58,7 +53,6 @@ When writing the PHP `render_callback`, you must strictly follow WordPress secur
   "typography": { "fontSize": true, "lineHeight": true },
   "borders": { "color": true, "radius": true, "style": true, "width": true }
 }
-
 ```
 
 ---
@@ -76,7 +70,6 @@ const { Fragment, useState, useEffect, useRef } = wp.element;
 const { InspectorControls, BlockControls, useBlockProps, useInnerBlocksProps, InnerBlocks, RichText, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 // Standard Components
 const { PanelBody, TextControl, TextareaControl, ToggleControl, SelectControl, RangeControl, ColorPalette, Button, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
-
 ```
 
 ### B. Number & Size Controls (Mandatory Flags)
@@ -86,9 +79,7 @@ const { PanelBody, TextControl, TextareaControl, ToggleControl, SelectControl, R
 ### C. Advanced / Experimental Controls
 
 * **`ToggleGroupControl`**: Modern button-group style selector.
-* *Rule:* Always include a fallback `SelectControl` checking `typeof __experimentalToggleGroupControl !== 'undefined'`. Include the `__next` flags.
-
-
+* **Rule:** Always include a fallback `SelectControl` checking `typeof ToggleGroupControl !== 'undefined'`. Include the `__next` flags.
 
 ---
 
@@ -105,7 +96,6 @@ add_action('enqueue_block_editor_assets', function() {
         echo '<script type="text/babel">' . $jsx_content . '</script>';
     });
 });
-
 ```
 
 ### B. Experimental Control Fallback Pattern
@@ -136,7 +126,6 @@ const hasToggleGroup = typeof ToggleGroupControl !== 'undefined';
         onChange={val => setAttributes({ direction: val })}
     />
 )}
-
 ```
 
 ---
@@ -156,7 +145,3 @@ Before giving the user the final code, verify these points silently. If any fail
 9. [ ] **DYNAMIC CSS:** Do inline CSS styles map correctly in BOTH the React `edit` preview AND the PHP `render_callback`?
 
 **DELIVERY INSTRUCTIONS:** Output the code as 4 distinct code blocks representing the 4 required files (`block.json`, `block.php`, `editor.jsx`, `block.css`). Do not omit boilerplate. Provide complete, ready-to-paste files.
-
-```
-
-```
