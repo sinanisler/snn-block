@@ -85,8 +85,18 @@ require_once SNN_PATH . 'includes/features/utils.php';
 //require_once SNN_PATH . 'includes/features/auto-update-snn-brx-github.php';
 
 // Block Patterns
-require_once SNN_PATH . 'includes/features/block-patterns.php';
+add_filter( 'should_load_remote_block_patterns', '__return_false' );
+add_action( 'after_setup_theme', function() {
+    remove_theme_support( 'core-block-patterns' );
+} );
 
+add_action( 'init', function() {
+    register_block_pattern_category( 'snn/hero',     [ 'label' => __( 'SNN — Hero Sections', 'snn' ), 'description' => __( 'Bold hero and banner sections for landing pages.', 'snn' ) ] );
+    register_block_pattern_category( 'snn/features', [ 'label' => __( 'SNN — Features', 'snn' ), 'description' => __( 'Feature grids, service lists, and capability showcases.', 'snn' ) ] );
+    register_block_pattern_category( 'snn/cta',      [ 'label' => __( 'SNN — Call to Action', 'snn' ), 'description' => __( 'Conversion-focused call-to-action sections.', 'snn' ) ] );
+    register_block_pattern_category( 'snn/content',  [ 'label' => __( 'SNN — Content', 'snn' ), 'description' => __( 'Content sections: posts, FAQs, testimonials, and more.', 'snn' ) ] );
+    register_block_pattern_category( 'snn/layout',   [ 'label' => __( 'SNN — Layout', 'snn' ), 'description' => __( 'Full-page layouts, pricing, contact, and team sections.', 'snn' ) ] );
+} );
 
 // Load Translations
 add_action('after_setup_theme', function() {

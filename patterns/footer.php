@@ -5,3 +5,5 @@
  * Inserter: no
  */
 ?>
+
+<!-- /wp:paragraph -->
