@@ -111,6 +111,7 @@ add_action('after_setup_theme', function() {
 
 
 require_once SNN_PATH . 'includes/features/block-editor-settings.php';
+require_once SNN_PATH . 'includes/features/global-style-editor-settings.php';
 require_once SNN_PATH . 'includes/features/media-image-opt.php';
 require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 
@@ -139,7 +140,7 @@ function snn_block_enqueue_assets() { wp_enqueue_style( 'snn-block-style', get_s
 
 
 
-// Load Babel Tower
+// Load Babel Tower (required for block editor.jsx files)
 add_action('enqueue_block_editor_assets', function() { 
     wp_enqueue_script(
         'babel-standalone', SNN_URL_ASSETS . 'js/babel.min.js',[
@@ -147,43 +148,4 @@ add_action('enqueue_block_editor_assets', function() {
             'wp-data','wp-compose','wp-rich-text','wp-api-fetch','wp-url','wp-dom-ready',   
             'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
         ], wp_get_theme()->get('Version') , true );
-    
-    // Enqueue global style modal styles
-    wp_enqueue_style(
-        'snn-global-style-modal-styles',
-        SNN_URL . 'editor/global-style-modal.css',
-        [],
-        wp_get_theme()->get('Version')
-    );
-    
-    // Enqueue global style modal
-    wp_enqueue_script(
-        'snn-global-style-modal',
-        SNN_URL . 'editor/global-style-modal.js',
-        [
-            'wp-element',
-            'wp-components',
-            'wp-i18n'
-        ],
-        wp_get_theme()->get('Version'),
-        true
-    );
-    
-    // Enqueue editor filter for core block attributes
-    wp_enqueue_script(
-        'snn-core-attributes',
-        SNN_URL . 'editor/global-style-control.js',
-        [
-            'wp-blocks',
-            'wp-hooks',
-            'wp-element',
-            'wp-components',
-            'wp-compose',
-            'wp-block-editor',
-            'wp-editor',
-            'snn-global-style-modal'
-        ],
-        wp_get_theme()->get('Version'),
-        true
-    );
 });

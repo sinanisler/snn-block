@@ -1,0 +1,376 @@
+/* ═══════════════════════════════════════════════
+   SNN Global Style Editor — Full-Screen Modal
+   ═══════════════════════════════════════════════ */
+
+/* ── Full-screen modal overlay ── */
+.snn-global-editor-modal {
+    max-width: 98vw !important;
+    width: 98vw !important;
+    max-height: 96vh !important;
+    height: 96vh !important;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.snn-global-editor-modal .components-modal__header {
+    flex-shrink: 0;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    margin: 0;
+    height: auto;
+    position:relative !important;
+}
+
+.snn-global-editor-modal .components-modal__header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e1e1e;
+}
+
+.snn-global-editor-modal .components-modal__content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-top: 0;
+}
+
+.snn-global-editor-modal .components-modal__content::before {
+    display: none;
+}
+
+/* ── Top tabs ── */
+.snn-ge-tabs {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    flex-shrink: 0;
+    padding: 0 16px;
+}
+
+.snn-ge-tab {
+    padding: 12px 20px !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    color: #666 !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: auto !important;
+    border-radius: 0 !important;
+}
+
+.snn-ge-tab:hover {
+    color: #1e1e1e !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+
+.snn-ge-tab.active {
+    color: #007cba !important;
+    border-bottom-color: #007cba !important;
+    background: transparent !important;
+}
+
+.snn-ge-tab-count {
+    display: inline-block;
+    background: #e0e0e0;
+    color: #666;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+}
+
+.snn-ge-tab.active .snn-ge-tab-count {
+    background: #d4edff;
+    color: #007cba;
+}
+
+/* ── Tab content area ── */
+.snn-ge-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    padding: 0;
+}
+
+.snn-ge-panel {
+    display: none;
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+}
+
+.snn-ge-panel.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Quick actions toolbar ── */
+.snn-ge-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.snn-ge-toolbar .snn-ge-search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.snn-ge-toolbar .snn-ge-search input {
+    width: 100%;
+}
+
+/* ── Two-column layout ── */
+.snn-ge-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.snn-ge-split-left {
+    overflow: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.snn-ge-split-right {
+    overflow: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #f8f9fa;
+    padding: 16px;
+}
+
+/* ── List items ── */
+.snn-ge-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.snn-ge-list-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.snn-ge-list-item:hover {
+    background: #f8f9fa;
+}
+
+.snn-ge-list-item.active {
+    background: #edf6fc;
+    border-left: 3px solid #007cba;
+}
+
+.snn-ge-list-item:last-child {
+    border-bottom: none;
+}
+
+.snn-ge-list-item-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e1e1e;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.snn-ge-list-item-sub {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.snn-ge-list-item-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.snn-ge-list-item:hover .snn-ge-list-item-actions {
+    opacity: 1;
+}
+
+/* ── Editor form ── */
+.snn-ge-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.snn-ge-form h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e1e1e;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.snn-ge-form-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.snn-ge-form-row > * {
+    flex: 1;
+}
+
+/* ── Preview block ── */
+.snn-ge-preview {
+    background: #fff;
+    border: 1px solid #007cba;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 8px;
+}
+
+.snn-ge-preview-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #007cba;
+    margin-bottom: 6px;
+}
+
+.snn-ge-preview-code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 11px;
+    background: #f0f4f8;
+    padding: 8px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    color: #1e1e1e;
+    line-height: 1.4;
+}
+
+/* ── Color swatch in variable list ── */
+.snn-ge-color-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+/* ── Empty state ── */
+.snn-ge-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.snn-ge-empty-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+    opacity: 0.4;
+}
+
+.snn-ge-empty h3 {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 4px 0;
+}
+
+.snn-ge-empty p {
+    font-size: 12px;
+    margin: 0 0 16px 0;
+}
+
+/* ── Block defaults: block selector ── */
+.snn-ge-block-selector {
+    margin-bottom: 16px;
+}
+
+.snn-ge-block-selector .components-combobox-control {
+    width: 100%;
+}
+
+/* ── Block defaults: attribute controls ── */
+.snn-ge-attr-group {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #fff;
+}
+
+.snn-ge-attr-group h4 {
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* ── Color variable sync indicator ── */
+.snn-ge-color-synced {
+    font-size: 10px;
+    color: #007cba;
+    font-weight: 500;
+    margin-left: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+    .snn-ge-split {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .snn-global-editor-modal {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        max-height: 100vh !important;
+        height: 100vh !important;
+        border-radius: 0;
+    }
+    
+    .snn-ge-tab {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+    
+    .snn-ge-panel {
+        padding: 12px;
+    }
+}
+
+/* ── Success/error notices ── */
+.snn-ge-notice {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100000;
+    animation: snn-ge-fadein 0.2s ease;
+}
+
+@keyframes snn-ge-fadein {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
