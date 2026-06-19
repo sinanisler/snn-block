@@ -25,7 +25,8 @@
         "padding": { "type": "object", "default": {} },
         "textAlign": { "type": "object", "default": {} },
         "minHeight": { "type": "object", "default": {} },
-        "overflow": { "type": "string" }
+        "overflow": { "type": "string" },
+        "customCSS": { "type": "string", "default": "" }
     },
     "supports": {
         "html": false,

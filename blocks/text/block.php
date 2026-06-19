@@ -106,6 +106,7 @@ function snn_render_text_block($attributes, $content, $block) {
     $text_align   = $attributes['textAlign'] ?? [];
     $padding      = $attributes['padding'] ?? [];
     $class_name   = $attributes['className'] ?? '';
+    $custom_css   = $attributes['customCSS'] ?? '';
 
     // Validate tag
     $allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'div'];
@@ -159,6 +160,12 @@ function snn_render_text_block($attributes, $content, $block) {
         $output .= ' ' . $key . '="' . esc_attr($value) . '"';
     }
     $output .= '>';
+    // ── 5. Custom CSS ──
+    if (!empty($custom_css)) {
+        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
+        $resp .= "{$selector} {\n{$safe_css}\n}\n";
+    }
+
     if ($resp) {
         $output .= '<style>' . $resp . '</style>';
     }

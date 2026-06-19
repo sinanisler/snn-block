@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, RichText, MediaUpload } = wp.blockEditor;
-const { PanelBody, Button, SelectControl, TextControl, ColorPalette, RangeControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { PanelBody, Button, SelectControl, TextControl, TextareaControl, ColorPalette, RangeControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
 const { Fragment } = wp.element;
 const { useSelect } = wp.data;
 const { __ } = wp.i18n;
@@ -147,7 +147,11 @@ registerBlockType('snn/text', {
 
         // ── Device state ──
         const deviceType = useSelect(select => {
-            const store = select('core/edit-post') || select('core/editor');
+            const editorStore = select('core/editor');
+            if (editorStore?.getDeviceType) {
+                return editorStore.getDeviceType();
+            }
+            const store = select('core/edit-post') || editorStore;
             const getDevice = store?.__experimentalGetPreviewDeviceType;
             return getDevice ? getDevice() : 'Desktop';
         }, []);
@@ -258,22 +262,22 @@ registerBlockType('snn/text', {
         return (
             <Fragment>
                 <InspectorControls>
-                    {/* ═══════ TAG SELECTOR ═══════ */}
-                    <PanelBody title={__('Tag', 'snn')} initialOpen={true}>
+                    {/* ═══════ TEXT SETTINGS ═══════ */}
+                    <PanelBody title={__('Text Settings', 'snn')} initialOpen={true}>
                         <ToggleField
                             label={__('HTML Tag', 'snn')}
                             value={attributes.tagName || 'p'}
                             options={tagOptions}
                             onChange={v => setAttributes({ tagName: v })}
                         />
-                    </PanelBody>
 
-                    {/* ═══════ TYPOGRAPHY ═══════ */}
-                    <PanelBody title={__('Typography', 'snn')} initialOpen={false}>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
                         <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
                             {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
                         </div>
 
+                        {/* Typography */}
                         <RangeUnitField
                             label={__('Font Size', 'snn')}
                             value={getVal('fontSize')}
@@ -310,10 +314,10 @@ registerBlockType('snn/text', {
                             options={textAlignOptions}
                             onChange={v => setVal('textAlign', v)}
                         />
-                    </PanelBody>
 
-                    {/* ═══════ COLORS ═══════ */}
-                    <PanelBody title={__('Colors', 'snn')} initialOpen={false}>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Colors */}
                         <RespLabel label={__('Text Color', 'snn')} device={activeDevice} />
                         <ColorPalette
                             colors={themeColors}
@@ -330,14 +334,22 @@ registerBlockType('snn/text', {
                                 clearable
                             />
                         </div>
+
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Spacing */}
+                        <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
                     </PanelBody>
 
-                    {/* ═══════ SPACING ═══════ */}
-                    <PanelBody title={__('Spacing', 'snn')} initialOpen={false}>
-                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
-                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
-                        </div>
-                        <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
+                    {/* ═══════ CUSTOM CSS ═══════ */}
+                    <PanelBody title={__('Custom CSS', 'snn')} initialOpen={false}>
+                        <TextareaControl
+                            label={__('Custom CSS', 'snn')}
+                            help={__('Write custom CSS rules. The selector .snn-text will target this block.', 'snn')}
+                            value={attributes.customCSS || ''}
+                            onChange={val => setAttributes({ customCSS: val })}
+                            rows={8}
+                        />
                     </PanelBody>
                 </InspectorControls>
 

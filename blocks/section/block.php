@@ -102,6 +102,7 @@ function snn_render_section_block($attributes, $content, $block) {
     $text_color = $attributes['textColor'] ?? []; // responsive object
     $overflow  = $attributes['overflow'] ?? '';
     $class_name = $attributes['className'] ?? '';
+    $custom_css = $attributes['customCSS'] ?? '';
 
     // Generate a unique class for targeting responsive styles
     $uid = 'snn-s-' . uniqid();
@@ -163,8 +164,16 @@ function snn_render_section_block($attributes, $content, $block) {
         $output .= ' ' . $key . '="' . esc_attr($value) . '"';
     }
     $output .= '>';
-    if ($responsive_css) {
-        $output .= '<style>' . $responsive_css . '</style>';
+    // ── 5. Custom CSS ──
+    $all_css = $responsive_css;
+    if (!empty($custom_css)) {
+        // Sanitize: strip dangerous tags/expressions
+        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
+        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+    }
+
+    if ($all_css) {
+        $output .= '<style>' . $all_css . '</style>';
     }
     $output .= $content;
     $output .= '</section>';

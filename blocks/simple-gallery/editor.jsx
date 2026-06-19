@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, MediaUpload, MediaUploadCheck } = wp.blockEditor;
-const { PanelBody, Button, RangeControl, SelectControl, ToggleControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { PanelBody, Button, TextareaControl, RangeControl, SelectControl, ToggleControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
 const { Fragment } = wp.element;
 const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
@@ -71,7 +71,11 @@ registerBlockType('snn/simple-gallery', {
 
         // ── Device state ──
         const deviceType = useSelect(select => {
-            const store = select('core/edit-post') || select('core/editor');
+            const editorStore = select('core/editor');
+            if (editorStore?.getDeviceType) {
+                return editorStore.getDeviceType();
+            }
+            const store = select('core/edit-post') || editorStore;
             const getDevice = store?.__experimentalGetPreviewDeviceType;
             return getDevice ? getDevice() : 'Desktop';
         }, []);
@@ -189,6 +193,17 @@ registerBlockType('snn/simple-gallery', {
                                 : __('Turn on to enable a fullscreen lightbox with navigation.', 'snn')}
                             checked={enableLightbox}
                             onChange={(val) => setAttributes({ enableLightbox: val })}
+                        />
+                    </PanelBody>
+
+                    {/* ═══════ CUSTOM CSS ═══════ */}
+                    <PanelBody title={__('Custom CSS', 'snn')} initialOpen={false}>
+                        <TextareaControl
+                            label={__('Custom CSS', 'snn')}
+                            help={__('Write custom CSS rules. The selector .snn-simple-gallery will target this block.', 'snn')}
+                            value={attributes.customCSS || ''}
+                            onChange={val => setAttributes({ customCSS: val })}
+                            rows={8}
                         />
                     </PanelBody>
                 </InspectorControls>

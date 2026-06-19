@@ -1,0 +1,18 @@
+/* ─── Icon Block ─── */
+.snn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.snn-icon i {
+    display: inline-block;
+    line-height: 1;
+}
+
+/* Editor preview */
+.snn-icon.is-selected {
+    outline: 1px dashed #3858e9;
+    outline-offset: 2px;
+}

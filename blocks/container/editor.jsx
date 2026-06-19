@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, useInnerBlocksProps, InnerBlocks, MediaUpload } = wp.blockEditor;
-const { PanelBody, Button, SelectControl, TextControl, ColorPalette, RangeControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { PanelBody, Button, SelectControl, TextControl, TextareaControl, ColorPalette, RangeControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
 const { Fragment } = wp.element;
 const { useSelect } = wp.data;
 const { __ } = wp.i18n;
@@ -56,6 +56,45 @@ const ToggleField = ({ label, value, options, onChange }) => {
 
     return (
         <SelectControl label={label} value={value} options={options} onChange={onChange} />
+    );
+};
+
+/* ─── Icon Toggle Field (Font Awesome) ─── */
+const IconToggleField = ({ label, value, options, onChange }) => {
+    return (
+        <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '11px', fontWeight: 500, display: 'block', marginBottom: '4px', color: '#1e1e1e' }}>
+                {label}
+            </label>
+            <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap' }}>
+                {options.filter(o => o.value !== '' || o.label === 'Default').map(opt => (
+                    <button
+                        key={opt.value}
+                        onClick={() => onChange(opt.value)}
+                        title={opt.label}
+                        type="button"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            border: value === opt.value ? '2px solid #3858e9' : '1px solid #d0d0d0',
+                            borderRadius: '4px',
+                            background: value === opt.value ? '#f0f6ff' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: value === opt.value ? '#3858e9' : '#666',
+                            padding: 0,
+                            transition: 'all 0.1s',
+                            boxSizing: 'border-box',
+                        }}
+                    >
+                        {opt.icon ? <i className={opt.icon}></i> : opt.label}
+                    </button>
+                ))}
+            </div>
+        </div>
     );
 };
 
@@ -147,7 +186,11 @@ registerBlockType('snn/container', {
 
         // ── Device state ──
         const deviceType = useSelect(select => {
-            const store = select('core/edit-post') || select('core/editor');
+            const editorStore = select('core/editor');
+            if (editorStore?.getDeviceType) {
+                return editorStore.getDeviceType();
+            }
+            const store = select('core/edit-post') || editorStore;
             const getDevice = store?.__experimentalGetPreviewDeviceType;
             return getDevice ? getDevice() : 'Desktop';
         }, []);
@@ -250,24 +293,33 @@ registerBlockType('snn/container', {
             { label: __('Block', 'snn'), value: 'block' },
         ];
         const flexDirOptions = [
-            { label: __('Row', 'snn'), value: 'row' },
-            { label: __('Column', 'snn'), value: 'column' },
-            { label: __('Row Rev', 'snn'), value: 'row-reverse' },
-            { label: __('Col Rev', 'snn'), value: 'column-reverse' },
+            { label: __('Row', 'snn'), value: 'row', icon: 'fa-solid fa-arrow-right' },
+            { label: __('Column', 'snn'), value: 'column', icon: 'fa-solid fa-arrow-down' },
+            { label: __('Row Rev', 'snn'), value: 'row-reverse', icon: 'fa-solid fa-arrow-left' },
+            { label: __('Col Rev', 'snn'), value: 'column-reverse', icon: 'fa-solid fa-arrow-up' },
         ];
         const wrapOptions = [
-            { label: __('Wrap', 'snn'), value: 'wrap' },
-            { label: __('Nowrap', 'snn'), value: 'nowrap' },
-            { label: __('Wrap Rev', 'snn'), value: 'wrap-reverse' },
+            { label: __('Wrap', 'snn'), value: 'wrap', icon: 'fa-solid fa-angles-down' },
+            { label: __('Nowrap', 'snn'), value: 'nowrap', icon: 'fa-solid fa-ellipsis' },
+            { label: __('Wrap Rev', 'snn'), value: 'wrap-reverse', icon: 'fa-solid fa-angles-up' },
+        ];
+        const justifyOptions = [
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'flex-start', icon: 'fa-solid fa-align-left' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-align-center' },
+            { label: __('End', 'snn'), value: 'flex-end', icon: 'fa-solid fa-align-right' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-arrows-left-right' },
+            { label: __('Between', 'snn'), value: 'space-between', icon: 'fa-solid fa-object-ungroup' },
+            { label: __('Around', 'snn'), value: 'space-around', icon: 'fa-solid fa-object-group' },
         ];
         const alignOptions = [
-            { label: __('Default', 'snn'), value: '' },
-            { label: __('Start', 'snn'), value: 'flex-start' },
-            { label: __('Center', 'snn'), value: 'center' },
-            { label: __('End', 'snn'), value: 'flex-end' },
-            { label: __('Stretch', 'snn'), value: 'stretch' },
-            { label: __('Between', 'snn'), value: 'space-between' },
-            { label: __('Around', 'snn'), value: 'space-around' },
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'flex-start', icon: 'fa-solid fa-chevron-up' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-arrows-up-down' },
+            { label: __('End', 'snn'), value: 'flex-end', icon: 'fa-solid fa-chevron-down' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-expand' },
+            { label: __('Between', 'snn'), value: 'space-between', icon: 'fa-solid fa-object-ungroup' },
+            { label: __('Around', 'snn'), value: 'space-around', icon: 'fa-solid fa-object-group' },
         ];
         const textAlignOptions = [
             { label: __('Default', 'snn'), value: '' },
@@ -310,7 +362,7 @@ registerBlockType('snn/container', {
         return (
             <Fragment>
                 <InspectorControls>
-                    {/* ═══════ CONTAINER ═══════ */}
+                    {/* ═══════ CONTAINER SETTINGS ═══════ */}
                     <PanelBody title={__('Container Settings', 'snn')} initialOpen={true}>
                         <TextControl
                             label={__('Max Width', 'snn')}
@@ -321,8 +373,13 @@ registerBlockType('snn/container', {
                         />
                     </PanelBody>
 
-                    {/* ═══════ BACKGROUND ═══════ */}
-                    <PanelBody title={__('Background', 'snn')} initialOpen={false}>
+                    {/* ═══════ STYLE ═══════ */}
+                    <PanelBody title={__('Style', 'snn')} initialOpen={false}>
+                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
+                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
+                        </div>
+
+                        {/* Background */}
                         <RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
                         <ColorPalette
                             colors={themeColors}
@@ -370,56 +427,62 @@ registerBlockType('snn/container', {
                                 ]} onChange={v => setAttributes({ bgRepeat: v })} />
                             </Fragment>
                         )}
-                    </PanelBody>
 
-                    {/* ═══════ LAYOUT ═══════ */}
-                    <PanelBody title={__('Layout', 'snn')} initialOpen={false}>
-                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
-                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
-                        </div>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
 
+                        {/* Display / Layout */}
                         <ToggleField label={__('Display', 'snn')} value={displayVal} options={displayOptions} onChange={v => setVal('display', v)} />
 
                         {isFlex && (
                             <Fragment>
-                                <ToggleField label={__('Direction', 'snn')} value={getVal('flexDirection')} options={flexDirOptions} onChange={v => setVal('flexDirection', v)} />
-                                <ToggleField label={__('Wrap', 'snn')} value={getVal('flexWrap')} options={wrapOptions} onChange={v => setVal('flexWrap', v)} />
-                                <ToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={alignOptions} onChange={v => setVal('justifyContent', v)} />
-                                <ToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
+                                <IconToggleField label={__('Direction', 'snn')} value={getVal('flexDirection')} options={flexDirOptions} onChange={v => setVal('flexDirection', v)} />
+                                <IconToggleField label={__('Wrap', 'snn')} value={getVal('flexWrap')} options={wrapOptions} onChange={v => setVal('flexWrap', v)} />
+                                <IconToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={justifyOptions} onChange={v => setVal('justifyContent', v)} />
+                                <IconToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
                                 <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
                             </Fragment>
                         )}
 
                         {isGrid && (
                             <Fragment>
-                                <ToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={alignOptions} onChange={v => setVal('justifyContent', v)} />
-                                <ToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
+                                <IconToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={justifyOptions} onChange={v => setVal('justifyContent', v)} />
+                                <IconToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
                                 <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
                                 <RespLabel label={__('Grid Columns', 'snn')} device={activeDevice} />
                                 <TextControl value={getVal('gridColumns')} onChange={v => setVal('gridColumns', v)} placeholder={__('e.g. 1fr 1fr 1fr', 'snn')} />
                             </Fragment>
                         )}
-                    </PanelBody>
 
-                    {/* ═══════ SPACING ═══════ */}
-                    <PanelBody title={__('Spacing', 'snn')} initialOpen={false}>
-                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
-                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
-                        </div>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Padding / Spacing */}
                         <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
-                    </PanelBody>
 
-                    {/* ═══════ SIZING ═══════ */}
-                    <PanelBody title={__('Sizing', 'snn')} initialOpen={false}>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Sizing */}
                         <RangeUnitField label={__('Min Height', 'snn')} value={getVal('minHeight')} onChange={v => setVal('minHeight', v)} min={0} max={1000} step={10} />
                         <SelectControl label={__('Overflow', 'snn')} value={attributes.overflow || ''} options={overflowOptions} onChange={v => setAttributes({ overflow: v })} />
-                    </PanelBody>
 
-                    {/* ═══════ TEXT ═══════ */}
-                    <PanelBody title={__('Text', 'snn')} initialOpen={false}>
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Text */}
                         <RespLabel label={__('Text Color', 'snn')} device={activeDevice} />
                         <ColorPalette colors={themeColors} value={getVal('textColor')} onChange={v => setVal('textColor', v || '')} clearable />
-                        <ToggleField label={__('Text Align', 'snn')} value={getVal('textAlign')} options={textAlignOptions} onChange={v => setVal('textAlign', v)} />
+                        <div style={{ marginTop: '8px' }}>
+                            <ToggleField label={__('Text Align', 'snn')} value={getVal('textAlign')} options={textAlignOptions} onChange={v => setVal('textAlign', v)} />
+                        </div>
+                    </PanelBody>
+
+                    {/* ═══════ CUSTOM CSS ═══════ */}
+                    <PanelBody title={__('Custom CSS', 'snn')} initialOpen={false}>
+                        <TextareaControl
+                            label={__('Custom CSS', 'snn')}
+                            help={__('Write custom CSS rules. The selector .snn-container will target this block.', 'snn')}
+                            value={attributes.customCSS || ''}
+                            onChange={val => setAttributes({ customCSS: val })}
+                            rows={8}
+                        />
                     </PanelBody>
                 </InspectorControls>
 

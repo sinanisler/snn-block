@@ -150,6 +150,27 @@ add_action('enqueue_block_editor_assets', function () {
 });
 ```
 
+### A1. Injecting CSS into the Editor Iframe Canvas
+
+If your block depends on external CSS with webfonts (e.g. Font Awesome) to render icons in the editor preview, the regular `enqueue_block_editor_assets` hook loads styles on the parent admin page but may **not** reliably resolve relative `url()` paths to webfont files inside the block editor iframe.
+
+The most reliable approach is `enqueue_block_assets` with an `is_admin()` guard. This hook fires in both frontend and editor contexts, and the guard limits it to the editor:
+
+```php
+add_action('enqueue_block_assets', function () {
+    if (is_admin()) {
+        wp_enqueue_style(
+            'my-handle',
+            SNN_URL . 'assets/fonts/fontawesome/all.min.css',
+            [],
+            '6.7.2'
+        );
+    }
+});
+```
+
+Do **not** use `add_editor_style()` for CSS that contains `@font-face` with relative webfont paths — the iframe context can break the relative URL resolution. Also avoid `block_editor_settings_all` with `file_get_contents()` for large files, as it reads the entire file into memory on every editor load.
+
 ### B. Experimental Control Fallback Pattern
 
 ```jsx
@@ -304,8 +325,13 @@ Every `editor.jsx` must detect the current preview device and route `getVal()`/`
 
 ```jsx
 // 1. Detect active device from the editor store
+//    WP ≥6.5 uses getDeviceType() on core/editor; older WP uses __experimentalGetPreviewDeviceType
 const deviceType = useSelect(select => {
-    const store = select('core/edit-post') || select('core/editor');
+    const editorStore = select('core/editor');
+    if (editorStore?.getDeviceType) {
+        return editorStore.getDeviceType();
+    }
+    const store = select('core/edit-post') || editorStore;
     const getDevice = store?.__experimentalGetPreviewDeviceType;
     return getDevice ? getDevice() : 'Desktop';
 }, []);
@@ -433,6 +459,38 @@ These use standard `setAttributes({ attrName: value })` without the device routi
 
 ---
 
+---
+
+## 🎨 CUSTOM CSS SUPPORT (ALL BLOCKS)
+
+Every SNN block supports a **Custom CSS** panel in the editor sidebar where users can write arbitrary CSS rules.
+
+### Implementation Details
+
+**block.json:**
+```json
+"customCSS": { "type": "string", "default": "" }
+```
+
+**editor.jsx:**
+- Import `TextareaControl` from `wp.components`
+- Add a `PanelBody` titled `'Custom CSS'` inside `InspectorControls`
+- Provide help text showing the block's CSS class (e.g., `.snn-container`, `.snn-section`, `.snn-text`, `.snn-simple-gallery`)
+
+**block.php:**
+- Extract `$custom_css` from attributes: `$attributes['customCSS'] ?? ''`
+- Sanitize with: `preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css)`
+- Append to the `<style>` tag using the unique `$selector`:
+```php
+$all_css .= "{$selector} {\n{$safe_css}\n}\n";
+```
+
+### No Separate Groupings
+
+Blocks should NOT have separate `PanelBody` sections for Layout, Spacing, Sizing, or Text. All style controls live in a single **"Style"** panel (or **"Text Settings"** for the Text block), with visual separators (`<hr>`) between logical sections.
+
+---
+
 ## 🧠 8. THE OUTPUT PROTOCOL (AI CHECKLIST)
 
 Before giving the user the final code, verify these points silently. If any fail, correct your code before outputting.
@@ -451,5 +509,8 @@ Before giving the user the final code, verify these points silently. If any fail
 12. [ ] **UNIQUE SELECTORS:** Does the PHP render use `uniqid()` to generate a unique CSS class so multiple instances of the same block don't collide?
 13. [ ] **THEME CONSTANTS:** Are frontend asset URLs using `SNN_URL` (not hardcoded paths)?
 14. [ ] **DYNAMIC CSS:** Do inline CSS styles map correctly in BOTH the React `edit` preview AND the PHP `render_callback`?
+
+15. [ ] **NO GROUPINGS:** Are all inspector controls in ONE panel (Style or Settings) rather than separate Layout/Spacing/Sizing/Text groups? Use `<hr>` separators between logical sections.
+16. [ ] **CUSTOM CSS:** Does `block.json` include `"customCSS": { "type": "string", "default": "" }`? Does `editor.jsx` have a `TextareaControl` in a `Custom CSS` panel? Does `block.php` sanitize and output `$custom_css` in the `<style>` tag?
 
 **DELIVERY INSTRUCTIONS:** Output the code as distinct code blocks. Typically 4 files (`block.json`, `block.php`, `editor.jsx`, `block.css`). Include additional frontend JS files (e.g., `lightbox.js`) if the block needs them. Do not omit boilerplate. Provide complete, ready-to-paste files.

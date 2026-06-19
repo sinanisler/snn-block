@@ -37,6 +37,10 @@
         "enableLightbox": {
             "type": "boolean",
             "default": false
+        },
+        "customCSS": {
+            "type": "string",
+            "default": ""
         }
     },
     "supports": {

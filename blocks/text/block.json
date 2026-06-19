@@ -19,7 +19,8 @@
         "fontWeight": { "type": "object", "default": {} },
         "textTransform": { "type": "string" },
         "textAlign": { "type": "object", "default": {} },
-        "padding": { "type": "object", "default": {} }
+        "padding": { "type": "object", "default": {} },
+        "customCSS": { "type": "string", "default": "" }
     },
     "supports": {
         "html": false,

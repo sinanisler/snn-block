@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "snn/icon",
+    "version": "1.0.0",
+    "title": "Icon",
+    "category": "design",
+    "icon": "star-filled",
+    "description": "Display any Font Awesome 6 icon with responsive size and color controls.",
+    "keywords": ["icon", "font awesome", "svg", "vector"],
+    "attributes": {
+        "iconName": { "type": "string", "default": "" },
+        "iconPrefix": { "type": "string", "default": "fa-solid" },
+        "size": { "type": "object", "default": {} },
+        "color": { "type": "object", "default": {} },
+        "customCSS": { "type": "string", "default": "" }
+    },
+    "supports": {
+        "html": false,
+        "anchor": true,
+        "align": false
+    },
+    "style": "file:./block.css"
+}

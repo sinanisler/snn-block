@@ -103,6 +103,7 @@ function snn_render_container_block($attributes, $content, $block) {
     $text_color = $attributes['textColor'] ?? []; // responsive object
     $overflow  = $attributes['overflow'] ?? '';
     $class_name = $attributes['className'] ?? '';
+    $custom_css = $attributes['customCSS'] ?? '';
 
     // Get default max-width from theme.json if not set
     if (empty($max_width)) {
@@ -175,8 +176,16 @@ function snn_render_container_block($attributes, $content, $block) {
         $output .= ' ' . $key . '="' . esc_attr($value) . '"';
     }
     $output .= '>';
-    if ($responsive_css) {
-        $output .= '<style>' . $responsive_css . '</style>';
+    // ── 5. Custom CSS ──
+    $all_css = $responsive_css;
+    if (!empty($custom_css)) {
+        // Sanitize: strip dangerous tags/expressions
+        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
+        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+    }
+
+    if ($all_css) {
+        $output .= '<style>' . $all_css . '</style>';
     }
     $output .= $content;
     $output .= '</div>';

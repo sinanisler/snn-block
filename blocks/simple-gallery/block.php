@@ -53,6 +53,7 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
     $anchor = $attributes['anchor'] ?? '';
     $class_name = $attributes['className'] ?? '';
     $align = $attributes['align'] ?? '';
+    $custom_css = $attributes['customCSS'] ?? '';
 
     if (empty($images)) {
         return '';
@@ -118,8 +119,15 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $output .= ' ' . $key . '="' . esc_attr($value) . '"';
     }
     $output .= '>';
-    if ($responsive_css) {
-        $output .= '<style>' . $responsive_css . '</style>';
+    // ── 5. Custom CSS ──
+    $all_css = $responsive_css;
+    if (!empty($custom_css)) {
+        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
+        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+    }
+
+    if ($all_css) {
+        $output .= '<style>' . $all_css . '</style>';
     }
     $output .= '<div class="snn-gallery-grid">';
 
