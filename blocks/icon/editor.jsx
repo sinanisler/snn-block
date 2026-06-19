@@ -79,7 +79,7 @@ const SizeField = ({ label, value, onChange }) => {
 registerBlockType('snn/icon', {
     edit: function (props) {
         const { attributes, setAttributes } = props;
-        const { iconType, iconName, customSvg, customImageId, customImageUrl, customImageAlt, size, color, customCSS } = attributes;
+        const { iconType, iconName, iconPrefix, customSvg, customImageId, customImageUrl, customImageAlt, size, color, customCSS } = attributes;
 
         // ── Device state ──
         const deviceType = useSelect(select => {
@@ -116,6 +116,11 @@ registerBlockType('snn/icon', {
         // All icons from the global injected by block.php
         const allIcons = window.snnFAIcons || [];
 
+        // Exclude single-character / text-glyph icons (e.g. "0","1","a","b"…)
+        // from the picker grid — they render as styled letters/numbers, not
+        // meaningful graphical icons and clutter the top of the list.
+        const displayIcons = allIcons.filter(icon => icon.name && icon.name.length > 1);
+
         // Defer icon grid rendering so the modal backdrop paints solid first.
         // Without this, the first open renders ~1999 icon buttons synchronously
         // and the browser's initial composite appears semi-transparent.
@@ -143,8 +148,10 @@ registerBlockType('snn/icon', {
             };
         }, [isModalOpen]);
 
-        // Look up the correct FA style class for an icon name
+        // Use the saved iconPrefix attribute; fall back to lookup for legacy
+        // blocks that were saved before the prefix was stored.
         const getIconStyle = (name) => {
+            if (iconPrefix) return iconPrefix;
             if (!name) return 'fa-solid';
             const clean = name.replace(/^fa-/, '');
             const icon = allIcons.find(i => i.name === clean);
@@ -156,10 +163,28 @@ registerBlockType('snn/icon', {
             return 'fa-solid';
         };
 
-        // Filter by search term
-        const filteredIcons = searchTerm
-            ? allIcons.filter(icon => icon.name.toLowerCase().includes(searchTerm.toLowerCase()))
-            : allIcons;
+        // Filter + sort by search term (with relevance ranking)
+        const filteredIcons = (() => {
+            const q = (searchTerm || '').trim();
+            if (!q) return displayIcons;
+
+            const lowerQ = q.toLowerCase();
+            const results = displayIcons.filter(icon =>
+                icon.name.toLowerCase().includes(lowerQ)
+            );
+
+            // Relevance sort: exact match → starts-with → contains → rest
+            results.sort((a, b) => {
+                const na = a.name.toLowerCase();
+                const nb = b.name.toLowerCase();
+                const scoreA = na === lowerQ ? 0 : na.startsWith(lowerQ) ? 1 : 2;
+                const scoreB = nb === lowerQ ? 0 : nb.startsWith(lowerQ) ? 1 : 2;
+                if (scoreA !== scoreB) return scoreA - scoreB;
+                return na.localeCompare(nb);
+            });
+
+            return results;
+        })();
 
         // ── Theme colors ──
         const themeColors = useSelect(select => {
@@ -226,10 +251,13 @@ registerBlockType('snn/icon', {
                                     >
                                         {iconName ? (
                                             <span>
-                                                <i className={getIconStyle(iconName) + ' ' + iconName}
+                                                <i className={(iconPrefix || getIconStyle(iconName)) + ' ' + iconName}
                                                    style={{ fontSize: '20px', verticalAlign: 'middle', marginRight: '8px' }}
                                                 ></i>
                                                 {iconName.replace('fa-', '').replace(/-/g, ' ')}
+                                                {iconPrefix && iconPrefix !== 'fa-solid' ? (
+                                                    <span style={{ fontSize: '10px', color: '#999', marginLeft: '4px' }}>({iconPrefix.replace('fa-', '')})</span>
+                                                ) : null}
                                             </span>
                                         ) : (
                                             __('Choose Icon…', 'snn')
@@ -376,49 +404,68 @@ registerBlockType('snn/icon', {
                         />
 
                         {gridReady ? (
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
-                                gap: '4px',
-                                maxHeight: '420px',
-                                overflowY: 'auto',
-                                marginTop: '12px',
-                                padding: '4px',
-                            }}>
-                                {filteredIcons.map(icon => {
-                                    const fullName = 'fa-' + icon.name;
-                                    const isActive = iconName === fullName;
-                                    return (
-                                        <button
-                                            key={icon.name}
-                                            onClick={() => {
-                                                const style = icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid';
-                                                setAttributes({ iconName: fullName, iconPrefix: style });
-                                                setIsModalOpen(false);
-                                                setSearchTerm('');
-                                            }}
-                                            title={icon.name.replace(/-/g, ' ')}
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                width: '44px',
-                                                height: '44px',
-                                                border: isActive ? '2px solid #3858e9' : '1px solid #ddd',
-                                                borderRadius: '4px',
-                                                background: isActive ? '#f0f6ff' : '#fff',
-                                                cursor: 'pointer',
-                                                fontSize: '24px',
-                                                color: '#333',
-                                                padding: 0,
-                                                transition: 'all 0.1s',
-                                            }}
-                                        >
-                                            <i className={(icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid') + ' ' + fullName}></i>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            filteredIcons.length > 0 ? (
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
+                                    gap: '4px',
+                                    maxHeight: '420px',
+                                    overflowY: 'auto',
+                                    marginTop: '12px',
+                                    padding: '4px',
+                                }}>
+                                    {filteredIcons.map(icon => {
+                                        const fullName = 'fa-' + icon.name;
+                                        const style = icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid';
+                                        const isActive = iconName === fullName && iconPrefix === style;
+                                        return (
+                                            <button
+                                                key={icon.prefix + '--' + icon.name}
+                                                onClick={() => {
+                                                    setAttributes({ iconName: fullName, iconPrefix: style });
+                                                    setIsModalOpen(false);
+                                                    setSearchTerm('');
+                                                }}
+                                                title={(icon.prefix === 'regular' ? '(regular) ' : icon.prefix === 'brands' ? '(brands) ' : '') + icon.name.replace(/-/g, ' ')}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '44px',
+                                                    height: '44px',
+                                                    border: isActive ? '2px solid #3858e9' : '1px solid #ddd',
+                                                    borderRadius: '4px',
+                                                    background: isActive ? '#f0f6ff' : '#fff',
+                                                    cursor: 'pointer',
+                                                    fontSize: '24px',
+                                                    color: '#333',
+                                                    padding: 0,
+                                                    transition: 'all 0.1s',
+                                                }}
+                                            >
+                                                <i className={style + ' ' + fullName}></i>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '200px',
+                                    color: '#999',
+                                    fontSize: '13px',
+                                    gap: '8px',
+                                }}>
+                                    <span style={{ fontSize: '36px', opacity: 0.4 }}>🔍</span>
+                                    <span>{__('No icons match your search.', 'snn')}</span>
+                                    <span style={{ fontSize: '11px' }}>
+                                        {__('Try a different term (e.g. arrow, heart, star).', 'snn')}
+                                    </span>
+                                </div>
+                            )
                         ) : (
                             <div style={{
                                 display: 'flex',
@@ -432,16 +479,25 @@ registerBlockType('snn/icon', {
                             </div>
                         )}
 
-                        {gridReady && (
+                        {gridReady && filteredIcons.length > 0 && (
                             <p style={{
                                 textAlign: 'center',
                                 marginTop: '12px',
                                 color: '#757575',
                                 fontSize: '12px',
                             }}>
-                                {filteredIcons.length === 1
-                                    ? __('1 icon found', 'snn')
-                                    : sprintf(__('%d icons found', 'snn'), filteredIcons.length)
+                                {searchTerm.trim()
+                                    ? sprintf(
+                                        /* translators: 1: number of matching icons, 2: total display icons */
+                                        __('%1$d of %2$d icons match', 'snn'),
+                                        filteredIcons.length,
+                                        displayIcons.length
+                                    )
+                                    : sprintf(
+                                        /* translators: %d: total number of icons */
+                                        __('%d icons available', 'snn'),
+                                        displayIcons.length
+                                    )
                                 }
                             </p>
                         )}
@@ -493,7 +549,7 @@ registerBlockType('snn/icon', {
                         // Icon Library mode
                         if (iconName) {
                             return (
-                                <i className={getIconStyle(iconName) + ' ' + iconName} style={{
+                                <i className={(iconPrefix || getIconStyle(iconName)) + ' ' + iconName} style={{
                                     fontSize: previewSize + 'px',
                                     color: previewColor || undefined,
                                     lineHeight: 1,
