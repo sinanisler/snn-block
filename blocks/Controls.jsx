@@ -273,7 +273,7 @@ C.ColorRow = ({ label, value, onChange }) => {
                     type="text"
                     value={textVal || ''}
                     onChange={handleTextInput}
-                    placeholder="#333, #2db62380, var(--wp--preset--color--primary)"
+                    placeholder="#333333"
                     style={{
                         flex: 1, padding: '1px 4px', fontSize: '11px', fontFamily: 'monospace',
                         border: '1px solid #949494', borderRadius: '2px', lineHeight: '18px',
