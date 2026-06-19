@@ -150,3 +150,13 @@ add_action('enqueue_block_editor_assets', function() {
             'wp-hooks','wp-notices','wp-keycodes','wp-viewport'     
         ], wp_get_theme()->get('Version') , true );
 });
+
+// Load shared Controls.jsx — reusable editor components, loaded before any block JSX
+add_action('enqueue_block_editor_assets', function () {
+    add_action('admin_footer', function () {
+        $controls_path = SNN_PATH . 'blocks/controls.jsx';
+        if (file_exists($controls_path)) {
+            echo '<script type="text/babel" id="snn-controls">' . file_get_contents($controls_path) . '</script>';
+        }
+    }, 1);
+}, 5);

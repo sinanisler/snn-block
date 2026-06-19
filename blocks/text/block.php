@@ -93,20 +93,17 @@ function snn_text_all_padding($padding, $selector) {
 
 // Render callback
 function snn_render_text_block($attributes, $content, $block) {
-    $anchor    = $attributes['anchor'] ?? '';
-    $tag       = $attributes['tagName'] ?? 'p';
-    $text_content = $attributes['content'] ?? '';
-    $text_color   = $attributes['textColor'] ?? [];
-    $bg_color     = $attributes['bgColor'] ?? [];
-    $font_size    = $attributes['fontSize'] ?? [];
-    $line_height  = $attributes['lineHeight'] ?? [];
-    $letter_spacing = $attributes['letterSpacing'] ?? [];
-    $font_weight  = $attributes['fontWeight'] ?? [];
+    $tag            = $attributes['tagName'] ?? 'p';
+    $text_content   = $attributes['content'] ?? '';
+    $text_color     = $attributes['textColor'] ?? [];
+    $bg_color       = $attributes['bgColor'] ?? [];
+    $font_size      = $attributes['fontSize'] ?? [];
+    $font_weight    = $attributes['fontWeight'] ?? [];
     $text_transform = $attributes['textTransform'] ?? '';
-    $text_align   = $attributes['textAlign'] ?? [];
-    $padding      = $attributes['padding'] ?? [];
-    $class_name   = $attributes['className'] ?? '';
-    $custom_css   = $attributes['customCSS'] ?? '';
+    $text_align     = $attributes['textAlign'] ?? [];
+    $padding        = $attributes['padding'] ?? [];
+    $class_name     = $attributes['className'] ?? '';
+    $custom_css     = $attributes['customCSS'] ?? '';
 
     // Validate tag
     $allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'div'];
@@ -119,14 +116,13 @@ function snn_render_text_block($attributes, $content, $block) {
     $selector = '.' . $uid;
 
     // Build classes
-    $classes = ['snn-text', $uid];
+    $extra_classes = $uid;
     if ($class_name) {
-        $classes[] = $class_name;
+        $extra_classes .= ' ' . $class_name;
     }
 
     // ── 1. Inline styles (only non-responsive properties) ──
     $inline = '';
-    // text-transform is a single string value — not responsive
     if ($text_transform) {
         $inline .= "text-transform: {$text_transform};";
     }
@@ -137,29 +133,18 @@ function snn_render_text_block($attributes, $content, $block) {
     $resp .= snn_text_all_style($text_color, 'color', $selector);
     $resp .= snn_text_all_style($bg_color, 'background-color', $selector);
     $resp .= snn_text_all_style($font_size, 'font-size', $selector);
-    $resp .= snn_text_all_style($line_height, 'line-height', $selector);
-    $resp .= snn_text_all_style($letter_spacing, 'letter-spacing', $selector);
     $resp .= snn_text_all_style($font_weight, 'font-weight', $selector);
     $resp .= snn_text_all_style($text_align, 'text-align', $selector);
     $resp .= snn_text_all_padding($padding, $selector);
 
-    // ── 3. Build attributes ──
-    $wrapper_attrs = [
-        'class' => esc_attr(implode(' ', $classes)),
-    ];
-    if ($inline) {
-        $wrapper_attrs['style'] = $inline;
-    }
-    if ($anchor) {
-        $wrapper_attrs['id'] = esc_attr($anchor);
-    }
+    // ── 3. Build wrapper attributes ──
+    $wrapper_attributes = get_block_wrapper_attributes([
+        'class' => $extra_classes,
+        'style' => $inline,
+    ]);
 
-    // ── 4. Build output ──
-    $output = '<' . $tag;
-    foreach ($wrapper_attrs as $key => $value) {
-        $output .= ' ' . $key . '="' . esc_attr($value) . '"';
-    }
-    $output .= '>';
+    // ── Build output ──
+    $output = '<' . $tag . ' ' . $wrapper_attributes . '>';
     // ── 5. Custom CSS ──
     if (!empty($custom_css)) {
         $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);

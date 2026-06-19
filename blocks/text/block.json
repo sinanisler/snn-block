@@ -14,8 +14,6 @@
         "textColor": { "type": "object", "default": {} },
         "bgColor": { "type": "object", "default": {} },
         "fontSize": { "type": "object", "default": {} },
-        "lineHeight": { "type": "object", "default": {} },
-        "letterSpacing": { "type": "object", "default": {} },
         "fontWeight": { "type": "object", "default": {} },
         "textTransform": { "type": "string" },
         "textAlign": { "type": "object", "default": {} },
