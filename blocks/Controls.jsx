@@ -107,8 +107,27 @@ C.PaddingInput = ({ values, onChange, device, label }) => {
    ═══════════════════════════════════════════════ */
 
 /**
+ * Resolve a CSS color string (named color, hsl, etc.) to a normalized
+ * hex/rgba string using a canvas context.  Returns null for values that
+ * cannot be resolved without a DOM context (CSS variables, currentColor, …).
+ */
+function resolveCSSColor(colorStr) {
+    if (typeof CSS !== 'undefined' && CSS.supports && !CSS.supports('color', colorStr)) {
+        return null;
+    }
+    try {
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.fillStyle = colorStr;
+        return ctx.fillStyle || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
  * Parse a CSS color string into { hex (6-char), alpha (0-1) }.
- * Handles: #RGB, #RRGGBB, #RRGGBBAA, rgb(), rgba(), named/var fallback.
+ * Handles: #RGB, #RRGGBB, #RRGGBBAA, rgb(), rgba(), named colors, hsl(),
+ *          and other CSS <color> values.  CSS variables are kept as raw.
  */
 function parseColor(val) {
     if (!val || typeof val !== 'string') return { hex: '000000', alpha: 1 };
@@ -141,7 +160,20 @@ function parseColor(val) {
         return { hex: h.toLowerCase(), alpha: 1 };
     }
 
-    // CSS variable, named color, etc. — return as-is, no parsing
+    // CSS variables / custom properties — keep as-is
+    if (/^(var\(|--)/.test(s)) {
+        return { hex: '000000', alpha: 1, raw: s };
+    }
+
+    // Try canvas resolution for named colors, hsl(), etc.
+    // Only recurse if the resolved string actually changed (avoids infinite
+    // recursion on values like color-mix() that canvas may preserve as-is).
+    const resolved = resolveCSSColor(s);
+    if (resolved && resolved !== s) {
+        return parseColor(resolved);
+    }
+
+    // Unrecognised — keep as raw
     return { hex: '000000', alpha: 1, raw: s };
 }
 
@@ -225,7 +257,7 @@ C.ColorRow = ({ label, value, onChange }) => {
                     type="color"
                     value={'#' + hexVal}
                     onChange={handleColorInput}
-                    style={{ width: '26px', height: '22px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: '26px', height: '40px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <input
                     type="text"
