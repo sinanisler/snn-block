@@ -1,7 +1,7 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 const { PanelBody, Button, Modal, SearchControl, ColorPalette, RangeControl, BaseControl, TextareaControl } = wp.components;
-const { Fragment, useState } = wp.element;
+const { Fragment, useState, useEffect, useRef } = wp.element;
 const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
 
@@ -110,9 +110,38 @@ registerBlockType('snn/icon', {
         // ── Icon picker state ──
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [searchTerm, setSearchTerm] = useState('');
+        const [gridReady, setGridReady] = useState(false);
+        const rafRef = useRef(null);
 
         // All icons from the global injected by block.php
         const allIcons = window.snnFAIcons || [];
+
+        // Defer icon grid rendering so the modal backdrop paints solid first.
+        // Without this, the first open renders ~1999 icon buttons synchronously
+        // and the browser's initial composite appears semi-transparent.
+        useEffect(() => {
+            if (isModalOpen) {
+                setGridReady(false);
+                rafRef.current = requestAnimationFrame(() => {
+                    // Double rAF ensures the modal's backdrop has composited
+                    rafRef.current = requestAnimationFrame(() => {
+                        setGridReady(true);
+                    });
+                });
+            } else {
+                setGridReady(false);
+                if (rafRef.current) {
+                    cancelAnimationFrame(rafRef.current);
+                    rafRef.current = null;
+                }
+            }
+            return () => {
+                if (rafRef.current) {
+                    cancelAnimationFrame(rafRef.current);
+                    rafRef.current = null;
+                }
+            };
+        }, [isModalOpen]);
 
         // Look up the correct FA style class for an icon name
         const getIconStyle = (name) => {
@@ -253,61 +282,76 @@ registerBlockType('snn/icon', {
                             onChange={setSearchTerm}
                         />
 
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
-                            gap: '4px',
-                            maxHeight: '420px',
-                            overflowY: 'auto',
-                            marginTop: '12px',
-                            padding: '4px',
-                        }}>
-                            {filteredIcons.map(icon => {
-                                const fullName = 'fa-' + icon.name;
-                                const isActive = iconName === fullName;
-                                return (
-                                    <button
-                                        key={icon.name}
-                                        onClick={() => {
-                                            const style = icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid';
-                                            setAttributes({ iconName: fullName, iconPrefix: style });
-                                            setIsModalOpen(false);
-                                            setSearchTerm('');
-                                        }}
-                                        title={icon.name.replace(/-/g, ' ')}
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            width: '44px',
-                                            height: '44px',
-                                            border: isActive ? '2px solid #3858e9' : '1px solid #ddd',
-                                            borderRadius: '4px',
-                                            background: isActive ? '#f0f6ff' : '#fff',
-                                            cursor: 'pointer',
-                                            fontSize: '16px',
-                                            color: '#333',
-                                            padding: 0,
-                                            transition: 'all 0.1s',
-                                        }}
-                                    >
-                                        <i className={(icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid') + ' ' + fullName}></i>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        {gridReady ? (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
+                                gap: '4px',
+                                maxHeight: '420px',
+                                overflowY: 'auto',
+                                marginTop: '12px',
+                                padding: '4px',
+                            }}>
+                                {filteredIcons.map(icon => {
+                                    const fullName = 'fa-' + icon.name;
+                                    const isActive = iconName === fullName;
+                                    return (
+                                        <button
+                                            key={icon.name}
+                                            onClick={() => {
+                                                const style = icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid';
+                                                setAttributes({ iconName: fullName, iconPrefix: style });
+                                                setIsModalOpen(false);
+                                                setSearchTerm('');
+                                            }}
+                                            title={icon.name.replace(/-/g, ' ')}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '44px',
+                                                height: '44px',
+                                                border: isActive ? '2px solid #3858e9' : '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                background: isActive ? '#f0f6ff' : '#fff',
+                                                cursor: 'pointer',
+                                                fontSize: '24px',
+                                                color: '#333',
+                                                padding: 0,
+                                                transition: 'all 0.1s',
+                                            }}
+                                        >
+                                            <i className={(icon.prefix === 'brands' ? 'fa-brands' : icon.prefix === 'regular' ? 'fa-regular' : 'fa-solid') + ' ' + fullName}></i>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '200px',
+                                color: '#999',
+                                fontSize: '13px',
+                            }}>
+                                {__('Loading icons…', 'snn')}
+                            </div>
+                        )}
 
-                        <p style={{
-                            textAlign: 'center',
-                            marginTop: '12px',
-                            color: '#757575',
-                            fontSize: '12px',
-                        }}>
-                            {filteredIcons.length === 1
-                                ? __('1 icon found', 'snn')
-                                : sprintf(__('%d icons found', 'snn'), filteredIcons.length)
-                            }
-                        </p>
+                        {gridReady && (
+                            <p style={{
+                                textAlign: 'center',
+                                marginTop: '12px',
+                                color: '#757575',
+                                fontSize: '12px',
+                            }}>
+                                {filteredIcons.length === 1
+                                    ? __('1 icon found', 'snn')
+                                    : sprintf(__('%d icons found', 'snn'), filteredIcons.length)
+                                }
+                            </p>
+                        )}
                     </Modal>
                 )}
 
