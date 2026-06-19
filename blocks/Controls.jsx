@@ -167,15 +167,12 @@ C.ColorRow = ({ label, value, onChange }) => {
         setAlphaVal(p.alpha != null ? p.alpha : 1);
     }, [value]);
 
-    // Build the final CSS color value from hex + alpha
+    // Build the final CSS color value from hex + alpha (always hex format)
     const buildColor = useCallback((hex, alpha) => {
         const h = String(hex || '000000').replace('#', '');
         if (alpha >= 1 || alpha == null) return '#' + h;
-        const r = parseInt(h.substring(0, 2), 16);
-        const g = parseInt(h.substring(2, 4), 16);
-        const b = parseInt(h.substring(4, 6), 16);
-        const a = Math.round(alpha * 100) / 100; // round to 2 decimals
-        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+        const aHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
+        return '#' + h + aHex;
     }, []);
 
     // Debounced commit
@@ -220,44 +217,51 @@ C.ColorRow = ({ label, value, onChange }) => {
     const alphaPct = Math.round(alphaVal * 100);
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', color: '#1e1e1e', minWidth: '64px' }}>{label}</span>
-            <input
-                type="color"
-                value={'#' + hexVal}
-                onChange={handleColorInput}
-                style={{ width: '26px', height: '22px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
-            />
-            {/* Alpha slider */}
-            <input
-                type="range"
-                min="0" max="100"
-                value={alphaPct}
-                onChange={handleAlphaInput}
-                title={'Opacity: ' + alphaPct + '%'}
-                style={{
-                    width: '36px', height: '14px', margin: 0, padding: 0,
-                    cursor: 'pointer', flexShrink: 0,
-                    accentColor: '#' + hexVal,
-                    background: 'linear-gradient(to right, transparent, #' + hexVal + ')',
-                    borderRadius: '7px',
-                    appearance: 'none',
-                }}
-            />
-            <span style={{ fontSize: '9px', color: '#757575', minWidth: '26px', textAlign: 'right', flexShrink: 0 }}>
-                {alphaPct}%
-            </span>
-            <input
-                type="text"
-                value={textVal || ''}
-                onChange={handleTextInput}
-                placeholder="#333, rgb(0,0,0,.5), var(--wp--preset--color--primary)"
-                style={{
-                    flex: 1, padding: '1px 4px', fontSize: '11px', fontFamily: 'monospace',
-                    border: '1px solid #949494', borderRadius: '2px', lineHeight: '18px',
-                    boxSizing: 'border-box', minWidth: 0,
-                }}
-            />
+        <div style={{ marginBottom: '3px' }}>
+            {/* Row 1: label + color swatch + text input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', color: '#1e1e1e', minWidth: label ? '64px' : '0' }}>{label}</span>
+                <input
+                    type="color"
+                    value={'#' + hexVal}
+                    onChange={handleColorInput}
+                    style={{ width: '26px', height: '22px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <input
+                    type="text"
+                    value={textVal || ''}
+                    onChange={handleTextInput}
+                    placeholder="#333, #2db62380, var(--wp--preset--color--primary)"
+                    style={{
+                        flex: 1, padding: '1px 4px', fontSize: '11px', fontFamily: 'monospace',
+                        border: '1px solid #949494', borderRadius: '2px', lineHeight: '18px',
+                        boxSizing: 'border-box', minWidth: 0,
+                    }}
+                />
+            </div>
+            {/* Row 2: alpha slider full-width */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                <span style={{ fontSize: '9px', color: '#949494', flexShrink: 0 }}>0%</span>
+                <input
+                    type="range"
+                    min="0" max="100"
+                    value={alphaPct}
+                    onChange={handleAlphaInput}
+                    title={'Opacity: ' + alphaPct + '%'}
+                    style={{
+                        flex: 1, height: '14px', margin: 0, padding: 0,
+                        cursor: 'pointer',
+                        accentColor: '#' + hexVal,
+                        background: 'linear-gradient(to right, transparent, #' + hexVal + ')',
+                        borderRadius: '7px',
+                        appearance: 'none',
+                    }}
+                />
+                <span style={{ fontSize: '9px', color: '#949494', flexShrink: 0 }}>100%</span>
+                <span style={{ fontSize: '10px', fontWeight: 600, color: '#1e1e1e', minWidth: '28px', textAlign: 'right', flexShrink: 0 }}>
+                    {alphaPct}%
+                </span>
+            </div>
         </div>
     );
 };

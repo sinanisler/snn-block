@@ -124,14 +124,9 @@ registerBlockType('snn/text', {
                             {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
                         </div>
                         <ColorRow
-                            label={__('Text Color', 'snn')}
+                            label=""
                             value={getVal('textColor')}
                             onChange={v => setVal('textColor', v || '')}
-                        />
-                        <ColorRow
-                            label={__('BG Color', 'snn')}
-                            value={getVal('bgColor')}
-                            onChange={v => setVal('bgColor', v || '')}
                         />
 
                         <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
