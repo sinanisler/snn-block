@@ -1,76 +1,12 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, MediaUpload, MediaUploadCheck } = wp.blockEditor;
-const { PanelBody, Button, Modal, SearchControl, ColorPalette, RangeControl, BaseControl, TextareaControl, SelectControl } = wp.components;
+const { PanelBody, Button, Modal, SearchControl, ColorPalette, BaseControl, TextareaControl, SelectControl } = wp.components;
 const { Fragment, useState, useEffect, useRef } = wp.element;
 const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
 
-/* ═══════════════════════════════════════════════
-   SHARED HELPERS
-   ═══════════════════════════════════════════════ */
-
-/* ─── Device badge ─── */
-const DeviceBadge = ({ device }) => (
-    <span style={{
-        display: 'inline-block', fontSize: '10px', fontWeight: 600,
-        textTransform: 'uppercase', letterSpacing: '0.5px',
-        background: device === 'desktop' ? '#3858e9' : device === 'tablet' ? '#7b5cf0' : '#f59e0b',
-        color: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '6px', verticalAlign: 'middle',
-    }}>{device}</span>
-);
-
-/* ─── Device-aware label row ─── */
-const RespLabel = ({ label, device }) => (
-    <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '4px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e',
-    }}>
-        <span>{label} <DeviceBadge device={device} /></span>
-    </div>
-);
-
-/* ─── Size field: slider (0–200) + free-form text input ─── */
-const SizeField = ({ label, value, onChange }) => {
-    const strVal = String(value || '');
-    const numVal = parseFloat(strVal);
-    const isValidNum = !isNaN(numVal) && strVal.trim() !== '';
-
-    return (
-        <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>{label}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                    <input
-                        type="text"
-                        value={strVal}
-                        onChange={e => onChange(e.target.value)}
-                        placeholder="48"
-                        style={{
-                            width: '70px', padding: '2px 6px', fontSize: '11px',
-                            fontFamily: 'monospace', border: '1px solid #ddd',
-                            borderRadius: '2px', textAlign: 'right',
-                        }}
-                    />
-                    {strVal !== '' && (
-                        <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>px</span>
-                    )}
-                </div>
-            </div>
-            {isValidNum && (
-                <RangeControl
-                    value={Math.min(numVal, 200)}
-                    onChange={v => onChange(String(v))}
-                    min={0}
-                    max={200}
-                    step={1}
-                    withInputField={false}
-                    __next40pxDefaultSize={true}
-                    __nextHasNoMarginBottom={true}
-                />
-            )}
-        </div>
-    );
-};
+// Shared reusable controls (loaded by functions.php via Controls.jsx)
+const { DeviceBadge, RespLabel, RangeUnitField, useResponsiveAttributes } = window.SNNControls;
 
 /* ═══════════════════════════════════════════════
    ICON BLOCK
@@ -81,31 +17,9 @@ registerBlockType('snn/icon', {
         const { attributes, setAttributes } = props;
         const { iconType, iconName, iconPrefix, customSvg, customImageId, customImageUrl, customImageAlt, size, color, customCSS } = attributes;
 
-        // ── Device state ──
-        const deviceType = useSelect(select => {
-            const editorStore = select('core/editor');
-            if (editorStore?.getDeviceType) {
-                return editorStore.getDeviceType();
-            }
-            const store = select('core/edit-post') || editorStore;
-            const getDevice = store?.__experimentalGetPreviewDeviceType;
-            return getDevice ? getDevice() : 'Desktop';
-        }, []);
-        const activeDevice = (deviceType || 'Desktop').toLowerCase();
-
-        // ── Responsive helpers ──
-        const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
-        const setVal = (attr, value) => {
-            setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
-        };
-        const inheritVal = (attr) => {
-            const val = attributes[attr];
-            if (!val || typeof val !== 'object') return '';
-            if (val[activeDevice]) return val[activeDevice];
-            if (activeDevice === 'mobile' && val.tablet) return val.tablet;
-            if (val.desktop) return val.desktop;
-            return '';
-        };
+        // ── Responsive attributes ──
+        const { activeDevice, getVal, setVal, inheritVal } =
+            useResponsiveAttributes(attributes, setAttributes);
 
         // ── Icon picker state ──
         const [isModalOpen, setIsModalOpen] = useState(false);
@@ -357,10 +271,11 @@ registerBlockType('snn/icon', {
 
                         {/* Size */}
                         <RespLabel label={__('Size', 'snn')} device={activeDevice} />
-                        <SizeField
+                        <RangeUnitField
                             label=""
                             value={getVal('size') || '48'}
                             onChange={v => setVal('size', v)}
+                            min={0} max={200} step={1}
                         />
 
                         <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />

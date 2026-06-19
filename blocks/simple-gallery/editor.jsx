@@ -1,64 +1,11 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, MediaUpload, MediaUploadCheck } = wp.blockEditor;
-const { PanelBody, Button, TextareaControl, RangeControl, SelectControl, ToggleControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { PanelBody, Button, TextareaControl, ToggleControl } = wp.components;
 const { Fragment } = wp.element;
-const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
 
-/* ─── Device badge ─── */
-const DeviceBadge = ({ device }) => (
-    <span style={{
-        display: 'inline-block', fontSize: '10px', fontWeight: 600,
-        textTransform: 'uppercase', letterSpacing: '0.5px',
-        background: device === 'desktop' ? '#3858e9' : device === 'tablet' ? '#7b5cf0' : '#f59e0b',
-        color: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '6px', verticalAlign: 'middle',
-    }}>{device}</span>
-);
-
-/* ─── ToggleGroupControl with SelectControl fallback ─── */
-const ToggleField = ({ label, value, options, onChange }) => {
-    const hasToggle = typeof __experimentalToggleGroupControl !== 'undefined';
-    if (hasToggle) {
-        return (
-            <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 500, display: 'block', marginBottom: '4px', color: '#1e1e1e' }}>{label}</label>
-                <__experimentalToggleGroupControl value={value} onChange={onChange} isBlock __next40pxDefaultSize={true} __nextHasNoMarginBottom={true}>
-                    {options.map(opt => (
-                        <__experimentalToggleGroupControlOption key={opt.value} label={opt.label} value={opt.value} />
-                    ))}
-                </__experimentalToggleGroupControl>
-            </div>
-        );
-    }
-    return <SelectControl label={label} value={value} options={options} onChange={onChange} />;
-};
-
-/* ─── Range slider + smart text input ─── */
-const RangeUnitField = ({ label, value, onChange, min = 0, max = 500, step = 1 }) => {
-    const strVal = String(value || '');
-    const match = strVal.match(/^(-?[\d.]+)(.*)$/);
-    const numVal = match ? parseFloat(match[1]) : '';
-    const unitVal = match ? match[2] : '';
-    const isPureNum = match && !match[2];
-    const handleSlider = (v) => onChange(String(v) + (isPureNum ? '' : unitVal));
-    return (
-        <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>{label}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                    <input type="text" value={strVal} onChange={e => onChange(e.target.value)} placeholder="0"
-                        style={{ width: '70px', padding: '2px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1px solid #ddd', borderRadius: '2px', textAlign: 'right' }} />
-                    {isPureNum && strVal !== '' && <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>px</span>}
-                </div>
-            </div>
-            {(numVal !== '' || strVal === '') && (
-                <RangeControl value={numVal !== '' ? numVal : 0} onChange={handleSlider}
-                    min={min} max={max} step={step} withInputField={false}
-                    __next40pxDefaultSize={true} __nextHasNoMarginBottom={true} />
-            )}
-        </div>
-    );
-};
+// Shared reusable controls (loaded by functions.php via Controls.jsx)
+const { DeviceBadge, ToggleField, RangeUnitField, useResponsiveAttributes } = window.SNNControls;
 
 /* ═══════════════════════════════════════════════
    SIMPLE GALLERY BLOCK
@@ -69,31 +16,9 @@ registerBlockType('snn/simple-gallery', {
         const { attributes, setAttributes } = props;
         const { images, enableLightbox } = attributes;
 
-        // ── Device state ──
-        const deviceType = useSelect(select => {
-            const editorStore = select('core/editor');
-            if (editorStore?.getDeviceType) {
-                return editorStore.getDeviceType();
-            }
-            const store = select('core/edit-post') || editorStore;
-            const getDevice = store?.__experimentalGetPreviewDeviceType;
-            return getDevice ? getDevice() : 'Desktop';
-        }, []);
-        const activeDevice = (deviceType || 'Desktop').toLowerCase();
-
-        // ── Responsive helpers ──
-        const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
-        const setVal = (attr, value) => {
-            setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
-        };
-        const inheritVal = (attr, fallback) => {
-            const val = attributes[attr];
-            if (!val || typeof val !== 'object') return fallback || '';
-            if (val[activeDevice]) return val[activeDevice];
-            if (activeDevice === 'mobile' && val.tablet) return val.tablet;
-            if (val.desktop) return val.desktop;
-            return fallback || '';
-        };
+        // ── Responsive attributes ──
+        const { activeDevice, getVal, setVal, inheritVal } =
+            useResponsiveAttributes(attributes, setAttributes);
 
         // ── Options ──
         const aspectOptions = [

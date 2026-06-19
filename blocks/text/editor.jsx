@@ -2,11 +2,10 @@ const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, RichText } = wp.blockEditor;
 const { PanelBody, TextareaControl } = wp.components;
 const { Fragment } = wp.element;
-const { useSelect } = wp.data;
 const { __ } = wp.i18n;
 
 // Shared reusable controls (loaded by functions.php via Controls.jsx)
-const { DeviceBadge, RespLabel, ToggleField, PaddingInput, ColorRow, FontSizeRow, AlignRow, TransformRow, CompactSelect } = window.SNNControls;
+const { DeviceBadge, RespLabel, ToggleField, PaddingInput, ColorRow, FontSizeRow, AlignRow, TransformRow, CompactSelect, useResponsiveAttributes } = window.SNNControls;
 
 /* ═══════════════════════════════════════════════
    TEXT BLOCK
@@ -16,47 +15,9 @@ registerBlockType('snn/text', {
     edit: function (props) {
         const { attributes, setAttributes } = props;
 
-        // ── Device state ──
-        const deviceType = useSelect(select => {
-            const editorStore = select('core/editor');
-            if (editorStore?.getDeviceType) {
-                return editorStore.getDeviceType();
-            }
-            const store = select('core/edit-post') || editorStore;
-            const getDevice = store?.__experimentalGetPreviewDeviceType;
-            return getDevice ? getDevice() : 'Desktop';
-        }, []);
-        const activeDevice = (deviceType || 'Desktop').toLowerCase();
-
-        // ── Responsive helpers ──
-        const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
-        const setVal = (attr, value) => {
-            setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
-        };
-        const getPad = () => attributes.padding?.[activeDevice] || {};
-        const setPad = (obj) => {
-            setAttributes({ padding: { ...(attributes.padding || {}), [activeDevice]: obj } });
-        };
-        // Inherited value: current device → tablet → desktop → ''
-        const inheritVal = (attr) => {
-            const val = attributes[attr];
-            if (!val || typeof val !== 'object') return '';
-            if (val[activeDevice]) return val[activeDevice];
-            if (activeDevice === 'mobile' && val.tablet) return val.tablet;
-            if (val.desktop) return val.desktop;
-            return '';
-        };
-        const inheritPad = () => {
-            const pad = attributes.padding;
-            if (!pad || typeof pad !== 'object') return {};
-            const tryDevices = ['mobile', 'tablet', 'desktop'];
-            const start = tryDevices.indexOf(activeDevice);
-            for (let i = start; i < tryDevices.length; i++) {
-                const d = tryDevices[i];
-                if (pad[d] && Object.values(pad[d]).some(v => v)) return pad[d];
-            }
-            return {};
-        };
+        // ── Responsive attributes ──
+        const { activeDevice, getVal, setVal, inheritVal, getPad, setPad, inheritPad } =
+            useResponsiveAttributes(attributes, setAttributes);
 
         // ── Preview styles with full inheritance ──
         const previewStyles = {};

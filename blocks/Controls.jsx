@@ -9,7 +9,8 @@
  */
 
 const { __ } = wp.i18n;
-const { __experimentalToggleGroupControl, __experimentalToggleGroupControlOption, SelectControl } = wp.components;
+const { __experimentalToggleGroupControl, __experimentalToggleGroupControlOption, SelectControl, RangeControl } = wp.components;
+const { useSelect } = wp.data;
 
 const C = window.SNNControls = window.SNNControls || {};
 
@@ -257,7 +258,7 @@ C.ColorRow = ({ label, value, onChange }) => {
                     type="color"
                     value={'#' + hexVal}
                     onChange={handleColorInput}
-                    style={{ width: '26px', height: '40px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: '40px', height: '40px', padding: 0, border: '1px solid #949494', borderRadius: '2px', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <input
                     type="text"
@@ -406,3 +407,149 @@ C.CompactSelect = ({ label, value, options, onChange }) => (
         </select>
     </div>
 );
+
+/* ═══════════════════════════════════════════════
+   RANGE + ICON TOGGLE
+   ═══════════════════════════════════════════════ */
+
+/* ─── Range slider + smart text input (defaults to px) ─── */
+C.RangeUnitField = ({ label, value, onChange, min = 0, max = 500, step = 1 }) => {
+    const strVal = String(value || '');
+    const match = strVal.match(/^(-?[\d.]+)(.*)$/);
+    const numVal = match ? parseFloat(match[1]) : '';
+    const unitVal = match ? match[2] : '';
+    const isPureNum = match && !match[2];
+
+    const handleSlider = (v) => {
+        onChange(String(v) + (isPureNum ? '' : unitVal));
+    };
+
+    return (
+        <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>{label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    <input
+                        type="text"
+                        value={strVal}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder="0"
+                        style={{
+                            width: '70px', padding: '2px 6px', fontSize: '11px', fontFamily: 'monospace',
+                            border: '1px solid #ddd', borderRadius: '2px', textAlign: 'right',
+                        }}
+                    />
+                    {isPureNum && strVal !== '' && (
+                        <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>px</span>
+                    )}
+                </div>
+            </div>
+            {(numVal !== '' || strVal === '') && (
+                <RangeControl
+                    value={numVal !== '' ? numVal : 0}
+                    onChange={handleSlider}
+                    min={min} max={max} step={step}
+                    withInputField={false}
+                    __next40pxDefaultSize={true}
+                    __nextHasNoMarginBottom={true}
+                />
+            )}
+        </div>
+    );
+};
+
+/* ─── Icon Toggle Field (Font Awesome) ─── */
+C.IconToggleField = ({ label, value, options, onChange }) => {
+    return (
+        <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '11px', fontWeight: 500, display: 'block', marginBottom: '4px', color: '#1e1e1e' }}>
+                {label}
+            </label>
+            <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap' }}>
+                {options.filter(o => o.value !== '' || o.label === 'Default').map(opt => (
+                    <button
+                        key={opt.value}
+                        onClick={() => onChange(opt.value)}
+                        title={opt.label}
+                        type="button"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            border: value === opt.value ? '2px solid #3858e9' : '1px solid #d0d0d0',
+                            borderRadius: '4px',
+                            background: value === opt.value ? '#f0f6ff' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: value === opt.value ? '#3858e9' : '#666',
+                            padding: 0,
+                            transition: 'all 0.1s',
+                            boxSizing: 'border-box',
+                        }}
+                    >
+                        {opt.icon ? <i className={opt.icon}></i> : opt.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE HOOKS
+   ═══════════════════════════════════════════════ */
+
+/* ─── useActiveDevice — returns 'desktop' | 'tablet' | 'mobile' ─── */
+C.useActiveDevice = () => {
+    const deviceType = useSelect(select => {
+        const editorStore = select('core/editor');
+        if (editorStore?.getDeviceType) {
+            return editorStore.getDeviceType();
+        }
+        const store = select('core/edit-post') || editorStore;
+        const getDevice = store?.__experimentalGetPreviewDeviceType;
+        return getDevice ? getDevice() : 'Desktop';
+    }, []);
+    return (deviceType || 'Desktop').toLowerCase();
+};
+
+/* ─── useResponsiveAttributes — getVal / setVal / inheritVal / padding helpers ─── */
+C.useResponsiveAttributes = (attributes, setAttributes) => {
+    const activeDevice = C.useActiveDevice();
+
+    const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
+
+    const setVal = (attr, value) => {
+        setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
+    };
+
+    // Inherited value cascade: current device → tablet → desktop → fallback
+    const inheritVal = (attr, fallback = '') => {
+        const val = attributes[attr];
+        if (!val || typeof val !== 'object') return fallback;
+        if (val[activeDevice]) return val[activeDevice];
+        if (activeDevice === 'mobile' && val.tablet) return val.tablet;
+        if (val.desktop) return val.desktop;
+        return fallback;
+    };
+
+    const getPad = () => attributes.padding?.[activeDevice] || {};
+    const setPad = (obj) => {
+        setAttributes({ padding: { ...(attributes.padding || {}), [activeDevice]: obj } });
+    };
+    const inheritPad = () => {
+        const pad = attributes.padding;
+        if (!pad || typeof pad !== 'object') return {};
+        const tryDevices = ['mobile', 'tablet', 'desktop'];
+        const start = tryDevices.indexOf(activeDevice);
+        for (let i = start; i < tryDevices.length; i++) {
+            const d = tryDevices[i];
+            if (pad[d] && Object.values(pad[d]).some(v => v)) return pad[d];
+        }
+        return {};
+    };
+
+    return { activeDevice, getVal, setVal, inheritVal, getPad, setPad, inheritPad };
+};
