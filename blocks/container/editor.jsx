@@ -181,6 +181,35 @@ const RangeUnitField = ({ label, value, onChange, min = 0, max = 500, step = 1 }
    ═══════════════════════════════════════════════ */
 
 registerBlockType('snn/container', {
+    // Enable multi-block transform so switchToBlockType works for grouping
+    transforms: {
+        from: [
+            {
+                type: 'block',
+                isMultiBlock: true,
+                blocks: ['*'],
+                __experimentalConvert: function (blocks) {
+                    return wp.blocks.createBlock(
+                        'snn/container',
+                        {},
+                        blocks.map(function (b) {
+                            return wp.blocks.createBlock(
+                                b.name,
+                                Object.assign({}, b.attributes),
+                                (b.innerBlocks || []).map(function (inner) {
+                                    return wp.blocks.createBlock(
+                                        inner.name,
+                                        Object.assign({}, inner.attributes),
+                                        inner.innerBlocks
+                                    );
+                                })
+                            );
+                        })
+                    );
+                }
+            }
+        ]
+    },
     edit: function (props) {
         const { attributes, setAttributes } = props;
 
