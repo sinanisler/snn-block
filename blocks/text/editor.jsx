@@ -325,8 +325,16 @@ registerBlockType('snn/text', {
                             onChange={v => setVal('textColor', v || '')}
                             clearable
                         />
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Spacing */}
+                        <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
+
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Background Color */}
                         <div style={{ marginTop: '12px' }}>
-                            <RespLabel label={__('Background', 'snn')} device={activeDevice} />
+                            <RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
                             <ColorPalette
                                 colors={themeColors}
                                 value={getVal('bgColor')}
@@ -334,11 +342,6 @@ registerBlockType('snn/text', {
                                 clearable
                             />
                         </div>
-
-                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
-
-                        {/* Spacing */}
-                        <PaddingInput values={getPad()} onChange={setPad} device={activeDevice} />
                     </PanelBody>
 
                     {/* ═══════ CUSTOM CSS ═══════ */}

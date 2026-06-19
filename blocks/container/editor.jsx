@@ -408,57 +408,6 @@ registerBlockType('snn/container', {
                             {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
                         </div>
 
-                        {/* Background */}
-                        <RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
-                        <ColorPalette
-                            colors={themeColors}
-                            value={getVal('bgColor')}
-                            onChange={v => setVal('bgColor', v || '')}
-                            clearable
-                        />
-
-                        <MediaUpload
-                            onSelect={onBgImageSelect}
-                            allowedTypes={['image']}
-                            value={attributes.bgImage?.id}
-                            render={({ open }) => (
-                                <div style={{ marginTop: '12px' }}>
-                                    <Button variant="secondary" onClick={open} style={{ width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
-                                        {attributes.bgImage?.url ? __('Change Image', 'snn') : __('Background Image', 'snn')}
-                                    </Button>
-                                    {attributes.bgImage?.url && (
-                                        <div style={{ marginBottom: '8px' }}>
-                                            <img src={attributes.bgImage.url} alt="" style={{ maxWidth: '100%', maxHeight: '80px', objectFit: 'cover', borderRadius: '2px' }} />
-                                            <Button
-                                                onClick={() => setAttributes({ bgImage: { id: 0, url: '', alt: '' } })}
-                                                style={{ display: 'block', marginTop: '4px', color: '#cc1818', fontSize: '11px', padding: '0' }}
-                                                variant="link"
-                                            >{__('Remove', 'snn')}</Button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        />
-
-                        {attributes.bgImage?.url && (
-                            <Fragment>
-                                <SelectControl label={__('Size', 'snn')} value={attributes.bgSize} options={[
-                                    { label: 'Cover', value: 'cover' }, { label: 'Contain', value: 'contain' }, { label: 'Auto', value: 'auto' },
-                                ]} onChange={v => setAttributes({ bgSize: v })} />
-                                <SelectControl label={__('Position', 'snn')} value={attributes.bgPosition} options={[
-                                    { label: 'Center', value: 'center center' }, { label: 'Top', value: 'top center' },
-                                    { label: 'Bottom', value: 'bottom center' }, { label: 'Left', value: 'left center' },
-                                    { label: 'Right', value: 'right center' },
-                                ]} onChange={v => setAttributes({ bgPosition: v })} />
-                                <SelectControl label={__('Repeat', 'snn')} value={attributes.bgRepeat} options={[
-                                    { label: 'No Repeat', value: 'no-repeat' }, { label: 'Repeat', value: 'repeat' },
-                                    { label: 'Repeat X', value: 'repeat-x' }, { label: 'Repeat Y', value: 'repeat-y' },
-                                ]} onChange={v => setAttributes({ bgRepeat: v })} />
-                            </Fragment>
-                        )}
-
-                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
-
                         {/* Display / Layout */}
                         <ToggleField label={__('Display', 'snn')} value={displayVal} options={displayOptions} onChange={v => setVal('display', v)} />
 
@@ -501,6 +450,59 @@ registerBlockType('snn/container', {
                         <div style={{ marginTop: '8px' }}>
                             <ToggleField label={__('Text Align', 'snn')} value={getVal('textAlign')} options={textAlignOptions} onChange={v => setVal('textAlign', v)} />
                         </div>
+
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* Background Color */}
+                        <RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
+                        <ColorPalette
+                            colors={themeColors}
+                            value={getVal('bgColor')}
+                            onChange={v => setVal('bgColor', v || '')}
+                            clearable
+                        />
+
+                        <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        <MediaUpload
+                            onSelect={onBgImageSelect}
+                            allowedTypes={['image']}
+                            value={attributes.bgImage?.id}
+                            render={({ open }) => (
+                                <div style={{ marginTop: '12px' }}>
+                                    <Button variant="secondary" onClick={open} style={{ width: '100%', justifyContent: 'center', marginBottom: '8px' }}>
+                                        {attributes.bgImage?.url ? __('Change Image', 'snn') : __('Background Image', 'snn')}
+                                    </Button>
+                                    {attributes.bgImage?.url && (
+                                        <div style={{ marginBottom: '8px' }}>
+                                            <img src={attributes.bgImage.url} alt="" style={{ maxWidth: '100%', maxHeight: '80px', objectFit: 'cover', borderRadius: '2px' }} />
+                                            <Button
+                                                onClick={() => setAttributes({ bgImage: { id: 0, url: '', alt: '' } })}
+                                                style={{ display: 'block', marginTop: '4px', color: '#cc1818', fontSize: '11px', padding: '0' }}
+                                                variant="link"
+                                            >{__('Remove', 'snn')}</Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        />
+
+                        {attributes.bgImage?.url && (
+                            <Fragment>
+                                <SelectControl label={__('Size', 'snn')} value={attributes.bgSize} options={[
+                                    { label: 'Cover', value: 'cover' }, { label: 'Contain', value: 'contain' }, { label: 'Auto', value: 'auto' },
+                                ]} onChange={v => setAttributes({ bgSize: v })} />
+                                <SelectControl label={__('Position', 'snn')} value={attributes.bgPosition} options={[
+                                    { label: 'Center', value: 'center center' }, { label: 'Top', value: 'top center' },
+                                    { label: 'Bottom', value: 'bottom center' }, { label: 'Left', value: 'left center' },
+                                    { label: 'Right', value: 'right center' },
+                                ]} onChange={v => setAttributes({ bgPosition: v })} />
+                                <SelectControl label={__('Repeat', 'snn')} value={attributes.bgRepeat} options={[
+                                    { label: 'No Repeat', value: 'no-repeat' }, { label: 'Repeat', value: 'repeat' },
+                                    { label: 'Repeat X', value: 'repeat-x' }, { label: 'Repeat Y', value: 'repeat-y' },
+                                ]} onChange={v => setAttributes({ bgRepeat: v })} />
+                            </Fragment>
+                        )}
                     </PanelBody>
 
                     {/* ═══════ CUSTOM CSS ═══════ */}
