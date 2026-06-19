@@ -197,8 +197,9 @@ registerBlockType('snn/container', {
 
                     {/* ═══════ STYLE ═══════ */}
                     <PanelBody title={__('Style', 'snn')} initialOpen={false}>
-                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
-                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
+                        <div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>{__('Editing:', 'snn')}</span>
+                            <DeviceBadge device={activeDevice} />
                         </div>
 
                         {/* Display / Layout */}

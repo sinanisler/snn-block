@@ -18,15 +18,24 @@ const C = window.SNNControls = window.SNNControls || {};
    DEVICE / RESPONSIVE HELPERS
    ═══════════════════════════════════════════════ */
 
-/* ─── Device badge ─── */
-C.DeviceBadge = ({ device }) => (
-    <span style={{
-        display: 'inline-block', fontSize: '10px', fontWeight: 600,
-        textTransform: 'uppercase', letterSpacing: '0.5px',
-        background: device === 'desktop' ? '#3858e9' : device === 'tablet' ? '#7b5cf0' : '#f59e0b',
-        color: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '6px', verticalAlign: 'middle',
-    }}>{device}</span>
-);
+/* ─── Device icon ─── */
+C.DeviceBadge = ({ device }) => {
+    const iconMap = {
+        desktop: 'fa-solid fa-desktop-alt',
+        tablet:  'fa-solid fa-tablet-screen-button',
+        mobile:  'fa-solid fa-mobile-screen',
+    };
+    const iconClass = iconMap[device] || iconMap.desktop;
+    return (
+        <i className={iconClass}
+            title={device}
+            style={{
+                fontSize: '12px', color: '#1e1e1e', marginLeft: '6px',
+                verticalAlign: 'middle', lineHeight: 1,
+            }}
+        ></i>
+    );
+};
 
 /* ─── Device-aware label row ─── */
 C.RespLabel = ({ label, device }) => (

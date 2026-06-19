@@ -64,8 +64,9 @@ registerBlockType('snn/simple-gallery', {
             <Fragment>
                 <InspectorControls>
                     <PanelBody title={__('Gallery Settings', 'snn')} initialOpen={true}>
-                        <div style={{ fontSize: '11px', color: '#757575', marginBottom: '8px', fontStyle: 'italic' }}>
-                            {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong> <DeviceBadge device={activeDevice} />
+                        <div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>{__('Editing:', 'snn')}</span>
+                            <DeviceBadge device={activeDevice} />
                         </div>
 
                         <MediaUploadCheck>
