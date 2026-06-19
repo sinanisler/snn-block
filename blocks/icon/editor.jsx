@@ -198,9 +198,9 @@ registerBlockType('snn/icon', {
                         {/* Icon Type Toggle */}
                         <SelectControl
                             label={__('Icon Source', 'snn')}
-                            value={iconType || 'fontawesome'}
+                            value={iconType || 'icon-library'}
                             options={[
-                                { label: __('Font Awesome Icon', 'snn'), value: 'fontawesome' },
+                                { label: __('Icon Library', 'snn'), value: 'icon-library' },
                                 { label: __('Custom SVG / Image', 'snn'), value: 'custom' },
                             ]}
                             onChange={val => setAttributes({ iconType: val })}
@@ -208,8 +208,8 @@ registerBlockType('snn/icon', {
 
                         <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
 
-                        {/* ── Font Awesome Mode ── */}
-                        {(iconType === 'fontawesome' || !iconType) && (
+                        {/* ── Icon Library Mode ── */}
+                        {(iconType === 'icon-library' || !iconType) && (
                             <Fragment>
                                 {/* Icon Picker Button */}
                                 <BaseControl label={__('Select Icon', 'snn')}>
@@ -490,7 +490,7 @@ registerBlockType('snn/icon', {
                             );
                         }
 
-                        // Font Awesome mode
+                        // Icon Library mode
                         if (iconName) {
                             return (
                                 <i className={getIconStyle(iconName) + ' ' + iconName} style={{

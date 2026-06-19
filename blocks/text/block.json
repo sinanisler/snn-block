@@ -6,7 +6,7 @@
     "title": "Text",
     "category": "text",
     "icon": "text",
-    "description": "A text block with responsive typography and color controls. Supports p, h1-h4, and div tags.",
+    "description": "",
     "keywords": ["text", "paragraph", "heading", "typography"],
     "attributes": {
         "content": { "type": "string", "default": "" },

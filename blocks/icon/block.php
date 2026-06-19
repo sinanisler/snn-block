@@ -2,7 +2,7 @@
 /**
  * Icon Block — SNN
  *
- * Renders a Font Awesome 6 icon with responsive size/color + custom CSS.
+ * Renders an Icon Library icon, custom SVG, or uploaded image with responsive size/color + custom CSS.
  *
  * @package SNN
  */
@@ -14,11 +14,11 @@ add_action('init', function () {
     ]);
 });
 
-// ── Frontend: enqueue Font Awesome if this block is present ────────
+// ── Frontend: enqueue Icon Library styles if this block is present ────────
 add_action('wp_enqueue_scripts', function () {
     if (has_block('snn/icon')) {
         wp_enqueue_style(
-            'snn-fontawesome',
+            'snn-icon-library',
             SNN_URL . 'assets/fonts/fontawesome/all.min.css',
             [],
             '6.7.2'
@@ -50,7 +50,7 @@ add_action('enqueue_block_editor_assets', function () {
 
 // ── Render callback ─────────────────────────────────────────────────
 function snn_icon_block_render($attributes) {
-    $icon_type       = $attributes['iconType'] ?? 'fontawesome';
+    $icon_type       = $attributes['iconType'] ?? 'icon-library';
     $icon_name       = $attributes['iconName'] ?? '';
     $icon_prefix     = $attributes['iconPrefix'] ?? 'fa-solid';
     $custom_svg      = $attributes['customSvg'] ?? '';
@@ -122,7 +122,7 @@ function snn_icon_block_render($attributes) {
             $icon_html   = '<i class="' . esc_attr($icon_prefix) . ' ' . esc_attr($icon_name) . '"></i>';
         }
     } else {
-        // Font Awesome mode (default)
+        // Icon Library mode (default)
         if (empty($icon_name)) {
             $icon_name   = 'fa-star';
             $icon_prefix = 'fa-solid';

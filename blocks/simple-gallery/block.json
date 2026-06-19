@@ -6,7 +6,7 @@
     "title": "Simple Gallery",
     "category": "media",
     "icon": "images-alt2",
-    "description": "A responsive image gallery block with multi-image selection and configurable columns.",
+    "description": "",
     "keywords": ["gallery", "images", "photos", "grid"],
     "attributes": {
         "images": {

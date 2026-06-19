@@ -6,7 +6,7 @@
     "title": "Section",
     "category": "design",
     "icon": "align-full-width",
-    "description": "A full-width section block with responsive flex/grid and styling controls. Automatically contains a Container block.",
+    "description": "",
     "keywords": ["section", "wrapper", "full-width"],
     "attributes": {
         "bgColor": { "type": "object", "default": {} },

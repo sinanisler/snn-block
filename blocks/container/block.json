@@ -6,7 +6,7 @@
     "title": "Container",
     "category": "design",
     "icon": "align-center",
-    "description": "A centered container block with responsive flex/grid and styling controls. Meant to live inside a Section block.",
+    "description": "",
     "keywords": ["container", "wrapper", "centered"],
     "attributes": {
         "maxWidth": { "type": "string" },
