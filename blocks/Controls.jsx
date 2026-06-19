@@ -241,7 +241,6 @@ C.ColorRow = ({ label, value, onChange }) => {
             </div>
             {/* Row 2: alpha slider full-width */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                <span style={{ fontSize: '9px', color: '#949494', flexShrink: 0 }}>0%</span>
                 <input
                     type="range"
                     min="0" max="100"
@@ -257,7 +256,6 @@ C.ColorRow = ({ label, value, onChange }) => {
                         appearance: 'none',
                     }}
                 />
-                <span style={{ fontSize: '9px', color: '#949494', flexShrink: 0 }}>100%</span>
                 <span style={{ fontSize: '10px', fontWeight: 600, color: '#1e1e1e', minWidth: '28px', textAlign: 'right', flexShrink: 0 }}>
                     {alphaPct}%
                 </span>
