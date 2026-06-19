@@ -6,11 +6,16 @@
     "title": "Icon",
     "category": "design",
     "icon": "star-filled",
-    "description": "Display any Font Awesome 6 icon with responsive size and color controls.",
+    "description": "Display a Font Awesome 6 icon, custom SVG, or uploaded image with responsive size and color controls.",
     "keywords": ["icon", "font awesome", "svg", "vector"],
     "attributes": {
+        "iconType": { "type": "string", "default": "fontawesome" },
         "iconName": { "type": "string", "default": "" },
         "iconPrefix": { "type": "string", "default": "fa-solid" },
+        "customSvg": { "type": "string", "default": "" },
+        "customImageId": { "type": "number", "default": 0 },
+        "customImageUrl": { "type": "string", "default": "" },
+        "customImageAlt": { "type": "string", "default": "" },
         "size": { "type": "object", "default": {} },
         "color": { "type": "object", "default": {} },
         "customCSS": { "type": "string", "default": "" }

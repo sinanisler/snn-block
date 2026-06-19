@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
-const { InspectorControls, useBlockProps } = wp.blockEditor;
-const { PanelBody, Button, Modal, SearchControl, ColorPalette, RangeControl, BaseControl, TextareaControl } = wp.components;
+const { InspectorControls, useBlockProps, MediaUpload, MediaUploadCheck } = wp.blockEditor;
+const { PanelBody, Button, Modal, SearchControl, ColorPalette, RangeControl, BaseControl, TextareaControl, SelectControl } = wp.components;
 const { Fragment, useState, useEffect, useRef } = wp.element;
 const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
@@ -79,7 +79,7 @@ const SizeField = ({ label, value, onChange }) => {
 registerBlockType('snn/icon', {
     edit: function (props) {
         const { attributes, setAttributes } = props;
-        const { iconName, size, color, customCSS } = attributes;
+        const { iconType, iconName, customSvg, customImageId, customImageUrl, customImageAlt, size, color, customCSS } = attributes;
 
         // ── Device state ──
         const deviceType = useSelect(select => {
@@ -195,41 +195,134 @@ registerBlockType('snn/icon', {
                             {__('Editing: ', 'snn')}<strong style={{ textTransform: 'capitalize' }}>{activeDevice}</strong>
                         </div>
 
-                        {/* Icon Picker Button */}
-                        <BaseControl label={__('Select Icon', 'snn')}>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setIsModalOpen(true)}
-                                style={{
-                                    width: '100%',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    padding: '10px',
-                                    height: 'auto',
-                                }}
-                            >
-                                {iconName ? (
-                                    <span>
-                                        <i className={getIconStyle(iconName) + ' ' + iconName}
-                                           style={{ fontSize: '20px', verticalAlign: 'middle', marginRight: '8px' }}
-                                        ></i>
-                                        {iconName.replace('fa-', '').replace(/-/g, ' ')}
-                                    </span>
-                                ) : (
-                                    __('Choose Icon…', 'snn')
-                                )}
-                            </Button>
-                        </BaseControl>
+                        {/* Icon Type Toggle */}
+                        <SelectControl
+                            label={__('Icon Source', 'snn')}
+                            value={iconType || 'fontawesome'}
+                            options={[
+                                { label: __('Font Awesome Icon', 'snn'), value: 'fontawesome' },
+                                { label: __('Custom SVG / Image', 'snn'), value: 'custom' },
+                            ]}
+                            onChange={val => setAttributes({ iconType: val })}
+                        />
 
-                        {/* Remove icon button */}
-                        {iconName && (
-                            <Button
-                                variant="link"
-                                onClick={() => setAttributes({ iconName: '' })}
-                                style={{ color: '#cc1818', fontSize: '11px', padding: '0', marginTop: '4px' }}
-                            >
-                                {__('Remove Icon', 'snn')}
-                            </Button>
+                        <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                        {/* ── Font Awesome Mode ── */}
+                        {(iconType === 'fontawesome' || !iconType) && (
+                            <Fragment>
+                                {/* Icon Picker Button */}
+                                <BaseControl label={__('Select Icon', 'snn')}>
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => setIsModalOpen(true)}
+                                        style={{
+                                            width: '100%',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            padding: '10px',
+                                            height: 'auto',
+                                        }}
+                                    >
+                                        {iconName ? (
+                                            <span>
+                                                <i className={getIconStyle(iconName) + ' ' + iconName}
+                                                   style={{ fontSize: '20px', verticalAlign: 'middle', marginRight: '8px' }}
+                                                ></i>
+                                                {iconName.replace('fa-', '').replace(/-/g, ' ')}
+                                            </span>
+                                        ) : (
+                                            __('Choose Icon…', 'snn')
+                                        )}
+                                    </Button>
+                                </BaseControl>
+
+                                {/* Remove icon button */}
+                                {iconName && (
+                                    <Button
+                                        variant="link"
+                                        onClick={() => setAttributes({ iconName: '' })}
+                                        style={{ color: '#cc1818', fontSize: '11px', padding: '0', marginTop: '4px' }}
+                                    >
+                                        {__('Remove Icon', 'snn')}
+                                    </Button>
+                                )}
+                            </Fragment>
+                        )}
+
+                        {/* ── Custom SVG / Image Mode ── */}
+                        {iconType === 'custom' && (
+                            <Fragment>
+                                {/* SVG Code Input */}
+                                <TextareaControl
+                                    label={__('SVG Code', 'snn')}
+                                    help={__('Paste raw SVG markup here. Takes priority over image upload.', 'snn')}
+                                    value={customSvg || ''}
+                                    onChange={val => setAttributes({ customSvg: val })}
+                                    rows={6}
+                                    style={{ fontFamily: 'monospace', fontSize: '11px' }}
+                                />
+
+                                <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
+
+                                {/* Image Upload */}
+                                <BaseControl label={__('Or Upload an Image', 'snn')}>
+                                    <MediaUploadCheck>
+                                        <MediaUpload
+                                            onSelect={media => {
+                                                setAttributes({
+                                                    customImageId: media.id,
+                                                    customImageUrl: media.url,
+                                                    customImageAlt: media.alt || '',
+                                                });
+                                            }}
+                                            allowedTypes={['image']}
+                                            value={customImageId}
+                                            render={({ open }) => (
+                                                <Fragment>
+                                                    {customImageUrl ? (
+                                                        <div style={{ position: 'relative', marginBottom: '8px' }}>
+                                                            <img
+                                                                src={customImageUrl}
+                                                                alt={customImageAlt || ''}
+                                                                style={{
+                                                                    maxWidth: '100%',
+                                                                    maxHeight: '120px',
+                                                                    display: 'block',
+                                                                    borderRadius: '4px',
+                                                                    border: '1px solid #ddd',
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    ) : null}
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={open}
+                                                            style={{ flex: 1 }}
+                                                        >
+                                                            {customImageUrl ? __('Replace Image', 'snn') : __('Choose Image', 'snn')}
+                                                        </Button>
+                                                        {customImageUrl && (
+                                                            <Button
+                                                                variant="link"
+                                                                onClick={() => setAttributes({
+                                                                    customImageId: 0,
+                                                                    customImageUrl: '',
+                                                                    customImageAlt: '',
+                                                                })}
+                                                                style={{ color: '#cc1818', fontSize: '11px' }}
+                                                            >
+                                                                {__('Remove', 'snn')}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </Fragment>
+                                            )}
+                                        />
+                                    </MediaUploadCheck>
+                                </BaseControl>
+                            </Fragment>
                         )}
 
                         <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
@@ -357,17 +450,62 @@ registerBlockType('snn/icon', {
 
                 {/* ═══════ EDITOR PREVIEW ═══════ */}
                 <div {...blockProps}>
-                    {iconName ? (
-                        <i className={getIconStyle(iconName) + ' ' + iconName} style={{
-                            fontSize: previewSize + 'px',
-                            color: previewColor || undefined,
-                            lineHeight: 1,
-                        }}></i>
-                    ) : (
-                        <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
-                            {__('Click to choose an icon →', 'snn')}
-                        </span>
-                    )}
+                    {(() => {
+                        // Custom SVG / Image mode
+                        if (iconType === 'custom') {
+                            if (customSvg) {
+                                return (
+                                    <span
+                                        dangerouslySetInnerHTML={{ __html: customSvg }}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: previewSize + 'px',
+                                            height: previewSize + 'px',
+                                            color: previewColor || undefined,
+                                            lineHeight: 1,
+                                        }}
+                                    />
+                                );
+                            }
+                            if (customImageUrl) {
+                                return (
+                                    <img
+                                        src={customImageUrl}
+                                        alt={customImageAlt || ''}
+                                        style={{
+                                            width: previewSize + 'px',
+                                            height: previewSize + 'px',
+                                            objectFit: 'contain',
+                                            lineHeight: 1,
+                                        }}
+                                    />
+                                );
+                            }
+                            return (
+                                <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
+                                    {__('Add an SVG or image →', 'snn')}
+                                </span>
+                            );
+                        }
+
+                        // Font Awesome mode
+                        if (iconName) {
+                            return (
+                                <i className={getIconStyle(iconName) + ' ' + iconName} style={{
+                                    fontSize: previewSize + 'px',
+                                    color: previewColor || undefined,
+                                    lineHeight: 1,
+                                }}></i>
+                            );
+                        }
+                        return (
+                            <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
+                                {__('Click to choose an icon →', 'snn')}
+                            </span>
+                        );
+                    })()}
                 </div>
             </Fragment>
         );

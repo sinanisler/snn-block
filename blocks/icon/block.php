@@ -50,17 +50,16 @@ add_action('enqueue_block_editor_assets', function () {
 
 // ── Render callback ─────────────────────────────────────────────────
 function snn_icon_block_render($attributes) {
-    $icon_name   = $attributes['iconName'] ?? '';
-    $icon_prefix = $attributes['iconPrefix'] ?? 'fa-solid';
-    $size        = $attributes['size'] ?? [];
-    $color       = $attributes['color'] ?? [];
-    $custom_css  = $attributes['customCSS'] ?? '';
-
-    // Fallback icon
-    if (empty($icon_name)) {
-        $icon_name   = 'fa-star';
-        $icon_prefix = 'fa-solid';
-    }
+    $icon_type       = $attributes['iconType'] ?? 'fontawesome';
+    $icon_name       = $attributes['iconName'] ?? '';
+    $icon_prefix     = $attributes['iconPrefix'] ?? 'fa-solid';
+    $custom_svg      = $attributes['customSvg'] ?? '';
+    $custom_image_id = $attributes['customImageId'] ?? 0;
+    $custom_image_url = $attributes['customImageUrl'] ?? '';
+    $custom_image_alt = $attributes['customImageAlt'] ?? '';
+    $size            = $attributes['size'] ?? [];
+    $color           = $attributes['color'] ?? [];
+    $custom_css      = $attributes['customCSS'] ?? '';
 
     $uid      = 'snn-i-' . uniqid();
     $selector = '.' . $uid;
@@ -68,9 +67,14 @@ function snn_icon_block_render($attributes) {
     // ── Build responsive CSS ──
     $all_css = '';
 
-    // Size (px)
+    // Size (px) — use width/height for images, font-size for FA & SVGs
     if (!empty($size) && is_array($size)) {
-        $all_css .= snn_block_responsive_style($size, 'font-size', $selector, 'px');
+        if ($icon_type === 'custom' && !empty($custom_image_url) && empty($custom_svg)) {
+            $all_css .= snn_block_responsive_style($size, 'width', $selector, 'px');
+            $all_css .= snn_block_responsive_style($size, 'height', $selector, 'px');
+        } else {
+            $all_css .= snn_block_responsive_style($size, 'font-size', $selector, 'px');
+        }
     }
 
     // Color
@@ -88,15 +92,51 @@ function snn_icon_block_render($attributes) {
         $all_css .= "{$selector} {\n{$safe_css}\n}\n";
     }
 
+    // ── Build icon HTML ──
+    $icon_html = '';
+
+    if ($icon_type === 'custom') {
+        // Custom SVG takes priority over image
+        if (!empty($custom_svg)) {
+            // Sanitize SVG: strip script tags, event handlers, etc.
+            $safe_svg = preg_replace(
+                '~<script\b[^>]*>.*?</script>|<[^>]*\s+on\w+\s*=\s*["\'][^"\']*["\']~is',
+                '',
+                $custom_svg
+            );
+            // Remove javascript: URLs
+            $safe_svg = preg_replace(
+                '~\b(?:xlink:)?href\s*=\s*["\']\s*javascript\s*:[^"\']*["\']~i',
+                '',
+                $safe_svg
+            );
+            $icon_html = '<span class="snn-icon__custom snn-icon__svg">' . $safe_svg . '</span>';
+        } elseif (!empty($custom_image_url)) {
+            $alt = !empty($custom_image_alt) ? esc_attr($custom_image_alt) : '';
+            $img = '<img src="' . esc_url($custom_image_url) . '" alt="' . $alt . '" class="snn-icon__custom snn-icon__img" loading="lazy" />';
+            $icon_html = $img;
+        } else {
+            // Fallback for custom mode with nothing set
+            $icon_name   = 'fa-star';
+            $icon_prefix = 'fa-solid';
+            $icon_html   = '<i class="' . esc_attr($icon_prefix) . ' ' . esc_attr($icon_name) . '"></i>';
+        }
+    } else {
+        // Font Awesome mode (default)
+        if (empty($icon_name)) {
+            $icon_name   = 'fa-star';
+            $icon_prefix = 'fa-solid';
+        }
+        $icon_html = '<i class="' . esc_attr($icon_prefix) . ' ' . esc_attr($icon_name) . '"></i>';
+    }
+
     // ── Output ──
     $class = 'snn-icon ' . esc_attr($uid);
-    $icon  = '<i class="' . esc_attr($icon_prefix) . ' ' . esc_attr($icon_name) . '"></i>';
-
     $output = '<span class="' . $class . '">';
     if ($all_css) {
         $output .= '<style>' . $all_css . '</style>';
     }
-    $output .= $icon;
+    $output .= $icon_html;
     $output .= '</span>';
 
     return $output;
