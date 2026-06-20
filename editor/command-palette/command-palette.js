@@ -1,31 +1,26 @@
 /**
- * SNN Command Palette — Ctrl+K Block Inserter
+ * SNN Command Palette — Block Inserter for the native Command Center
  *
- * Simple, self-contained command palette for the block editor & site editor:
- *   - Press Ctrl+K (or Cmd+K) → palette opens
- *   - Type a block name → arrow keys to navigate → Enter to insert
- *   - Esc to close
+ * Registers all insertable blocks into WordPress's native Command Palette
+ * (Ctrl+K / Cmd+K) so they appear alongside the built-in commands (pages,
+ * templates, patterns, settings, etc.). Type a block name → Enter → the
+ * block is inserted at the current selection.
  *
- * This deliberately does NOT use wp.commands/useCommandLoader (the native
- * Command Center API), because that integration triggered React error #130
- * ("element type is undefined") in the global wp build. Instead it renders
- * its own portal palette using only stable wp.element primitives.
+ * Implementation notes:
+ *   - Uses wp.data.dispatch( wp.commands.store ).registerCommandLoader with
+ *     a PLAIN function (not a React hook). The Command Center calls the
+ *     loader as `hook({ search })` and expects `{ commands, isLoading }`.
+ *     Calling React hooks (useSelect/useMemo) inside it triggered
+ *     React error #130, so we read blocks synchronously instead.
+ *   - We do NOT bind our own Ctrl+K handler, so the native palette (with
+ *     pages/subpages) keeps working as usual.
  */
 (function () {
     'use strict';
 
-    var element = wp.element || {};
-    var el = element.createElement;
-    var createPortal = element.createPortal;
-    var useState = element.useState;
-    var useEffect = element.useEffect;
-    var useRef = element.useRef;
     var registerPlugin = wp.plugins && wp.plugins.registerPlugin;
     var __ = (wp.i18n && wp.i18n.__) || function (s) { return s; };
-
-    if (!el || !createPortal || !useState || !useEffect || !useRef || !registerPlugin) {
-        return;
-    }
+    if (!registerPlugin) return;
 
     /* ═══════════════════════════════════════════════
        BLOCK LIST + INSERT
@@ -88,178 +83,89 @@
     }
 
     /* ═══════════════════════════════════════════════
-       PALETTE COMPONENT
+       COMMAND LOADER (plain function, NOT a React hook)
        ═══════════════════════════════════════════════ */
 
-    var CAT_COLORS = {
-        text: '#3858e9',
-        media: '#f59e0b',
-        design: '#7b5cf0',
-        widgets: '#00a32a',
-        theme: '#d63638',
-        embed: '#e26f56',
-    };
+    // The Command Center calls this as `hook({ search })` and expects
+    // `{ commands, isLoading }`. It must NOT call React hooks.
+    function blockCommandLoader(props) {
+        var search = (props && props.search) ? props.search : '';
+        var allBlocks = readBlockTypes();
+        var s = String(search).toLowerCase().trim();
 
-    function SNNCommandPalette() {
-        var sOpen = useState(false), isOpen = sOpen[0], setOpen = sOpen[1];
-        var sSearch = useState(''), search = sSearch[0], setSearch = sSearch[1];
-        var sIdx = useState(0), sel = sIdx[0], setSel = sIdx[1];
-        var inputRef = useRef(null);
-        var listRef = useRef(null);
-        var blocksRef = useRef([]);
-
-        var lower = search.trim().toLowerCase();
-        var filtered = lower
-            ? blocksRef.current.filter(function (b) {
-                return b.title.toLowerCase().indexOf(lower) !== -1 ||
-                    b.name.toLowerCase().indexOf(lower) !== -1 ||
-                    b.cat.toLowerCase().indexOf(lower) !== -1 ||
-                    b.keywords.toLowerCase().indexOf(lower) !== -1;
-              })
-            : blocksRef.current;
-        if (filtered.length > 60) filtered = filtered.slice(0, 60);
-
-        // Reset selection when search changes.
-        useEffect(function () { setSel(0); }, [search]);
-
-        // Global Ctrl+K / Cmd+K toggle.
-        useEffect(function () {
-            function onKey(e) {
-                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey &&
-                    (e.key === 'k' || e.key === 'K')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setOpen(function (p) {
-                        if (!p) {
-                            blocksRef.current = readBlockTypes();
-                            setSearch('');
-                        }
-                        return !p;
-                    });
+        var filtered = allBlocks;
+        if (s) {
+            filtered = [];
+            for (var i = 0; i < allBlocks.length; i++) {
+                var b = allBlocks[i];
+                if (
+                    b.title.toLowerCase().indexOf(s) !== -1 ||
+                    b.name.toLowerCase().indexOf(s) !== -1 ||
+                    b.cat.toLowerCase().indexOf(s) !== -1 ||
+                    b.keywords.toLowerCase().indexOf(s) !== -1
+                ) {
+                    filtered.push(b);
                 }
             }
-            document.addEventListener('keydown', onKey, true);
-            return function () { document.removeEventListener('keydown', onKey, true); };
-        }, []);
+        }
+        // Keep the palette snappy.
+        filtered = filtered.slice(0, 40);
 
-        // Focus input when opening.
-        useEffect(function () {
-            if (!isOpen) return;
-            var t = setTimeout(function () {
-                if (inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
-            }, 30);
-            return function () { clearTimeout(t); };
-        }, [isOpen]);
-
-        // Scroll selected item into view.
-        useEffect(function () {
-            if (!isOpen || !listRef.current) return;
-            var node = listRef.current.querySelector('.snn-cp-item-selected');
-            if (node && typeof node.scrollIntoView === 'function') {
-                node.scrollIntoView({ block: 'nearest' });
-            }
-        }, [sel, isOpen]);
-
-        function close() { setOpen(false); setSearch(''); }
-
-        function pick(b) {
-            if (!b) return;
-            insertBlock(b.name);
-            close();
+        var commands = [];
+        for (var j = 0; j < filtered.length; j++) {
+            (function (block) {
+                commands.push({
+                    name: 'snn/insert/' + block.name,
+                    label: block.title,
+                    description: block.desc || block.name,
+                    category: 'command',
+                    keywords: block.keywords ? block.keywords.split(' ') : [],
+                    callback: function (args) {
+                        var close = args && args.close;
+                        if (insertBlock(block.name)) {
+                            if (typeof close === 'function') close();
+                        }
+                    },
+                });
+            })(filtered[j]);
         }
 
-        function onInputKey(e) {
-            var max = Math.max(0, filtered.length - 1);
-            switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    setSel(function (p) { return Math.min(p + 1, max); });
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    setSel(function (p) { return Math.max(p - 1, 0); });
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    pick(filtered[sel]);
-                    break;
-                case 'Escape':
-                    e.preventDefault();
-                    close();
-                    break;
-                case 'Tab':
-                    e.preventDefault();
-                    setSel(function (p) { return e.shiftKey ? Math.max(p - 1, 0) : Math.min(p + 1, max); });
-                    break;
-            }
-        }
-
-        if (!isOpen) return null;
-
-        var items = [];
-        for (var i = 0; i < filtered.length; i++) {
-            (function (b, idx, isSel) {
-                var col = CAT_COLORS[b.cat] || '#757575';
-                items.push(el('div', {
-                    key: b.name,
-                    className: 'snn-cp-item' + (isSel ? ' snn-cp-item-selected' : ''),
-                    onClick: function () { pick(b); },
-                    onMouseEnter: function () { setSel(idx); },
-                    role: 'option',
-                    'aria-selected': isSel,
-                },
-                    el('span', { className: 'snn-cp-item-info' },
-                        el('span', { className: 'snn-cp-item-title' }, b.title),
-                        b.desc ? el('span', { className: 'snn-cp-item-desc' }, b.desc) : null
-                    ),
-                    b.cat ? el('span', {
-                        className: 'snn-cp-item-cat',
-                        style: { color: col, borderColor: col },
-                    }, b.cat) : null
-                ));
-            })(filtered[i], i, i === sel);
-        }
-
-        return createPortal(
-            el('div', {
-                className: 'snn-cp-overlay',
-                onMouseDown: function (e) { if (e.target === e.currentTarget) close(); },
-            },
-                el('div', {
-                    className: 'snn-cp-palette',
-                    onMouseDown: function (e) { e.stopPropagation(); },
-                },
-                    el('div', { className: 'snn-cp-header' },
-                        el('input', {
-                            ref: inputRef,
-                            type: 'text',
-                            className: 'snn-cp-input',
-                            placeholder: __('Search blocks to insert…', 'snn-block'),
-                            value: search,
-                            onChange: function (e) { setSearch(e.target.value); },
-                            onKeyDown: onInputKey,
-                            autoComplete: 'off',
-                            spellCheck: false,
-                            'aria-label': __('Search blocks', 'snn-block'),
-                        })
-                    ),
-                    el('div', { className: 'snn-cp-list', ref: listRef },
-                        items.length ? items : el('div', { className: 'snn-cp-empty' },
-                            el('span', {}, __('No blocks found.', 'snn-block'))
-                        )
-                    ),
-                    el('div', { className: 'snn-cp-footer' },
-                        el('span', { className: 'snn-cp-footer-hint' }, el('kbd', {}, '↑↓'), ' nav'),
-                        el('span', { className: 'snn-cp-footer-hint' }, el('kbd', {}, '↵'), ' insert'),
-                        el('span', { className: 'snn-cp-footer-hint' }, el('kbd', {}, 'Esc'), ' close'),
-                        el('span', { className: 'snn-cp-footer-count' }, filtered.length + ' blocks')
-                    )
-                )
-            ),
-            document.body
-        );
+        return { commands: commands, isLoading: false };
     }
 
-    registerPlugin('snn-command-palette', { render: SNNCommandPalette });
-    console.log('SNN Command Palette: ✅ Ready — press Ctrl+K to search & insert blocks.');
+    /* ═══════════════════════════════════════════════
+       REGISTER INTO THE NATIVE COMMAND CENTER
+       ═══════════════════════════════════════════════ */
+
+    function register() {
+        try {
+            var storeKey = (wp.commands && wp.commands.store) ? wp.commands.store : 'core/commands';
+            var dispatch = wp.data.dispatch(storeKey);
+            if (dispatch && typeof dispatch.registerCommandLoader === 'function') {
+                dispatch.registerCommandLoader({
+                    name: 'snn/block-commands',
+                    hook: blockCommandLoader,
+                    category: 'command',
+                });
+                console.log('SNN Command Palette: ✅ Blocks added to native Command Center (Ctrl+K).');
+                return true;
+            }
+        } catch (e) {
+            console.error('SNN Command Palette: register failed', e);
+        }
+        return false;
+    }
+
+    // The plugin render function is only used to ensure the registration
+    // runs inside the editor context (after wp.data stores are ready).
+    // It renders nothing.
+    function SNNCommandPaletteRegistration() {
+        // Register once on mount.
+        if (!window.__snnBlockCommandsRegistered) {
+            window.__snnBlockCommandsRegistered = register();
+        }
+        return null;
+    }
+
+    registerPlugin('snn-command-palette', { render: SNNCommandPaletteRegistration });
 })();

@@ -325,31 +325,6 @@ add_action('enqueue_block_editor_assets', function () {
         );
     }
 
-    // ── Enqueue Command Palette (block inserter via Ctrl+K / Ctrl+Shift+K) ──
-    $cp_css_path = SNN_PATH . 'editor/command-palette/command-palette.css';
-    if (file_exists($cp_css_path)) {
-        wp_enqueue_style(
-            'snn-command-palette',
-            SNN_URL . 'editor/command-palette/command-palette.css',
-            [],
-            wp_get_theme()->get('Version')
-        );
-    }
-
-    $cp_js_path = SNN_PATH . 'editor/command-palette/command-palette.js';
-    if (file_exists($cp_js_path)) {
-        wp_enqueue_script(
-            'snn-command-palette',
-            SNN_URL . 'editor/command-palette/command-palette.js',
-            [
-                'wp-element',
-                'wp-plugins',
-                'wp-data',
-                'wp-blocks',
-                'wp-block-editor',
-            ],
-            wp_get_theme()->get('Version'),
-            true
-        );
-    }
+    // ── Global Command Palette is now loaded globally (admin + frontend)
+    //     via global/command-palette/command-palette-loader.php — see functions.php.
 });
