@@ -30,7 +30,9 @@ Every block lives inside the `/blocks` folder. Each block directory contains the
 
 **Current blocks:** `section`, `container`, `text`, `icon`, `simple-gallery`
 
-> **Shared editor controls** live in `/blocks/Controls.jsx` (loaded once by `functions.php` before any block JSX) and are exposed on `window.SNNControls` for reuse across all block editors.
+> **Shared files:**
+> - `/blocks/Controls.jsx` — shared editor components (loaded once by `functions.php` before block JSX), exposed on `window.SNNControls`
+> - `/blocks/block-helpers.php` — shared PHP CSS helpers (`snn_responsive_style`, `snn_responsive_padding`), included by each `block.php` via `require_once`
 
 ### Block Registration Flow
 
@@ -386,59 +388,36 @@ Or inline the editing indicator:
 
 ### E. PHP Render Side — `<style>` Tag Generation
 
-On the frontend, responsive CSS is injected via a `<style>` tag using a unique class selector. Each block defines its own `all_style` and `all_padding` helper functions (prefixed with the block name) to avoid function name collisions:
+On the frontend, responsive CSS is injected via a `<style>` tag using a unique class selector. All blocks share two generic helper functions defined once in `/blocks/block-helpers.php` (the PHP equivalent of `Controls.jsx`):
 
 ```php
 // 1. Generate a unique class per block instance
 $uid = 'snn-c-' . uniqid();     // container: 'snn-c-', section: 'snn-s-', text: 'snn-t-', icon: 'snn-i-', gallery: 'snn-ssl-'
 $selector = '.' . $uid;
 
-// 2. Build CSS by device: desktop (base rule), tablet + mobile (@media queries)
-//    Naming convention: snn_{blockname}_all_style(…)
-//    Section uses: snn_section_all_style($attr, $property, $selector, $unit)
-//    Container uses: snn_container_all_style($attr, $property, $selector, $unit)
-//    Text uses:     snn_text_all_style($attr, $property, $selector, $unit)
-//    Icon uses:     snn_block_responsive_style($attr, $property, $selector, $unit)  (generic name)
-//    Gallery uses:  snn_gallery_all_val($attr, $property, $selector, $prefix, $suffix)  (for CSS custom props)
-
-// Generic pattern (per block):
-function snn_{blockname}_all_style($attr, $property, $selector, $unit = '') {
-    if (empty($attr) || !is_array($attr)) return '';
-    $css = '';
-    $devices = ['desktop', 'tablet', 'mobile'];
-    $breakpoints = [
-        'desktop' => '',
-        'tablet'  => 'max-width: 1023px',
-        'mobile'  => 'max-width: 767px',
-    ];
-    foreach ($devices as $device) {
-        $value = $attr[$device] ?? '';
-        if ($value === '' || $value === null || $value === false) continue;
-        if ($device === 'desktop') {
-            $css .= "{$selector} {{$property}: {$value}{$unit};}\n";
-        } else {
-            $css .= "@media ({$breakpoints[$device]}) {\n";
-            $css .= "\t{$selector} {{$property}: {$value}{$unit};}\n";
-            $css .= "}\n";
-        }
-    }
-    return $css;
-}
-
-// Padding helper (used by section, container, text):
-//    Naming convention: snn_{blockname}_all_padding($padding, $selector)
-function snn_{blockname}_all_padding($padding, $selector) { /* … same device loop for 4 sides */ }
+// 2. Build CSS by device using the shared helpers from block-helpers.php
+//    snn_responsive_style($attr, $property, $selector, $unit = '')
+//    snn_responsive_padding($padding, $selector)
 ```
+
+**Shared helpers (`/blocks/block-helpers.php`):**
+
+| Function | Signature | Purpose |
+|---|---|---|
+| `snn_responsive_style` | `($attr, $property, $selector, $unit='')` | Single CSS property per device (desktop=base, tablet/mobile=@media) |
+| `snn_responsive_padding` | `($padding, $selector)` | 4-side padding (top/right/bottom/left) per device |
+
+Each `block.php` includes them with: `require_once __DIR__ . '/../block-helpers.php';`
 
 **Naming convention summary:**
 
-| Block | UID prefix | Style function | Padding function |
-|---|---|---|---|
-| Section | `snn-s-` | `snn_section_all_style` | `snn_section_all_padding` |
-| Container | `snn-c-` | `snn_container_all_style` | `snn_container_all_padding` |
-| Text | `snn-t-` | `snn_text_all_style` | `snn_text_all_padding` |
-| Icon | `snn-i-` | `snn_block_responsive_style` | *(size/color only)* |
-| Simple Gallery | `snn-ssl-` | `snn_gallery_all_val` | *(CSS custom props)* |
+| Block | UID prefix | CSS functions used |
+|---|---|---|
+| Section | `snn-s-` | `snn_responsive_style` + `snn_responsive_padding` |
+| Container | `snn-c-` | `snn_responsive_style` + `snn_responsive_padding` |
+| Text | `snn-t-` | `snn_responsive_style` + `snn_responsive_padding` |
+| Icon | `snn-i-` | `snn_responsive_style` (size/color only) |
+| Simple Gallery | `snn-ssl-` | `snn_responsive_style` (for CSS custom properties: `--snn-gallery-columns`, `--snn-gallery-gap`, `--snn-gallery-aspect-ratio`) |
 
 **Output pattern (same across all blocks):**
 ```php
@@ -529,7 +508,8 @@ Before giving the user the final code, verify these points silently. If any fail
 16. [ ] **DYNAMIC CSS:** Do inline CSS styles map correctly in BOTH the React `edit` preview AND the PHP `render_callback`?
 17. [ ] **NO GROUPINGS:** Are all inspector controls in ONE panel (Style or Settings) rather than separate Layout/Spacing/Sizing/Text groups? Use `<hr>` separators between logical sections. Exception: Container block has a separate "Container Settings" panel for max-width.
 18. [ ] **CUSTOM CSS:** Does `block.json` include `"customCSS": { "type": "string", "default": "" }`? Does `editor.jsx` have a `TextareaControl` in a `Custom CSS` panel? Does `block.php` sanitize and output `$custom_css` in the `<style>` tag?
-19. [ ] **PHP FUNCTION NAMING:** Are helper functions prefixed with the block name to avoid collisions? (e.g., `snn_section_all_style`, not `snn_block_all_style`)
+19. [ ] **SHARED PHP HELPERS:** Is `require_once __DIR__ . '/../block-helpers.php';` at the top of `block.php`? Are `snn_responsive_style()` and `snn_responsive_padding()` used (not per-block functions)?
 20. [ ] **CONTROLS.JSX LOADED:** Is `Controls.jsx` loaded in `functions.php` BEFORE individual block JSX? The file is located at `blocks/Controls.jsx` (capital C).
+21. [ ] **BLOCK.JSON RENDER:** Does `block.json` include `"render": "file:./block.php"` for apiVersion 3 forward compatibility?
 
 **DELIVERY INSTRUCTIONS:** Output the code as distinct code blocks. Typically 4 files (`block.json`, `block.php`, `editor.jsx`, `block.css`). Include additional frontend JS files (e.g., `lightbox.js`) if the block needs them. Do not omit boilerplate. Provide complete, ready-to-paste files.

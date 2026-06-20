@@ -12,36 +12,8 @@ function snn_register_simple_gallery_block() {
 }
 add_action('init', 'snn_register_simple_gallery_block');
 
-/**
- * Get fully responsive CSS custom property — desktop (base) + tablet/mobile (media queries).
- * Used inside a <style> tag so all breakpoints can override each other properly.
- */
-function snn_gallery_all_val($attr, $property, $selector, $prefix = '', $suffix = '') {
-    if (empty($attr) || !is_array($attr)) {
-        return '';
-    }
-    $css = '';
-    $devices = ['desktop', 'tablet', 'mobile'];
-    $breakpoints = [
-        'desktop' => '',
-        'tablet'  => 'max-width: 1023px',
-        'mobile'  => 'max-width: 767px',
-    ];
-    foreach ($devices as $device) {
-        $value = $attr[$device] ?? '';
-        if ($value === '' || $value === null) {
-            continue;
-        }
-        if ($device === 'desktop') {
-            $css .= "{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
-        } else {
-            $css .= "@media ({$breakpoints[$device]}) {\n";
-            $css .= "\t{$selector} {{$property}: {$prefix}{$value}{$suffix};}\n";
-            $css .= "}\n";
-        }
-    }
-    return $css;
-}
+// Shared responsive CSS helpers (centralised in /blocks/block-helpers.php)
+require_once __DIR__ . '/../block-helpers.php';
 
 // Render callback
 function snn_render_simple_gallery_block($attributes, $content, $block) {
@@ -78,9 +50,9 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
     // Desktop values as base rule, tablet/mobile in media queries.
     // No inline styles — they would override the <style> tag's media queries.
     $responsive_css = '';
-    $responsive_css .= snn_gallery_all_val($columns, '--snn-gallery-columns', $selector);
-    $responsive_css .= snn_gallery_all_val($gap, '--snn-gallery-gap', $selector, '', 'px');
-    $responsive_css .= snn_gallery_all_val($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
+    $responsive_css .= snn_responsive_style($columns, '--snn-gallery-columns', $selector);
+    $responsive_css .= snn_responsive_style($gap, '--snn-gallery-gap', $selector, 'px');
+    $responsive_css .= snn_responsive_style($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
 
     // If no responsive values at all, provide fallback defaults via inline style
     $inline_css = '';

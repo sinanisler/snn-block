@@ -7,6 +7,9 @@
  * @package SNN
  */
 
+// Shared responsive CSS helpers (centralised in /blocks/block-helpers.php)
+require_once __DIR__ . '/../block-helpers.php';
+
 // ── Register block ──────────────────────────────────────────────────
 add_action('init', function () {
     register_block_type(__DIR__, [
@@ -70,16 +73,16 @@ function snn_icon_block_render($attributes) {
     // Size (px) — use width/height for images, font-size for FA & SVGs
     if (!empty($size) && is_array($size)) {
         if ($icon_type === 'custom' && !empty($custom_image_url) && empty($custom_svg)) {
-            $all_css .= snn_block_responsive_style($size, 'width', $selector, 'px');
-            $all_css .= snn_block_responsive_style($size, 'height', $selector, 'px');
+            $all_css .= snn_responsive_style($size, 'width', $selector, 'px');
+            $all_css .= snn_responsive_style($size, 'height', $selector, 'px');
         } else {
-            $all_css .= snn_block_responsive_style($size, 'font-size', $selector, 'px');
+            $all_css .= snn_responsive_style($size, 'font-size', $selector, 'px');
         }
     }
 
     // Color
     if (!empty($color) && is_array($color)) {
-        $all_css .= snn_block_responsive_style($color, 'color', $selector);
+        $all_css .= snn_responsive_style($color, 'color', $selector);
     }
 
     // Custom CSS
@@ -140,46 +143,4 @@ function snn_icon_block_render($attributes) {
     $output .= '</span>';
 
     return $output;
-}
-
-/**
- * Generate responsive CSS for a single property.
- *
- * @param array  $attr     Responsive attribute { desktop, tablet, mobile }.
- * @param string $property CSS property name.
- * @param string $selector CSS selector.
- * @param string $unit     CSS unit suffix (e.g. 'px').
- * @return string
- */
-function snn_block_responsive_style($attr, $property, $selector, $unit = '') {
-    if (empty($attr) || !is_array($attr)) {
-        return '';
-    }
-
-    $css         = '';
-    $devices     = ['desktop', 'tablet', 'mobile'];
-    $breakpoints = [
-        'desktop' => '',
-        'tablet'  => 'max-width: 1023px',
-        'mobile'  => 'max-width: 767px',
-    ];
-
-    foreach ($devices as $device) {
-        $value = $attr[$device] ?? '';
-        if ($value === '' || $value === null || $value === false) {
-            continue;
-        }
-
-        $css_value = $value . $unit;
-
-        if ($device === 'desktop') {
-            $css .= "{$selector}{{$property}:{$css_value}}\n";
-        } else {
-            $css .= '@media(' . $breakpoints[$device] . "){\n";
-            $css .= "\t{$selector}{{$property}:{$css_value}}\n";
-            $css .= "}\n";
-        }
-    }
-
-    return $css;
 }

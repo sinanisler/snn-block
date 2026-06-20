@@ -25,5 +25,6 @@
         "anchor": true,
         "align": false
     },
-    "style": "file:./block.css"
+    "style": "file:./block.css",
+    "render": "file:./block.php"
 }

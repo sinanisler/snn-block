@@ -24,5 +24,6 @@
         "html": false,
         "anchor": true
     },
-    "style": "file:./block.css"
+    "style": "file:./block.css",
+    "render": "file:./block.php"
 }
