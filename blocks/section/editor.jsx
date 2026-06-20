@@ -50,6 +50,10 @@ registerBlockType('snn/section', {
         if (gap) previewStyles.gap = gap;
         const gc = inheritVal('gridColumns');
         if (gc) previewStyles.gridTemplateColumns = gc;
+        const ji = inheritVal('justifyItems');
+        if (ji) previewStyles.justifyItems = ji;
+        const ac = inheritVal('alignContent');
+        if (ac) previewStyles.alignContent = ac;
         const ta = inheritVal('textAlign');
         if (ta) previewStyles.textAlign = ta;
         const mh = inheritVal('minHeight');
@@ -69,10 +73,11 @@ registerBlockType('snn/section', {
 
         // ── Options ──
         const displayOptions = [
-            { label: __('Default', 'snn'), value: '' },
+            { label: __('Block', 'snn'), value: 'block' },
             { label: __('Flex', 'snn'), value: 'flex' },
             { label: __('Grid', 'snn'), value: 'grid' },
-            { label: __('Block', 'snn'), value: 'block' },
+            { label: __('Inline Block', 'snn'), value: 'inline-block' },
+            { label: __('None', 'snn'), value: 'none' },
         ];
         const flexDirOptions = [
             { label: __('Row', 'snn'), value: 'row', icon: 'fa-solid fa-arrow-right' },
@@ -102,6 +107,40 @@ registerBlockType('snn/section', {
             { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-expand' },
             { label: __('Between', 'snn'), value: 'space-between', icon: 'fa-solid fa-object-ungroup' },
             { label: __('Around', 'snn'), value: 'space-around', icon: 'fa-solid fa-object-group' },
+        ];
+        const gridJustifyItemsOptions = [
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'start', icon: 'fa-solid fa-align-left' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-align-center' },
+            { label: __('End', 'snn'), value: 'end', icon: 'fa-solid fa-align-right' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-arrows-left-right' },
+        ];
+        const gridAlignItemsOptions = [
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'start', icon: 'fa-solid fa-chevron-up' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-arrows-up-down' },
+            { label: __('End', 'snn'), value: 'end', icon: 'fa-solid fa-chevron-down' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-expand' },
+        ];
+        const gridJustifyContentOptions = [
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'start', icon: 'fa-solid fa-align-left' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-align-center' },
+            { label: __('End', 'snn'), value: 'end', icon: 'fa-solid fa-align-right' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-arrows-left-right' },
+            { label: __('Between', 'snn'), value: 'space-between', icon: 'fa-solid fa-object-ungroup' },
+            { label: __('Around', 'snn'), value: 'space-around', icon: 'fa-solid fa-object-group' },
+            { label: __('Evenly', 'snn'), value: 'space-evenly', icon: 'fa-solid fa-object-group' },
+        ];
+        const gridAlignContentOptions = [
+            { label: __('Default', 'snn'), value: '', icon: 'fa-solid fa-circle' },
+            { label: __('Start', 'snn'), value: 'start', icon: 'fa-solid fa-chevron-up' },
+            { label: __('Center', 'snn'), value: 'center', icon: 'fa-solid fa-arrows-up-down' },
+            { label: __('End', 'snn'), value: 'end', icon: 'fa-solid fa-chevron-down' },
+            { label: __('Stretch', 'snn'), value: 'stretch', icon: 'fa-solid fa-expand' },
+            { label: __('Between', 'snn'), value: 'space-between', icon: 'fa-solid fa-object-ungroup' },
+            { label: __('Around', 'snn'), value: 'space-around', icon: 'fa-solid fa-object-group' },
+            { label: __('Evenly', 'snn'), value: 'space-evenly', icon: 'fa-solid fa-object-group' },
         ];
         const textAlignOptions = [
             { label: __('Default', 'snn'), value: '' },
@@ -166,11 +205,13 @@ registerBlockType('snn/section', {
 
                         {isGrid && (
                             <Fragment>
-                                <IconToggleField label={__('Justify', 'snn')} value={getVal('justifyContent')} options={justifyOptions} onChange={v => setVal('justifyContent', v)} />
-                                <IconToggleField label={__('Align', 'snn')} value={getVal('alignItems')} options={alignOptions} onChange={v => setVal('alignItems', v)} />
-                                <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
                                 <RespLabel label={__('Grid Columns', 'snn')} device={activeDevice} />
                                 <TextControl value={getVal('gridColumns')} onChange={v => setVal('gridColumns', v)} placeholder={__('e.g. 1fr 1fr 1fr', 'snn')} />
+                                <IconToggleField label={__('Justify Items', 'snn')} value={getVal('justifyItems')} options={gridJustifyItemsOptions} onChange={v => setVal('justifyItems', v)} />
+                                <IconToggleField label={__('Align Items', 'snn')} value={getVal('alignItems')} options={gridAlignItemsOptions} onChange={v => setVal('alignItems', v)} />
+                                <IconToggleField label={__('Justify Content', 'snn')} value={getVal('justifyContent')} options={gridJustifyContentOptions} onChange={v => setVal('justifyContent', v)} />
+                                <IconToggleField label={__('Align Content', 'snn')} value={getVal('alignContent')} options={gridAlignContentOptions} onChange={v => setVal('alignContent', v)} />
+                                <RangeUnitField label={__('Gap', 'snn')} value={getVal('gap')} onChange={v => setVal('gap', v)} min={0} max={200} step={1} />
                             </Fragment>
                         )}
 

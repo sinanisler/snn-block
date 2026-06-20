@@ -239,22 +239,22 @@ add_action('enqueue_block_editor_assets', function () {
     ]);
 
     // ── Enqueue Global Editor App Styles ──
-    $app_css_path = SNN_PATH . 'editor/snn-global-editor-app.css';
+    $app_css_path = SNN_PATH . 'editor/global-style/snn-global-editor-app.css';
     if (file_exists($app_css_path)) {
         wp_enqueue_style(
             'snn-global-editor-app-styles',
-            SNN_URL . 'editor/snn-global-editor-app.css',
+            SNN_URL . 'editor/global-style/snn-global-editor-app.css',
             [],
             wp_get_theme()->get('Version')
         );
     }
 
     // ── Enqueue Global Editor App ──
-    $app_js_path = SNN_PATH . 'editor/snn-global-editor-app.js';
+    $app_js_path = SNN_PATH . 'editor/global-style/snn-global-editor-app.js';
     if (file_exists($app_js_path)) {
         wp_enqueue_script(
             'snn-global-editor-app',
-            SNN_URL . 'editor/snn-global-editor-app.js',
+            SNN_URL . 'editor/global-style/snn-global-editor-app.js',
             [
                 'wp-element',
                 'wp-components',
@@ -278,11 +278,11 @@ add_action('enqueue_block_editor_assets', function () {
     }
 
     // ── Enqueue Header Button ──
-    $header_js_path = SNN_PATH . 'editor/snn-global-header-button.js';
+    $header_js_path = SNN_PATH . 'editor/global-style/snn-global-header-button.js';
     if (file_exists($header_js_path)) {
         wp_enqueue_script(
             'snn-global-header-button',
-            SNN_URL . 'editor/snn-global-header-button.js',
+            SNN_URL . 'editor/global-style/snn-global-header-button.js',
             [
                 'wp-plugins',
                 'wp-edit-post',
@@ -298,11 +298,11 @@ add_action('enqueue_block_editor_assets', function () {
     }
 
     // ── Enqueue Enhanced Control (per-block class selector + defaults) ──
-    $control_js_path = SNN_PATH . 'editor/global-style-control.js';
+    $control_js_path = SNN_PATH . 'editor/global-style/global-style-control.js';
     if (file_exists($control_js_path)) {
         wp_enqueue_script(
             'snn-core-attributes',
-            SNN_URL . 'editor/global-style-control.js',
+            SNN_URL . 'editor/global-style/global-style-control.js',
             [
                 'wp-blocks',
                 'wp-hooks',
@@ -322,6 +322,37 @@ add_action('enqueue_block_editor_assets', function () {
             'snn-core-attributes',
             'window.SNN_GLOBAL_EDITOR_DATA = window.SNN_GLOBAL_EDITOR_DATA || ' . $inline_data . ';',
             'before'
+        );
+    }
+
+    // ── Enqueue Command Palette (Ctrl+K block inserter) ──
+    $cp_css_path = SNN_PATH . 'editor/command-palette/command-palette.css';
+    if (file_exists($cp_css_path)) {
+        wp_enqueue_style(
+            'snn-command-palette',
+            SNN_URL . 'editor/command-palette/command-palette.css',
+            [],
+            wp_get_theme()->get('Version')
+        );
+    }
+
+    $cp_js_path = SNN_PATH . 'editor/command-palette/command-palette.js';
+    if (file_exists($cp_js_path)) {
+        wp_enqueue_script(
+            'snn-command-palette',
+            SNN_URL . 'editor/command-palette/command-palette.js',
+            [
+                'wp-element',
+                'wp-plugins',
+                'wp-data',
+                'wp-blocks',
+                'wp-block-editor',
+                'wp-components',
+                'wp-i18n',
+                'wp-compose',
+            ],
+            wp_get_theme()->get('Version'),
+            true
         );
     }
 });

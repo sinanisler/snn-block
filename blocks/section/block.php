@@ -64,7 +64,9 @@ function snn_render_section_block($attributes, $content, $block) {
     $responsive_css .= snn_responsive_style($attributes['flexDirection'] ?? [], 'flex-direction', $selector);
     $responsive_css .= snn_responsive_style($attributes['flexWrap'] ?? [], 'flex-wrap', $selector);
     $responsive_css .= snn_responsive_style($attributes['justifyContent'] ?? [], 'justify-content', $selector);
+    $responsive_css .= snn_responsive_style($attributes['justifyItems'] ?? [], 'justify-items', $selector);
     $responsive_css .= snn_responsive_style($attributes['alignItems'] ?? [], 'align-items', $selector);
+    $responsive_css .= snn_responsive_style($attributes['alignContent'] ?? [], 'align-content', $selector);
     $responsive_css .= snn_responsive_style($attributes['gap'] ?? [], 'gap', $selector);
     $responsive_css .= snn_responsive_style($attributes['gridColumns'] ?? [], 'grid-template-columns', $selector);
     $responsive_css .= snn_responsive_style($attributes['textAlign'] ?? [], 'text-align', $selector);
