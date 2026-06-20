@@ -28,6 +28,10 @@ Every block lives inside the `/blocks` folder. Each block directory contains the
 | 4 | `block.css` | Styles applied to both the editor and frontend |
 | *(5)* | `*.js` | *(Optional)* Additional frontend-only vanilla JS files (e.g., `lightbox.js`). Registered in `block.php` via `wp_register_script()` using the `SNN_URL` constant |
 
+**Current blocks:** `section`, `container`, `text`, `icon`, `simple-gallery`
+
+> **Shared editor controls** live in `/blocks/Controls.jsx` (loaded once by `functions.php` before any block JSX) and are exposed on `window.SNNControls` for reuse across all block editors.
+
 ### Block Registration Flow
 
 Each `block.php` is **self-registering** — it hooks into `init` and calls `register_block_type(__DIR__, ...)`. The `functions.php` only **includes** the block files:
@@ -37,6 +41,7 @@ Each `block.php` is **self-registering** — it hooks into `init` and calls `reg
 require_once SNN_PATH . 'blocks/section/block.php';
 require_once SNN_PATH . 'blocks/container/block.php';
 require_once SNN_PATH . 'blocks/text/block.php';
+require_once SNN_PATH . 'blocks/icon/block.php';
 require_once SNN_PATH . 'blocks/simple-gallery/block.php';
 ```
 
@@ -65,6 +70,22 @@ When writing the PHP `render_callback`, you must strictly follow WordPress secur
 4. **Rich Text:** If the attribute contains HTML (like from a `RichText` component), output it using `wp_kses_post()`.
 5. **Default Values:** Always provide fallback values when extracting attributes in PHP: `$myVar = $attributes['myVar'] ?? 'default_value';`
 6. **CSS Output in `<style>` Tags:** When injecting user-controlled attribute values into `<style>` tags, the values flow through CSS property context — not HTML context. Use `esc_attr()` if placing them in a style *attribute*, but for `<style>` tag content, **sanitize CSS values** by stripping dangerous characters (e.g. allow only CSS-safe tokens: alphanumerics, `#`, spaces, `-`, `_`, `.`, `%`, `px`, `em`, `rem`, `vh`, `vw`, `fr`, parentheses, commas). Never echo raw user input into a `<style>` tag without stripping `<script`, `</style`, `url(`, and `expression(`.
+7. **SVG Sanitization (Icon Block):** When rendering user-supplied SVG markup via `customSvg`, strip dangerous elements before output:
+   ```php
+   // Strip <script> tags and inline event handlers (onclick, onload, etc.)
+   $safe_svg = preg_replace(
+       '~<script\b[^>]*>.*?</script>|<[^>]*\s+on\w+\s*=\s*["\'][^"\']*["\']~is',
+       '',
+       $custom_svg
+   );
+   // Remove javascript: URLs in href/xlink:href attributes
+   $safe_svg = preg_replace(
+       '~\b(?:xlink:)?href\s*=\s*["\']\s*javascript\s*:[^"\']*["\']~i',
+       '',
+       $safe_svg
+   );
+   ```
+   Then output the sanitized SVG wrapped in a `<span>` — do NOT use `wp_kses_post()` on raw SVG as it will strip valid SVG elements.
 
 ---
 
@@ -91,7 +112,19 @@ Native block supports are **not responsive** — they set a single value for all
 - The property doesn't need to change across breakpoints (e.g., image borders, rounded corners)
 - The block is a simple display block like `simple-gallery`
 
-For layout blocks (Section, Container) and text blocks, prefer custom responsive controls so users can set different values per device.
+**Example — Simple Gallery uses native supports:**
+```json
+"supports": {
+    "html": false,
+    "align": ["wide", "full", "center"],
+    "anchor": true,
+    "spacing": { "margin": true, "padding": true },
+    "color": { "background": true, "text": false },
+    "borders": { "color": true, "radius": true, "style": true, "width": true }
+}
+```
+
+For layout blocks (Section, Container) and text blocks, use custom responsive controls so users can set different values per device. These blocks set `"align": false` in their `block.json` and handle all layout via custom responsive attributes.
 
 ---
 
@@ -109,12 +142,42 @@ const { Fragment, useState, useEffect, useRef } = wp.element;
 const { InspectorControls, BlockControls, useBlockProps, useInnerBlocksProps, InnerBlocks, RichText, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 
 // Standard Components
-const { PanelBody, TextControl, TextareaControl, ToggleControl, SelectControl, RangeControl, ColorPalette, Button, BaseControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
+const { PanelBody, TextControl, TextareaControl, ToggleControl, SelectControl, RangeControl, ColorPalette, Button, BaseControl, Modal, SearchControl, __experimentalToggleGroupControl, __experimentalToggleGroupControlOption } = wp.components;
 
 // Data & i18n (MUST destructure — used in every block)
 const { useSelect } = wp.data;
 const { __, sprintf } = wp.i18n;
 ```
+
+### A2. Shared Controls (`window.SNNControls`)
+
+All block editor JSX files destructure shared helper components from `window.SNNControls`. These are defined once in `/blocks/Controls.jsx` and loaded by `functions.php` before any block JSX:
+
+```jsx
+// Shared reusable controls (loaded by functions.php via Controls.jsx)
+const { DeviceBadge, RespLabel, ToggleField, IconToggleField, PaddingInput, RangeUnitField, useResponsiveAttributes, useActiveDevice } = window.SNNControls;
+
+// Text block also uses these additional controls:
+const { ColorRow, FontSizeRow, AlignRow, TransformRow, CompactSelect } = window.SNNControls;
+```
+
+**Available shared components on `window.SNNControls`:**
+
+| Component | Signature | Used By |
+|---|---|---|
+| `DeviceBadge` | `({ device })` | All blocks — renders a FA icon for desktop/tablet/mobile |
+| `RespLabel` | `({ label, device })` | All blocks — label row with device badge |
+| `ToggleField` | `({ label, value, options, onChange })` | section, container, text, simple-gallery — ToggleGroupControl with SelectControl fallback |
+| `IconToggleField` | `({ label, value, options, onChange })` | section, container — FA icon button group for flex direction/wrap/justify/align |
+| `PaddingInput` | `({ values, onChange, device, label? })` | section, container, text — 4-side padding grid (T/R/B/L) |
+| `RangeUnitField` | `({ label, value, onChange, min?, max?, step? })` | All blocks — RangeControl slider paired with smart unit-aware text input |
+| `ColorRow` | `({ label, value, onChange })` | text — native color picker + alpha slider + hex text input (compact) |
+| `FontSizeRow` | `({ label, value, onChange, units? })` | text — number input + unit dropdown |
+| `AlignRow` | `({ label, value, onChange })` | text — 3-button text-align toggle (≤/≥/≧) |
+| `TransformRow` | `({ label, value, onChange })` | text — 4-button text-transform toggle (Aa/AA/aa/Aa·) |
+| `CompactSelect` | `({ label, value, options, onChange })` | text — label + dropdown on one row |
+| `useActiveDevice` | `() => 'desktop'\|'tablet'\|'mobile'` | Used internally by `useResponsiveAttributes` — detects WP preview device |
+| `useResponsiveAttributes` | `(attributes, setAttributes) => { activeDevice, getVal, setVal, inheritVal, getPad, setPad, inheritPad }` | All blocks — the core responsive hook |
 
 ### B. Number & Size Controls (Mandatory Flags)
 
@@ -171,120 +234,70 @@ add_action('enqueue_block_assets', function () {
 
 Do **not** use `add_editor_style()` for CSS that contains `@font-face` with relative webfont paths — the iframe context can break the relative URL resolution. Also avoid `block_editor_settings_all` with `file_get_contents()` for large files, as it reads the entire file into memory on every editor load.
 
-### B. Experimental Control Fallback Pattern
+### A2. Injecting Data into the Editor (Icon Block Pattern)
 
-```jsx
-const ToggleField = ({ label, value, options, onChange }) => {
-    const hasToggle = typeof __experimentalToggleGroupControl !== 'undefined';
+If your block needs to pass server-side data to the editor JSX (e.g., an icon library list), output a `<script>` tag alongside the JSX in the `admin_footer` hook:
 
-    if (hasToggle) {
-        return (
-            <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 500, display: 'block', marginBottom: '4px', color: '#1e1e1e' }}>
-                    {label}
-                </label>
-                <__experimentalToggleGroupControl
-                    value={value}
-                    onChange={onChange}
-                    isBlock
-                    __next40pxDefaultSize={true}
-                    __nextHasNoMarginBottom={true}
-                >
-                    {options.map(opt => (
-                        <__experimentalToggleGroupControlOption key={opt.value} label={opt.label} value={opt.value} />
-                    ))}
-                </__experimentalToggleGroupControl>
-            </div>
-        );
+```php
+add_action('enqueue_block_editor_assets', function () {
+    $current_screen = get_current_screen();
+    if ($current_screen && $current_screen->is_block_editor) {
+        add_action('admin_footer', function () {
+            // 1. Pass data to the browser BEFORE the JSX
+            $icons_path = SNN_PATH_ASSETS . 'fa-icons.json';
+            if (file_exists($icons_path)) {
+                $icons_json = file_get_contents($icons_path);
+                echo '<script>window.snnFAIcons = ' . $icons_json . ';</script>';
+            }
+
+            // 2. JSX (compiled by in-browser Babel)
+            $jsx_path = __DIR__ . '/editor.jsx';
+            if (file_exists($jsx_path)) {
+                $jsx_content = file_get_contents($jsx_path);
+                echo '<script type="text/babel">' . $jsx_content . '</script>';
+            }
+        });
     }
-
-    return (
-        <SelectControl label={label} value={value} options={options} onChange={onChange} />
-    );
-};
+});
 ```
 
-### C. RangeUnitField — Smart Slider with Unit-Aware Input
+### A3. Loading Shared Controls (Controls.jsx)
 
-This is a shared pattern used in every block. It provides a `RangeControl` slider paired with a text input that auto-detects units (`px`, `em`, `rem`, `%`, `vh`, `vw`, etc.). When the value is a pure number, it shows "px" as implied unit and enables the slider:
+The shared editor components (`DeviceBadge`, `ToggleField`, `RangeUnitField`, `useResponsiveAttributes`, etc.) are defined in `/blocks/Controls.jsx` and loaded **once** by `functions.php` at priority 1, before any individual block JSX:
 
-```jsx
-const RangeUnitField = ({ label, value, onChange, min = 0, max = 500, step = 1 }) => {
-    const strVal = String(value || '');
-    const match = strVal.match(/^(-?[\d.]+)(.*)$/);
-    const numVal = match ? parseFloat(match[1]) : '';
-    const unitVal = match ? match[2] : '';
-    const isPureNum = match && !match[2];
-
-    const handleSlider = (v) => {
-        onChange(String(v) + (isPureNum ? '' : unitVal));
-    };
-
-    return (
-        <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>{label}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                    <input
-                        type="text"
-                        value={strVal}
-                        onChange={e => onChange(e.target.value)}
-                        placeholder="0"
-                        style={{ width: '70px', padding: '2px 6px', fontSize: '11px', fontFamily: 'monospace', border: '1px solid #ddd', borderRadius: '2px', textAlign: 'right' }}
-                    />
-                    {isPureNum && strVal !== '' && (
-                        <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>px</span>
-                    )}
-                </div>
-            </div>
-            {(numVal !== '' || strVal === '') && (
-                <RangeControl
-                    value={numVal !== '' ? numVal : 0}
-                    onChange={handleSlider}
-                    min={min} max={max} step={step}
-                    withInputField={false}
-                    __next40pxDefaultSize={true}
-                    __nextHasNoMarginBottom={true}
-                />
-            )}
-        </div>
-    );
-};
+```php
+// functions.php — load shared Controls.jsx before all block JSX
+add_action('enqueue_block_editor_assets', function () {
+    add_action('admin_footer', function () {
+        $controls_path = SNN_PATH . 'blocks/Controls.jsx';
+        if (file_exists($controls_path)) {
+            echo '<script type="text/babel" id="snn-controls">' . file_get_contents($controls_path) . '</script>';
+        }
+    }, 1);  // priority 1 — runs before block JSX (which use default priority 10)
+}, 5);
 ```
 
-### D. PaddingInput — 4-Side Padding Grid
+The `Controls.jsx` file uses `window.SNNControls = window.SNNControls || {}` to create a shared namespace. All block editors then destructure the components they need from `window.SNNControls`.
 
-Another shared pattern. Provides T/R/B/L text inputs for per-device padding values:
+### B. Experimental Control Fallback Pattern (ToggleField)
 
-```jsx
-const PaddingInput = ({ values, onChange, device }) => {
-    const sides = [
-        { key: 'top', label: 'T' },
-        { key: 'right', label: 'R' },
-        { key: 'bottom', label: 'B' },
-        { key: 'left', label: 'L' },
-    ];
-    return (
-        <div style={{ marginBottom: '14px' }}>
-            <RespLabel label={__('Padding', 'snn')} device={device} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                {sides.map(s => (
-                    <div key={s.key}>
-                        <span style={{ fontSize: '9px', color: '#757575', display: 'block' }}>{s.label}</span>
-                        <input
-                            type="text"
-                            value={values?.[s.key] || ''}
-                            onChange={e => onChange({ ...values, [s.key]: e.target.value })}
-                            placeholder="0"
-                            style={{ width: '100%', padding: '4px 6px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '2px', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-```
+This is implemented in `Controls.jsx` as `ToggleField` — all blocks use it as a shared component. See Section 5A2 for the destructuring pattern. The implementation checks `typeof __experimentalToggleGroupControl !== 'undefined'` and falls back to `SelectControl`.
+
+### C. Shared Editor Controls (Controls.jsx)
+
+The following controls are defined once in `Controls.jsx` and reused across all blocks. See Section 5A2 for the full component table and destructuring:
+
+- **`ToggleField`** — ToggleGroupControl with SelectControl fallback (Section 6B above)
+- **`IconToggleField`** — FA icon button group for flex direction, wrap, justify, align
+- **`RangeUnitField`** — RangeControl slider + smart unit-aware text input
+- **`PaddingInput`** — 4-side padding grid (T/R/B/L)
+- **`ColorRow`** — Compact native color picker + alpha slider + hex text (used by text block)
+- **`FontSizeRow`** — Number input + unit dropdown (used by text block)
+- **`AlignRow`** — 3-button text-align toggle (used by text block)
+- **`TransformRow`** — 4-button text-transform toggle (used by text block)
+- **`CompactSelect`** — Label + dropdown on one row (used by text block for font-weight)
+
+**Do NOT inline these in individual block files.** Import them from `window.SNNControls`.
 
 ---
 
@@ -319,96 +332,77 @@ At runtime, values look like:
 }
 ```
 
-### B. JSX Editor Side — Device-Aware Editing
+### B. JSX Editor Side — `useResponsiveAttributes` Hook (from Controls.jsx)
 
-Every `editor.jsx` must detect the current preview device and route `getVal()`/`setVal()` to the correct key:
+Every block editor uses the shared `useResponsiveAttributes` hook from `window.SNNControls`. This single hook replaces all the manual device detection, get/set helpers, and inheritance cascade logic:
 
 ```jsx
-// 1. Detect active device from the editor store
-//    WP ≥6.5 uses getDeviceType() on core/editor; older WP uses __experimentalGetPreviewDeviceType
-const deviceType = useSelect(select => {
-    const editorStore = select('core/editor');
-    if (editorStore?.getDeviceType) {
-        return editorStore.getDeviceType();
-    }
-    const store = select('core/edit-post') || editorStore;
-    const getDevice = store?.__experimentalGetPreviewDeviceType;
-    return getDevice ? getDevice() : 'Desktop';
-}, []);
-const activeDevice = (deviceType || 'Desktop').toLowerCase(); // "desktop" | "tablet" | "mobile"
+// 1. Destructure from the shared Controls namespace
+const { DeviceBadge, RespLabel, ToggleField, IconToggleField, PaddingInput, RangeUnitField, useResponsiveAttributes } = window.SNNControls;
 
-// 2. Responsive get/set helpers
-const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
-const setVal = (attr, value) => {
-    setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
-};
-
-// 3. For padding (4-side object, not a flat value)
-const getPad = () => attributes.padding?.[activeDevice] || {};
-const setPad = (obj) => {
-    setAttributes({ padding: { ...(attributes.padding || {}), [activeDevice]: obj } });
-};
+// 2. One call gives you everything
+const { activeDevice, getVal, setVal, inheritVal, getPad, setPad, inheritPad } =
+    useResponsiveAttributes(attributes, setAttributes);
 ```
 
-### C. JSX Editor Side — Inheritance Cascade
+**What the hook provides:**
 
-To preview correctly, the editor must **cascade** values: current device → tablet → desktop → fallback. If mobile has no value set, show the tablet value. If tablet has none, show desktop:
+| Returned Value | Type | Description |
+|---|---|---|
+| `activeDevice` | `'desktop' \| 'tablet' \| 'mobile'` | Current WP preview device (lowercased) |
+| `getVal(attr)` | `string` | Raw value for the current device (no inheritance) |
+| `setVal(attr, value)` | `void` | Sets value for the current device only |
+| `inheritVal(attr, fallback?)` | `string` | Inherited value cascade: current → tablet → desktop → fallback |
+| `getPad()` | `{ top, right, bottom, left }` | Raw padding for current device |
+| `setPad(obj)` | `void` | Sets padding for current device only |
+| `inheritPad()` | `{ top, right, bottom, left }` | Inherited padding cascade: current → tablet → desktop |
 
+**How it works internally:**
+- Detects the active preview device via `useSelect` on `core/editor` store (WP ≥6.5: `getDeviceType()`; older: `__experimentalGetPreviewDeviceType`)
+- `getVal`/`setVal` route to `attributes[attrName][activeDevice]`
+- `inheritVal` cascades: mobile → tablet → desktop → fallback
+- `inheritPad` cascades: current device → tablet → desktop (first non-empty padding object)
+- Also available individually as `useActiveDevice()` on `window.SNNControls`
+
+### C. JSX Editor Side — Device Badge & Label (from Controls.jsx)
+
+These are shared components from `window.SNNControls`, not inline. The actual implementation uses Font Awesome icons instead of colored text badges:
+
+- **`DeviceBadge`** — renders `<i class="fa-solid fa-desktop-alt\|fa-tablet-screen-button\|fa-mobile-screen">` with the device name as title
+- **`RespLabel`** — renders a label row with `DeviceBadge` appended
+
+Usage in every block:
 ```jsx
-const inheritVal = (attr) => {
-    const val = attributes[attr];
-    if (!val || typeof val !== 'object') return '';
-    if (val[activeDevice]) return val[activeDevice];
-    if (activeDevice === 'mobile' && val.tablet) return val.tablet;
-    if (val.desktop) return val.desktop;
-    return '';
-};
-
-const inheritPad = () => {
-    const pad = attributes.padding;
-    if (!pad || typeof pad !== 'object') return {};
-    const tryDevices = ['mobile', 'tablet', 'desktop'];
-    const start = tryDevices.indexOf(activeDevice);
-    for (let i = start; i < tryDevices.length; i++) {
-        const d = tryDevices[i];
-        if (pad[d] && Object.values(pad[d]).some(v => v)) return pad[d];
-    }
-    return {};
-};
+<RespLabel label={__('Background Color', 'snn')} device={activeDevice} />
 ```
 
-### D. JSX Editor Side — Device Badge & Label
-
-Display which device is being edited with a colored badge:
-
+Or inline the editing indicator:
 ```jsx
-const DeviceBadge = ({ device }) => (
-    <span style={{
-        display: 'inline-block', fontSize: '10px', fontWeight: 600,
-        textTransform: 'uppercase', letterSpacing: '0.5px',
-        background: device === 'desktop' ? '#3858e9' : device === 'tablet' ? '#7b5cf0' : '#f59e0b',
-        color: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '6px', verticalAlign: 'middle',
-    }}>{device}</span>
-);
-
-const RespLabel = ({ label, device }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', fontWeight: 500, color: '#1e1e1e' }}>
-        <span>{label} <DeviceBadge device={device} /></span>
-    </div>
-);
+<div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+    <span>{__('Editing:', 'snn')}</span>
+    <DeviceBadge device={activeDevice} />
+</div>
 ```
 
 ### E. PHP Render Side — `<style>` Tag Generation
 
-On the frontend, responsive CSS is injected via a `<style>` tag using a unique class selector. The pattern:
+On the frontend, responsive CSS is injected via a `<style>` tag using a unique class selector. Each block defines its own `all_style` and `all_padding` helper functions (prefixed with the block name) to avoid function name collisions:
 
 ```php
 // 1. Generate a unique class per block instance
-$uid = 'snn-c-' . uniqid();
+$uid = 'snn-c-' . uniqid();     // container: 'snn-c-', section: 'snn-s-', text: 'snn-t-', icon: 'snn-i-', gallery: 'snn-ssl-'
 $selector = '.' . $uid;
 
 // 2. Build CSS by device: desktop (base rule), tablet + mobile (@media queries)
-function snn_block_all_style($attr, $property, $selector, $unit = '') {
+//    Naming convention: snn_{blockname}_all_style(…)
+//    Section uses: snn_section_all_style($attr, $property, $selector, $unit)
+//    Container uses: snn_container_all_style($attr, $property, $selector, $unit)
+//    Text uses:     snn_text_all_style($attr, $property, $selector, $unit)
+//    Icon uses:     snn_block_responsive_style($attr, $property, $selector, $unit)  (generic name)
+//    Gallery uses:  snn_gallery_all_val($attr, $property, $selector, $prefix, $suffix)  (for CSS custom props)
+
+// Generic pattern (per block):
+function snn_{blockname}_all_style($attr, $property, $selector, $unit = '') {
     if (empty($attr) || !is_array($attr)) return '';
     $css = '';
     $devices = ['desktop', 'tablet', 'mobile'];
@@ -431,6 +425,23 @@ function snn_block_all_style($attr, $property, $selector, $unit = '') {
     return $css;
 }
 
+// Padding helper (used by section, container, text):
+//    Naming convention: snn_{blockname}_all_padding($padding, $selector)
+function snn_{blockname}_all_padding($padding, $selector) { /* … same device loop for 4 sides */ }
+```
+
+**Naming convention summary:**
+
+| Block | UID prefix | Style function | Padding function |
+|---|---|---|---|
+| Section | `snn-s-` | `snn_section_all_style` | `snn_section_all_padding` |
+| Container | `snn-c-` | `snn_container_all_style` | `snn_container_all_padding` |
+| Text | `snn-t-` | `snn_text_all_style` | `snn_text_all_padding` |
+| Icon | `snn-i-` | `snn_block_responsive_style` | *(size/color only)* |
+| Simple Gallery | `snn-ssl-` | `snn_gallery_all_val` | *(CSS custom props)* |
+
+**Output pattern (same across all blocks):**
+```php
 // 3. Emit inline styles for non-responsive props + <style> tag for responsive CSS
 $output = '<div class="' . esc_attr(implode(' ', $classes)) . '" style="' . $inline_styles . '">';
 if ($responsive_css) {
@@ -444,11 +455,16 @@ $output .= '</div>';
 
 Some attributes are NOT responsive — they have a single flat value across all devices:
 
-- `maxWidth` (Container)
-- `tagName` (Text)
-- `enableLightbox` (Simple Gallery)
-- `bgSize`, `bgPosition`, `bgRepeat` (Section, Container)
-- `overflow`, `textTransform`
+| Block | Flat Attribute | Type | Notes |
+|---|---|---|---|
+| Section | `bgImage`, `bgSize`, `bgPosition`, `bgRepeat`, `overflow` | string/object | BG image props + overflow |
+| Container | `maxWidth`, `bgImage`, `bgSize`, `bgPosition`, `bgRepeat`, `overflow` | string/object | Max-width is flat, theme default as fallback |
+| Text | `tagName`, `content`, `textTransform` | string | HTML tag + rich text content + text-transform |
+| Icon | `iconType`, `iconName`, `iconPrefix`, `customSvg`, `customImageId`, `customImageUrl`, `customImageAlt` | string/number | Icon selection data is flat |
+| Simple Gallery | `images`, `enableLightbox` | array/boolean | Image array + lightbox toggle |
+| All | `customCSS`, `anchor`, `className` | string | Standard WP block attributes |
+
+These use standard `setAttributes({ attrName: value })` without the device routing.
 
 These use standard `setAttributes({ attrName: value })` without the device routing.
 
@@ -500,17 +516,20 @@ Before giving the user the final code, verify these points silently. If any fail
 3. [ ] **JSX COMPILE:** Did you include the Babel script block in `block.php` with the `$current_screen` guard?
 4. [ ] **SECURITY:** Did you use `esc_attr()`, `esc_html()`, or `wp_kses_post()` in the PHP render callback?
 5. [ ] **CSS SECURITY:** Are user-controlled values in `<style>` tags sanitized? Strip `<script`, `</style`, `url(`, and `expression(`.
-6. [ ] **SELF-REGISTERING:** Does `block.php` call `register_block_type(__DIR__, ...)` on `init`? Do NOT add registration logic to `functions.php` — just `require_once` the block file.
-7. [ ] **SAVE FUNCTION:** Does `save: () => { ... }` return only `<InnerBlocks.Content />` or `null`?
-8. [ ] **DIV SOUP:** Is `InnerBlocks` wrapped tightly with `useInnerBlocksProps(useBlockProps())` on the primary semantic tag?
-9. [ ] **WARNINGS:** Did you add `__next40pxDefaultSize={true}` and `__nextHasNoMarginBottom={true}` to `RangeControl` / `ToggleGroupControl`?
-10. [ ] **FALLBACKS:** Is there a `SelectControl` fallback for experimental components?
-11. [ ] **RESPONSIVE ATTRIBUTES:** Are styling attributes shaped as `{ desktop, tablet, mobile }` objects? Are `getVal`/`setVal`/`inheritVal`/`inheritPad` helpers defined?
-12. [ ] **UNIQUE SELECTORS:** Does the PHP render use `uniqid()` to generate a unique CSS class so multiple instances of the same block don't collide?
-13. [ ] **THEME CONSTANTS:** Are frontend asset URLs using `SNN_URL` (not hardcoded paths)?
-14. [ ] **DYNAMIC CSS:** Do inline CSS styles map correctly in BOTH the React `edit` preview AND the PHP `render_callback`?
-
-15. [ ] **NO GROUPINGS:** Are all inspector controls in ONE panel (Style or Settings) rather than separate Layout/Spacing/Sizing/Text groups? Use `<hr>` separators between logical sections.
-16. [ ] **CUSTOM CSS:** Does `block.json` include `"customCSS": { "type": "string", "default": "" }`? Does `editor.jsx` have a `TextareaControl` in a `Custom CSS` panel? Does `block.php` sanitize and output `$custom_css` in the `<style>` tag?
+6. [ ] **SVG SECURITY:** If accepting user SVG input, did you strip `<script>` tags, inline event handlers, and `javascript:` URLs?
+7. [ ] **SELF-REGISTERING:** Does `block.php` call `register_block_type(__DIR__, ...)` on `init`? Do NOT add registration logic to `functions.php` — just `require_once` the block file.
+8. [ ] **SAVE FUNCTION:** Does `save: () => { ... }` return only `<InnerBlocks.Content />` or `null`?
+9. [ ] **DIV SOUP:** Is `InnerBlocks` wrapped tightly with `useInnerBlocksProps(useBlockProps())` on the primary semantic tag?
+10. [ ] **WARNINGS:** Did you add `__next40pxDefaultSize={true}` and `__nextHasNoMarginBottom={true}` to `RangeControl` / `ToggleGroupControl`?
+11. [ ] **FALLBACKS:** Is there a `SelectControl` fallback for experimental components?
+12. [ ] **RESPONSIVE ATTRIBUTES:** Are styling attributes shaped as `{ desktop, tablet, mobile }` objects? Are you using `useResponsiveAttributes(attributes, setAttributes)` from `window.SNNControls`?
+13. [ ] **SHARED CONTROLS:** Are you using `window.SNNControls` for `DeviceBadge`, `ToggleField`, `IconToggleField`, `PaddingInput`, `RangeUnitField`, `RespLabel` — not inlining them?
+14. [ ] **UNIQUE SELECTORS:** Does the PHP render use `uniqid()` to generate a unique CSS class so multiple instances of the same block don't collide?
+15. [ ] **THEME CONSTANTS:** Are frontend asset URLs using `SNN_URL` (not hardcoded paths)?
+16. [ ] **DYNAMIC CSS:** Do inline CSS styles map correctly in BOTH the React `edit` preview AND the PHP `render_callback`?
+17. [ ] **NO GROUPINGS:** Are all inspector controls in ONE panel (Style or Settings) rather than separate Layout/Spacing/Sizing/Text groups? Use `<hr>` separators between logical sections. Exception: Container block has a separate "Container Settings" panel for max-width.
+18. [ ] **CUSTOM CSS:** Does `block.json` include `"customCSS": { "type": "string", "default": "" }`? Does `editor.jsx` have a `TextareaControl` in a `Custom CSS` panel? Does `block.php` sanitize and output `$custom_css` in the `<style>` tag?
+19. [ ] **PHP FUNCTION NAMING:** Are helper functions prefixed with the block name to avoid collisions? (e.g., `snn_section_all_style`, not `snn_block_all_style`)
+20. [ ] **CONTROLS.JSX LOADED:** Is `Controls.jsx` loaded in `functions.php` BEFORE individual block JSX? The file is located at `blocks/Controls.jsx` (capital C).
 
 **DELIVERY INSTRUCTIONS:** Output the code as distinct code blocks. Typically 4 files (`block.json`, `block.php`, `editor.jsx`, `block.css`). Include additional frontend JS files (e.g., `lightbox.js`) if the block needs them. Do not omit boilerplate. Provide complete, ready-to-paste files.
