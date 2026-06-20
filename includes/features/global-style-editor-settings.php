@@ -325,7 +325,7 @@ add_action('enqueue_block_editor_assets', function () {
         );
     }
 
-    // ── Enqueue Command Palette (Ctrl+K block inserter) ──
+    // ── Enqueue Command Palette (block inserter via Ctrl+K / Ctrl+Shift+K) ──
     $cp_css_path = SNN_PATH . 'editor/command-palette/command-palette.css';
     if (file_exists($cp_css_path)) {
         wp_enqueue_style(
@@ -347,9 +347,6 @@ add_action('enqueue_block_editor_assets', function () {
                 'wp-data',
                 'wp-blocks',
                 'wp-block-editor',
-                'wp-components',
-                'wp-i18n',
-                'wp-compose',
             ],
             wp_get_theme()->get('Version'),
             true
