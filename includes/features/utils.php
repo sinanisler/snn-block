@@ -264,40 +264,6 @@ add_action( 'admin_head', 'myroles_hide_default_role_dropdown' );
 
 
 
-/**
- * Enqueue Font Awesome 6 Free (Solid) on all admin pages + block editor.
- */
-function snn_enqueue_fontawesome() {
-    $theme_uri = get_stylesheet_directory_uri();
-    $ver       = '6.7.2';
-
-    wp_enqueue_style(
-        'snn-fontawesome',
-        $theme_uri . '/assets/fonts/fontawesome/all.min.css',
-        [],
-        $ver
-    );
-}
-add_action('admin_enqueue_scripts', 'snn_enqueue_fontawesome');
-add_action('enqueue_block_editor_assets', 'snn_enqueue_fontawesome');
-add_action('wp_enqueue_scripts', 'snn_enqueue_fontawesome');
-
-/**
- * Enqueue Font Awesome inside the block editor iframe (canvas preview)
- * via enqueue_block_assets + is_admin(). This is more reliable than
- * add_editor_style() for loading webfonts with relative paths.
- */
-add_action('enqueue_block_assets', function () {
-    if (is_admin()) {
-        wp_enqueue_style(
-            'snn-fontawesome-iframe',
-            SNN_URL . 'assets/fonts/fontawesome/all.min.css',
-            [],
-            '6.7.2'
-        );
-    }
-});
-
 add_action('admin_enqueue_scripts', function() {
     $theme_uri = get_stylesheet_directory_uri();
     wp_enqueue_style(
