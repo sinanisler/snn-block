@@ -205,15 +205,6 @@ function snn_disable_selected_blocks( $allowed, $ctx ) {
 add_filter( 'allowed_block_types_all', 'snn_disable_selected_blocks', 20, 2 );
 
 function snn_enqueue_block_editor_feature_scripts() {
-    // Enqueue the "Replace Group with Container" script
-    wp_enqueue_script(
-        'snn-replace-group',
-        SNN_URL_ASSETS . 'js/snn-replace-group.js',
-        [ 'wp-blocks', 'wp-hooks', 'wp-data', 'wp-i18n', 'wp-dom-ready', 'wp-block-editor' ],
-        wp_get_theme()->get('Version'),
-        true
-    );
-
     $opts  = (array) get_option( 'snn_block_editor_settings', [] );
     $parts = [];
 
