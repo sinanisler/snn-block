@@ -25,6 +25,7 @@ function snn_render_container_block($attributes, $content, $block) {
     $bg_pos     = $attributes['bgPosition'] ?? 'center center';
     $bg_repeat  = $attributes['bgRepeat'] ?? 'no-repeat';
     $bg_attach  = $attributes['bgAttachment'] ?? 'scroll';
+    $bg_gradient = $attributes['bgGradient'] ?? '';
     $bg_overlay = $attributes['bgOverlay'] ?? [];
     $text_color = $attributes['textColor'] ?? [];
     $overflow   = $attributes['overflow'] ?? '';
@@ -48,11 +49,14 @@ function snn_render_container_block($attributes, $content, $block) {
     $inline_styles .= "margin-left: auto;";
     $inline_styles .= "margin-right: auto;";
     if (!empty($bg_image['url'])) {
-        $inline_styles .= 'background-image: url(' . esc_url($bg_image['url']) . ');';
+        $bg_img_val = $bg_gradient ? $bg_gradient . ', url(' . esc_url($bg_image['url']) . ')' : 'url(' . esc_url($bg_image['url']) . ')';
+        $inline_styles .= 'background-image: ' . $bg_img_val . ';';
         $inline_styles .= "background-size: {$bg_size};";
         $inline_styles .= "background-position: {$bg_pos};";
         $inline_styles .= "background-repeat: {$bg_repeat};";
         $inline_styles .= "background-attachment: {$bg_attach};";
+    } elseif ($bg_gradient) {
+        $inline_styles .= 'background-image: ' . $bg_gradient . ';';
     }
     if ($overflow) $inline_styles .= "overflow: {$overflow};";
 
@@ -95,6 +99,46 @@ function snn_render_container_block($attributes, $content, $block) {
     );
     $css .= snn_bg_overlay_css($bg_overlay, $selector);
     $css .= snn_visibility_css($attributes['visibility'] ?? [], $selector);
+
+    // ── NEW: Additional CSS generators ──
+    $css .= snn_bg_gradient_css($attributes['bgGradient'] ?? '', $selector);
+    $css .= snn_bg_blend_mode_css($attributes['bgBlendMode'] ?? '', $selector);
+    $css .= snn_box_sizing_css($attributes['boxSizing'] ?? [], $selector);
+    $css .= snn_grid_rows_css($attributes['gridRows'] ?? [], $selector);
+    $css .= snn_grid_auto_flow_css($attributes['gridAutoFlow'] ?? [], $selector);
+    $css .= snn_row_gap_css($attributes['rowGap'] ?? [], $selector);
+    $css .= snn_column_gap_css($attributes['columnGap'] ?? [], $selector);
+    $css .= snn_flex_grow_css($attributes['flexGrow'] ?? [], $selector);
+    $css .= snn_flex_shrink_css($attributes['flexShrink'] ?? [], $selector);
+    $css .= snn_flex_basis_css($attributes['flexBasis'] ?? [], $selector);
+    $css .= snn_align_self_css($attributes['alignSelf'] ?? [], $selector);
+    $css .= snn_order_css($attributes['order'] ?? [], $selector);
+    $css .= snn_grid_column_start_css($attributes['gridColumnStart'] ?? [], $selector);
+    $css .= snn_grid_column_end_css($attributes['gridColumnEnd'] ?? [], $selector);
+    $css .= snn_grid_row_start_css($attributes['gridRowStart'] ?? [], $selector);
+    $css .= snn_grid_row_end_css($attributes['gridRowEnd'] ?? [], $selector);
+    $css .= snn_backdrop_filter_css($attributes['backdropFilter'] ?? [], $selector);
+    $css .= snn_text_shadow_css($attributes['textShadow'] ?? [], $selector);
+    $css .= snn_outline_css($attributes['outline'] ?? [], $selector);
+    $css .= snn_object_fit_css($attributes['objectFit'] ?? [], $selector);
+    $css .= snn_aspect_ratio_css($attributes['aspectRatio'] ?? [], $selector);
+    $css .= snn_clip_path_css($attributes['clipPath'] ?? [], $selector);
+    $css .= snn_cursor_css($attributes['cursor'] ?? [], $selector);
+    $css .= snn_pointer_events_css($attributes['pointerEvents'] ?? [], $selector);
+    $css .= snn_user_select_css($attributes['userSelect'] ?? [], $selector);
+    $css .= snn_resize_css($attributes['resize'] ?? [], $selector);
+    $css .= snn_scroll_behavior_css($attributes['scrollBehavior'] ?? [], $selector);
+    $css .= snn_scroll_snap_css($attributes['scrollSnapType'] ?? [], $attributes['scrollSnapAlign'] ?? [], $attributes['scrollSnapStop'] ?? [], $selector);
+    $css .= snn_text_overflow_css($attributes['textOverflow'] ?? [], $selector);
+    $css .= snn_white_space_css($attributes['whiteSpace'] ?? [], $selector);
+    $css .= snn_word_break_css($attributes['wordBreak'] ?? [], $selector);
+    $css .= snn_vertical_align_css($attributes['verticalAlign'] ?? [], $selector);
+    $css .= snn_will_change_css($attributes['willChange'] ?? [], $selector);
+    $css .= snn_isolation_css($attributes['isolation'] ?? [], $selector);
+    $css .= snn_list_style_css($attributes['listStyle'] ?? [], $selector);
+    $css .= snn_inset_css($attributes['inset'] ?? [], $selector);
+    $css .= snn_transition_css($attributes['transitions'] ?? [], $selector);
+    $css .= snn_animation_css($attributes['animations'] ?? [], $selector);
 
     // ── 3. Build wrapper attrs ──
     $wrapper_attrs = ['class' => esc_attr(implode(' ', $classes))];

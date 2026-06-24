@@ -185,6 +185,14 @@ add_action('enqueue_block_editor_assets', function () {
             'icon-toggle-field.jsx',    // 21. IconToggleField
             'overflow-select.jsx',      // 22. OverflowSelect (needs DeviceBadge)
             'flex-grid-icons.jsx',      // 23. DirectionIcons, JustifyIcons, AlignIcons, WrapIcons
+            'background-control.jsx',   // 24. BackgroundControl, GradientBuilder (needs ColorRow, RespLabel, CompactSelect, BlendModeSelect)
+            'dimensions-control.jsx',   // 25. DimensionsControl, SizeInput, BoxSizingSelect (needs RespLabel, CompactSelect)
+            'layout-control.jsx',       // 26. GapControl, GridTemplateControl, FlexChildControl, GridPlacementControl, OrderControl
+            'visual-effects-control.jsx', // 27. BackdropFilterControl, OutlineControl, TextShadowControl, ClipPathControl, ObjectFitControl, AspectRatioControl
+            'interaction-control.jsx',  // 28. CursorSelect, PointerEventsSelect, UserSelectSelect, ResizeSelect, ScrollBehaviorSelect, ScrollSnapControl
+            'text-advanced-control.jsx',// 29. TextOverflowSelect, WhiteSpaceSelect, WordBreakSelect, VerticalAlignSelect
+            'animation-control.jsx',    // 30. TransitionBuilder, AnimationBuilder
+            'misc-control.jsx',         // 31. WillChangeSelect, IsolationSelect, ListStyleControl, InsetControl
         ];
         $combined = '';
         foreach ($files as $file) {

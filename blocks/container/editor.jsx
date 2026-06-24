@@ -14,6 +14,15 @@ const {
     PositionSelect, OffsetInput, ZIndexControl, VisibilityControls,
     OverflowSelect, useResponsiveAttributes,
     DirectionIcons, JustifyIcons, AlignIcons, WrapIcons,
+    // ── NEW CONTROLS ──
+    BackgroundControl, GradientBuilder,
+    DimensionsControl, SizeInput, BoxSizingSelect,
+    GapControl, GridTemplateControl, FlexChildControl, GridPlacementControl, OrderControl,
+    BackdropFilterControl, OutlineControl, TextShadowControl, ClipPathControl, ObjectFitControl, AspectRatioControl,
+    CursorSelect, PointerEventsSelect, UserSelectSelect, ResizeSelect, ScrollBehaviorSelect, ScrollSnapControl,
+    TextOverflowSelect, WhiteSpaceSelect, WordBreakSelect, VerticalAlignSelect,
+    TransitionBuilder, AnimationBuilder,
+    WillChangeSelect, IsolationSelect, ListStyleControl, InsetControl,
 } = window.SNNControls;
 
 registerBlockType('snn/container', {
@@ -55,10 +64,44 @@ registerBlockType('snn/container', {
             previewStyles.backgroundRepeat = attributes.bgRepeat || 'no-repeat';
             previewStyles.backgroundAttachment = attributes.bgAttachment || 'scroll';
         }
-        ['display','flexDirection','flexWrap','justifyContent','justifyItems','alignItems','alignContent','gap','gridColumns','textAlign','minHeight','width','height','minWidth','maxHeight'].forEach(k => {
-            const v = inheritVal(k); if (v) previewStyles[k==='gridColumns'?'gridTemplateColumns':k] = v;
+        ['display','flexDirection','flexWrap','justifyContent','justifyItems','alignItems','alignContent','gap','gridColumns','textAlign','minHeight','width','height','minWidth','maxHeight',
+         'gridRows','gridAutoFlow','rowGap','columnGap','flexGrow','flexShrink','flexBasis','alignSelf','order',
+         'gridColumnStart','gridColumnEnd','gridRowStart','gridRowEnd',
+         'objectFit','aspectRatio','cursor','pointerEvents','userSelect','resize','scrollBehavior',
+         'scrollSnapType','scrollSnapAlign','scrollSnapStop','textOverflow','whiteSpace','wordBreak','verticalAlign',
+         'boxSizing','willChange','isolation'].forEach(k => {
+            const v = inheritVal(k); if (v) previewStyles[k==='gridColumns'?'gridTemplateColumns':k==='gridRows'?'gridTemplateRows':k==='gridAutoFlow'?'gridAutoFlow':k] = v;
         });
         if (attributes.overflow) previewStyles.overflow = attributes.overflow;
+        // ── New controls preview ──
+        if (attributes.bgGradient) {
+            if (attributes.bgImage?.url) previewStyles.backgroundImage = attributes.bgGradient + ', url(' + attributes.bgImage.url + ')';
+            else previewStyles.backgroundImage = attributes.bgGradient;
+        }
+        if (attributes.bgBlendMode && attributes.bgBlendMode !== 'normal') previewStyles.backgroundBlendMode = attributes.bgBlendMode;
+        const outline = (Array.isArray(attributes.outline) ? {} : (attributes.outline || {}));
+        if (outline.style && outline.style !== 'none') {
+            let ol = ''; if (outline.width) ol += outline.width + ' '; ol += outline.style; if (outline.color) ol += ' ' + outline.color;
+            if (ol) previewStyles.outline = ol;
+        }
+        if (attributes.textShadow && attributes.textShadow.length > 0) {
+            previewStyles.textShadow = attributes.textShadow.map(s => `${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.color||'rgba(0,0,0,0.2)'}`).join(', ');
+        }
+        if (attributes.backdropFilter && !Array.isArray(attributes.backdropFilter)) {
+            const bfMap = {blur:'blur(%spx)',brightness:'brightness(%s%%)',contrast:'contrast(%s%%)',grayscale:'grayscale(%s%%)',hueRotate:'hue-rotate(%sdeg)',invert:'invert(%s%%)',saturate:'saturate(%s%%)',sepia:'sepia(%s%%)'};
+            const bfParts = [];
+            for (const [k, fmt] of Object.entries(bfMap)) {
+                const v = attributes.backdropFilter[k];
+                if (v !== '' && v !== null && v !== undefined) bfParts.push(fmt.replace('%s', v));
+            }
+            if (bfParts.length > 0) previewStyles.backdropFilter = bfParts.join(' ');
+        }
+        if (attributes.transitions && attributes.transitions.length > 0) {
+            previewStyles.transition = attributes.transitions.map(t => `${t.property||'all'} ${t.duration||'0.3s'} ${t.timing||'ease'} ${t.delay||'0s'}`).join(', ');
+        }
+        if (attributes.animations && attributes.animations.length > 0) {
+            previewStyles.animation = attributes.animations.map(a => `${a.name||'fadeIn'} ${a.duration||'0.5s'} ${a.timing||'ease'} ${a.delay||'0s'} ${a.iterationCount||'1'} ${a.direction||'normal'} ${a.fillMode||'forwards'}`).join(', ');
+        }
         const pad = inheritSides('padding');
         if (pad.top) previewStyles.paddingTop = pad.top;
         if (pad.right) previewStyles.paddingRight = pad.right;
@@ -328,6 +371,62 @@ registerBlockType('snn/container', {
                         <label style={{fontSize:'14px',fontWeight:500,display:'block',marginBottom:'4px',color:'#1e1e1e'}}>{__('Custom CSS','snn')}</label>
                         <TextareaControl value={attributes.customCSS||''} onChange={v => setAttributes({customCSS:v})}
                             placeholder=".your-class { color: red; }" style={{fontSize:'14px',fontFamily:'monospace'}} />
+                    </PanelBody>
+
+                    {/* ── MORE CONTROLS (new: backdrop-filter, outline, text-shadow, animations, etc.) ── */}
+                    <PanelBody title={__('More Controls','snn')} initialOpen={false}>
+
+                        {/* Visual Effects */}
+                        <CompactSection title={__('Visual Effects','snn')} />
+                        <BackdropFilterControl filters={attributes.backdropFilter||{}} onChange={v => setAttributes({backdropFilter:v})} device={d} />
+                        <OutlineControl width={attributes.outline?.width||''} style={attributes.outline?.style||''} color={attributes.outline?.color||''}
+                            onWidthChange={v => setAttributes({outline:{...(attributes.outline||{}),width:v}})}
+                            onStyleChange={v => setAttributes({outline:{...(attributes.outline||{}),style:v}})}
+                            onColorChange={v => setAttributes({outline:{...(attributes.outline||{}),color:v}})} device={d} />
+                        <TextShadowControl shadows={attributes.textShadow||[]} onChange={v => setAttributes({textShadow:v})} device={d} />
+                        <ClipPathControl value={getVal('clipPath')} onChange={v => setVal('clipPath',v)} device={d} />
+                        <ObjectFitControl value={getVal('objectFit')} onChange={v => setVal('objectFit',v)} device={d} />
+                        <AspectRatioControl value={getVal('aspectRatio')} onChange={v => setVal('aspectRatio',v)} device={d} />
+
+                        {/* Interaction */}
+                        <CompactSection title={__('Interaction','snn')} />
+                        <CursorSelect value={getVal('cursor')} onChange={v => setVal('cursor',v)} />
+                        <PointerEventsSelect value={getVal('pointerEvents')} onChange={v => setVal('pointerEvents',v)} />
+                        <UserSelectSelect value={getVal('userSelect')} onChange={v => setVal('userSelect',v)} />
+                        <ResizeSelect value={getVal('resize')} onChange={v => setVal('resize',v)} />
+                        <ScrollBehaviorSelect value={getVal('scrollBehavior')} onChange={v => setVal('scrollBehavior',v)} />
+                        <ScrollSnapControl getVal={getVal} setVal={setVal} device={d} />
+
+                        {/* Text Advanced */}
+                        <CompactSection title={__('Text Advanced','snn')} />
+                        <TextOverflowSelect value={getVal('textOverflow')} onChange={v => setVal('textOverflow',v)} />
+                        <WhiteSpaceSelect value={getVal('whiteSpace')} onChange={v => setVal('whiteSpace',v)} />
+                        <WordBreakSelect value={getVal('wordBreak')} onChange={v => setVal('wordBreak',v)} />
+                        <VerticalAlignSelect value={getVal('verticalAlign')} onChange={v => setVal('verticalAlign',v)} />
+
+                        {/* Layout Extra */}
+                        <CompactSection title={__('Layout Extra','snn')} />
+                        <BoxSizingSelect value={getVal('boxSizing')} onChange={v => setVal('boxSizing',v)} />
+                        <OrderControl getVal={getVal} setVal={setVal} device={d} />
+                        {isFlex && <FlexChildControl getVal={getVal} setVal={setVal} device={d} />}
+                        {isGrid && <GridPlacementControl getVal={getVal} setVal={setVal} device={d} />}
+
+                        {/* Animations */}
+                        <CompactSection title={__('Animations','snn')} />
+                        <TransitionBuilder transitions={attributes.transitions||[]} onChange={v => setAttributes({transitions:v})} device={d} />
+                        <AnimationBuilder animations={attributes.animations||[]} onChange={v => setAttributes({animations:v})} device={d} />
+
+                        {/* Misc */}
+                        <CompactSection title={__('Misc','snn')} />
+                        <WillChangeSelect value={getVal('willChange')} onChange={v => setVal('willChange',v)} />
+                        <IsolationSelect value={getVal('isolation')} onChange={v => setVal('isolation',v)} />
+                        <ListStyleControl type={attributes.listStyle?.type||''} position={attributes.listStyle?.position||''}
+                            onTypeChange={v => setAttributes({listStyle:{...(attributes.listStyle||{}),type:v}})}
+                            onPositionChange={v => setAttributes({listStyle:{...(attributes.listStyle||{}),position:v}})} />
+                        <InsetControl value={attributes.inset||{}} onChange={v => setAttributes({inset:v})} device={d} />
+                        <CompactSelect label={__('Bg Blend','snn')} value={attributes.bgBlendMode||''}
+                            options={[{value:'',label:'—'},{value:'normal',label:'Normal'},{value:'multiply',label:'Multiply'},{value:'screen',label:'Screen'},{value:'overlay',label:'Overlay'},{value:'darken',label:'Darken'},{value:'lighten',label:'Lighten'},{value:'color-dodge',label:'Color Dodge'},{value:'color-burn',label:'Color Burn'},{value:'hard-light',label:'Hard Light'},{value:'soft-light',label:'Soft Light'},{value:'difference',label:'Difference'},{value:'exclusion',label:'Exclusion'},{value:'hue',label:'Hue'},{value:'saturation',label:'Saturation'},{value:'color',label:'Color'},{value:'luminosity',label:'Luminosity'}]}
+                            onChange={v => setAttributes({bgBlendMode:v})} />
                     </PanelBody>
                     </div>
                 </InspectorControls>
