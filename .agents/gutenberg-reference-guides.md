@@ -43,6 +43,13 @@
    - [core/block-editor: The Block Editor's Data](#82-coreblock-editor-the-block-editors-data)
    - [core/editor: The Post Editor's Data](#83-coreeditor-the-post-editors-data)
    - [Other Data Modules](#84-other-data-modules)
+9. [SNN Practical Notes & Discovered Gotchas](#9-snn-practical-notes--discovered-gotchas)
+   - [Empty Object Defaults → Empty Arrays](#91-empty-object-defaults--empty-arrays-)
+   - [Editor Canvas is an Iframe](#92-editor-canvas-is-an-iframe-apiversion-3)
+   - [Pattern: Editor Preview via Inline Styles](#93-pattern-editor-preview-via-inline-styles)
+   - [Quick Block Attribute Debugging](#94-quick-block-attribute-debugging)
+   - [Responsive vs Non-Responsive Attributes](#95-responsive-vs-non-responsive-attribute-patterns)
+   - [Border Control Default Style](#96-border-control--default-style-gotcha)
 
 ---
 
@@ -1446,6 +1453,140 @@ Enables UI tools for: background, border, color (link, heading, button, caption)
 ### Styles
 
 Top-level styles are added in the `body` selector. Styles can be set for: `background`, `border`, `color`, `css`, `dimensions`, `filter`, `outline`, `shadow`, `spacing`, `typography`.
+
+---
+
+# 9. SNN Practical Notes & Discovered Gotchas
+
+> **Source:** Real-world debugging on this project (2026-06-24).
+> See also: `.agents/debugging.md` for the full debugging guide.
+
+## 9.1 Empty Object Defaults → Empty Arrays `[]`
+
+### The Bug
+
+`block.json` attributes declared as `{ "type": "object", "default": {} }` are serialized by WordPress as `[]` (empty JSON array) in block comment delimiters when no values have been set. This is a long-standing WP core quirk with the block parser.
+
+**Symptom:** `wp.data.select('core/block-editor').getBlock(id).attributes` shows `padding: []` instead of `padding: {}`. The `useResponsiveAttributes` hook's `inheritVal()` function sees `typeof [] === 'object'` (true!) but `[]['desktop']` returns `undefined`, so it silently falls back to the fallback value.
+
+### The Fix
+
+Always normalize object-type attributes before reading. The SNN project handles this in `blocks/controls/responsive-hooks.js` via an `obj()` helper:
+
+```javascript
+const obj = (attr) => {
+    const v = attributes[attr];
+    if (Array.isArray(v)) return {};       // ← THE KEY LINE
+    if (!v || typeof v !== 'object') return {};
+    return v;
+};
+```
+
+All `getVal`, `setVal`, `inheritVal`, `getSides`, `setSides`, `inheritSides` route through this normalizer. For attributes accessed directly in editor preview code, guard with:
+
+```javascript
+const border = Array.isArray(attributes.border) ? {} : (attributes.border || {});
+```
+
+## 9.2 Editor Canvas is an Iframe (`apiVersion: 3`)
+
+Since WordPress 6.3+, blocks with `"apiVersion": 3` render inside an `<iframe name="editor-canvas">`. This means:
+
+- **Inspector controls** (sidebar) live in the **parent document**
+- **Block preview** (canvas) lives inside the **iframe**
+- `document.querySelector('.wp-block-snn-container')` from the console will **not** find blocks — you must access the iframe:
+
+```js
+const iframe = document.querySelector('iframe[name="editor-canvas"]');
+const el = iframe.contentDocument.querySelector('.wp-block-snn-container');
+console.log(el.style.cssText);  // Full inline preview style
+```
+
+- `el.getAttribute('style')` may return a **truncated** style string. Use `el.style.cssText` for the full value.
+- CSS with `@font-face` and relative `url()` paths (e.g., Font Awesome) must be loaded via `enqueue_block_assets` with `is_admin()` guard, not `add_editor_style()` — the iframe breaks relative URL resolution.
+
+## 9.3 Pattern: Editor Preview via Inline Styles
+
+Custom controls modify block attributes via `setAttributes()`. To reflect those changes visually in the editor canvas, you must build a `previewStyles` object and pass it to `useBlockProps()`:
+
+```javascript
+const previewStyles = {};
+
+// Responsive properties (inherit across device breakpoints)
+const invBg = inheritVal('bgColor');
+if (invBg) previewStyles.backgroundColor = invBg;
+
+// Non-responsive properties (read directly)
+if (attributes.opacity !== '' && attributes.opacity !== null)
+    previewStyles.opacity = attributes.opacity;
+
+// Complex properties (convert to CSS strings)
+if (attributes.boxShadow && attributes.boxShadow.length > 0) {
+    previewStyles.boxShadow = attributes.boxShadow.map(s => {
+        const inset = s.type === 'inner' ? 'inset ' : '';
+        return `${inset}${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.spread||'0'} ${s.color||'rgba(0,0,0,0.2)'}`;
+    }).join(', ');
+}
+
+const blockProps = useBlockProps({ style: previewStyles });
+```
+
+**⚠️ Common mistake:** Adding a control to `<InspectorControls>` but forgetting to add the corresponding CSS property to `previewStyles`. The attribute saves correctly and the frontend renders correctly (via PHP), but the editor preview shows no change. See `.agents/debugging.md` Section 3 for the full list of controls that had this bug.
+
+## 9.4 Quick Block Attribute Debugging
+
+Paste in browser console while on the editor page:
+
+```js
+const { select, dispatch } = wp.data;
+const id = select('core/block-editor').getSelectedBlockClientId();
+const block = select('core/block-editor').getBlock(id);
+
+// 1. Inspect all attributes
+console.log(block.name, block.attributes);
+
+// 2. Find attributes that are [] but should be {}
+Object.entries(block.attributes).forEach(([k, v]) => {
+    if (Array.isArray(v) && v.length === 0) console.warn(`⚠ ${k} is []`);
+});
+
+// 3. Test a preview by directly setting an attribute
+dispatch('core/block-editor').updateBlockAttributes(id, {
+    opacity: '0.5',
+    boxShadow: [{ type: 'drop', x: '4px', y: '4px', blur: '12px', spread: '0px', color: '#00000040' }],
+});
+
+// 4. Check the rendered preview style
+const iframe = document.querySelector('iframe[name="editor-canvas"]');
+const el = iframe.contentDocument.querySelector('[class*="snn-"]');
+console.log(el?.style.cssText);
+```
+
+## 9.5 Responsive vs Non-Responsive Attribute Patterns
+
+This project uses a convention where some attributes are device-responsive (nested `{ desktop, tablet, mobile }`) and others are flat values:
+
+| Pattern | Attributes | How to Read | How to Write |
+|---------|-----------|-------------|--------------|
+| **Responsive** | padding, margin, fontSize, fontWeight, bgColor, textColor, display, flex/grid props, gap, sizing, textAlign | `inheritVal('attr')` or `getVal('attr')` | `setVal('attr', value)` |
+| **Non-responsive** | opacity, blendMode, position, zIndex, boxShadow, filter, transform, visibility, textTransform, fontFamily, customCSS | `attributes.attr` directly | `setAttributes({ attr: value })` directly |
+
+The distinction matters because `getVal`/`setVal` expect the attribute to be a `{ desktop, tablet, mobile }` object. Passing a flat attribute through `getVal` will return `''` (since `[activeDevice]` on a string is `undefined`).
+
+## 9.6 Border Control — Default Style Gotcha
+
+The `BorderControl` component displays "Solid" as the default style via `value={style || 'solid'}`, but `onStyleChange` only fires on user interaction. If the user sets border widths without touching the style dropdown, `attributes.border.style` remains unset. The editor preview and PHP render must default to `'solid'` when widths exist but no style is defined:
+
+```javascript
+// Editor preview (editor.jsx)
+const borderStyle = border.style || (hasBorderWidth ? 'solid' : '');
+```
+
+```php
+// Frontend render (block-helpers.php)
+if (!$style && $has_width) $style = 'solid';
+```
+
 
 ### Patterns
 An array of pattern slugs to be registered from the Pattern Directory.
