@@ -154,12 +154,46 @@ add_action('enqueue_block_editor_assets', function() {
         ], wp_get_theme()->get('Version') , true );
 });
 
-// Load shared Controls.jsx — reusable editor components, loaded before any block JSX
+// Load shared Controls — concatenated from modular /blocks/controls/ files
+// Order matters: device-badge → device-label → device-switcher → responsive-hooks
+// then all other controls (alphabetical order is fine after the four above)
 add_action('enqueue_block_editor_assets', function () {
     add_action('admin_footer', function () {
-        $controls_path = SNN_PATH . 'blocks/Controls.jsx';
-        if (file_exists($controls_path)) {
-            echo '<script type="text/babel" id="snn-controls">' . file_get_contents($controls_path) . '</script>';
+        $controls_dir = SNN_PATH . 'blocks/controls/';
+        // Ordered list: dependencies first
+        $files = [
+            'device-badge.jsx',         // 1. DeviceBadge (no deps)
+            'device-label.jsx',         // 2. RespLabel (needs DeviceBadge)
+            'device-switcher.jsx',      // 3. DeviceSwitcher (no deps)
+            'responsive-hooks.js',      // 4. Hooks (needs wp.data)
+            'compact-section.jsx',      // 5. CompactSection, CompactRow, CompactLabel
+            'color-row.jsx',            // 6. ColorRow (no deps)
+            'spacing-input.jsx',        // 7. SpacingInput (needs RespLabel)
+            'border-control.jsx',       // 8. BorderControl (needs ColorRow)
+            'border-radius.jsx',        // 9. BorderRadiusControl (needs RespLabel)
+            'shadow-builder.jsx',       // 10. ShadowBuilder (needs ColorRow, RespLabel)
+            'filter-controls.jsx',      // 11. FilterControls (needs RespLabel)
+            'transform-controls.jsx',   // 12. TransformControls (needs RespLabel)
+            'opacity-slider.jsx',       // 13. OpacitySlider (needs RespLabel)
+            'typography-controls.jsx',  // 14. Typography controls
+            'blend-mode-select.jsx',    // 15. BlendModeSelect
+            'visibility-controls.jsx',  // 16. VisibilityControls
+            'position-controls.jsx',    // 17. Position/Offset/ZIndex (needs RespLabel)
+            'toggle-field.jsx',         // 18. ToggleField
+            'compact-select.jsx',       // 19. CompactSelect
+            'range-unit-field.jsx',     // 20. RangeUnitField
+            'icon-toggle-field.jsx',    // 21. IconToggleField
+            'overflow-select.jsx',      // 22. OverflowSelect (needs DeviceBadge)
+        ];
+        $combined = '';
+        foreach ($files as $file) {
+            $path = $controls_dir . $file;
+            if (file_exists($path)) {
+                $combined .= '(function(){' . file_get_contents($path) . '})();' . "\n";
+            }
+        }
+        if ($combined) {
+            echo '<script type="text/babel" id="snn-controls">' . $combined . '</script>';
         }
     }, 1);
 }, 5);

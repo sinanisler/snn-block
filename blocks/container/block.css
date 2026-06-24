@@ -10,15 +10,27 @@
 
 .editor-styles-wrapper .snn-container {
     min-height: 40px;
-}
-
-/* Give the container a subtle dashed border in editor to show its bounds */
-.editor-styles-wrapper .snn-container {
-    outline: 1px dashed rgba(0, 0, 0, 0.08);
+    outline: 1px dashed rgba(56, 88, 233, 0.25);
     outline-offset: -1px;
+    transition: outline-color 0.15s;
 }
 
 .editor-styles-wrapper .block-editor-block-list__block.is-selected > .snn-container,
 .editor-styles-wrapper .block-editor-block-list__block.is-hovered > .snn-container {
-    outline-color: rgba(0, 0, 0, 0.2);
+    outline-color: rgba(56, 88, 233, 0.5);
+    outline-width: 2px;
+}
+
+/* Visual label for empty containers */
+.editor-styles-wrapper .snn-container:empty::after,
+.editor-styles-wrapper .snn-container > .block-editor-inner-blocks:empty::after {
+    content: 'Container';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+    font-size: 14px;
+    color: #949494;
+    font-style: italic;
+    pointer-events: none;
 }

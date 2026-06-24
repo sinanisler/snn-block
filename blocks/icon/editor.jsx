@@ -130,7 +130,7 @@ registerBlockType('snn/icon', {
                 <InspectorControls>
                     {/* ═══════ ICON SETTINGS ═══════ */}
                     <PanelBody title={__('Icon Settings', 'snn')} initialOpen={true}>
-                        <div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>{__('Editing:', 'snn')}</span>
                             <DeviceBadge device={activeDevice} />
                         </div>
@@ -171,7 +171,7 @@ registerBlockType('snn/icon', {
                                                 ></i>
                                                 {iconName.replace('fa-', '').replace(/-/g, ' ')}
                                                 {iconPrefix && iconPrefix !== 'fa-solid' ? (
-                                                    <span style={{ fontSize: '10px', color: '#999', marginLeft: '4px' }}>({iconPrefix.replace('fa-', '')})</span>
+                                                    <span style={{ fontSize: '14px', color: '#999', marginLeft: '4px' }}>({iconPrefix.replace('fa-', '')})</span>
                                                 ) : null}
                                             </span>
                                         ) : (
@@ -185,7 +185,7 @@ registerBlockType('snn/icon', {
                                     <Button
                                         variant="link"
                                         onClick={() => setAttributes({ iconName: '' })}
-                                        style={{ color: '#cc1818', fontSize: '11px', padding: '0', marginTop: '4px' }}
+                                        style={{ color: '#cc1818', fontSize: '14px', padding: '0', marginTop: '4px' }}
                                     >
                                         {__('Remove Icon', 'snn')}
                                     </Button>
@@ -203,7 +203,7 @@ registerBlockType('snn/icon', {
                                     value={customSvg || ''}
                                     onChange={val => setAttributes({ customSvg: val })}
                                     rows={6}
-                                    style={{ fontFamily: 'monospace', fontSize: '11px' }}
+                                    style={{ fontFamily: 'monospace', fontSize: '14px' }}
                                 />
 
                                 <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
@@ -254,7 +254,7 @@ registerBlockType('snn/icon', {
                                                                     customImageUrl: '',
                                                                     customImageAlt: '',
                                                                 })}
-                                                                style={{ color: '#cc1818', fontSize: '11px' }}
+                                                                style={{ color: '#cc1818', fontSize: '14px' }}
                                                             >
                                                                 {__('Remove', 'snn')}
                                                             </Button>
@@ -372,12 +372,11 @@ registerBlockType('snn/icon', {
                                     justifyContent: 'center',
                                     height: '200px',
                                     color: '#999',
-                                    fontSize: '13px',
-                                    gap: '8px',
+                                    fontSize: '14px',
                                 }}>
                                     <span style={{ fontSize: '36px', opacity: 0.4 }}>🔍</span>
                                     <span>{__('No icons match your search.', 'snn')}</span>
-                                    <span style={{ fontSize: '11px' }}>
+                                    <span style={{ fontSize: '14px' }}>
                                         {__('Try a different term (e.g. arrow, heart, star).', 'snn')}
                                     </span>
                                 </div>
@@ -389,7 +388,7 @@ registerBlockType('snn/icon', {
                                 justifyContent: 'center',
                                 height: '200px',
                                 color: '#999',
-                                fontSize: '13px',
+                                fontSize: '14px',
                             }}>
                                 {__('Loading icons…', 'snn')}
                             </div>
@@ -400,7 +399,7 @@ registerBlockType('snn/icon', {
                                 textAlign: 'center',
                                 marginTop: '12px',
                                 color: '#757575',
-                                fontSize: '12px',
+                                fontSize: '14px',
                             }}>
                                 {searchTerm.trim()
                                     ? sprintf(
@@ -456,7 +455,7 @@ registerBlockType('snn/icon', {
                                 );
                             }
                             return (
-                                <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
+                                <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '14px' }}>
                                     {__('Add an SVG or image →', 'snn')}
                                 </span>
                             );
@@ -473,7 +472,7 @@ registerBlockType('snn/icon', {
                             );
                         }
                         return (
-                            <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
+                            <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '14px' }}>
                                 {__('Click to choose an icon →', 'snn')}
                             </span>
                         );

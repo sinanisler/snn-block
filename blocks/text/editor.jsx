@@ -81,7 +81,7 @@ registerBlockType('snn/text', {
                         <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />
 
                         {/* Colors */}
-                        <div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e1e1e', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>{__('Editing:', 'snn')}</span>
                             <DeviceBadge device={activeDevice} />
                         </div>

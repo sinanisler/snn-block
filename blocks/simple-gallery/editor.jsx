@@ -64,7 +64,7 @@ registerBlockType('snn/simple-gallery', {
             <Fragment>
                 <InspectorControls>
                     <PanelBody title={__('Gallery Settings', 'snn')} initialOpen={true}>
-                        <div style={{ fontSize: '11px', color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#1e1e1e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>{__('Editing:', 'snn')}</span>
                             <DeviceBadge device={activeDevice} />
                         </div>
@@ -82,7 +82,7 @@ registerBlockType('snn/simple-gallery', {
                                             {images.length > 0 ? __('Edit Gallery', 'snn') : __('Select Images', 'snn')}
                                         </Button>
                                         {images.length > 0 && (
-                                            <p style={{ margin: '8px 0 0', color: '#757575', fontSize: '12px' }}>
+                                            <p style={{ margin: '8px 0 0', color: '#757575', fontSize: '14px' }}>
                                                 {sprintf(__('%d image(s) selected', 'snn'), images.length)}
                                             </p>
                                         )}

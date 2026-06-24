@@ -8,14 +8,35 @@
 
 /* ─── Editor Styles ─── */
 
-/* Make section visible in editor */
 .editor-styles-wrapper .snn-section {
     min-height: 40px;
+    outline: 1px dashed rgba(56, 88, 233, 0.15);
+    outline-offset: -1px;
+    transition: outline-color 0.15s;
+}
+
+.editor-styles-wrapper .block-editor-block-list__block.is-selected > .snn-section,
+.editor-styles-wrapper .block-editor-block-list__block.is-hovered > .snn-section {
+    outline-color: rgba(56, 88, 233, 0.4);
+    outline-width: 2px;
 }
 
 /* Section placeholder when empty */
 .editor-styles-wrapper .snn-section > .block-editor-inner-blocks > .block-editor-block-list__layout > .wp-block:first-child:last-child {
     min-height: 40px;
+}
+
+/* Visual label for empty sections */
+.editor-styles-wrapper .snn-section:not(:has(.wp-block))::after {
+    content: 'Section';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+    font-size: 14px;
+    color: #949494;
+    font-style: italic;
+    pointer-events: none;
 }
 
 /* Responsive preview hint */
