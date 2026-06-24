@@ -23,16 +23,28 @@ C.useActiveDevice = () => {
 C.useResponsiveAttributes = (attributes, setAttributes) => {
     const activeDevice = C.useActiveDevice();
 
-    const getVal = (attr) => attributes[attr]?.[activeDevice] || '';
+    // Normalize helper: ensure attribute is an object, not an array.
+    // WP may serialize empty objects {} as [] in block delimiter comments.
+    const obj = (attr) => {
+        const v = attributes[attr];
+        if (Array.isArray(v)) return {};
+        if (!v || typeof v !== 'object') return {};
+        return v;
+    };
+
+    const getVal = (attr) => {
+        const o = obj(attr);
+        return o[activeDevice] || '';
+    };
 
     const setVal = (attr, value) => {
-        setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: value } });
+        const o = obj(attr);
+        setAttributes({ [attr]: { ...o, [activeDevice]: value } });
     };
 
     // Inherited value cascade: current device → tablet → desktop → fallback
     const inheritVal = (attr, fallback = '') => {
-        const val = attributes[attr];
-        if (!val || typeof val !== 'object') return fallback;
+        const val = obj(attr);
         if (val[activeDevice]) return val[activeDevice];
         if (activeDevice === 'mobile' && val.tablet) return val.tablet;
         if (val.desktop) return val.desktop;
@@ -40,13 +52,16 @@ C.useResponsiveAttributes = (attributes, setAttributes) => {
     };
 
     // 4-side helpers (padding, margin, border width, border radius)
-    const getSides = (attr) => attributes[attr]?.[activeDevice] || { top: '', right: '', bottom: '', left: '' };
-    const setSides = (attr, obj) => {
-        setAttributes({ [attr]: { ...(attributes[attr] || {}), [activeDevice]: obj } });
+    const getSides = (attr) => {
+        const o = obj(attr);
+        return o[activeDevice] || { top: '', right: '', bottom: '', left: '' };
+    };
+    const setSides = (attr, sideObj) => {
+        const o = obj(attr);
+        setAttributes({ [attr]: { ...o, [activeDevice]: sideObj } });
     };
     const inheritSides = (attr) => {
-        const sides = attributes[attr];
-        if (!sides || typeof sides !== 'object') return { top: '', right: '', bottom: '', left: '' };
+        const sides = obj(attr);
         const tryDevices = ['mobile', 'tablet', 'desktop'];
         const start = tryDevices.indexOf(activeDevice);
         for (let i = start; i < tryDevices.length; i++) {
@@ -58,24 +73,34 @@ C.useResponsiveAttributes = (attributes, setAttributes) => {
 
     // Padding aliases (for text block backwards compatibility)
     const getPad = () => getSides('padding');
-    const setPad = (obj) => setSides('padding', obj);
+    const setPad = (sideObj) => setSides('padding', sideObj);
     const inheritPad = () => inheritSides('padding');
 
-    // Border width helpers — border.width is nested inside the border object
+    // Border width helpers — border.width is nested inside the border object.
+    // The border attribute itself may also be an empty array [] from WP serialization.
     const getBorderWidth = () => {
-        const bw = attributes.border?.width;
-        return (bw && bw[activeDevice]) ? bw[activeDevice] : { top: '', right: '', bottom: '', left: '' };
+        const border = Array.isArray(attributes.border) ? {} : (attributes.border || {});
+        const bw = border.width;
+        return (bw && !Array.isArray(bw) && bw[activeDevice]) ? bw[activeDevice] : { top: '', right: '', bottom: '', left: '' };
     };
-    const setBorderWidth = (obj) => {
-        const border = attributes.border || {};
+    const setBorderWidth = (sideObj) => {
+        const border = Array.isArray(attributes.border) ? {} : (attributes.border || {});
         setAttributes({
-            border: { ...border, width: { ...(border.width || {}), [activeDevice]: obj } }
+            border: { ...border, width: { ...(border.width && !Array.isArray(border.width) ? border.width : {}), [activeDevice]: sideObj } }
         });
     };
 
-    // Border radius aliases using getSides/setSides (borderRadius IS top-level)
-    const getBorderRadius = () => getSides('borderRadius');
-    const setBorderRadius = (obj) => setSides('borderRadius', obj);
+    // Border radius helpers — use proper corner keys (NOT top/right/bottom/left)
+    const getBorderRadius = () => {
+        const br = Array.isArray(attributes.borderRadius) ? {} : (attributes.borderRadius || {});
+        return (br[activeDevice]) ? br[activeDevice] : { topLeft: '', topRight: '', bottomRight: '', bottomLeft: '' };
+    };
+    const setBorderRadius = (sideObj) => {
+        const br = Array.isArray(attributes.borderRadius) ? {} : (attributes.borderRadius || {});
+        setAttributes({
+            borderRadius: { ...br, [activeDevice]: sideObj }
+        });
+    };
 
     return { activeDevice, getVal, setVal, inheritVal, getSides, setSides, inheritSides,
         getPad, setPad, inheritPad, getBorderWidth, setBorderWidth, getBorderRadius, setBorderRadius };

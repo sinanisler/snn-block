@@ -184,6 +184,7 @@ add_action('enqueue_block_editor_assets', function () {
             'range-unit-field.jsx',     // 20. RangeUnitField
             'icon-toggle-field.jsx',    // 21. IconToggleField
             'overflow-select.jsx',      // 22. OverflowSelect (needs DeviceBadge)
+            'flex-grid-icons.jsx',      // 23. DirectionIcons, JustifyIcons, AlignIcons, WrapIcons
         ];
         $combined = '';
         foreach ($files as $file) {

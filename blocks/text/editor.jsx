@@ -86,9 +86,14 @@ registerBlockType('snn/text', {
                             <DeviceBadge device={activeDevice} />
                         </div>
                         <ColorRow
-                            label=""
+                            label={__('Text','snn')}
                             value={getVal('textColor')}
                             onChange={v => setVal('textColor', v || '')}
+                        />
+                        <ColorRow
+                            label={__('BG','snn')}
+                            value={getVal('bgColor')}
+                            onChange={v => setVal('bgColor', v || '')}
                         />
 
                         <hr style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e0e0e0' }} />

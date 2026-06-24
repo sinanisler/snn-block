@@ -18,6 +18,7 @@ defined('ABSPATH') || exit;
 
 /**
  * Generate fully responsive CSS for a single property.
+ * If $unit is provided, it is appended ONLY if the value doesn't already end with that unit.
  */
 function snn_responsive_style($attr, $property, $selector, $unit = '') {
     if (empty($attr) || !is_array($attr)) return '';
@@ -26,7 +27,11 @@ function snn_responsive_style($attr, $property, $selector, $unit = '') {
     foreach (['desktop', 'tablet', 'mobile'] as $device) {
         $value = $attr[$device] ?? '';
         if ($value === '' || $value === null || $value === false) continue;
-        $cv = $value . $unit;
+        // If unit is specified and value doesn't already end with it, append it
+        if ($unit && is_string($value) && !preg_match('/' . preg_quote($unit, '/') . '$/', $value)) {
+            $value .= $unit;
+        }
+        $cv = $value;
         if ($device === 'desktop') $css .= "{$selector} {{$property}: {$cv};}\n";
         else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {{$property}: {$cv};}\n}\n";
     }
@@ -74,9 +79,12 @@ function snn_border_css($border, $selector) {
     if (empty($border) || !is_array($border)) return '';
     $css = '';
     $style = $border['style'] ?? '';
+    $has_width = !empty($border['width']);
+    // Default to solid when width is set but no style defined
+    if (!$style && $has_width) $style = 'solid';
     if ($style && $style !== 'none') {
         $css .= "{$selector} {border-style: {$style};}\n";
-        if (!empty($border['width']))
+        if ($has_width)
             $css .= snn_responsive_sides($border['width'], [
                 'top' => 'border-top-width', 'right' => 'border-right-width',
                 'bottom' => 'border-bottom-width', 'left' => 'border-left-width',

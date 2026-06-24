@@ -1,5 +1,5 @@
 const { registerBlockType } = wp.blocks;
-const { InspectorControls, useBlockProps, useInnerBlocksProps, MediaUpload } = wp.blockEditor;
+const { InspectorControls, useBlockProps, useInnerBlocksProps, InnerBlocks, MediaUpload } = wp.blockEditor;
 const { Button, TextareaControl, PanelBody } = wp.components;
 const { Fragment } = wp.element;
 const { __ } = wp.i18n;
@@ -13,6 +13,7 @@ const {
     ToggleField, IconToggleField, CompactSelect, RangeUnitField,
     PositionSelect, OffsetInput, ZIndexControl, VisibilityControls,
     OverflowSelect, useResponsiveAttributes,
+    DirectionIcons, JustifyIcons, AlignIcons, WrapIcons,
 } = window.SNNControls;
 
 registerBlockType('snn/section', {
@@ -31,7 +32,7 @@ registerBlockType('snn/section', {
             previewStyles.backgroundRepeat = attributes.bgRepeat || 'no-repeat';
             previewStyles.backgroundAttachment = attributes.bgAttachment || 'scroll';
         }
-        ['display','flexDirection','flexWrap','justifyContent','justifyItems','alignItems','alignContent','gap','gridColumns','textAlign','minHeight'].forEach(k => {
+        ['display','flexDirection','flexWrap','justifyContent','justifyItems','alignItems','alignContent','gap','gridColumns','textAlign','minHeight','width','height','minWidth','maxWidth','maxHeight'].forEach(k => {
             const v = inheritVal(k); if (v) previewStyles[k==='gridColumns'?'gridTemplateColumns':k] = v;
         });
         if (attributes.overflow) previewStyles.overflow = attributes.overflow;
@@ -41,18 +42,106 @@ registerBlockType('snn/section', {
         if (pad.bottom) previewStyles.paddingBottom = pad.bottom;
         if (pad.left) previewStyles.paddingLeft = pad.left;
 
+        // ── Margin preview ──
+        const mar = inheritSides('margin');
+        if (mar.top) previewStyles.marginTop = mar.top;
+        if (mar.right) previewStyles.marginRight = mar.right;
+        if (mar.bottom) previewStyles.marginBottom = mar.bottom;
+        if (mar.left) previewStyles.marginLeft = mar.left;
+
+        // ── Typography preview ──
+        if (attributes.fontFamily) previewStyles.fontFamily = attributes.fontFamily;
+        const invFs = inheritVal('fontSize'); if (invFs) previewStyles.fontSize = invFs;
+        const invFw = inheritVal('fontWeight'); if (invFw) previewStyles.fontWeight = invFw;
+        const invLh = inheritVal('lineHeight'); if (invLh) previewStyles.lineHeight = invLh;
+        const invLs = inheritVal('letterSpacing'); if (invLs) previewStyles.letterSpacing = invLs;
+        if (attributes.textTransform) previewStyles.textTransform = attributes.textTransform;
+
+        // ── Border preview ──
+        const border = (Array.isArray(attributes.border) ? {} : (attributes.border || {}));
+        const bw = getBorderWidth();
+        const hasBorderWidth = bw.top || bw.right || bw.bottom || bw.left;
+        const borderStyle = border.style || (hasBorderWidth ? 'solid' : '');
+        if (borderStyle && borderStyle !== 'none') {
+            previewStyles.borderStyle = borderStyle;
+            if (bw.top) previewStyles.borderTopWidth = bw.top;
+            if (bw.right) previewStyles.borderRightWidth = bw.right;
+            if (bw.bottom) previewStyles.borderBottomWidth = bw.bottom;
+            if (bw.left) previewStyles.borderLeftWidth = bw.left;
+            if (border.color) previewStyles.borderColor = border.color;
+        }
+
+        // ── Border Radius preview ──
+        const br = getBorderRadius();
+        if (br.topLeft) previewStyles.borderTopLeftRadius = br.topLeft;
+        if (br.topRight) previewStyles.borderTopRightRadius = br.topRight;
+        if (br.bottomRight) previewStyles.borderBottomRightRadius = br.bottomRight;
+        if (br.bottomLeft) previewStyles.borderBottomLeftRadius = br.bottomLeft;
+
+        // ── Box Shadow preview ──
+        if (attributes.boxShadow && attributes.boxShadow.length > 0) {
+            previewStyles.boxShadow = attributes.boxShadow.map(s => {
+                const inset = (s.type || 'drop') === 'inner' ? 'inset ' : '';
+                return `${inset}${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.spread||'0'} ${s.color||'rgba(0,0,0,0.2)'}`;
+            }).join(', ');
+        }
+
+        // ── Filter preview ──
+        const filters = (Array.isArray(attributes.filter) ? {} : (attributes.filter || {}));
+        const filterMap = {blur:'blur(%spx)',brightness:'brightness(%s%%)',contrast:'contrast(%s%%)',grayscale:'grayscale(%s%%)',hueRotate:'hue-rotate(%sdeg)',invert:'invert(%s%%)',saturate:'saturate(%s%%)',sepia:'sepia(%s%%)'};
+        const filterParts = [];
+        for (const [k, fmt] of Object.entries(filterMap)) {
+            const v = filters[k];
+            if (v !== '' && v !== null && v !== undefined) filterParts.push(fmt.replace('%s', v));
+        }
+        if (filterParts.length > 0) previewStyles.filter = filterParts.join(' ');
+
+        // ── Transform preview ──
+        const t = (Array.isArray(attributes.transform) ? {} : (attributes.transform || {}));
+        const transformParts = [];
+        const tx = t.translateX || '', ty = t.translateY || '';
+        if (tx !== '' || ty !== '') transformParts.push(`translate(${tx||'0'}, ${ty||'0'})`);
+        const sx = t.scaleX || '', sy = t.scaleY || '';
+        if (sx !== '' || sy !== '') transformParts.push(`scale(${sx||'1'}, ${sy||'1'})`);
+        if (t.rotate) transformParts.push(`rotate(${t.rotate})`);
+        const kx = t.skewX || '', ky = t.skewY || '';
+        if (kx !== '' || ky !== '') transformParts.push(`skew(${kx||'0'}, ${ky||'0'})`);
+        if (transformParts.length > 0) previewStyles.transform = transformParts.join(' ');
+
+        // ── Opacity ──
+        if (attributes.opacity !== '' && attributes.opacity !== null) previewStyles.opacity = attributes.opacity;
+
+        // ── Blend Mode ──
+        if (attributes.blendMode && attributes.blendMode !== 'normal') previewStyles.mixBlendMode = attributes.blendMode;
+
+        // ── Position / Offsets / Z-Index ──
+        if (attributes.position && attributes.position !== 'static') previewStyles.position = attributes.position;
+        const offsets = (Array.isArray(attributes.offsets) ? {} : (attributes.offsets || {}));
+        if (offsets.top) previewStyles.top = offsets.top;
+        if (offsets.right) previewStyles.right = offsets.right;
+        if (offsets.bottom) previewStyles.bottom = offsets.bottom;
+        if (offsets.left) previewStyles.left = offsets.left;
+        if (attributes.zIndex !== '' && attributes.zIndex !== null) previewStyles.zIndex = attributes.zIndex;
+
         const displayVal = inheritVal('display');
         const isFlex = displayVal === 'flex';
         const isGrid = displayVal === 'grid';
 
-        const blockProps = useBlockProps({ className:'snn-section', style:previewStyles });
+        // Overlay preview — sets CSS var consumed by ::before in block.css
+        const overlayColor = attributes.bgOverlay?.color || '';
+        const hasOverlay = !!overlayColor;
+        const wrapperStyle = { ...previewStyles };
+        if (hasOverlay) {
+            wrapperStyle['--snn-overlay'] = overlayColor;
+            wrapperStyle.position = wrapperStyle.position || 'relative';
+        }
+
+        const blockProps = useBlockProps({ className:'snn-section', style: wrapperStyle });
         const innerBlocksProps = useInnerBlocksProps(blockProps, { template: [['snn/container']] });
 
         /* ══════════════════════════════════════════
            SHARED STYLES
            ══════════════════════════════════════════ */
-        const row = { display:'flex',alignItems:'center',gap:'6px',marginBottom:'4px' };
-        const lbl = { fontSize:'14px',fontWeight:600,textTransform:'uppercase',color:'#1e1e1e',minWidth:'54px',flexShrink:0 };
         const tinyInp = { width:'100%',padding:'4px 6px',fontSize:'14px',fontFamily:'monospace',border:'1px solid #ddd',borderRadius:'3px',boxSizing:'border-box',lineHeight:'20px' };
         const sel = { fontSize:'14px',padding:'3px 6px',border:'1px solid #949494',borderRadius:'3px',height:'26px',flex:1,background:'#fff',minWidth:0 };
 
@@ -70,48 +159,34 @@ registerBlockType('snn/section', {
                         options={[{value:'',label:'—'},{value:'left',label:'Left'},{value:'center',label:'Center'},{value:'right',label:'Right'}]}
                         onChange={v => setVal('textAlign',v)} />
 
-                    {isFlex && <div>
-                        <div style={{ display:'flex',gap:'4px',marginBottom:'4px' }}>
-                            <select value={getVal('flexDirection')} onChange={e => setVal('flexDirection',e.target.value)} style={sel}>
-                                <option value="">{__('Direction','snn')}</option>
-                                <option value="row">Row</option><option value="column">Column</option>
-                                <option value="row-reverse">Row Rev</option><option value="column-reverse">Col Rev</option>
-                            </select>
-                            <select value={getVal('flexWrap')} onChange={e => setVal('flexWrap',e.target.value)} style={sel}>
-                                <option value="">{__('Wrap','snn')}</option>
-                                <option value="wrap">Wrap</option><option value="nowrap">Nowrap</option>
-                                <option value="wrap-reverse">Wrap Rev</option>
-                            </select>
+                    {/* ── FLEX: Direction / Wrap / Justify / Align ── */}
+                    {isFlex && <div style={{ marginBottom:'6px', padding:'8px', background:'#f9fafc', borderRadius:'4px', border:'1px solid #e8ecf1' }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px' }}>
+                            <DirectionIcons value={getVal('flexDirection')} onChange={v => setVal('flexDirection',v)} />
+                            <WrapIcons value={getVal('flexWrap')} onChange={v => setVal('flexWrap',v)} />
                         </div>
-                        <div style={{ display:'flex',gap:'4px',marginBottom:'4px' }}>
-                            <select value={getVal('justifyContent')} onChange={e => setVal('justifyContent',e.target.value)} style={sel}>
-                                <option value="">{__('Justify','snn')}</option>
-                                <option value="flex-start">Start</option><option value="center">Center</option>
-                                <option value="flex-end">End</option><option value="space-between">Between</option>
-                                <option value="space-around">Around</option><option value="space-evenly">Evenly</option>
-                            </select>
-                            <select value={getVal('alignItems')} onChange={e => setVal('alignItems',e.target.value)} style={sel}>
-                                <option value="">{__('Align','snn')}</option>
-                                <option value="flex-start">Start</option><option value="center">Center</option>
-                                <option value="flex-end">End</option><option value="stretch">Stretch</option>
-                            </select>
-                        </div>
+                        <JustifyIcons value={getVal('justifyContent')} onChange={v => setVal('justifyContent',v)} isGrid={false} />
+                        <AlignIcons value={getVal('alignItems')} onChange={v => setVal('alignItems',v)} isGrid={false} />
                     </div>}
 
-                    {isGrid && <div style={{ display:'flex',gap:'4px',marginBottom:'4px' }}>
-                        <input type="text" value={getVal('gridColumns')} onChange={e => setVal('gridColumns',e.target.value)}
-                            placeholder="1fr 1fr" style={{...tinyInp,flex:1}} />
-                        <select value={getVal('alignItems')} onChange={e => setVal('alignItems',e.target.value)} style={sel}>
-                            <option value="">Align</option>
-                            <option value="start">Start</option><option value="center">Center</option>
-                            <option value="end">End</option><option value="stretch">Stretch</option>
-                        </select>
+                    {/* ── GRID: Columns / Justify Items / Align Items / Justify Content / Align Content ── */}
+                    {isGrid && <div style={{ marginBottom:'6px', padding:'8px', background:'#f9fafc', borderRadius:'4px', border:'1px solid #e8ecf1' }}>
+                        <div style={{ display:'flex',alignItems:'center',gap:'6px',marginBottom:'8px' }}>
+                            <span style={{ fontSize:'14px',fontWeight:600,color:'#1e1e1e',whiteSpace:'nowrap' }}>{__('Columns','snn')}</span>
+                            <input type="text" value={getVal('gridColumns')} onChange={e => setVal('gridColumns',e.target.value)}
+                                placeholder="1fr 1fr" style={{...tinyInp,flex:1}} />
+                        </div>
+                        <JustifyIcons value={getVal('justifyItems')} onChange={v => setVal('justifyItems',v)} isGrid={true} label={__('Justify Items','snn')} />
+                        <AlignIcons value={getVal('alignItems')} onChange={v => setVal('alignItems',v)} isGrid={true} />
+                        <JustifyIcons value={getVal('justifyContent')} onChange={v => setVal('justifyContent',v)} isGrid={true} label={__('Justify Content','snn')} />
+                        <JustifyIcons value={getVal('alignContent')} onChange={v => setVal('alignContent',v)} isGrid={true} label={__('Align Content','snn')} />
                     </div>}
 
-                    <div style={{ display:'flex',gap:'4px',marginBottom:'2px' }}>
+                    {/* ── GAP (only for flex/grid) ── */}
+                    {(isFlex || isGrid) && <div style={{ display:'flex',gap:'4px',marginBottom:'6px' }}>
                         <input type="text" value={getVal('gap')} onChange={e => setVal('gap',e.target.value)}
                             placeholder={__('Gap','snn')} style={{...tinyInp,flex:1}} />
-                    </div>
+                    </div>}
 
                     <CompactSection title={__('Spacing','snn')} />
                     <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',marginBottom:'6px' }}>
@@ -138,29 +213,74 @@ registerBlockType('snn/section', {
                     <OverflowSelect value={attributes.overflow||''} onChange={v => setAttributes({overflow:v})} device={d} />
 
                     <CompactSection title={__('Background','snn')} />
+
+                    {/* ── 1. Background Color ── */}
                     <ColorRow label={__('Color','snn')} value={getVal('bgColor')} onChange={v => setVal('bgColor',v)} />
-                    <div style={{marginBottom:'6px'}}>
-                        <MediaUpload onSelect={m => setAttributes({bgImage:{id:m.id,url:m.url,alt:m.alt||''}})} allowedTypes={['image']} value={attributes.bgImage?.id||0}
-                            render={({open}) => (
-                                <Button onClick={open} isSecondary style={{width:'100%',justifyContent:'center',fontSize:'14px',padding:'4px 12px',height:'auto'}}>
-                                    {attributes.bgImage?.url ? __('Change Image','snn') : __('+ BG Image','snn')}
-                                </Button>
-                            )} />
-                        {attributes.bgImage?.url && <Button onClick={() => setAttributes({bgImage:{id:0,url:'',alt:''}})} isDestructive style={{width:'100%',marginTop:'4px',fontSize:'14px',padding:'3px 12px',height:'auto'}}>{__('Remove','snn')}</Button>}
+
+                    {/* ── 2. Background Image with thumbnail preview ── */}
+                    <div style={{ marginBottom:'8px' }}>
+                        <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px' }}>
+                            <span style={{ fontSize:'14px',fontWeight:600,color:'#1e1e1e' }}>{__('Image','snn')}</span>
+                            <MediaUpload onSelect={m => setAttributes({bgImage:{id:m.id,url:m.url,alt:m.alt||''}})} allowedTypes={['image']} value={attributes.bgImage?.id||0}
+                                render={({open}) => (
+                                    <button type="button" onClick={open} style={{ border:'none',background:'#3858e9',color:'#fff',borderRadius:'3px',padding:'3px 10px',fontSize:'13px',cursor:'pointer',fontWeight:500 }}>
+                                        {attributes.bgImage?.url ? __('Change','snn') : __('+ Add','snn')}
+                                    </button>
+                                )} />
+                        </div>
+                        {attributes.bgImage?.url ? (
+                            <div style={{ position:'relative',borderRadius:'4px',overflow:'hidden',border:'1px solid #d0d0d0',marginBottom:'4px' }}>
+                                <img src={attributes.bgImage.url} alt={attributes.bgImage.alt||''}
+                                    style={{ width:'100%',height:'80px',objectFit:'cover',display:'block' }} />
+                                <button type="button" onClick={() => setAttributes({bgImage:{id:0,url:'',alt:''}})}
+                                    title={__('Remove image','snn')}
+                                    style={{ position:'absolute',top:'4px',right:'4px',width:'24px',height:'24px',borderRadius:'50%',border:'none',background:'rgba(0,0,0,0.55)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',padding:0,lineHeight:1 }}>
+                                    ✕
+                                </button>
+                            </div>
+                        ) : (
+                            <MediaUpload onSelect={m => setAttributes({bgImage:{id:m.id,url:m.url,alt:m.alt||''}})} allowedTypes={['image']} value={attributes.bgImage?.id||0}
+                                render={({open}) => (
+                                    <button type="button" onClick={open} style={{ width:'100%',height:'60px',border:'1px dashed #b0b0b0',borderRadius:'4px',background:'#fafafa',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',fontSize:'14px',color:'#757575' }}>
+                                        <span style={{ fontSize:'20px' }}>🖼</span> {__('Select image','snn')}
+                                    </button>
+                                )} />
+                        )}
                     </div>
-                    <div style={{display:'flex',gap:'6px',marginBottom:'6px'}}>
-                        <select value={attributes.bgSize||'cover'} onChange={e => setAttributes({bgSize:e.target.value})} style={sel}>
-                            <option value="cover">Cover</option><option value="contain">Contain</option><option value="auto">Auto</option>
-                        </select>
-                        <select value={attributes.bgAttachment||'scroll'} onChange={e => setAttributes({bgAttachment:e.target.value})} style={sel}>
-                            <option value="scroll">Scroll</option><option value="fixed">Fixed</option>
-                        </select>
+
+                    {/* ── 3-6. Size / Position / Repeat / Attachment ── */}
+                    <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px',marginBottom:'4px' }}>
+                        <div>
+                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Size','snn')}</span>
+                            <select value={attributes.bgSize||'cover'} onChange={e => setAttributes({bgSize:e.target.value})} style={sel}>
+                                <option value="cover">Cover</option><option value="contain">Contain</option><option value="auto">Auto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Position','snn')}</span>
+                            <select value={attributes.bgPosition||'center center'} onChange={e => setAttributes({bgPosition:e.target.value})} style={sel}>
+                                <option value="left top">Left Top</option><option value="center top">Center Top</option><option value="right top">Right Top</option>
+                                <option value="left center">Left Center</option><option value="center center">Center</option><option value="right center">Right Center</option>
+                                <option value="left bottom">Left Bottom</option><option value="center bottom">Center Bottom</option><option value="right bottom">Right Bottom</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Repeat','snn')}</span>
+                            <select value={attributes.bgRepeat||'no-repeat'} onChange={e => setAttributes({bgRepeat:e.target.value})} style={sel}>
+                                <option value="no-repeat">No Repeat</option><option value="repeat">Repeat</option>
+                                <option value="repeat-x">Repeat X</option><option value="repeat-y">Repeat Y</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Attachment','snn')}</span>
+                            <select value={attributes.bgAttachment||'scroll'} onChange={e => setAttributes({bgAttachment:e.target.value})} style={sel}>
+                                <option value="scroll">Scroll</option><option value="fixed">Fixed</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style={row}>
-                        <span style={lbl}>{__('Overlay','snn')}</span>
-                        <input type="text" value={attributes.bgOverlay?.color||''} onChange={e => setAttributes({bgOverlay:{...(attributes.bgOverlay||{}),color:e.target.value}})}
-                            placeholder="#00000080" style={{...tinyInp,flex:1}} />
-                    </div>
+
+                    {/* ── 7. Background Overlay ── */}
+                    <ColorRow label={__('Overlay','snn')} value={attributes.bgOverlay?.color||''} onChange={v => setAttributes({bgOverlay:{...(attributes.bgOverlay||{}),color:v}})} />
 
                     <CompactSection title={__('Color & Type','snn')} />
                     <ColorRow label={__('Text','snn')} value={getVal('textColor')} onChange={v => setVal('textColor',v)} />
@@ -218,5 +338,5 @@ registerBlockType('snn/section', {
             </Fragment>
         );
     },
-    save: () => null,
+    save: () => <InnerBlocks.Content />,
 });

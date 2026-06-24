@@ -6,6 +6,21 @@
     box-sizing: border-box;
 }
 
+/* ─── Overlay preview (editor) — driven by --snn-overlay CSS var ─── */
+.snn-container[style*="--snn-overlay"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--snn-overlay);
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+}
+.snn-container[style*="--snn-overlay"] > .block-editor-inner-blocks {
+    position: relative;
+    z-index: 1;
+}
+
 /* ─── Editor Styles ─── */
 
 .editor-styles-wrapper .snn-container {
