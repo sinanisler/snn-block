@@ -6,7 +6,7 @@
     "title": "Simple Gallery",
     "category": "media",
     "icon": "images-alt2",
-    "description": "",
+    "description": "Responsive image gallery with full custom styling — columns, gaps, borders, shadows, and lightbox.",
     "keywords": ["gallery", "images", "photos", "grid"],
     "attributes": {
         "images": {
@@ -22,45 +22,22 @@
                 }
             }
         },
-        "columns": {
-            "type": "object",
-            "default": {}
-        },
-        "gap": {
-            "type": "object",
-            "default": {}
-        },
-        "aspectRatio": {
-            "type": "object",
-            "default": {}
-        },
-        "enableLightbox": {
-            "type": "boolean",
-            "default": false
-        },
-        "customCSS": {
-            "type": "string",
-            "default": ""
-        }
+        "columns": { "type": "object", "default": {} },
+        "gap": { "type": "object", "default": {} },
+        "aspectRatio": { "type": "object", "default": {} },
+        "enableLightbox": { "type": "boolean", "default": false },
+        "bgColor": { "type": "object", "default": {} },
+        "padding": { "type": "object", "default": {} },
+        "margin": { "type": "object", "default": {} },
+        "border": { "type": "object", "default": {} },
+        "borderRadius": { "type": "object", "default": {} },
+        "boxShadow": { "type": "object", "default": {} },
+        "customCSS": { "type": "string", "default": "" }
     },
     "supports": {
         "html": false,
-        "align": ["wide", "full", "center"],
         "anchor": true,
-        "spacing": {
-            "margin": true,
-            "padding": true
-        },
-        "color": {
-            "background": true,
-            "text": false
-        },
-        "borders": {
-            "color": true,
-            "radius": true,
-            "style": true,
-            "width": true
-        }
+        "align": ["wide", "full", "center"]
     },
     "style": "file:./block.css",
     "render": "file:./block.php"

@@ -42,7 +42,7 @@ registerBlockType('snn/container', {
     },
     edit: function (props) {
         const { attributes, setAttributes } = props;
-        const { activeDevice, getVal, setVal, inheritVal, getSides, setSides, inheritSides, getBorderWidth, setBorderWidth, getBorderRadius, setBorderRadius } = useResponsiveAttributes(attributes, setAttributes);
+        const { activeDevice, getVal, setVal, inheritVal, getSides, setSides, inheritSides, getBorderWidth, setBorderWidth, getBorderRadius, setBorderRadius, getObj, setObj, inheritObj, getArr, setArr, inheritArr } = useResponsiveAttributes(attributes, setAttributes);
         const d = activeDevice;
 
         const themeContentSize = useSelect(select => {
@@ -57,12 +57,13 @@ registerBlockType('snn/container', {
         previewStyles.marginRight = 'auto';
         const invBg = inheritVal('bgColor'); if (invBg) previewStyles.backgroundColor = invBg;
         const invText = inheritVal('textColor'); if (invText) previewStyles.color = invText;
-        if (attributes.bgImage?.url) {
-            previewStyles.backgroundImage = `url(${attributes.bgImage.url})`;
-            previewStyles.backgroundSize = attributes.bgSize || 'cover';
-            previewStyles.backgroundPosition = attributes.bgPosition || 'center center';
-            previewStyles.backgroundRepeat = attributes.bgRepeat || 'no-repeat';
-            previewStyles.backgroundAttachment = attributes.bgAttachment || 'scroll';
+        const bgImg = inheritObj('bgImage');
+        if (bgImg.url) {
+            previewStyles.backgroundImage = `url(${bgImg.url})`;
+            previewStyles.backgroundSize = inheritVal('bgSize', 'cover');
+            previewStyles.backgroundPosition = inheritVal('bgPosition', 'center center');
+            previewStyles.backgroundRepeat = inheritVal('bgRepeat', 'no-repeat');
+            previewStyles.backgroundAttachment = inheritVal('bgAttachment', 'scroll');
         }
         ['display','flexDirection','flexWrap','justifyContent','justifyItems','alignItems','alignContent','gap','gridColumns','textAlign','minHeight','width','height','minWidth','maxHeight',
          'gridRows','gridAutoFlow','rowGap','columnGap','flexGrow','flexShrink','flexBasis','alignSelf','order',
@@ -72,35 +73,41 @@ registerBlockType('snn/container', {
          'boxSizing','willChange','isolation'].forEach(k => {
             const v = inheritVal(k); if (v) previewStyles[k==='gridColumns'?'gridTemplateColumns':k==='gridRows'?'gridTemplateRows':k==='gridAutoFlow'?'gridAutoFlow':k] = v;
         });
-        if (attributes.overflow) previewStyles.overflow = attributes.overflow;
+        const invOverflow = inheritVal('overflow'); if (invOverflow) previewStyles.overflow = invOverflow;
         // ── New controls preview ──
-        if (attributes.bgGradient) {
-            if (attributes.bgImage?.url) previewStyles.backgroundImage = attributes.bgGradient + ', url(' + attributes.bgImage.url + ')';
-            else previewStyles.backgroundImage = attributes.bgGradient;
-        }
-        if (attributes.bgBlendMode && attributes.bgBlendMode !== 'normal') previewStyles.backgroundBlendMode = attributes.bgBlendMode;
-        const outline = (Array.isArray(attributes.outline) ? {} : (attributes.outline || {}));
+        const bgGradients = (Array.isArray(attributes.bgGradients) ? attributes.bgGradients :
+            (attributes.bgGradient ? [{ css: attributes.bgGradient }] : []));
+        const bgLayers = [];
+        bgGradients.forEach(g => { if (g.css) bgLayers.push(g.css); });
+        if (attributes.bgImage?.url) bgLayers.push('url(' + attributes.bgImage.url + ')');
+        if (bgLayers.length) previewStyles.backgroundImage = bgLayers.join(', ');
+        const invBgBlend = inheritVal('bgBlendMode'); if (invBgBlend && invBgBlend !== 'normal') previewStyles.backgroundBlendMode = invBgBlend;
+        const outline = inheritObj('outline', {});
         if (outline.style && outline.style !== 'none') {
             let ol = ''; if (outline.width) ol += outline.width + ' '; ol += outline.style; if (outline.color) ol += ' ' + outline.color;
             if (ol) previewStyles.outline = ol;
         }
-        if (attributes.textShadow && attributes.textShadow.length > 0) {
-            previewStyles.textShadow = attributes.textShadow.map(s => `${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.color||'rgba(0,0,0,0.2)'}`).join(', ');
+        const textShadowArr = inheritArr('textShadow');
+        if (textShadowArr.length > 0) {
+            previewStyles.textShadow = textShadowArr.map(s => `${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.color||'rgba(0,0,0,0.2)'}`).join(', ');
         }
-        if (attributes.backdropFilter && !Array.isArray(attributes.backdropFilter)) {
+        const bfObj = inheritObj('backdropFilter', {});
+        if (Object.keys(bfObj).length > 0) {
             const bfMap = {blur:'blur(%spx)',brightness:'brightness(%s%%)',contrast:'contrast(%s%%)',grayscale:'grayscale(%s%%)',hueRotate:'hue-rotate(%sdeg)',invert:'invert(%s%%)',saturate:'saturate(%s%%)',sepia:'sepia(%s%%)'};
             const bfParts = [];
             for (const [k, fmt] of Object.entries(bfMap)) {
-                const v = attributes.backdropFilter[k];
+                const v = bfObj[k];
                 if (v !== '' && v !== null && v !== undefined) bfParts.push(fmt.replace('%s', v));
             }
             if (bfParts.length > 0) previewStyles.backdropFilter = bfParts.join(' ');
         }
-        if (attributes.transitions && attributes.transitions.length > 0) {
-            previewStyles.transition = attributes.transitions.map(t => `${t.property||'all'} ${t.duration||'0.3s'} ${t.timing||'ease'} ${t.delay||'0s'}`).join(', ');
+        const transArr = inheritArr('transitions');
+        if (transArr.length > 0) {
+            previewStyles.transition = transArr.map(t => `${t.property||'all'} ${t.duration||'0.3s'} ${t.timing||'ease'} ${t.delay||'0s'}`).join(', ');
         }
-        if (attributes.animations && attributes.animations.length > 0) {
-            previewStyles.animation = attributes.animations.map(a => `${a.name||'fadeIn'} ${a.duration||'0.5s'} ${a.timing||'ease'} ${a.delay||'0s'} ${a.iterationCount||'1'} ${a.direction||'normal'} ${a.fillMode||'forwards'}`).join(', ');
+        const animArr = inheritArr('animations');
+        if (animArr.length > 0) {
+            previewStyles.animation = animArr.map(a => `${a.name||'fadeIn'} ${a.duration||'0.5s'} ${a.timing||'ease'} ${a.delay||'0s'} ${a.iterationCount||'1'} ${a.direction||'normal'} ${a.fillMode||'forwards'}`).join(', ');
         }
         const pad = inheritSides('padding');
         if (pad.top) previewStyles.paddingTop = pad.top;
@@ -137,15 +144,16 @@ registerBlockType('snn/container', {
         if (br.bottomLeft) previewStyles.borderBottomLeftRadius = br.bottomLeft;
 
         // ── Box Shadow preview ──
-        if (attributes.boxShadow && attributes.boxShadow.length > 0) {
-            previewStyles.boxShadow = attributes.boxShadow.map(s => {
+        const shadowArr = inheritArr('boxShadow');
+        if (shadowArr.length > 0) {
+            previewStyles.boxShadow = shadowArr.map(s => {
                 const inset = (s.type || 'drop') === 'inner' ? 'inset ' : '';
                 return `${inset}${s.x||'0'} ${s.y||'0'} ${s.blur||'0'} ${s.spread||'0'} ${s.color||'rgba(0,0,0,0.2)'}`;
             }).join(', ');
         }
 
         // ── Filter preview ──
-        const filters = (Array.isArray(attributes.filter) ? {} : (attributes.filter || {}));
+        const filters = inheritObj('filter', {});
         const filterMap = {blur:'blur(%spx)',brightness:'brightness(%s%%)',contrast:'contrast(%s%%)',grayscale:'grayscale(%s%%)',hueRotate:'hue-rotate(%sdeg)',invert:'invert(%s%%)',saturate:'saturate(%s%%)',sepia:'sepia(%s%%)'};
         const filterParts = [];
         for (const [k, fmt] of Object.entries(filterMap)) {
@@ -155,7 +163,7 @@ registerBlockType('snn/container', {
         if (filterParts.length > 0) previewStyles.filter = filterParts.join(' ');
 
         // ── Transform preview ──
-        const t = (Array.isArray(attributes.transform) ? {} : (attributes.transform || {}));
+        const t = inheritObj('transform', {});
         const transformParts = [];
         const tx = t.translateX || '', ty = t.translateY || '';
         if (tx !== '' || ty !== '') transformParts.push(`translate(${tx||'0'}, ${ty||'0'})`);
@@ -167,30 +175,31 @@ registerBlockType('snn/container', {
         if (transformParts.length > 0) previewStyles.transform = transformParts.join(' ');
 
         // ── Opacity ──
-        if (attributes.opacity !== '' && attributes.opacity !== null) previewStyles.opacity = attributes.opacity;
+        const invOpacity = inheritVal('opacity'); if (invOpacity) previewStyles.opacity = invOpacity;
 
         // ── Blend Mode ──
-        if (attributes.blendMode && attributes.blendMode !== 'normal') previewStyles.mixBlendMode = attributes.blendMode;
+        const invBlend = inheritVal('blendMode'); if (invBlend && invBlend !== 'normal') previewStyles.mixBlendMode = invBlend;
 
         // ── Position / Offsets / Z-Index ──
-        if (attributes.position && attributes.position !== 'static') previewStyles.position = attributes.position;
-        const offsets = (Array.isArray(attributes.offsets) ? {} : (attributes.offsets || {}));
+        const invPos = inheritVal('position'); if (invPos && invPos !== 'static') previewStyles.position = invPos;
+        const offsets = inheritSides('offsets');
         if (offsets.top) previewStyles.top = offsets.top;
         if (offsets.right) previewStyles.right = offsets.right;
         if (offsets.bottom) previewStyles.bottom = offsets.bottom;
         if (offsets.left) previewStyles.left = offsets.left;
-        if (attributes.zIndex !== '' && attributes.zIndex !== null) previewStyles.zIndex = attributes.zIndex;
+        const invZ = inheritVal('zIndex'); if (invZ) previewStyles.zIndex = invZ;
 
         const displayVal = inheritVal('display');
         const isFlex = displayVal === 'flex';
         const isGrid = displayVal === 'grid';
 
-        // Overlay preview — sets CSS var consumed by ::before in block.css
-        const overlayColor = attributes.bgOverlay?.color || '';
-        const hasOverlay = !!overlayColor;
+        // Overlay preview
+        const overlay = inheritObj('bgOverlay', {});
+        const overlayColor = overlay.color || '';
+        const hasOverlay = !!overlayColor || !!overlay.gradient;
         const wrapperStyle = { ...previewStyles };
         if (hasOverlay) {
-            wrapperStyle['--snn-overlay'] = overlayColor;
+            if (overlayColor) wrapperStyle['--snn-overlay'] = overlayColor;
             wrapperStyle.position = wrapperStyle.position || 'relative';
         }
 
@@ -268,77 +277,10 @@ registerBlockType('snn/container', {
                             </div>
                         ))}
                     </div>
-                    <OverflowSelect value={attributes.overflow||''} onChange={v => setAttributes({overflow:v})} device={d} />
+                    <OverflowSelect value={getVal('overflow')} onChange={v => setVal('overflow',v)} device={d} />
 
                     <CompactSection title={__('Background','snn')} />
-
-                    {/* ── 1. Background Color ── */}
-                    <ColorRow label={__('Color','snn')} value={getVal('bgColor')} onChange={v => setVal('bgColor',v)} />
-
-                    {/* ── 2. Background Image with thumbnail preview ── */}
-                    <div style={{ marginBottom:'8px' }}>
-                        <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px' }}>
-                            <span style={{ fontSize:'14px',fontWeight:600,color:'#1e1e1e' }}>{__('Image','snn')}</span>
-                            <MediaUpload onSelect={m => setAttributes({bgImage:{id:m.id,url:m.url,alt:m.alt||''}})} allowedTypes={['image']} value={attributes.bgImage?.id||0}
-                                render={({open}) => (
-                                    <button type="button" onClick={open} style={{ border:'none',background:'#3858e9',color:'#fff',borderRadius:'3px',padding:'3px 10px',fontSize:'13px',cursor:'pointer',fontWeight:500 }}>
-                                        {attributes.bgImage?.url ? __('Change','snn') : __('+ Add','snn')}
-                                    </button>
-                                )} />
-                        </div>
-                        {attributes.bgImage?.url ? (
-                            <div style={{ position:'relative',borderRadius:'4px',overflow:'hidden',border:'1px solid #d0d0d0',marginBottom:'4px' }}>
-                                <img src={attributes.bgImage.url} alt={attributes.bgImage.alt||''}
-                                    style={{ width:'100%',height:'80px',objectFit:'cover',display:'block' }} />
-                                <button type="button" onClick={() => setAttributes({bgImage:{id:0,url:'',alt:''}})}
-                                    title={__('Remove image','snn')}
-                                    style={{ position:'absolute',top:'4px',right:'4px',width:'24px',height:'24px',borderRadius:'50%',border:'none',background:'rgba(0,0,0,0.55)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',padding:0,lineHeight:1 }}>
-                                    ✕
-                                </button>
-                            </div>
-                        ) : (
-                            <MediaUpload onSelect={m => setAttributes({bgImage:{id:m.id,url:m.url,alt:m.alt||''}})} allowedTypes={['image']} value={attributes.bgImage?.id||0}
-                                render={({open}) => (
-                                    <button type="button" onClick={open} style={{ width:'100%',height:'60px',border:'1px dashed #b0b0b0',borderRadius:'4px',background:'#fafafa',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',fontSize:'14px',color:'#757575' }}>
-                                        <span style={{ fontSize:'20px' }}>🖼</span> {__('Select image','snn')}
-                                    </button>
-                                )} />
-                        )}
-                    </div>
-
-                    {/* ── 3-6. Size / Position / Repeat / Attachment ── */}
-                    <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px',marginBottom:'4px' }}>
-                        <div>
-                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Size','snn')}</span>
-                            <select value={attributes.bgSize||'cover'} onChange={e => setAttributes({bgSize:e.target.value})} style={sel}>
-                                <option value="cover">Cover</option><option value="contain">Contain</option><option value="auto">Auto</option>
-                            </select>
-                        </div>
-                        <div>
-                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Position','snn')}</span>
-                            <select value={attributes.bgPosition||'center center'} onChange={e => setAttributes({bgPosition:e.target.value})} style={sel}>
-                                <option value="left top">Left Top</option><option value="center top">Center Top</option><option value="right top">Right Top</option>
-                                <option value="left center">Left Center</option><option value="center center">Center</option><option value="right center">Right Center</option>
-                                <option value="left bottom">Left Bottom</option><option value="center bottom">Center Bottom</option><option value="right bottom">Right Bottom</option>
-                            </select>
-                        </div>
-                        <div>
-                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Repeat','snn')}</span>
-                            <select value={attributes.bgRepeat||'no-repeat'} onChange={e => setAttributes({bgRepeat:e.target.value})} style={sel}>
-                                <option value="no-repeat">No Repeat</option><option value="repeat">Repeat</option>
-                                <option value="repeat-x">Repeat X</option><option value="repeat-y">Repeat Y</option>
-                            </select>
-                        </div>
-                        <div>
-                            <span style={{ fontSize:'13px',fontWeight:500,color:'#1e1e1e',display:'block',marginBottom:'2px' }}>{__('Attachment','snn')}</span>
-                            <select value={attributes.bgAttachment||'scroll'} onChange={e => setAttributes({bgAttachment:e.target.value})} style={sel}>
-                                <option value="scroll">Scroll</option><option value="fixed">Fixed</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* ── 7. Background Overlay ── */}
-                    <ColorRow label={__('Overlay','snn')} value={attributes.bgOverlay?.color||''} onChange={v => setAttributes({bgOverlay:{...(attributes.bgOverlay||{}),color:v}})} />
+                    <BackgroundControl attributes={attributes} setAttributes={setAttributes} device={d} />
 
                     <CompactSection title={__('Color','snn')} />
                     <ColorRow label={__('Text','snn')} value={getVal('textColor')} onChange={v => setVal('textColor',v)} />
@@ -351,18 +293,18 @@ registerBlockType('snn/container', {
 
                     {/* ── EFFECTS ── */}
                     <PanelBody title={__('Effects','snn')} initialOpen={false}>
-                        <OpacitySlider value={attributes.opacity||''} onChange={v => setAttributes({opacity:v})} device={d} />
-                        <BlendModeSelect value={attributes.blendMode||''} onChange={v => setAttributes({blendMode:v})} />
-                        <ShadowBuilder shadows={attributes.boxShadow||[]} onChange={v => setAttributes({boxShadow:v})} device={d} />
-                        <FilterControls filters={attributes.filter||{}} onChange={v => setAttributes({filter:v})} device={d} />
-                        <TransformControls transform={attributes.transform||{}} onChange={v => setAttributes({transform:v})} device={d} />
+                        <OpacitySlider value={getVal('opacity')} onChange={v => setVal('opacity',v)} device={d} />
+                        <BlendModeSelect value={getVal('blendMode')} onChange={v => setVal('blendMode',v)} />
+                        <ShadowBuilder shadows={getArr('boxShadow')} onChange={v => setArr('boxShadow',v)} device={d} />
+                        <FilterControls filters={getObj('filter',{})} onChange={v => setObj('filter',v)} device={d} />
+                        <TransformControls transform={getObj('transform',{})} onChange={v => setObj('transform',v)} device={d} />
                     </PanelBody>
 
                     {/* ── POSITION ── */}
                     <PanelBody title={__('Position','snn')} initialOpen={false}>
-                        <PositionSelect value={attributes.position||''} onChange={v => setAttributes({position:v})} />
-                        <OffsetInput offsets={attributes.offsets||{}} onChange={v => setAttributes({offsets:v})} device={d} />
-                        <ZIndexControl value={attributes.zIndex||''} onChange={v => setAttributes({zIndex:v})} />
+                        <PositionSelect value={getVal('position')} onChange={v => setVal('position',v)} />
+                        <OffsetInput offsets={getSides('offsets')} onChange={v => setSides('offsets',v)} device={d} />
+                        <ZIndexControl value={getVal('zIndex')} onChange={v => setVal('zIndex',v)} />
                         <VisibilityControls visibility={attributes.visibility||{}} onChange={v => setAttributes({visibility:v})} />
                     </PanelBody>
 
@@ -378,12 +320,12 @@ registerBlockType('snn/container', {
 
                         {/* Visual Effects */}
                         <CompactSection title={__('Visual Effects','snn')} />
-                        <BackdropFilterControl filters={attributes.backdropFilter||{}} onChange={v => setAttributes({backdropFilter:v})} device={d} />
-                        <OutlineControl width={attributes.outline?.width||''} style={attributes.outline?.style||''} color={attributes.outline?.color||''}
-                            onWidthChange={v => setAttributes({outline:{...(attributes.outline||{}),width:v}})}
-                            onStyleChange={v => setAttributes({outline:{...(attributes.outline||{}),style:v}})}
-                            onColorChange={v => setAttributes({outline:{...(attributes.outline||{}),color:v}})} device={d} />
-                        <TextShadowControl shadows={attributes.textShadow||[]} onChange={v => setAttributes({textShadow:v})} device={d} />
+                        <BackdropFilterControl filters={getObj('backdropFilter', {})} onChange={v => setObj('backdropFilter', v)} device={d} />
+                        <OutlineControl width={getObj('outline', {}).width||''} style={getObj('outline', {}).style||''} color={getObj('outline', {}).color||''}
+                            onWidthChange={v => setObj('outline', {...getObj('outline',{}),width:v})}
+                            onStyleChange={v => setObj('outline', {...getObj('outline',{}),style:v})}
+                            onColorChange={v => setObj('outline', {...getObj('outline',{}),color:v})} device={d} />
+                        <TextShadowControl shadows={getArr('textShadow')} onChange={v => setArr('textShadow', v)} device={d} />
                         <ClipPathControl value={getVal('clipPath')} onChange={v => setVal('clipPath',v)} device={d} />
                         <ObjectFitControl value={getVal('objectFit')} onChange={v => setVal('objectFit',v)} device={d} />
                         <AspectRatioControl value={getVal('aspectRatio')} onChange={v => setVal('aspectRatio',v)} device={d} />
@@ -413,20 +355,20 @@ registerBlockType('snn/container', {
 
                         {/* Animations */}
                         <CompactSection title={__('Animations','snn')} />
-                        <TransitionBuilder transitions={attributes.transitions||[]} onChange={v => setAttributes({transitions:v})} device={d} />
-                        <AnimationBuilder animations={attributes.animations||[]} onChange={v => setAttributes({animations:v})} device={d} />
+                        <TransitionBuilder transitions={getArr('transitions')} onChange={v => setArr('transitions', v)} device={d} />
+                        <AnimationBuilder animations={getArr('animations')} onChange={v => setArr('animations', v)} device={d} />
 
                         {/* Misc */}
                         <CompactSection title={__('Misc','snn')} />
                         <WillChangeSelect value={getVal('willChange')} onChange={v => setVal('willChange',v)} />
                         <IsolationSelect value={getVal('isolation')} onChange={v => setVal('isolation',v)} />
-                        <ListStyleControl type={attributes.listStyle?.type||''} position={attributes.listStyle?.position||''}
-                            onTypeChange={v => setAttributes({listStyle:{...(attributes.listStyle||{}),type:v}})}
-                            onPositionChange={v => setAttributes({listStyle:{...(attributes.listStyle||{}),position:v}})} />
-                        <InsetControl value={attributes.inset||{}} onChange={v => setAttributes({inset:v})} device={d} />
-                        <CompactSelect label={__('Bg Blend','snn')} value={attributes.bgBlendMode||''}
+                        <ListStyleControl type={getObj('listStyle',{}).type||''} position={getObj('listStyle',{}).position||''}
+                            onTypeChange={v => setObj('listStyle', {...getObj('listStyle',{}),type:v})}
+                            onPositionChange={v => setObj('listStyle', {...getObj('listStyle',{}),position:v})} />
+                        <InsetControl value={getObj('inset',{top:'',right:'',bottom:'',left:''})} onChange={v => setObj('inset', v)} device={d} />
+                        <CompactSelect label={__('Bg Blend','snn')} value={getVal('bgBlendMode')}
                             options={[{value:'',label:'—'},{value:'normal',label:'Normal'},{value:'multiply',label:'Multiply'},{value:'screen',label:'Screen'},{value:'overlay',label:'Overlay'},{value:'darken',label:'Darken'},{value:'lighten',label:'Lighten'},{value:'color-dodge',label:'Color Dodge'},{value:'color-burn',label:'Color Burn'},{value:'hard-light',label:'Hard Light'},{value:'soft-light',label:'Soft Light'},{value:'difference',label:'Difference'},{value:'exclusion',label:'Exclusion'},{value:'hue',label:'Hue'},{value:'saturation',label:'Saturation'},{value:'color',label:'Color'},{value:'luminosity',label:'Luminosity'}]}
-                            onChange={v => setAttributes({bgBlendMode:v})} />
+                            onChange={v => setVal('bgBlendMode',v)} />
                     </PanelBody>
                     </div>
                 </InspectorControls>

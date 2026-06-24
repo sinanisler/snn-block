@@ -102,6 +102,46 @@ C.useResponsiveAttributes = (attributes, setAttributes) => {
         });
     };
 
+    // ── Generic responsive object helper (e.g. outline, backdropFilter, listStyle) ──
+    const getObj = (attr, defaultObj = {}) => {
+        const o = obj(attr);
+        return (o[activeDevice] && typeof o[activeDevice] === 'object' && !Array.isArray(o[activeDevice]))
+            ? o[activeDevice] : { ...defaultObj };
+    };
+    const setObj = (attr, value) => {
+        const o = obj(attr);
+        setAttributes({ [attr]: { ...o, [activeDevice]: value } });
+    };
+    // Inherited object cascade
+    const inheritObj = (attr, defaultObj = {}) => {
+        const val = obj(attr);
+        const tryDevices = [activeDevice, 'tablet', 'desktop'];
+        for (const d of tryDevices) {
+            if (val[d] && typeof val[d] === 'object' && !Array.isArray(val[d])) return val[d];
+        }
+        return { ...defaultObj };
+    };
+
+    // ── Generic responsive array helper (e.g. textShadow, transitions, animations) ──
+    const getArr = (attr) => {
+        const o = obj(attr);
+        return (o[activeDevice] && Array.isArray(o[activeDevice])) ? o[activeDevice] : [];
+    };
+    const setArr = (attr, value) => {
+        const o = obj(attr);
+        setAttributes({ [attr]: { ...o, [activeDevice]: value } });
+    };
+    // Inherited array cascade
+    const inheritArr = (attr) => {
+        const val = obj(attr);
+        const tryDevices = [activeDevice, 'tablet', 'desktop'];
+        for (const d of tryDevices) {
+            if (val[d] && Array.isArray(val[d])) return val[d];
+        }
+        return [];
+    };
+
     return { activeDevice, getVal, setVal, inheritVal, getSides, setSides, inheritSides,
-        getPad, setPad, inheritPad, getBorderWidth, setBorderWidth, getBorderRadius, setBorderRadius };
+        getPad, setPad, inheritPad, getBorderWidth, setBorderWidth, getBorderRadius, setBorderRadius,
+        getObj, setObj, inheritObj, getArr, setArr, inheritArr };
 };

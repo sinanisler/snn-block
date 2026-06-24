@@ -26,6 +26,7 @@ function snn_render_container_block($attributes, $content, $block) {
     $bg_repeat  = $attributes['bgRepeat'] ?? 'no-repeat';
     $bg_attach  = $attributes['bgAttachment'] ?? 'scroll';
     $bg_gradient = $attributes['bgGradient'] ?? '';
+    $bg_gradients = $attributes['bgGradients'] ?? [];
     $bg_overlay = $attributes['bgOverlay'] ?? [];
     $text_color = $attributes['textColor'] ?? [];
     $overflow   = $attributes['overflow'] ?? '';
@@ -48,25 +49,35 @@ function snn_render_container_block($attributes, $content, $block) {
     $inline_styles .= "max-width: {$max_width};";
     $inline_styles .= "margin-left: auto;";
     $inline_styles .= "margin-right: auto;";
-    if (!empty($bg_image['url'])) {
-        $bg_img_val = $bg_gradient ? $bg_gradient . ', url(' . esc_url($bg_image['url']) . ')' : 'url(' . esc_url($bg_image['url']) . ')';
-        $inline_styles .= 'background-image: ' . $bg_img_val . ';';
-        $inline_styles .= "background-size: {$bg_size};";
-        $inline_styles .= "background-position: {$bg_pos};";
-        $inline_styles .= "background-repeat: {$bg_repeat};";
-        $inline_styles .= "background-attachment: {$bg_attach};";
+    // Build background layers: gradients (multi) + image
+    $bg_layers = [];
+    if (!empty($bg_gradients) && is_array($bg_gradients)) {
+        foreach ($bg_gradients as $g) {
+            if (!empty($g['css'])) $bg_layers[] = $g['css'];
+        }
     } elseif ($bg_gradient) {
-        $inline_styles .= 'background-image: ' . $bg_gradient . ';';
+        $bg_layers[] = $bg_gradient;
+    }
+    if (!empty($bg_image['url'])) {
+        $bg_layers[] = 'url(' . esc_url($bg_image['url']) . ')';
+    }
+    if (!empty($bg_layers)) {
+        $inline_styles .= 'background-image: ' . implode(', ', $bg_layers) . ';';
     }
     if ($overflow) $inline_styles .= "overflow: {$overflow};";
 
-    $has_overlay = !empty($bg_overlay['color']);
+    $has_overlay = !empty($bg_overlay['color']) || !empty($bg_overlay['gradient']);
     if ($has_overlay) $inline_styles .= 'position: relative;';
 
     // ── 2. Responsive CSS ──
     $css = '';
     $css .= snn_responsive_style($bg_color, 'background-color', $selector);
     $css .= snn_responsive_style($text_color, 'color', $selector);
+    $css .= snn_bg_size_css($attributes['bgSize'] ?? [], $selector);
+    $css .= snn_bg_position_css($attributes['bgPosition'] ?? [], $selector);
+    $css .= snn_bg_repeat_css($attributes['bgRepeat'] ?? [], $selector);
+    $css .= snn_bg_attachment_css($attributes['bgAttachment'] ?? [], $selector);
+    $css .= snn_responsive_style($attributes['overflow'] ?? [], 'overflow', $selector);
     $css .= snn_responsive_style($attributes['display'] ?? [], 'display', $selector);
     $css .= snn_responsive_style($attributes['flexDirection'] ?? [], 'flex-direction', $selector);
     $css .= snn_responsive_style($attributes['flexWrap'] ?? [], 'flex-wrap', $selector);
@@ -101,8 +112,8 @@ function snn_render_container_block($attributes, $content, $block) {
     $css .= snn_visibility_css($attributes['visibility'] ?? [], $selector);
 
     // ── NEW: Additional CSS generators ──
-    $css .= snn_bg_gradient_css($attributes['bgGradient'] ?? '', $selector);
-    $css .= snn_bg_blend_mode_css($attributes['bgBlendMode'] ?? '', $selector);
+    $css .= snn_bg_gradient_css(!empty($bg_gradients) ? $bg_gradients : ($attributes['bgGradient'] ?? ''), $selector);
+    $css .= snn_bg_blend_mode_css($attributes['bgBlendMode'] ?? [], $selector);
     $css .= snn_box_sizing_css($attributes['boxSizing'] ?? [], $selector);
     $css .= snn_grid_rows_css($attributes['gridRows'] ?? [], $selector);
     $css .= snn_grid_auto_flow_css($attributes['gridAutoFlow'] ?? [], $selector);
@@ -155,7 +166,7 @@ function snn_render_container_block($attributes, $content, $block) {
         $safe = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
         $all_css .= "{$selector} {\n{$safe}\n}\n";
     }
-    if ($all_css) $output .= '<style>' . $all_css . '</style>';
+    if ($all_css) SNN_CSS_Collector::instance()->collect($all_css);
     $output .= $content;
     $output .= '</div>';
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Block Name: Text
- * Description: A text block with responsive typography and color controls.
+ * Description: Rich text block with full responsive styling controls.
  */
 
 // Register the block
@@ -19,18 +19,11 @@ require_once __DIR__ . '/../block-helpers.php';
 function snn_render_text_block($attributes, $content, $block) {
     $tag            = $attributes['tagName'] ?? 'p';
     $text_content   = $attributes['content'] ?? '';
-    $text_color     = $attributes['textColor'] ?? [];
-    $bg_color       = $attributes['bgColor'] ?? [];
-    $font_size      = $attributes['fontSize'] ?? [];
-    $font_weight    = $attributes['fontWeight'] ?? [];
-    $text_transform = $attributes['textTransform'] ?? '';
-    $text_align     = $attributes['textAlign'] ?? [];
-    $padding        = $attributes['padding'] ?? [];
     $class_name     = $attributes['className'] ?? '';
     $custom_css     = $attributes['customCSS'] ?? '';
 
     // Validate tag
-    $allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'div'];
+    $allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'blockquote', 'pre'];
     if (!in_array($tag, $allowed_tags, true)) {
         $tag = 'p';
     }
@@ -40,28 +33,48 @@ function snn_render_text_block($attributes, $content, $block) {
     $selector = '.' . $uid;
 
     // Build classes
-    $extra_classes = $uid;
+    $extra_classes = 'snn-text ' . $uid;
     if ($class_name) {
         $extra_classes .= ' ' . $class_name;
     }
 
-    // ── 1. Inline styles (only non-responsive properties) ──
+    // ── Inline styles (non-responsive bg layers + overlay trigger) ──
     $inline = '';
-    if ($text_transform) {
-        $inline .= "text-transform: {$text_transform};";
+    $bg_layers = [];
+    $bg_gradients = $attributes['bgGradients'] ?? [];
+    if (!empty($bg_gradients) && is_array($bg_gradients)) {
+        foreach ($bg_gradients as $g) {
+            if (!empty($g['css'])) $bg_layers[] = $g['css'];
+        }
+    } elseif (!empty($attributes['bgGradient'])) {
+        $bg_layers[] = $attributes['bgGradient'];
+    }
+    if (!empty($attributes['bgImage']['url'])) {
+        $bg_layers[] = 'url(' . esc_url($attributes['bgImage']['url']) . ')';
+    }
+    if (!empty($bg_layers)) {
+        $inline .= 'background-image:' . implode(', ', $bg_layers) . ';';
+    }
+    $overlay = $attributes['bgOverlay'] ?? [];
+    if (!empty($overlay['color']) || !empty($overlay['gradient'])) {
+        $inline .= 'position:relative;';
     }
 
-    // ── 2. All-device CSS for <style> tag ──
-    // Desktop values as base rule (no media query), tablet/mobile in media queries.
-    $resp = '';
-    $resp .= snn_responsive_style($text_color, 'color', $selector);
-    $resp .= snn_responsive_style($bg_color, 'background-color', $selector);
-    $resp .= snn_responsive_style($font_size, 'font-size', $selector);
-    $resp .= snn_responsive_style($font_weight, 'font-weight', $selector);
-    $resp .= snn_responsive_style($text_align, 'text-align', $selector);
-    $resp .= snn_responsive_padding($padding, $selector);
+    // ── Responsive CSS (unified renderer — all ~70 properties) ──
+    $all_css = snn_render_box_css($attributes, $selector);
 
-    // ── 3. Build wrapper attributes ──
+    // Custom CSS
+    if (!empty($custom_css)) {
+        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
+        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+    }
+
+    // Collect into global aggregator
+    if ($all_css) {
+        SNN_CSS_Collector::instance()->collect($all_css);
+    }
+
+    // ── Build wrapper attributes ──
     $wrapper_attributes = get_block_wrapper_attributes([
         'class' => $extra_classes,
         'style' => $inline,
@@ -69,15 +82,6 @@ function snn_render_text_block($attributes, $content, $block) {
 
     // ── Build output ──
     $output = '<' . $tag . ' ' . $wrapper_attributes . '>';
-    // ── 5. Custom CSS ──
-    if (!empty($custom_css)) {
-        $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
-        $resp .= "{$selector} {\n{$safe_css}\n}\n";
-    }
-
-    if ($resp) {
-        $output .= '<style>' . $resp . '</style>';
-    }
     $output .= wp_kses_post($text_content);
     $output .= '</' . $tag . '>';
 

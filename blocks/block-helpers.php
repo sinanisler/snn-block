@@ -13,6 +13,55 @@
 defined('ABSPATH') || exit;
 
 /* ═══════════════════════════════════════════════
+   CSS COLLECTOR — aggregates all block CSS into a single <style> tag
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Singleton CSS collector. Instead of each block emitting its own <style> tag
+ * inline (which can produce 50+ style tags on a page), all block CSS is
+ * collected here and rendered once in wp_footer.
+ *
+ * Usage in any block render callback:
+ *   SNN_CSS_Collector::instance()->collect($css);
+ */
+class SNN_CSS_Collector {
+    private static $instance = null;
+    private $css = '';
+
+    public static function instance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    /**
+     * Append a CSS snippet to the global collector.
+     * @param string $css Raw CSS to collect.
+     */
+    public function collect($css) {
+        if (is_string($css) && $css !== '') {
+            $this->css .= $css;
+        }
+    }
+
+    /**
+     * Output the aggregated CSS in a single <style> tag.
+     * Must be static because WordPress hooks call it statically.
+     */
+    public static function render() {
+        $instance = self::instance();
+        if ($instance->css === '') return;
+        echo "\n<!-- SNN Block Styles (aggregated) -->\n";
+        echo '<style id="snn-block-styles">' . "\n" . $instance->css . '</style>' . "\n";
+    }
+}
+
+// Hook the collector output into the footer on both frontend and editor.
+add_action('wp_footer',    ['SNN_CSS_Collector', 'render'], 9999);
+add_action('admin_footer', ['SNN_CSS_Collector', 'render'], 9999);
+
+/* ═══════════════════════════════════════════════
    CORE RESPONSIVE ENGINE
    ═══════════════════════════════════════════════ */
 
@@ -103,57 +152,108 @@ function snn_border_radius_css($radius, $selector) {
     ], $selector);
 }
 
-/* ─── Box Shadow ─── */
+/* ─── Box Shadow (responsive) ─── */
 function snn_box_shadow_css($shadows, $selector) {
     if (empty($shadows) || !is_array($shadows)) return '';
-    $values = [];
-    foreach ($shadows as $s) {
-        if (empty($s) || !is_array($s)) continue;
-        $inset = ($s['type'] ?? 'drop') === 'inner' ? 'inset ' : '';
-        $sx = $s['x'] ?? '0'; $sy = $s['y'] ?? '0'; $sblur = $s['blur'] ?? '0';
-        $sspread = $s['spread'] ?? '0'; $scolor = $s['color'] ?? 'rgba(0,0,0,0.2)';
-        $values[] = "{$inset}{$sx} {$sy} {$sblur} {$sspread} {$scolor}";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $shadows[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $values = [];
+        foreach ($dv as $s) {
+            if (empty($s) || !is_array($s)) continue;
+            $inset = ($s['type'] ?? 'drop') === 'inner' ? 'inset ' : '';
+            $sx = $s['x'] ?? '0'; $sy = $s['y'] ?? '0'; $sblur = $s['blur'] ?? '0';
+            $sspread = $s['spread'] ?? '0'; $scolor = $s['color'] ?? 'rgba(0,0,0,0.2)';
+            $values[] = "{$inset}{$sx} {$sy} {$sblur} {$sspread} {$scolor}";
+        }
+        if (empty($values)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {box-shadow: " . implode(', ', $values) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {box-shadow: " . implode(', ', $values) . ";}\n}\n";
     }
-    return empty($values) ? '' : "{$selector} {box-shadow: " . implode(', ', $values) . ";}\n";
+    return $css;
 }
 
-/* ─── CSS Filter ─── */
+/* ─── CSS Filter (responsive) ─── */
 function snn_filter_css($filters, $selector) {
     if (empty($filters) || !is_array($filters)) return '';
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
     $map = ['blur'=>'blur(%spx)','brightness'=>'brightness(%s%%)','contrast'=>'contrast(%s%%)','grayscale'=>'grayscale(%s%%)','hueRotate'=>'hue-rotate(%sdeg)','invert'=>'invert(%s%%)','saturate'=>'saturate(%s%%)','sepia'=>'sepia(%s%%)'];
-    $parts = [];
-    foreach ($map as $k => $f) { $v = $filters[$k] ?? ''; if ($v !== '' && $v !== null) $parts[] = sprintf($f, $v); }
-    return empty($parts) ? '' : "{$selector} {filter: " . implode(' ', $parts) . ";}\n";
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $filters[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $parts = [];
+        foreach ($map as $k => $f) { $v = $dv[$k] ?? ''; if ($v !== '' && $v !== null) $parts[] = sprintf($f, $v); }
+        if (empty($parts)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {filter: " . implode(' ', $parts) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {filter: " . implode(' ', $parts) . ";}\n}\n";
+    }
+    return $css;
 }
 
-/* ─── Transform ─── */
+/* ─── Transform (responsive) ─── */
 function snn_transform_css($transform, $selector) {
     if (empty($transform) || !is_array($transform)) return '';
-    $parts = [];
-    $tx = $transform['translateX'] ?? ''; $ty = $transform['translateY'] ?? '';
-    if ($tx !== '' || $ty !== '') $parts[] = 'translate(' . ($tx ?: '0') . ', ' . ($ty ?: '0') . ')';
-    $sx = $transform['scaleX'] ?? ''; $sy = $transform['scaleY'] ?? '';
-    if ($sx !== '' || $sy !== '') $parts[] = 'scale(' . ($sx ?: '1') . ', ' . ($sy ?: '1') . ')';
-    if (!empty($transform['rotate'])) $parts[] = 'rotate(' . $transform['rotate'] . ')';
-    $kx = $transform['skewX'] ?? ''; $ky = $transform['skewY'] ?? '';
-    if ($kx !== '' || $ky !== '') $parts[] = 'skew(' . ($kx ?: '0') . ', ' . ($ky ?: '0') . ')';
-    return empty($parts) ? '' : "{$selector} {transform: " . implode(' ', $parts) . ";}\n";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $transform[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $parts = [];
+        $tx = $dv['translateX'] ?? ''; $ty = $dv['translateY'] ?? '';
+        if ($tx !== '' || $ty !== '') $parts[] = 'translate(' . ($tx ?: '0') . ', ' . ($ty ?: '0') . ')';
+        $sx = $dv['scaleX'] ?? ''; $sy = $dv['scaleY'] ?? '';
+        if ($sx !== '' || $sy !== '') $parts[] = 'scale(' . ($sx ?: '1') . ', ' . ($sy ?: '1') . ')';
+        if (!empty($dv['rotate'])) $parts[] = 'rotate(' . $dv['rotate'] . ')';
+        $kx = $dv['skewX'] ?? ''; $ky = $dv['skewY'] ?? '';
+        if ($kx !== '' || $ky !== '') $parts[] = 'skew(' . ($kx ?: '0') . ', ' . ($ky ?: '0') . ')';
+        if (empty($parts)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {transform: " . implode(' ', $parts) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {transform: " . implode(' ', $parts) . ";}\n}\n";
+    }
+    return $css;
 }
 
-/* ─── Opacity ─── */
-function snn_opacity_css($opacity, $selector) { return ($opacity === '' || $opacity === null) ? '' : "{$selector} {opacity: {$opacity};}\n"; }
+/* ─── Opacity (responsive) ─── */
+function snn_opacity_css($opacity, $selector) {
+    return snn_responsive_style($opacity, 'opacity', $selector);
+}
 
-/* ─── Blend Mode ─── */
-function snn_blend_mode_css($bm, $selector) { return (empty($bm) || $bm === 'normal') ? '' : "{$selector} {mix-blend-mode: {$bm};}\n"; }
+/* ─── Blend Mode (responsive) ─── */
+function snn_blend_mode_css($bm, $selector) {
+    return snn_responsive_style($bm, 'mix-blend-mode', $selector);
+}
 
-/* ─── Background Overlay ─── */
+/* ─── Background Overlay (responsive — color or gradient per device) ─── */
 function snn_bg_overlay_css($overlay, $selector) {
     if (empty($overlay) || !is_array($overlay)) return '';
-    $color = $overlay['color'] ?? ''; $opacity = $overlay['opacity'] ?? '';
-    if (!$color) return '';
-    $o = $opacity !== '' ? floatval($opacity) : 0.5;
-    return "{$selector}::before {content: ''; position: absolute; inset: 0; background-color: {$color}; opacity: {$o}; z-index: 0; pointer-events: none;}\n";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $overlay[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $color    = $dv['color'] ?? '';
+        $gradient = $dv['gradient'] ?? '';
+        $opacity  = $dv['opacity'] ?? '';
+        if (!$color && !$gradient) continue;
+        $o = $opacity !== '' ? floatval($opacity) : 0.5;
+        $rule = "{$selector}::before {content: ''; position: absolute; inset: 0; ";
+        if ($gradient) { $rule .= "background-image: {$gradient}; "; }
+        else { $rule .= "background-color: {$color}; "; }
+        $rule .= "opacity: {$o}; z-index: 0; pointer-events: none;}";
+        if ($device === 'desktop') $css .= $rule . "\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$rule}\n}\n";
+    }
+    return $css;
 }
+
+/* ─── Background Size / Position / Repeat / Attachment (responsive) ─── */
+function snn_bg_size_css($v, $s) { return snn_responsive_style($v, 'background-size', $s); }
+function snn_bg_position_css($v, $s) { return snn_responsive_style($v, 'background-position', $s); }
+function snn_bg_repeat_css($v, $s) { return snn_responsive_style($v, 'background-repeat', $s); }
+function snn_bg_attachment_css($v, $s) { return snn_responsive_style($v, 'background-attachment', $s); }
 
 /* ─── Device Visibility ─── */
 function snn_visibility_css($visibility, $selector) {
@@ -165,16 +265,14 @@ function snn_visibility_css($visibility, $selector) {
     return $css;
 }
 
-/* ─── Position, Offsets, Z-Index ─── */
+/* ─── Position, Offsets, Z-Index (responsive) ─── */
 function snn_position_css($position, $offsets, $z_index, $selector) {
     $css = '';
-    if ($position && $position !== 'static') $css .= "{$selector} {position: {$position};}\n";
+    $css .= snn_responsive_style($position, 'position', $selector);
     if (!empty($offsets) && is_array($offsets)) {
-        $rules = '';
-        foreach (['top','right','bottom','left'] as $s) { $v = $offsets[$s] ?? ''; if ($v !== '') $rules .= "{$s}: {$v};"; }
-        if ($rules) $css .= "{$selector} {{$rules}}\n";
+        $css .= snn_responsive_sides($offsets, ['top'=>'top','right'=>'right','bottom'=>'bottom','left'=>'left'], $selector);
     }
-    if ($z_index !== '' && $z_index !== null) $css .= "{$selector} {z-index: {$z_index};}\n";
+    $css .= snn_responsive_style($z_index, 'z-index', $selector);
     return $css;
 }
 
@@ -182,14 +280,28 @@ function snn_position_css($position, $offsets, $z_index, $selector) {
    NEW CONTROLS — ADDED 2026-06-24
    ═══════════════════════════════════════════════ */
 
-/* ─── Background Gradient ─── */
-function snn_bg_gradient_css($gradient, $selector) {
-    return ($gradient && is_string($gradient)) ? "{$selector} {background-image: {$gradient};}\n" : '';
+/* ─── Background Gradient (supports new bgGradients array + legacy bgGradient string) ─── */
+function snn_bg_gradient_css($gradients, $selector) {
+    if (empty($gradients)) return '';
+    // New multi-gradient array format: [{css:'...'}, ...]
+    if (is_array($gradients) && isset($gradients[0]) && is_array($gradients[0])) {
+        $parts = [];
+        foreach ($gradients as $g) {
+            $css = $g['css'] ?? '';
+            if (is_string($css) && $css !== '') $parts[] = $css;
+        }
+        return empty($parts) ? '' : "{$selector} {background-image: " . implode(', ', $parts) . ";}\n";
+    }
+    // Legacy single string format
+    if (is_string($gradients) && $gradients !== '') {
+        return "{$selector} {background-image: {$gradients};}\n";
+    }
+    return '';
 }
 
 /* ─── Background Blend Mode ─── */
 function snn_bg_blend_mode_css($bm, $selector) {
-    return (empty($bm) || $bm === 'normal') ? '' : "{$selector} {background-blend-mode: {$bm};}\n";
+    return snn_responsive_style($bm, 'background-blend-mode', $selector);
 }
 
 /* ─── Box Sizing ─── */
@@ -242,42 +354,59 @@ function snn_grid_column_end_css($val, $selector)   { return snn_responsive_styl
 function snn_grid_row_start_css($val, $selector)    { return snn_responsive_style($val, 'grid-row-start', $selector); }
 function snn_grid_row_end_css($val, $selector)      { return snn_responsive_style($val, 'grid-row-end', $selector); }
 
-/* ─── Backdrop Filter ─── */
+/* ─── Backdrop Filter (responsive) ─── */
 function snn_backdrop_filter_css($filters, $selector) {
     if (empty($filters) || !is_array($filters)) return '';
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
     $map = ['blur'=>'blur(%spx)','brightness'=>'brightness(%s%%)','contrast'=>'contrast(%s%%)','grayscale'=>'grayscale(%s%%)','hueRotate'=>'hue-rotate(%sdeg)','invert'=>'invert(%s%%)','saturate'=>'saturate(%s%%)','sepia'=>'sepia(%s%%)'];
-    $parts = [];
-    foreach ($map as $k => $f) { $v = $filters[$k] ?? ''; if ($v !== '' && $v !== null) $parts[] = sprintf($f, $v); }
-    return empty($parts) ? '' : "{$selector} {backdrop-filter: " . implode(' ', $parts) . ";}\n";
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $filters[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $parts = [];
+        foreach ($map as $k => $f) { $v = $dv[$k] ?? ''; if ($v !== '' && $v !== null) $parts[] = sprintf($f, $v); }
+        if (empty($parts)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {backdrop-filter: " . implode(' ', $parts) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {backdrop-filter: " . implode(' ', $parts) . ";}\n}\n";
+    }
+    return $css;
 }
 
-/* ─── Text Shadow ─── */
+/* ─── Text Shadow (responsive) ─── */
 function snn_text_shadow_css($shadows, $selector) {
     if (empty($shadows) || !is_array($shadows)) return '';
-    $values = [];
-    foreach ($shadows as $s) {
-        if (empty($s) || !is_array($s)) continue;
-        $sx = $s['x'] ?? '0'; $sy = $s['y'] ?? '0'; $sblur = $s['blur'] ?? '0'; $scolor = $s['color'] ?? 'rgba(0,0,0,0.2)';
-        $values[] = "{$sx} {$sy} {$sblur} {$scolor}";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $shadows[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $values = [];
+        foreach ($dv as $s) {
+            if (empty($s) || !is_array($s)) continue;
+            $sx = $s['x'] ?? '0'; $sy = $s['y'] ?? '0'; $sblur = $s['blur'] ?? '0'; $scolor = $s['color'] ?? 'rgba(0,0,0,0.2)';
+            $values[] = "{$sx} {$sy} {$sblur} {$scolor}";
+        }
+        if (empty($values)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {text-shadow: " . implode(', ', $values) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {text-shadow: " . implode(', ', $values) . ";}\n}\n";
     }
-    return empty($values) ? '' : "{$selector} {text-shadow: " . implode(', ', $values) . ";}\n";
+    return $css;
 }
 
-/* ─── Outline ─── */
+/* ─── Outline (responsive) ─── */
 function snn_outline_css($outline, $selector) {
     if (empty($outline) || !is_array($outline)) return '';
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
     $css = '';
-    $style = $outline['style'] ?? '';
-    $width = $outline['width'] ?? '';
-    $color = $outline['color'] ?? '';
-    if ($style && $style !== 'none') {
-        $parts = [];
-        if ($width) $parts[] = $width;
-        $parts[] = $style;
-        if ($color) $parts[] = $color;
-        if (!empty($parts)) $css .= "{$selector} {outline: " . implode(' ', $parts) . ";}\n";
-    } elseif ($style === 'none') {
-        $css .= "{$selector} {outline: none;}\n";
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $outline[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $style = $dv['style'] ?? ''; $width = $dv['width'] ?? ''; $color = $dv['color'] ?? '';
+        if (!$style && !$width && !$color) continue;
+        $rule = ($style === 'none') ? 'none' : trim(($width ? $width . ' ' : '') . $style . ($color ? ' ' . $color : ''));
+        if (empty($rule)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {outline: {$rule};}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {outline: {$rule};}\n}\n";
     }
     return $css;
 }
@@ -361,14 +490,22 @@ function snn_isolation_css($isolation, $selector) {
     return snn_responsive_style($isolation, 'isolation', $selector);
 }
 
-/* ─── List Style ─── */
+/* ─── List Style (responsive) ─── */
 function snn_list_style_css($list_style, $selector) {
     if (empty($list_style) || !is_array($list_style)) return '';
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
     $css = '';
-    $type = $list_style['type'] ?? '';
-    $pos  = $list_style['position'] ?? '';
-    if ($type) $css .= "{$selector} {list-style-type: {$type};}\n";
-    if ($pos)  $css .= "{$selector} {list-style-position: {$pos};}\n";
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $list_style[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $type = $dv['type'] ?? ''; $pos = $dv['position'] ?? '';
+        $rules = '';
+        if ($type) $rules .= "list-style-type: {$type};";
+        if ($pos)  $rules .= "list-style-position: {$pos};";
+        if (empty($rules)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {{$rules}}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {{$rules}}\n}\n";
+    }
     return $css;
 }
 
@@ -381,35 +518,186 @@ function snn_inset_css($inset, $selector) {
     ], $selector);
 }
 
-/* ─── Transition ─── */
+/* ─── Transition (responsive) ─── */
 function snn_transition_css($transitions, $selector) {
     if (empty($transitions) || !is_array($transitions)) return '';
-    $values = [];
-    foreach ($transitions as $t) {
-        if (empty($t) || !is_array($t)) continue;
-        $prop = $t['property'] ?? 'all';
-        $dur  = $t['duration'] ?? '0.3s';
-        $tim  = $t['timing'] ?? 'ease';
-        $del  = $t['delay'] ?? '0s';
-        $values[] = "{$prop} {$dur} {$tim} {$del}";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $transitions[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $values = [];
+        foreach ($dv as $t) {
+            if (empty($t) || !is_array($t)) continue;
+            $prop = $t['property'] ?? 'all'; $dur = $t['duration'] ?? '0.3s';
+            $tim = $t['timing'] ?? 'ease'; $del = $t['delay'] ?? '0s';
+            $values[] = "{$prop} {$dur} {$tim} {$del}";
+        }
+        if (empty($values)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {transition: " . implode(', ', $values) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {transition: " . implode(', ', $values) . ";}\n}\n";
     }
-    return empty($values) ? '' : "{$selector} {transition: " . implode(', ', $values) . ";}\n";
+    return $css;
 }
 
-/* ─── Animation ─── */
+/* ─── Animation (responsive) ─── */
 function snn_animation_css($animations, $selector) {
     if (empty($animations) || !is_array($animations)) return '';
-    $values = [];
-    foreach ($animations as $a) {
-        if (empty($a) || !is_array($a)) continue;
-        $name  = $a['name'] ?? 'fadeIn';
-        $dur   = $a['duration'] ?? '0.5s';
-        $tim   = $a['timing'] ?? 'ease';
-        $del   = $a['delay'] ?? '0s';
-        $count = $a['iterationCount'] ?? '1';
-        $dir   = $a['direction'] ?? 'normal';
-        $fill  = $a['fillMode'] ?? 'forwards';
-        $values[] = "{$name} {$dur} {$tim} {$del} {$count} {$dir} {$fill}";
+    $bps = ['desktop' => '', 'tablet' => 'max-width: 1023px', 'mobile' => 'max-width: 767px'];
+    $css = '';
+    foreach (['desktop', 'tablet', 'mobile'] as $device) {
+        $dv = $animations[$device] ?? null;
+        if (empty($dv) || !is_array($dv)) continue;
+        $values = [];
+        foreach ($dv as $a) {
+            if (empty($a) || !is_array($a)) continue;
+            $name = $a['name'] ?? 'fadeIn'; $dur = $a['duration'] ?? '0.5s';
+            $tim = $a['timing'] ?? 'ease'; $del = $a['delay'] ?? '0s';
+            $count = $a['iterationCount'] ?? '1'; $dir = $a['direction'] ?? 'normal'; $fill = $a['fillMode'] ?? 'forwards';
+            $values[] = "{$name} {$dur} {$tim} {$del} {$count} {$dir} {$fill}";
+        }
+        if (empty($values)) continue;
+        if ($device === 'desktop') $css .= "{$selector} {animation: " . implode(', ', $values) . ";}\n";
+        else $css .= "@media ({$bps[$device]}) {\n\t{$selector} {animation: " . implode(', ', $values) . ";}\n}\n";
     }
-    return empty($values) ? '' : "{$selector} {animation: " . implode(', ', $values) . ";}\n";
+    return $css;
+}
+
+/* ═══════════════════════════════════════════════
+   UNIFIED BOX CSS RENDERER
+   One function to generate ALL responsive CSS for any box-like block.
+   Used by: Box, Text, and any future styled-container blocks.
+   ═══════════════════════════════════════════════ */
+
+/**
+ * Generate the complete responsive CSS for a box-like block from its attributes.
+ *
+ * @param array  $attrs    The block attributes array.
+ * @param string $selector CSS selector (e.g. '.snn-b-abc123').
+ * @return string Complete CSS with media queries.
+ */
+function snn_render_box_css($attrs, $selector) {
+    $css = '';
+
+    // Color
+    $css .= snn_responsive_style($attrs['bgColor']       ?? [], 'background-color', $selector);
+    $css .= snn_responsive_style($attrs['textColor']     ?? [], 'color',            $selector);
+
+    // Background
+    $css .= snn_bg_size_css(       $attrs['bgSize']       ?? [], $selector);
+    $css .= snn_bg_position_css(   $attrs['bgPosition']   ?? [], $selector);
+    $css .= snn_bg_repeat_css(     $attrs['bgRepeat']     ?? [], $selector);
+    $css .= snn_bg_attachment_css( $attrs['bgAttachment'] ?? [], $selector);
+    $css .= snn_bg_blend_mode_css( $attrs['bgBlendMode']  ?? [], $selector);
+    $css .= snn_bg_gradient_css(
+        !empty($attrs['bgGradients']) ? $attrs['bgGradients'] : ($attrs['bgGradient'] ?? ''),
+        $selector
+    );
+
+    // Overlay
+    $css .= snn_bg_overlay_css($attrs['bgOverlay'] ?? [], $selector);
+
+    // Layout
+    $css .= snn_responsive_style($attrs['display']        ?? [], 'display',              $selector);
+    $css .= snn_responsive_style($attrs['flexDirection']  ?? [], 'flex-direction',       $selector);
+    $css .= snn_responsive_style($attrs['flexWrap']       ?? [], 'flex-wrap',            $selector);
+    $css .= snn_responsive_style($attrs['justifyContent'] ?? [], 'justify-content',      $selector);
+    $css .= snn_responsive_style($attrs['justifyItems']   ?? [], 'justify-items',        $selector);
+    $css .= snn_responsive_style($attrs['alignItems']     ?? [], 'align-items',          $selector);
+    $css .= snn_responsive_style($attrs['alignContent']   ?? [], 'align-content',        $selector);
+    $css .= snn_responsive_style($attrs['gap']            ?? [], 'gap',                  $selector);
+    $css .= snn_responsive_style($attrs['gridColumns']    ?? [], 'grid-template-columns',$selector);
+    $css .= snn_grid_rows_css(     $attrs['gridRows']     ?? [], $selector);
+    $css .= snn_grid_auto_flow_css($attrs['gridAutoFlow'] ?? [], $selector);
+    $css .= snn_row_gap_css(       $attrs['rowGap']       ?? [], $selector);
+    $css .= snn_column_gap_css(    $attrs['columnGap']    ?? [], $selector);
+
+    // Flex child
+    $css .= snn_flex_grow_css(   $attrs['flexGrow']   ?? [], $selector);
+    $css .= snn_flex_shrink_css( $attrs['flexShrink'] ?? [], $selector);
+    $css .= snn_flex_basis_css(  $attrs['flexBasis']  ?? [], $selector);
+    $css .= snn_align_self_css(  $attrs['alignSelf']  ?? [], $selector);
+
+    // Grid placement
+    $css .= snn_grid_column_start_css($attrs['gridColumnStart'] ?? [], $selector);
+    $css .= snn_grid_column_end_css(  $attrs['gridColumnEnd']   ?? [], $selector);
+    $css .= snn_grid_row_start_css(   $attrs['gridRowStart']    ?? [], $selector);
+    $css .= snn_grid_row_end_css(     $attrs['gridRowEnd']      ?? [], $selector);
+    $css .= snn_order_css(            $attrs['order']           ?? [], $selector);
+
+    // Sizing
+    $css .= snn_responsive_style($attrs['width']      ?? [], 'width',       $selector);
+    $css .= snn_responsive_style($attrs['height']     ?? [], 'height',      $selector);
+    $css .= snn_responsive_style($attrs['minWidth']   ?? [], 'min-width',   $selector);
+    $css .= snn_responsive_style($attrs['minHeight']  ?? [], 'min-height',  $selector);
+    $css .= snn_responsive_style($attrs['maxWidth']   ?? [], 'max-width',   $selector);
+    $css .= snn_responsive_style($attrs['maxHeight']  ?? [], 'max-height',  $selector);
+    $css .= snn_box_sizing_css( $attrs['boxSizing']   ?? [], $selector);
+
+    // Spacing
+    $css .= snn_responsive_padding($attrs['padding'] ?? [], $selector);
+    $css .= snn_responsive_margin( $attrs['margin']  ?? [], $selector);
+    $css .= snn_inset_css(         $attrs['inset']   ?? [], $selector);
+
+    // Border
+    $css .= snn_border_css(        $attrs['border']       ?? [], $selector);
+    $css .= snn_border_radius_css( $attrs['borderRadius'] ?? [], $selector);
+    $css .= snn_outline_css(       $attrs['outline']      ?? [], $selector);
+
+    // Typography
+    $css .= snn_responsive_style($attrs['fontFamily']    ?? [], 'font-family',     $selector);
+    $css .= snn_responsive_style($attrs['fontSize']      ?? [], 'font-size',       $selector);
+    $css .= snn_responsive_style($attrs['fontWeight']    ?? [], 'font-weight',     $selector);
+    $css .= snn_responsive_style($attrs['lineHeight']    ?? [], 'line-height',     $selector);
+    $css .= snn_responsive_style($attrs['letterSpacing'] ?? [], 'letter-spacing',  $selector);
+    $css .= snn_responsive_style($attrs['textTransform'] ?? [], 'text-transform',  $selector);
+    $css .= snn_responsive_style($attrs['textAlign']     ?? [], 'text-align',      $selector);
+
+    // Effects
+    $css .= snn_opacity_css(        $attrs['opacity']        ?? [], $selector);
+    $css .= snn_blend_mode_css(     $attrs['blendMode']      ?? [], $selector);
+    $css .= snn_box_shadow_css(     $attrs['boxShadow']      ?? [], $selector);
+    $css .= snn_text_shadow_css(    $attrs['textShadow']     ?? [], $selector);
+    $css .= snn_filter_css(         $attrs['filter']         ?? [], $selector);
+    $css .= snn_backdrop_filter_css($attrs['backdropFilter'] ?? [], $selector);
+    $css .= snn_transform_css(      $attrs['transform']      ?? [], $selector);
+
+    // Position
+    $css .= snn_position_css(
+        $attrs['position'] ?? [],
+        $attrs['offsets']  ?? [],
+        $attrs['zIndex']   ?? [],
+        $selector
+    );
+
+    // Misc
+    $css .= snn_responsive_style($attrs['overflow']        ?? [], 'overflow',           $selector);
+    $css .= snn_visibility_css(    $attrs['visibility']    ?? [], $selector);
+    $css .= snn_clip_path_css(     $attrs['clipPath']      ?? [], $selector);
+    $css .= snn_object_fit_css(    $attrs['objectFit']     ?? [], $selector);
+    $css .= snn_aspect_ratio_css(  $attrs['aspectRatio']   ?? [], $selector);
+    $css .= snn_cursor_css(        $attrs['cursor']        ?? [], $selector);
+    $css .= snn_pointer_events_css($attrs['pointerEvents'] ?? [], $selector);
+    $css .= snn_user_select_css(   $attrs['userSelect']    ?? [], $selector);
+    $css .= snn_resize_css(        $attrs['resize']        ?? [], $selector);
+    $css .= snn_scroll_behavior_css($attrs['scrollBehavior'] ?? [], $selector);
+    $css .= snn_scroll_snap_css(
+        $attrs['scrollSnapType']  ?? [],
+        $attrs['scrollSnapAlign'] ?? [],
+        $attrs['scrollSnapStop']  ?? [],
+        $selector
+    );
+    $css .= snn_text_overflow_css( $attrs['textOverflow']  ?? [], $selector);
+    $css .= snn_white_space_css(   $attrs['whiteSpace']    ?? [], $selector);
+    $css .= snn_word_break_css(    $attrs['wordBreak']     ?? [], $selector);
+    $css .= snn_vertical_align_css($attrs['verticalAlign'] ?? [], $selector);
+    $css .= snn_will_change_css(   $attrs['willChange']    ?? [], $selector);
+    $css .= snn_isolation_css(     $attrs['isolation']     ?? [], $selector);
+    $css .= snn_list_style_css(    $attrs['listStyle']     ?? [], $selector);
+
+    // Animation
+    $css .= snn_transition_css($attrs['transitions'] ?? [], $selector);
+    $css .= snn_animation_css($attrs['animations']  ?? [], $selector);
+
+    return $css;
 }

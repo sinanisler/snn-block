@@ -122,9 +122,7 @@ C.GradientBuilder = ({ value, onChange }) => {
     };
 
     return (
-        <div style={{ marginBottom:'8px', padding:'8px', background:'#f9fafc', borderRadius:'4px', border:'1px solid #e8ecf1' }}>
-            <span style={{ fontSize:'14px',fontWeight:600,textTransform:'uppercase',color:'#1e1e1e',display:'block',marginBottom:'6px' }}>{__('Gradient','snn')}</span>
-
+        <div style={{ marginBottom:'6px', padding:'8px', background:'#f9fafc', borderRadius:'4px', border:'1px solid #e8ecf1' }}>
             {/* Type selector */}
             <div style={{ display:'flex',gap:'4px',marginBottom:'6px' }}>
                 {['linear','radial','conic'].map(t => (
@@ -173,7 +171,7 @@ C.GradientBuilder = ({ value, onChange }) => {
 
             <div style={{ display:'flex',gap:'4px',marginTop:'4px' }}>
                 <button type="button" onClick={addStop}
-                    style={{ flex:1,border:'1px dashed #949494',background:'#fff',color:'#666',borderRadius:'3px',padding:'4px',fontSize:'14px',cursor:'pointer' }}>
+                    style={{ width:'100%',border:'1px dashed #949494',background:'#fff',color:'#666',borderRadius:'3px',padding:'4px',fontSize:'14px',cursor:'pointer' }}>
                     + {__('Add Stop','snn')}
                 </button>
             </div>
@@ -182,7 +180,82 @@ C.GradientBuilder = ({ value, onChange }) => {
 };
 
 /* ═══════════════════════════════════════════════
-   BACKGROUND CONTROL (full)
+   GRADIENT LAYER EDITOR (multi-gradient repeater)
+   ═══════════════════════════════════════════════ */
+C.GradientLayerEditor = ({ layers, onChange, title }) => {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const list = layers || [];
+
+    const addLayer = () => {
+        onChange([...list, { css: 'linear-gradient(90deg, #000000, #ffffff)' }]);
+        setActiveIndex(list.length);
+    };
+    const removeLayer = (idx) => {
+        const updated = list.filter((_, i) => i !== idx);
+        onChange(updated);
+        setActiveIndex(Math.min(activeIndex, Math.max(0, updated.length - 1)));
+    };
+    const updateLayer = (idx, newCSS) => {
+        onChange(list.map((l, i) => i === idx ? { css: newCSS } : l));
+    };
+
+    const current = list[activeIndex] || null;
+    const combinedCSS = list.map(l => l.css || '').filter(Boolean).join(', ');
+
+    return (
+        <div style={{ marginBottom:'8px' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px' }}>
+                <span style={{ fontSize:'14px',fontWeight:600,textTransform:'uppercase',color:'#1e1e1e' }}>
+                    {title || __('Gradients','snn')}
+                    {list.length > 0 && <span style={{ fontWeight:400,color:'#757575',marginLeft:'6px' }}>({list.length})</span>}
+                </span>
+                <button type="button" onClick={addLayer}
+                    style={{ border:'none',background:'#3858e9',color:'#fff',borderRadius:'3px',padding:'4px 12px',fontSize:'14px',cursor:'pointer' }}>
+                    + {__('Add','snn')}
+                </button>
+            </div>
+
+            {list.length > 0 && (
+                <div style={{ height:'24px',borderRadius:'3px',marginBottom:'8px',border:'1px solid #d0d0d0',background:combinedCSS}}></div>
+            )}
+
+            {list.length > 1 && (
+                <div style={{ display:'flex',gap:'4px',marginBottom:'6px',flexWrap:'wrap' }}>
+                    {list.map((l, i) => (
+                        <button key={i} type="button" onClick={() => setActiveIndex(i)}
+                            style={{
+                                padding:'3px 10px',fontSize:'14px',borderRadius:'3px',cursor:'pointer',
+                                border: i===activeIndex?'2px solid #3858e9':'1px solid #ddd',
+                                background: i===activeIndex?'#f0f6ff':'#fff',color:i===activeIndex?'#3858e9':'#666',
+                            }}>
+                            #{i+1}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {current && (
+                <div>
+                    <C.GradientBuilder value={current.css || ''}
+                        onChange={v => updateLayer(activeIndex, v)} />
+                    <button type="button" onClick={() => removeLayer(activeIndex)}
+                        style={{ border:'none',background:'none',color:'#cc0000',fontSize:'14px',cursor:'pointer',padding:'4px 0',marginTop:'2px' }}>
+                        {__('Remove this gradient','snn')}
+                    </button>
+                </div>
+            )}
+
+            {list.length === 0 && (
+                <div style={{ padding:'12px',background:'#f9fafc',borderRadius:'4px',border:'1px dashed #d0d0d0',textAlign:'center',fontSize:'14px',color:'#757575' }}>
+                    {__('No gradients added yet. Click "+ Add" to create one.','snn')}
+                </div>
+            )}
+        </div>
+    );
+};
+
+/* ═══════════════════════════════════════════════
+   BACKGROUND CONTROL (full — multi-gradient + gradient overlay)
    ═══════════════════════════════════════════════ */
 C.BackgroundControl = ({ attributes, setAttributes, device }) => {
     const bgColor = (Array.isArray(attributes.bgColor) ? {} : (attributes.bgColor || {}));
@@ -191,47 +264,31 @@ C.BackgroundControl = ({ attributes, setAttributes, device }) => {
     const bgPosition = attributes.bgPosition || 'center center';
     const bgRepeat = attributes.bgRepeat || 'no-repeat';
     const bgAttachment = attributes.bgAttachment || 'scroll';
-    const bgGradient = attributes.bgGradient || '';
+    const bgGradients = (Array.isArray(attributes.bgGradients) ? attributes.bgGradients :
+        (attributes.bgGradient ? [{ css: attributes.bgGradient }] : []));
     const bgOverlay = (Array.isArray(attributes.bgOverlay) ? {} : (attributes.bgOverlay || {}));
     const bgBlendMode = attributes.bgBlendMode || 'normal';
 
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [overlayMode, setOverlayMode] = useState(bgOverlay.gradient ? 'gradient' : 'color');
 
-    // Build preview
-    const previewBg = [];
-    if (bgGradient) previewBg.push(bgGradient);
-    if (bgImage.url) previewBg.push(`url(${bgImage.url})`);
-    const previewStyle = {};
-    if (previewBg.length) {
-        previewStyle.backgroundImage = previewBg.join(', ');
-        previewStyle.backgroundSize = bgGradient && bgImage.url ? 'cover, cover' : bgSize;
-        previewStyle.backgroundPosition = bgGradient && bgImage.url ? 'center center, center center' : bgPosition;
-        previewStyle.backgroundRepeat = bgRepeat;
-        previewStyle.backgroundAttachment = bgAttachment;
-    }
-    if (bgColor.desktop) previewStyle.backgroundColor = bgColor.desktop;
-    if (bgBlendMode && bgBlendMode !== 'normal') previewStyle.backgroundBlendMode = bgBlendMode;
+    const previewBgLayers = [];
+    bgGradients.forEach(g => { if (g.css) previewBgLayers.push(g.css); });
+    if (bgImage.url) previewBgLayers.push('url(' + bgImage.url + ')');
 
     return (
         <div style={{ marginBottom: '14px' }}>
             <C.RespLabel label={__('Background','snn')} device={device} />
 
-            {/* Color */}
             <C.ColorRow label={__('Bg Color','snn')} value={bgColor[device] || ''}
                 onChange={v => setAttributes({ bgColor: { ...bgColor, [device]: v } })} />
 
-            {/* Gradient */}
-            <div style={{ marginBottom:'4px' }}>
-                <div style={{ display:'flex',alignItems:'center',gap:'4px' }}>
-                    <input type="text" value={bgGradient} onChange={e => setAttributes({ bgGradient: e.target.value })}
-                        placeholder={__('Gradient CSS','snn')} style={{ ...tinyInp,flex:1 }} />
-                    <button type="button" onClick={() => setAttributes({ bgGradient: bgGradient ? '' : 'linear-gradient(90deg, #000000, #ffffff)' })}
-                        style={{ border:'1px solid #949494',background:bgGradient?'#ffe8e8':'#e8f5e9',color:bgGradient?'#cc0000':'#2e7d32',borderRadius:'3px',padding:'4px 8px',fontSize:'14px',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0 }}>
-                        {bgGradient ? '×' : '+'}
-                    </button>
-                </div>
-                {bgGradient && <C.GradientBuilder value={bgGradient} onChange={v => setAttributes({ bgGradient: v })} />}
-            </div>
+            {/* ── GRADIENT LAYERS (multi-repeater) ── */}
+            <C.GradientLayerEditor
+                layers={bgGradients}
+                onChange={v => setAttributes({ bgGradients: v })}
+                title={__('Gradients','snn')}
+            />
 
             {/* Image */}
             <div style={{ marginBottom:'4px' }}>
@@ -260,7 +317,7 @@ C.BackgroundControl = ({ attributes, setAttributes, device }) => {
             </div>
 
             {/* Advanced toggle */}
-            {(bgImage.url || bgGradient) && (
+            {(bgImage.url || bgGradients.length > 0) && (
                 <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}
                     style={{ border:'none',background:'none',color:'#3858e9',fontSize:'14px',cursor:'pointer',padding:'2px 0',marginBottom:'4px' }}>
                     {showAdvanced ? '▾ ' : '▸ '}{__('Advanced','snn')}
@@ -268,8 +325,7 @@ C.BackgroundControl = ({ attributes, setAttributes, device }) => {
             )}
 
             {showAdvanced && (
-                <div style={{ padding:'6px',background:'#f9fafc',borderRadius:'4px',border:'1px solid #e8ecf1',marginBottom:'4px' }}>
-                    {/* Size */}
+                <div style={{ padding:'6px',background:'#f9fafc',borderRadius:'4px',border:'1px solid #e8ecf1',marginBottom:'8px' }}>
                     <C.CompactSelect label={__('Size','snn')} value={bgSize || 'cover'} options={BG_SIZE_OPTS}
                         onChange={v => setAttributes({ bgSize: v })} />
                     {bgSize === 'custom' && (
@@ -278,48 +334,87 @@ C.BackgroundControl = ({ attributes, setAttributes, device }) => {
                                 placeholder="100% auto" style={{ ...tinyInp,flex:1 }} />
                         </div>
                     )}
-
-                    {/* Position */}
                     <C.CompactSelect label={__('Position','snn')} value={bgPosition || 'center center'} options={BG_POS_OPTS}
                         onChange={v => setAttributes({ bgPosition: v })} />
-
-                    {/* Repeat */}
                     <C.CompactSelect label={__('Repeat','snn')} value={bgRepeat || 'no-repeat'} options={BG_REPEAT_OPTS}
                         onChange={v => setAttributes({ bgRepeat: v })} />
-
-                    {/* Attachment */}
                     <C.CompactSelect label={__('Attach','snn')} value={bgAttachment || 'scroll'} options={BG_ATTACH_OPTS}
                         onChange={v => setAttributes({ bgAttachment: v })} />
-
-                    {/* Blend Mode */}
                     <C.BlendModeSelect label={__('Bg Blend','snn')} value={bgBlendMode}
                         onChange={v => setAttributes({ bgBlendMode: v })} />
                 </div>
             )}
 
-            {/* Overlay */}
-            <div style={{ display:'flex',alignItems:'center',gap:'4px',marginTop:'4px' }}>
-                <span style={{ fontSize:'14px',fontWeight:500,textTransform:'uppercase',color:'#1e1e1e',minWidth:'64px' }}>{__('Overlay','snn')}</span>
-                <input type="color" value={bgOverlay.color || '#000000'} onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, color: e.target.value } })}
-                    style={{ width:'28px',height:'26px',padding:0,border:'1px solid #949494',borderRadius:'3px',cursor:'pointer',flexShrink:0 }} />
-                <input type="text" value={bgOverlay.color || ''} onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, color: e.target.value } })}
-                    placeholder="#000" style={{ ...tinyInp,flex:1 }} />
-                <input type="range" min="0" max="100" value={bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 50}
-                    onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, opacity: String(parseInt(e.target.value) / 100) } })}
-                    style={{ width:'60px',height:'14px',margin:0,cursor:'pointer',flexShrink:0 }} />
-                <span style={{ fontSize:'14px',fontFamily:'monospace',color:'#1e1e1e',minWidth:'32px',textAlign:'right',flexShrink:0 }}>
-                    {bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 50}%
-                </span>
+            {/* ── OVERLAY (Color or Gradient) ── */}
+            <div style={{ marginBottom:'8px', padding:'8px', background:'#f9fafc', borderRadius:'4px', border:'1px solid #e8ecf1' }}>
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px' }}>
+                    <span style={{ fontSize:'14px',fontWeight:600,textTransform:'uppercase',color:'#1e1e1e' }}>{__('Overlay','snn')}</span>
+                    <div style={{ display:'flex',gap:'2px' }}>
+                        <button type="button" onClick={() => { setOverlayMode('color'); setAttributes({ bgOverlay: { ...bgOverlay, gradient: '' } }); }}
+                            style={{ padding:'3px 8px',fontSize:'14px',borderRadius:'3px',cursor:'pointer',
+                                border: overlayMode==='color'?'2px solid #3858e9':'1px solid #d0d0d0',
+                                background: overlayMode==='color'?'#f0f6ff':'#fff',
+                                color: overlayMode==='color'?'#3858e9':'#666',fontWeight:500 }}>
+                            {__('Color','snn')}
+                        </button>
+                        <button type="button" onClick={() => setOverlayMode('gradient')}
+                            style={{ padding:'3px 8px',fontSize:'14px',borderRadius:'3px',cursor:'pointer',
+                                border: overlayMode==='gradient'?'2px solid #3858e9':'1px solid #d0d0d0',
+                                background: overlayMode==='gradient'?'#f0f6ff':'#fff',
+                                color: overlayMode==='gradient'?'#3858e9':'#666',fontWeight:500 }}>
+                            {__('Gradient','snn')}
+                        </button>
+                    </div>
+                </div>
+
+                {overlayMode === 'color' ? (
+                    <div>
+                        <div style={{ display:'flex',alignItems:'center',gap:'4px',marginBottom:'4px' }}>
+                            <span style={{ fontSize:'14px',fontWeight:500,color:'#1e1e1e',minWidth:'48px' }}>{__('Color','snn')}</span>
+                            <input type="color" value={bgOverlay.color || '#000000'} onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, color: e.target.value, gradient: '' } })}
+                                style={{ width:'28px',height:'26px',padding:0,border:'1px solid #949494',borderRadius:'3px',cursor:'pointer',flexShrink:0 }} />
+                            <input type="text" value={bgOverlay.color || ''} onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, color: e.target.value, gradient: '' } })}
+                                placeholder="#000" style={{ ...tinyInp,flex:1 }} />
+                        </div>
+                        <div style={{ display:'flex',alignItems:'center',gap:'4px' }}>
+                            <span style={{ fontSize:'14px',fontWeight:500,color:'#1e1e1e',minWidth:'48px' }}>{__('Opacity','snn')}</span>
+                            <input type="range" min="0" max="100"
+                                value={bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 50}
+                                onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, opacity: String(parseInt(e.target.value) / 100), gradient: '' } })}
+                                style={{ flex:1,height:'14px',margin:0,cursor:'pointer' }} />
+                            <span style={{ fontSize:'14px',fontFamily:'monospace',color:'#1e1e1e',minWidth:'32px',textAlign:'right' }}>
+                                {bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 50}%
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        <C.GradientBuilder
+                            value={bgOverlay.gradient || 'linear-gradient(90deg, #00000080, #00000000)'}
+                            onChange={v => setAttributes({ bgOverlay: { ...bgOverlay, gradient: v, color: '' } })}
+                        />
+                        <div style={{ display:'flex',alignItems:'center',gap:'4px',marginTop:'4px' }}>
+                            <span style={{ fontSize:'14px',fontWeight:500,color:'#1e1e1e',minWidth:'48px' }}>{__('Opacity','snn')}</span>
+                            <input type="range" min="0" max="100"
+                                value={bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 70}
+                                onChange={e => setAttributes({ bgOverlay: { ...bgOverlay, opacity: String(parseInt(e.target.value) / 100) } })}
+                                style={{ flex:1,height:'14px',margin:0,cursor:'pointer' }} />
+                            <span style={{ fontSize:'14px',fontFamily:'monospace',color:'#1e1e1e',minWidth:'32px',textAlign:'right' }}>
+                                {bgOverlay.opacity ? Math.round(parseFloat(bgOverlay.opacity) * 100) : 70}%
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Preview */}
+            {/* Preview bar */}
             <div style={{ height:'40px',borderRadius:'4px',marginTop:'8px',border:'1px solid #d0d0d0',
-                background: previewBg.length ? previewBg.join(', ') : (bgColor[device] || '#f5f5f5'),
-                backgroundSize: previewStyle.backgroundSize || 'cover',
-                backgroundPosition: previewStyle.backgroundPosition || 'center center',
+                backgroundImage: previewBgLayers.length ? previewBgLayers.join(', ') : 'none',
+                backgroundSize: previewBgLayers.length ? bgSize : 'cover',
+                backgroundPosition: previewBgLayers.length ? bgPosition : 'center center',
                 backgroundRepeat: bgRepeat,
                 backgroundAttachment: bgAttachment,
-                backgroundColor: bgColor[device] || (previewBg.length ? 'transparent' : '#f5f5f5'),
+                backgroundColor: bgColor[device] || '#f5f5f5',
             }}>
             </div>
         </div>

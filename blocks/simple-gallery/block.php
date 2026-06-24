@@ -22,6 +22,12 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
     $gap = $attributes['gap'] ?? [];
     $aspect_ratio = $attributes['aspectRatio'] ?? [];
     $enable_lightbox = $attributes['enableLightbox'] ?? false;
+    $bg_color = $attributes['bgColor'] ?? [];
+    $padding = $attributes['padding'] ?? [];
+    $margin = $attributes['margin'] ?? [];
+    $border = $attributes['border'] ?? [];
+    $border_radius = $attributes['borderRadius'] ?? [];
+    $box_shadow = $attributes['boxShadow'] ?? [];
     $anchor = $attributes['anchor'] ?? '';
     $class_name = $attributes['className'] ?? '';
     $align = $attributes['align'] ?? '';
@@ -46,13 +52,18 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
         $classes[] = 'has-lightbox';
     }
 
-    // ── 1. Build all-device CSS for <style> tag ──
-    // Desktop values as base rule, tablet/mobile in media queries.
-    // No inline styles — they would override the <style> tag's media queries.
+    // ── Responsive CSS (grid params + custom styling) ──
     $responsive_css = '';
     $responsive_css .= snn_responsive_style($columns, '--snn-gallery-columns', $selector);
     $responsive_css .= snn_responsive_style($gap, '--snn-gallery-gap', $selector, 'px');
     $responsive_css .= snn_responsive_style($aspect_ratio, '--snn-gallery-aspect-ratio', $selector);
+    // Custom controls — block-level styling
+    $responsive_css .= snn_responsive_style($bg_color, 'background-color', $selector);
+    $responsive_css .= snn_responsive_padding($padding, $selector);
+    $responsive_css .= snn_responsive_margin($margin, $selector);
+    $responsive_css .= snn_border_css($border, $selector);
+    $responsive_css .= snn_border_radius_css($border_radius, $selector);
+    $responsive_css .= snn_box_shadow_css($box_shadow, $selector);
 
     // If no responsive values at all, provide fallback defaults via inline style
     $inline_css = '';
@@ -99,7 +110,7 @@ function snn_render_simple_gallery_block($attributes, $content, $block) {
     }
 
     if ($all_css) {
-        $output .= '<style>' . $all_css . '</style>';
+        SNN_CSS_Collector::instance()->collect($all_css);
     }
     $output .= '<div class="snn-gallery-grid">';
 

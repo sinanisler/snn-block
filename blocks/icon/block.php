@@ -137,7 +137,7 @@ function snn_icon_block_render($attributes) {
     $class = 'snn-icon ' . esc_attr($uid);
     $output = '<span class="' . $class . '">';
     if ($all_css) {
-        $output .= '<style>' . $all_css . '</style>';
+        SNN_CSS_Collector::instance()->collect($all_css);
     }
     $output .= $icon_html;
     $output .= '</span>';
