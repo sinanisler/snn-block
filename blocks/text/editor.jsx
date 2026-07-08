@@ -1,7 +1,7 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, RichText } = wp.blockEditor;
 const { PanelBody, TextareaControl } = wp.components;
-const { Fragment } = wp.element;
+const { Fragment, useEffect, useRef } = wp.element;
 const { __ } = wp.i18n;
 
 const {
@@ -142,7 +142,36 @@ registerBlockType('snn/text', {
             { label: 'H6', value: 'h6' }, { label: 'DIV', value: 'div' }, { label: 'SPAN', value: 'span' },
         ];
 
-        const blockProps = useBlockProps({ className: 'snn-text', style: previewStyles });
+        // ── Editor-unique class for custom CSS live preview ──
+        const editorClass = 'snn-te-' + props.clientId.substring(0, 8);
+        const editorSelector = '.' + editorClass;
+
+        useEffect(() => {
+            const styleId = 'snn-css-' + props.clientId;
+            const raw = attributes.customCSS || '';
+            // Gutenberg renders blocks inside an iframe — target it directly
+            const iframe = document.querySelector('iframe[name="editor-canvas"]');
+            const doc = iframe && iframe.contentDocument ? iframe.contentDocument : document;
+            let styleEl = doc.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = doc.createElement('style');
+                styleEl.id = styleId;
+                doc.head.appendChild(styleEl);
+            }
+            if (raw.trim()) {
+                styleEl.textContent = raw.includes('selector')
+                    ? raw.replace(/selector/g, editorSelector)
+                    : editorSelector + ' {\n' + raw + '\n}';
+            } else {
+                styleEl.textContent = '';
+            }
+            return () => {
+                const el = doc.getElementById(styleId);
+                if (el) el.remove();
+            };
+        }, [attributes.customCSS, editorSelector, props.clientId]);
+
+        const blockProps = useBlockProps({ className: 'snn-text ' + editorClass, style: previewStyles });
         const tinyInp = { width:'100%',padding:'4px 6px',fontSize:'14px',fontFamily:'monospace',border:'1px solid #ddd',borderRadius:'3px',boxSizing:'border-box',lineHeight:'20px' };
         const sel = { fontSize:'14px',padding:'3px 6px',border:'1px solid #949494',borderRadius:'3px',height:'26px',flex:1,background:'#fff',minWidth:0 };
 

@@ -1,7 +1,7 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps, useInnerBlocksProps, InnerBlocks, MediaUpload } = wp.blockEditor;
 const { Button, TextareaControl, PanelBody } = wp.components;
-const { Fragment } = wp.element;
+const { Fragment, useEffect, useRef } = wp.element;
 const { __ } = wp.i18n;
 
 const {
@@ -188,7 +188,36 @@ registerBlockType('snn/section', {
             wrapperStyle.position = wrapperStyle.position || 'relative';
         }
 
-        const blockProps = useBlockProps({ className:'snn-section', style: wrapperStyle });
+        // ── Editor-unique class for custom CSS live preview ──
+        const editorClass = 'snn-se-' + props.clientId.substring(0, 8);
+        const editorSelector = '.' + editorClass;
+
+        useEffect(() => {
+            const styleId = 'snn-css-' + props.clientId;
+            const raw = attributes.customCSS || '';
+            // Gutenberg renders blocks inside an iframe — target it directly
+            const iframe = document.querySelector('iframe[name="editor-canvas"]');
+            const doc = iframe && iframe.contentDocument ? iframe.contentDocument : document;
+            let styleEl = doc.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = doc.createElement('style');
+                styleEl.id = styleId;
+                doc.head.appendChild(styleEl);
+            }
+            if (raw.trim()) {
+                styleEl.textContent = raw.includes('selector')
+                    ? raw.replace(/selector/g, editorSelector)
+                    : editorSelector + ' {\n' + raw + '\n}';
+            } else {
+                styleEl.textContent = '';
+            }
+            return () => {
+                const el = doc.getElementById(styleId);
+                if (el) el.remove();
+            };
+        }, [attributes.customCSS, editorSelector, props.clientId]);
+
+        const blockProps = useBlockProps({ className: 'snn-section ' + editorClass, style: wrapperStyle });
         const innerBlocksProps = useInnerBlocksProps(blockProps, { template: [['snn/container']] });
 
         /* ══════════════════════════════════════════
