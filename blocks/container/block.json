@@ -93,8 +93,7 @@
     "supports": {
         "html": false,
         "anchor": true,
-        "align": false,
-        "inserter": false
+        "align": false
     },
     "style": "file:./block.css",
     "render": "file:./block.php"

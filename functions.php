@@ -128,9 +128,8 @@ require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 
 // Register Blocks
 require_once SNN_PATH . 'blocks/simple-gallery/block.php';
-require_once SNN_PATH . 'blocks/box/block.php';           // ★ NEW unified Box block
-require_once SNN_PATH . 'blocks/section/block.php';       // Legacy — kept for existing content
-require_once SNN_PATH . 'blocks/container/block.php';     // Legacy — kept for existing content
+require_once SNN_PATH . 'blocks/section/block.php';
+require_once SNN_PATH . 'blocks/container/block.php';
 require_once SNN_PATH . 'blocks/text/block.php';
 require_once SNN_PATH . 'blocks/icon/block.php';
 
