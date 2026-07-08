@@ -66,7 +66,11 @@ function snn_render_text_block($attributes, $content, $block) {
     // Custom CSS
     if (!empty($custom_css)) {
         $safe_css = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
-        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+        if (str_contains($safe_css, 'selector')) {
+            $all_css .= str_replace('selector', $selector, $safe_css) . "\n";
+        } else {
+            $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+        }
     }
 
     // Collect into global aggregator

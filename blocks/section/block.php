@@ -163,7 +163,11 @@ function snn_render_section_block($attributes, $content, $block) {
     $all_css = $css;
     if (!empty($custom_css)) {
         $safe = preg_replace('~<script\s|</style|url\(|expression\s*\(~i', '', $custom_css);
-        $all_css .= "{$selector} {\n{$safe}\n}\n";
+        if (str_contains($safe, 'selector')) {
+            $all_css .= str_replace('selector', $selector, $safe) . "\n";
+        } else {
+            $all_css .= "{$selector} {\n{$safe}\n}\n";
+        }
     }
     if ($all_css) SNN_CSS_Collector::instance()->collect($all_css);
     $output .= $content;

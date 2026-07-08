@@ -10,27 +10,33 @@
 // Shared responsive CSS helpers (centralised in /blocks/block-helpers.php)
 require_once __DIR__ . '/../block-helpers.php';
 
-// ── Register block ──────────────────────────────────────────────────
+// ── Register FontAwesome handle + block (editor_style injects FA CSS into the editor iframe) ──
 add_action('init', function () {
+    wp_register_style(
+        'snn-fontawesome',
+        SNN_URL . 'assets/fonts/fontawesome/all.min.css',
+        [],
+        '6.7.2'
+    );
+
     register_block_type(__DIR__, [
         'render_callback' => 'snn_icon_block_render',
+        'editor_style'     => 'snn-fontawesome',
     ]);
 });
 
 // ── Frontend: enqueue Icon Library styles if this block is present ────────
 add_action('wp_enqueue_scripts', function () {
     if (has_block('snn/icon')) {
-        wp_enqueue_style(
-            'snn-icon-library',
-            SNN_URL . 'assets/fonts/fontawesome/all.min.css',
-            [],
-            '6.7.2'
-        );
+        wp_enqueue_style('snn-fontawesome');
     }
 });
 
-// ── Editor: load JSX + icons data ──────────────────────────────────
+// ── Editor: load JSX + icons data; also enqueue FA CSS for the outer frame (popup modal) ──
 add_action('enqueue_block_editor_assets', function () {
+    // Load FontAwesome CSS in the outer admin frame (popup modal etc.)
+    wp_enqueue_style('snn-fontawesome');
+
     $current_screen = get_current_screen();
     if ($current_screen && $current_screen->is_block_editor) {
         add_action('admin_footer', function () {
@@ -92,7 +98,11 @@ function snn_icon_block_render($attributes) {
             '',
             $custom_css
         );
-        $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+        if (str_contains($safe_css, 'selector')) {
+            $all_css .= str_replace('selector', $selector, $safe_css) . "\n";
+        } else {
+            $all_css .= "{$selector} {\n{$safe_css}\n}\n";
+        }
     }
 
     // ── Build icon HTML ──

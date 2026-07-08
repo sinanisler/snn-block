@@ -26,5 +26,6 @@
         "align": false
     },
     "style": "file:./block.css",
+    "editorStyle": "snn-fontawesome",
     "render": "file:./block.php"
 }

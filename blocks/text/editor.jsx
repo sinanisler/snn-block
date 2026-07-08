@@ -255,7 +255,7 @@ registerBlockType('snn/text', {
                     <PanelBody title={__('Custom CSS','snn')} initialOpen={false}>
                         <TextareaControl
                             label={__('Custom CSS','snn')}
-                            help={__('Target this block with the .snn-text class.','snn')}
+                            help={__('Use "selector" to target this block, e.g. selector { color: red; } or selector:hover { ... }','snn')}
                             value={attributes.customCSS || ''}
                             onChange={v => setAttributes({ customCSS: v })}
                             rows={8} />

@@ -315,7 +315,7 @@ registerBlockType('snn/section', {
                     <PanelBody title={__('Advanced','snn')} initialOpen={false}>
                         <label style={{fontSize:'14px',fontWeight:500,display:'block',marginBottom:'4px',color:'#1e1e1e'}}>{__('Custom CSS','snn')}</label>
                         <TextareaControl value={attributes.customCSS||''} onChange={v => setAttributes({customCSS:v})}
-                            placeholder=".your-class { color: red; }" style={{fontSize:'14px',fontFamily:'monospace'}} />
+                            placeholder="selector { color: red; }" style={{fontSize:'14px',fontFamily:'monospace'}} />
                     </PanelBody>
 
                     {/* ── MORE CONTROLS (new: backdrop-filter, outline, text-shadow, animations, etc.) ── */}

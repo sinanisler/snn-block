@@ -166,7 +166,7 @@ registerBlockType('snn/simple-gallery', {
                     <PanelBody title={__('Custom CSS','snn')} initialOpen={false}>
                         <TextareaControl
                             label={__('Custom CSS','snn')}
-                            help={__('Target this block with .snn-simple-gallery.','snn')}
+                            help={__('Use "selector" to target this block, e.g. selector { color: red; } or selector:hover { ... }','snn')}
                             value={attributes.customCSS || ''}
                             onChange={val => setAttributes({ customCSS: val })}
                             rows={8} />
