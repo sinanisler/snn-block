@@ -1,6 +1,6 @@
 <?php
 /**
- * SNN Global Command Palette — Loader
+ * SNN Command Palette — Loader
  *
  * Enqueues CSS + JS on every page (admin + frontend) for logged-in users.
  *
@@ -92,9 +92,9 @@ add_action('wp_footer', 'snn_cp_frontend_footer_menu');
 
 function snn_global_cp_enqueue_styles()
 {
-    $path = SNN_PATH . 'global/command-palette/command-palette.css';
+    $path = SNN_PATH . 'includes/command-palette/command-palette.css';
     if (file_exists($path)) {
-        wp_enqueue_style('snn-global-command-palette', SNN_URL . 'global/command-palette/command-palette.css', [], wp_get_theme()->get('Version'));
+        wp_enqueue_style('snn-global-command-palette', SNN_URL . 'includes/command-palette/command-palette.css', [], wp_get_theme()->get('Version'));
     }
 }
 add_action('wp_enqueue_scripts', 'snn_global_cp_enqueue_styles');
@@ -104,13 +104,13 @@ function snn_global_cp_enqueue_script()
 {
     if (!is_user_logged_in()) return;
 
-    $path = SNN_PATH . 'global/command-palette/command-palette.js';
+    $path = SNN_PATH . 'includes/command-palette/command-palette.js';
     if (!file_exists($path)) return;
 
     $handle = 'snn-global-command-palette';
     $deps   = is_admin() ? ['wp-blocks', 'wp-data', 'wp-block-editor'] : [];
 
-    wp_enqueue_script($handle, SNN_URL . 'global/command-palette/command-palette.js', $deps, wp_get_theme()->get('Version'), true);
+    wp_enqueue_script($handle, SNN_URL . 'includes/command-palette/command-palette.js', $deps, wp_get_theme()->get('Version'), true);
 
     // Pass site config (menu is set separately in the footer).
     wp_add_inline_script($handle,

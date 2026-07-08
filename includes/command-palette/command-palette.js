@@ -1,5 +1,5 @@
 /**
- * SNN Global Command Palette — Ctrl+K Everywhere
+ * SNN Command Palette — Ctrl+K Everywhere
  *
  * Pure-vanilla-JS command palette for logged-in users on every page
  * (wp-admin, block editor, site editor, frontend).
@@ -451,7 +451,7 @@
         refs.input.addEventListener('input', onInputChange);
         refs.overlay.addEventListener('mousedown', onOverlayClick);
         refs.palette.addEventListener('mousedown', function (e) { e.stopPropagation(); });
-        console.log('SNN Global Command Palette: ✅ Ready — press Ctrl+K anywhere.');
+        console.log('SNN Command Palette: ✅ Ready — press Ctrl+K anywhere.');
     }
 
     if (D.readyState === 'loading') {

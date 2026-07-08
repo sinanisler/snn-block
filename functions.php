@@ -111,10 +111,10 @@ add_action('after_setup_theme', function() {
 
 
 require_once SNN_PATH . 'includes/features/block-editor-settings.php';
-require_once SNN_PATH . 'includes/features/global-style-editor-settings.php';
+require_once SNN_PATH . 'includes/global-style/global-style-editor-settings.php';
 
-// Global Command Palette (Ctrl+K everywhere — admin + frontend)
-require_once SNN_PATH . 'global/command-palette/command-palette-loader.php';
+// Command Palette (Ctrl+K everywhere — admin + frontend)
+require_once SNN_PATH . 'includes/command-palette/command-palette-loader.php';
 require_once SNN_PATH . 'includes/features/media-image-opt.php';
 require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
 

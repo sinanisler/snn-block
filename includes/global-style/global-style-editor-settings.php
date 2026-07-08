@@ -325,6 +325,6 @@ add_action('enqueue_block_editor_assets', function () {
         );
     }
 
-    // ── Global Command Palette is now loaded globally (admin + frontend)
-    //     via global/command-palette/command-palette-loader.php — see functions.php.
+    // ── Command Palette is now loaded globally (admin + frontend)
+    //     via includes/command-palette/command-palette-loader.php — see functions.php.
 });
