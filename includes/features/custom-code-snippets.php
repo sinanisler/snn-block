@@ -57,7 +57,6 @@ define('SNN_SNIPPET_META_TYPE', '_snn_code_type');
 define('SNN_SNIPPET_META_LOCATION', '_snn_location');
 define('SNN_SNIPPET_META_PRIORITY', '_snn_priority');
 define('SNN_SNIPPET_META_CONDITIONS', '_snn_conditions');
-define('SNN_SNIPPET_META_TEST_URL', '_snn_test_url');
 // Every switched-on modern snippet, code included, in one autoloaded option.
 // Rebuilt on every save, switch and delete, so running snippets costs no
 // queries - and works at after_setup_theme, before post types exist.
@@ -245,6 +244,22 @@ function snn_snippet_rule_post_ids( $value ) {
     return array_values( array_unique( array_filter( array_map( 'absint', explode( ',', (string) $value ) ) ) ) );
 }
 
+/**
+ * A picked post as the "Page or post" rule shows it: its title, post type slug
+ * and status, so same-titled posts of different types can be told apart.
+ */
+function snn_snippet_post_label( $post_id ) {
+    $post = get_post( $post_id );
+    if ( ! $post ) {
+        return array( 'title' => '#' . absint( $post_id ), 'meta' => '' );
+    }
+    $status = get_post_status_object( $post->post_status );
+    return array(
+        'title' => '' !== $post->post_title ? $post->post_title : '#' . $post->ID,
+        'meta'  => $post->post_type . ' · ' . ( $status ? $status->label : $post->post_status ),
+    );
+}
+
 /** Page types the page_type rule understands. */
 function snn_snippet_page_types() {
     return array( 'front_page', 'blog', 'singular', 'archive', 'search', '404' );
@@ -345,8 +360,8 @@ function snn_snippet_normalize_settings( $settings, &$dropped = 0 ) {
     $settings = is_array( $settings ) ? array_merge( $defaults, $settings ) : $defaults;
     $map      = snn_snippet_location_map();
 
-    $type     = array_key_exists( (string) $settings['type'], array( 'php' => 1, 'html_php' => 1, 'html' => 1, 'css' => 1, 'js' => 1 ) ) ? (string) $settings['type'] : 'php';
-    $location = isset( $map[ (string) $settings['location'] ] ) ? (string) $settings['location'] : 'everywhere';
+    $type     = ( is_string( $settings['type'] ) && isset( array( 'php' => 1, 'html_php' => 1, 'html' => 1, 'css' => 1, 'js' => 1 )[ $settings['type'] ] ) ) ? $settings['type'] : 'php';
+    $location = ( is_string( $settings['location'] ) && isset( $map[ $settings['location'] ] ) ) ? $settings['location'] : 'everywhere';
     if ( ! snn_snippet_location_allows_type( $location, $type ) ) {
         $location = 'site_head';
     }
@@ -1321,26 +1336,25 @@ function snn_snippet_test_targets_for( $slug, $settings = null ) {
     }
 }
 
-/** Whether a URL points at this site, so a test may load it. */
-function snn_snippet_is_own_url( $url ) {
-    $scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
-    return in_array( $scheme, array( 'http', 'https' ), true )
-        && strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) === strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-}
-
 /**
  * A front-end page that satisfies one group of "show" conditions, or ''.
  * Only the rules that point at a page are used; the rest (logged-in, device)
  * do not change which page to load.
  */
 function snn_snippet_test_url_for_group( $group ) {
-    $url = '';
+    // Rows in a group all apply at once, so they are read together rather than
+    // letting the last row win: "Post type is Page and Page type is Single"
+    // must load a page, not the newest post.
+    $post_type = '';
+    $page_type = '';
+    $path      = '';
     foreach ( $group as $rule ) {
         if ( 'is_not' === $rule['op'] ) {
             continue;
         }
         switch ( $rule['rule'] ) {
             case 'post_id':
+                // The most specific rule: a page it names wins outright.
                 foreach ( snn_snippet_rule_post_ids( $rule['value'] ) as $post_id ) {
                     $link = get_permalink( $post_id );
                     if ( $link ) {
@@ -1349,48 +1363,50 @@ function snn_snippet_test_url_for_group( $group ) {
                 }
                 break;
             case 'post_type':
-                $newest = get_posts( array( 'post_type' => $rule['value'], 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids', 'suppress_filters' => true ) );
-                if ( $newest ) {
-                    $url = get_permalink( $newest[0] );
-                }
+                $post_type = $rule['value'];
                 break;
             case 'page_type':
-                if ( 'blog' === $rule['value'] && get_option( 'page_for_posts' ) ) {
-                    $url = get_permalink( (int) get_option( 'page_for_posts' ) );
-                } elseif ( 'singular' === $rule['value'] ) {
-                    $newest = get_posts( array( 'post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids', 'suppress_filters' => true ) );
-                    $url    = $newest ? get_permalink( $newest[0] ) : '';
-                } elseif ( 'archive' === $rule['value'] ) {
-                    $url = get_post_type_archive_link( 'post' );
-                } elseif ( 'search' === $rule['value'] ) {
-                    $url = add_query_arg( 's', 'snn-snippet-test', home_url( '/' ) );
-                } elseif ( '404' === $rule['value'] ) {
-                    $url = home_url( '/snn-snippet-test-page-not-found/' );
-                }
+                $page_type = $rule['value'];
                 break;
             case 'url_path':
                 if ( 'contains' !== $rule['op'] ) {
-                    $url = home_url( '/' . ltrim( $rule['value'], '/' ) );
+                    $path = $rule['value'];
                 }
                 break;
         }
+    }
+
+    if ( '' !== $path ) {
+        return home_url( '/' . ltrim( $path, '/' ) );
+    }
+
+    $url = '';
+    if ( 'blog' === $page_type ) {
+        $url = get_option( 'page_for_posts' ) ? get_permalink( (int) get_option( 'page_for_posts' ) ) : '';
+    } elseif ( 'archive' === $page_type ) {
+        // Pages and other types without an archive fall back to the posts archive.
+        $url = ( '' !== $post_type ? get_post_type_archive_link( $post_type ) : false ) ?: get_post_type_archive_link( 'post' );
+    } elseif ( 'search' === $page_type ) {
+        $url = add_query_arg( 's', 'snn-snippet-test', home_url( '/' ) );
+    } elseif ( '404' === $page_type ) {
+        $url = home_url( '/snn-snippet-test-page-not-found/' );
+    } elseif ( 'singular' === $page_type || ( '' === $page_type && '' !== $post_type ) ) {
+        $newest = get_posts( array( 'post_type' => '' !== $post_type ? $post_type : 'post', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids', 'suppress_filters' => true ) );
+        $url    = $newest ? get_permalink( $newest[0] ) : '';
     }
     return $url ? $url : '';
 }
 
 /**
  * The page each test target loads. Admin targets load the profile screen.
- * Front-end targets load the URL the editor names, else a page picked to
- * match the snippet's conditions (the newest product for "Post type is
+ * Front-end targets load a page picked to match the snippet's conditions (the newest product for "Post type is
  * Product"), else the home page. During the test the draft runs whatever its
  * conditions say, so the page only decides which code paths get exercised.
  */
-function snn_snippet_test_urls( $targets, $settings = null, $test_url = '' ) {
+function snn_snippet_test_urls( $targets, $settings = null ) {
     $defs  = snn_snippet_test_target_defs();
     $front = home_url( '/' );
-    if ( '' !== $test_url && snn_snippet_is_own_url( $test_url ) ) {
-        $front = $test_url;
-    } elseif ( is_array( $settings ) && ! empty( $settings['conditions']['enabled'] ) && 'show' === $settings['conditions']['action'] ) {
+    if ( is_array( $settings ) && ! empty( $settings['conditions']['enabled'] ) && 'show' === $settings['conditions']['action'] ) {
         foreach ( $settings['conditions']['groups'] as $group ) {
             $picked = snn_snippet_test_url_for_group( $group );
             if ( '' !== $picked ) {
@@ -1775,7 +1791,9 @@ jQuery( function ( $ ) {
             function drawChips() {
                 chips.innerHTML = '';
                 ids().forEach( function ( id ) {
-                    var chip = el( 'span', { className: 'snn-post-chip', title: '#' + id }, titles[ id ] || '#' + id );
+                    var info = titles[ id ] || { title: '#' + id, meta: '' };
+                    var chip = el( 'span', { className: 'snn-post-chip', title: '#' + id }, info.title );
+                    if ( info.meta ) { chip.appendChild( el( 'span', { className: 'snn-post-chip-meta' }, info.meta ) ); }
                     var x    = el( 'button', { type: 'button', 'aria-label': i18n.remove }, '×' );
                     x.addEventListener( 'click', function () {
                         setIds( ids().filter( function ( other ) { return other !== id; } ) );
@@ -1791,7 +1809,7 @@ jQuery( function ( $ ) {
                 var match = /\(#(\d+)\)$/.exec( text ) || /^#?(\d+)$/.exec( text );
                 if ( match ) { return match[1]; }
                 var lower = text.toLowerCase();
-                var hits  = Object.keys( found ).filter( function ( id ) { return found[ id ].toLowerCase() === lower; } );
+                var hits  = Object.keys( found ).filter( function ( id ) { return found[ id ].title.toLowerCase() === lower; } );
                 return hits.length === 1 ? hits[0] : '';
             }
             function add( id ) {
@@ -1806,9 +1824,9 @@ jQuery( function ( $ ) {
                 request = $.get( cfg.ajaxUrl, { action: 'snn_snippet_search_posts', nonce: cfg.nonces.search, term: term } ).done( function ( response ) {
                     list.innerHTML = '';
                     ( response && response.success ? response.data : [] ).forEach( function ( post ) {
-                        found[ post.id ] = post.title;
+                        found[ post.id ] = post;
                         if ( ids().indexOf( String( post.id ) ) === -1 ) {
-                            list.appendChild( el( 'option', { value: post.title + ' (#' + post.id + ')' }, post.type ) );
+                            list.appendChild( el( 'option', { value: post.title + ' (#' + post.id + ')' }, post.meta ) );
                         }
                     } );
                 } );
@@ -2203,6 +2221,7 @@ function snn_custom_codes_snippets_admin_styles() {
         .snn-post-picker:focus-within { border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; }
         .snn-post-chips { display: contents; }
         .snn-post-chip { display: inline-flex; align-items: center; gap: 2px; background: #f0f6fc; border: 1px solid #c5d9ed; border-radius: 3px; padding: 0 2px 0 8px; font-size: 13px; line-height: 22px; }
+        .snn-post-chip-meta { margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #dcdcde; color: #50575e; font-size: 11px; line-height: 16px; }
         .snn-post-chip button { border: 0; background: none; cursor: pointer; color: #646970; font-size: 16px; line-height: 1; padding: 0 4px; }
         .snn-post-chip button:hover { color: #b32d2e; }
         .snn-post-picker input[type=text] { flex: 1; min-width: 160px; border: 0; box-shadow: none; outline: 0; padding: 0 2px; min-height: 26px; background: transparent; }
@@ -2898,7 +2917,7 @@ function snn_snippet_publish( $def, $post_id, $code, $switch_on, $settings = nul
  * works on servers that handle one request at a time - and asks the server
  * to publish once every page has reported back.
  */
-function snn_snippet_start_test( $slug, $post_id, $code, $switch_on, $settings = null, $test_url = '' ) {
+function snn_snippet_start_test( $slug, $post_id, $code, $switch_on, $settings = null ) {
     snn_snippet_delete_draft( $post_id ); // Voids an earlier run's token.
 
     $targets = snn_snippet_test_targets_for( $slug, $settings );
@@ -2910,7 +2929,7 @@ function snn_snippet_start_test( $slug, $post_id, $code, $switch_on, $settings =
         'hash'     => md5( $code ),
         'user'     => get_current_user_id(),
         'targets'  => $targets,
-        'urls'     => snn_snippet_test_urls( $targets, $settings, $test_url ),
+        'urls'     => snn_snippet_test_urls( $targets, $settings ),
         'results'  => array(),
         'expires'  => time() + SNN_SNIPPET_TEST_TTL,
     ), SNN_SNIPPET_TEST_TTL );
@@ -2978,9 +2997,8 @@ function snn_snippet_fail_draft( $slug, $post_id, $code, $switch_on, $error, $se
  * @param string     $code       Submitted code, unslashed.
  * @param bool|null  $desired_on The "Run this snippet" checkbox, or null if not submitted.
  * @param array|null $settings   Modern snippets: normalized settings. Null for legacy.
- * @param string     $test_url   Modern snippets: the page to test on, or ''.
  */
-function snn_snippet_process_save( $def, $code, $desired_on, $settings = null, $test_url = '' ) {
+function snn_snippet_process_save( $def, $code, $desired_on, $settings = null ) {
     $slug  = $def['slug'];
     $title = $def['title'];
 
@@ -3057,7 +3075,7 @@ function snn_snippet_process_save( $def, $code, $desired_on, $settings = null, $
         return;
     }
 
-    snn_snippet_start_test( $slug, $post_id, $code, $switch_on, $settings, $test_url );
+    snn_snippet_start_test( $slug, $post_id, $code, $switch_on, $settings );
     add_settings_error( 'snn-custom-codes', 'testing_' . $slug, sprintf(
         /* translators: %s: snippet title */
         __( '"%s" was saved as a draft and is being tested on your site. It goes live only if the test passes; until then the current version keeps running.', 'snn' ),
@@ -4480,8 +4498,7 @@ function snn_snippets_switch_on( $key ) {
         return sprintf( __( '"%1$s" was not switched on: %2$s (line %3$d).', 'snn' ), snn_snippet_title( $key ), $check['message'], (int) $check['line'] );
     }
 
-    $test_url = $is_modern ? (string) get_post_meta( $post_id, SNN_SNIPPET_META_TEST_URL, true ) : '';
-    snn_snippet_start_test( $key, $post_id, $code, true, $settings, $test_url );
+    snn_snippet_start_test( $key, $post_id, $code, true, $settings );
     return 'testing';
 }
 
@@ -4746,7 +4763,7 @@ function snn_snippets_handle_editor_post() {
         $revision = ( 3 === count( $parts ) && 'restore' === $parts[0] ) ? wp_get_post_revision( absint( $parts[1] ) ) : null;
         if ( $revision && (int) $revision->post_parent === $id ) {
             // Restoring is saving old code: the same draft -> test -> publish path.
-            snn_snippet_process_save( array( 'slug' => $key, 'title' => snn_snippet_title( $key ) ), $revision->post_content, null, snn_snippet_get_settings( $id ), (string) get_post_meta( $id, SNN_SNIPPET_META_TEST_URL, true ) );
+            snn_snippet_process_save( array( 'slug' => $key, 'title' => snn_snippet_title( $key ) ), $revision->post_content, null, snn_snippet_get_settings( $id ) );
         } else {
             add_settings_error( 'snn-custom-codes', 'restore_failed', esc_html__( 'Failed to restore revision. Invalid ID or permissions.', 'snn' ), 'error' );
         }
@@ -4776,12 +4793,6 @@ function snn_snippets_handle_editor_post() {
         $code = snn_snippet_strip_open_tag( $code );
     }
 
-    $test_url = isset( $_POST['snn_test_url'] ) ? esc_url_raw( trim( (string) wp_unslash( $_POST['snn_test_url'] ) ) ) : '';
-    if ( '' !== $test_url && ! snn_snippet_is_own_url( $test_url ) ) {
-        add_settings_error( 'snn-custom-codes', 'test_url', esc_html__( 'The test URL must be a page of this site, so it was cleared.', 'snn' ), 'warning' );
-        $test_url = '';
-    }
-
     if ( ! $id ) {
         $id = wp_insert_post( array(
             'post_type'    => 'snn_code_snippet',
@@ -4803,8 +4814,8 @@ function snn_snippets_handle_editor_post() {
         snn_snippets_rebuild_cache();
     }
 
-    update_post_meta( $id, SNN_SNIPPET_META_TEST_URL, $test_url );
-    snn_snippet_process_save( array( 'slug' => $key, 'title' => $title ), $code, isset( $_POST['snn_active'] ), $settings, $test_url );
+    delete_post_meta( $id, '_snn_test_url' ); // Leftover from the removed "Test on this URL" field.
+    snn_snippet_process_save( array( 'slug' => $key, 'title' => $title ), $code, isset( $_POST['snn_active'] ), $settings );
 
     if ( ! get_settings_errors( 'snn-custom-codes' ) ) {
         add_settings_error( 'snn-custom-codes', 'saved', esc_html__( 'Snippet saved.', 'snn' ), 'updated' );
@@ -4851,7 +4862,7 @@ function snn_ajax_snippet_search_posts() {
     $types = array_values( get_post_types( array( 'public' => true ) ) );
     $args  = array(
         'post_type'        => $types,
-        'post_status'      => 'publish',
+        'post_status'      => array( 'publish', 'draft', 'pending', 'future', 'private' ),
         'posts_per_page'   => 20,
         'no_found_rows'    => true,
         'suppress_filters' => true,
@@ -4868,12 +4879,7 @@ function snn_ajax_snippet_search_posts() {
 
     $found = array();
     foreach ( get_posts( $args ) as $post ) {
-        $type    = get_post_type_object( $post->post_type );
-        $found[] = array(
-            'id'    => (int) $post->ID,
-            'title' => '' !== $post->post_title ? $post->post_title : '#' . $post->ID,
-            'type'  => $type ? $type->labels->singular_name : $post->post_type,
-        );
+        $found[] = array( 'id' => (int) $post->ID ) + snn_snippet_post_label( $post );
     }
     wp_send_json_success( $found );
 }
@@ -5121,7 +5127,6 @@ function snn_snippets_render_editor() {
     $title      = $id ? (string) get_post_field( 'post_title', $id ) : '';
     $on         = $id && snn_snippet_is_enabled( $key );
     $pending_on = $draft && ! empty( $draft['switch_on'] );
-    $test_url   = $id ? (string) get_post_meta( $id, SNN_SNIPPET_META_TEST_URL, true ) : '';
     $error      = $id ? snn_snippet_get_error( $key ) : false;
     $types      = snn_snippet_code_types();
     $map        = snn_snippet_location_map();
@@ -5135,7 +5140,7 @@ function snn_snippets_render_editor() {
         foreach ( $group as $rule ) {
             if ( 'post_id' === $rule['rule'] ) {
                 foreach ( snn_snippet_rule_post_ids( $rule['value'] ) as $post_id ) {
-                    $post_titles[ $post_id ] = get_the_title( $post_id );
+                    $post_titles[ $post_id ] = snn_snippet_post_label( $post_id );
                 }
             }
         }
@@ -5286,13 +5291,6 @@ function snn_snippets_render_editor() {
                         <div>
                             <input type="number" id="snn_priority" name="snn_priority" class="small-text" min="0" max="9999" step="1" value="<?php echo (int) $settings['priority']; ?>">
                             <span class="description"><?php esc_html_e( 'Lower runs first. Snippets with the same priority run oldest first.', 'snn' ); ?></span>
-                        </div>
-                    </div>
-                    <div class="snn-field">
-                        <label for="snn_test_url"><strong><?php esc_html_e( 'Test on this URL', 'snn' ); ?></strong></label>
-                        <div>
-                            <input type="url" id="snn_test_url" name="snn_test_url" class="regular-text" value="<?php echo esc_attr( $test_url ); ?>" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>">
-                            <p class="description"><?php esc_html_e( 'Optional. Front-end test pages load this URL. Leave empty to use a page that matches the conditions (for example the newest product for "Post type is Product"), or else the home page.', 'snn' ); ?></p>
                         </div>
                     </div>
                 </div>
