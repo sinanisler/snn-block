@@ -59,7 +59,8 @@ function snn_block_edit_find_section( array $blocks, $anchor, $identifier ) {
     }
     $needle = mb_strtolower( trim( $identifier ) );
     foreach ( $blocks as $index => $block ) {
-        if ( 'core/heading' !== ( $block['blockName'] ?? '' ) ) {
+        // In sections mode a section is a Custom HTML block that holds its headings, so it can match too.
+        if ( ! in_array( $block['blockName'] ?? '', array( 'core/heading', 'core/html' ), true ) ) {
             continue;
         }
         if ( false !== mb_strpos( mb_strtolower( snn_block_edit_text( $block ) ), $needle ) ) {

@@ -10,7 +10,9 @@
  *  - _snn_page_scripts  https URLs of script files, loaded before _snn_page_js.
  *
  * Output: on the front end of that post only. CSS goes in the head after the theme
- * styles; scripts and JavaScript go in the footer, in that order.
+ * styles; scripts and JavaScript go in the footer, in that order. The same CSS also
+ * goes into the block editor canvas (scoped by WordPress), so the editor shows the
+ * design as the front end does. JavaScript does not run in the editor.
  *
  * Saving CSS, JavaScript or script files needs unfiltered_html (administrators have
  * it). Without it the content is passed through wp_kses_post and no code is kept.
@@ -182,6 +184,63 @@ function snn_page_code_print_head() {
     }
     // A stylesheet cannot be closed early from inside the CSS text.
     echo "<style id=\"snn-page-css\">\n" . str_ireplace( '</style', '<\/style', $css ) . "\n</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+}
+
+/**
+ * Editor-only layout reset for the snn-canvas template. The editor's root block list
+ * is the content box, so it gets the same reset as the front end's content wrapper.
+ */
+function snn_page_code_editor_reset() {
+    return '.is-root-container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}'
+        . '.is-root-container>*{max-width:none!important;margin-inline:0!important;margin-block:0!important}'
+        . snn_page_code_canvas_reset();
+}
+
+/** Declarations of the html and body rules in a stylesheet, joined with ';'. */
+function snn_page_code_root_declarations( $css ) {
+    $found = array();
+    if ( preg_match_all( '~(?:^|[\s;}])(?:html|body)\s*\{([^{}]*)\}~i', (string) $css, $matches ) ) {
+        $found = $matches[1];
+    }
+    return trim( implode( ';', $found ), " \t\r\n;" );
+}
+
+/**
+ * Page CSS in the block editor canvas. WordPress scopes these rules to the canvas
+ * (body and :root rules map to the canvas wrapper), so the design's CSS is used
+ * unchanged. Only posts that have page CSS get an entry.
+ */
+add_filter( 'block_editor_settings_all', 'snn_page_code_editor_styles', 10, 2 );
+function snn_page_code_editor_styles( $settings, $context ) {
+    $post = isset( $context->post ) ? $context->post : null;
+    if ( ! $post instanceof WP_Post || ! is_array( $settings ) ) {
+        return $settings;
+    }
+    $code = snn_page_code_for_post( $post->ID );
+    if ( '' === trim( $code['css'] ) ) {
+        return $settings;
+    }
+    $css = $code['css'];
+    if ( 'snn-canvas' === get_page_template_slug( $post ) ) {
+        $css = snn_page_code_editor_reset() . "\n" . $css;
+    }
+    // The canvas is a wrapper element, not the page's body, so the body's own
+    // declarations (background, text colour, font) are copied onto it. The doubled
+    // class beats the editor's global body styles.
+    $root = snn_page_code_root_declarations( $code['css'] );
+    if ( '' !== $root ) {
+        $css = '.editor-styles-wrapper.editor-styles-wrapper{' . $root . "}\n" . $css;
+    }
+    // The design's body overflow would make the canvas wrapper a scroll container, which breaks sticky elements.
+    $css .= "\n.editor-styles-wrapper{overflow:visible!important}";
+    // Decorative overlays that scripts remove on the front end (converter class snn-decor) would cover the canvas.
+    $css .= "\n.editor-styles-wrapper .snn-decor{display:none!important}";
+    $settings['styles'][] = array(
+        'css'            => $css,
+        '__unstableType' => 'snn-page',
+        'isGlobalStyles' => false,
+    );
+    return $settings;
 }
 
 add_action( 'wp_footer', 'snn_page_code_print_footer', 99 );

@@ -10,6 +10,16 @@
  * a Custom HTML block, so the editor opens it without "invalid block" errors and
  * nothing from the design is lost.
  *
+ * Two modes (the "mode" argument):
+ *  - sections (default): each design section (a top-level section, header, footer,
+ *    nav or class-bearing wrapper) is ONE Custom HTML block that keeps the design
+ *    markup exactly. Its headings and paragraphs are native core/heading and
+ *    core/paragraph blocks placed inside that block, so the text is editable in
+ *    place and the layout stays the design's own. Every block is named from its
+ *    design class (List View shows "Hero / title", "Services", ...).
+ *  - blocks: the older per-element conversion (groups, lists, buttons, images), with
+ *    a Custom HTML block only where a core block cannot keep the markup.
+ *
  * Styling is moved out of the markup:
  *  - every inline style="" becomes a generated class (snn-xxxxxxxx) and a rule in
  *    the returned CSS, so the block keeps its look and stays valid;
@@ -41,6 +51,15 @@ class SNN_HTML_To_Blocks {
     /** Wrapper tags a group can keep (core/group tagName). */
     const GROUP_TAGS = array( 'div', 'section', 'header', 'footer', 'main', 'article', 'aside' );
 
+    /** Elements that make a section in sections mode (one Custom HTML block each). */
+    const SECTION_TAGS = array( 'section', 'header', 'footer', 'nav', 'article', 'aside' );
+
+    /** Text elements that become native text blocks inside a section (sections mode). */
+    const LEAF_TAGS = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p' );
+
+    /** Attributes a text element may carry to become a native block. Others (data-*, aria-*, on*) keep it as HTML. */
+    const LEAF_ATTRS = array( 'class', 'id', 'style' );
+
     /** Attributes a rich-text run can keep on its tags. Everything else is dropped. */
     const RICH_ATTRS = array( 'href', 'target', 'rel' );
 
@@ -57,21 +76,26 @@ class SNN_HTML_To_Blocks {
     private $fallbacks    = 0;
     private $warnings     = array();
     private $dropped_attr = 0;
+    private $mode        = 'sections';
+    private $leaves      = 0;
+    private $fixed       = null;
 
     /**
      * Convert HTML to block markup.
      *
      * @param string $html Design markup. Block markup (containing "<!-- wp:") is passed through normalized.
      * @param array  $args allow_code (bool): keep <script> tags as page scripts.
-     * @return array { markup, css, scripts: { src, inline }, fonts, report: { blocks, html_fallbacks, warnings } }
+     *                     mode ('sections' | 'blocks'): see the file header. Default 'sections'.
+     * @return array { markup, css, scripts: { src, inline }, fonts, report: { blocks, html_fallbacks, editable_text, warnings } }
      */
     public static function convert( $html, $args = array() ) {
-        $converter = new self( ! empty( $args['allow_code'] ) );
+        $converter = new self( ! empty( $args['allow_code'] ), $args['mode'] ?? 'sections' );
         return $converter->run( (string) $html );
     }
 
-    private function __construct( $allow_code ) {
+    private function __construct( $allow_code, $mode = 'sections' ) {
         $this->allow_code = (bool) $allow_code;
+        $this->mode       = 'blocks' === $mode ? 'blocks' : 'sections';
     }
 
     private function run( $html ) {
@@ -111,7 +135,8 @@ class SNN_HTML_To_Blocks {
 
         $this->extract_page_code( $root );
 
-        $blocks = $this->nodes_to_blocks( iterator_to_array( $root->childNodes ) );
+        $children = iterator_to_array( $root->childNodes );
+        $blocks   = 'blocks' === $this->mode ? $this->nodes_to_blocks( $children ) : $this->section_nodes( $children );
 
         return $this->result( implode( "\n\n", $blocks ), $blocks, null );
     }
@@ -137,6 +162,7 @@ class SNN_HTML_To_Blocks {
                 'blocks'         => null !== $counts ? $counts : $this->counts,
                 'html_fallbacks' => $this->fallbacks,
                 'dropped_attributes' => $this->dropped_attr,
+                'editable_text'  => $this->leaves,
                 'warnings'       => array_values( array_unique( $this->warnings ) ),
             ),
         );
@@ -336,6 +362,266 @@ class SNN_HTML_To_Blocks {
         }
 
         return array( $this->fallback( $el ) );
+    }
+
+    /* ----------------------------------------------------------------------
+     * Sections mode: one Custom HTML block per section, text leaves native
+     * ------------------------------------------------------------------- */
+
+    /** Sibling nodes in sections mode: sections, native text blocks, or runs of inline text. */
+    private function section_nodes( array $nodes ) {
+        $blocks = array();
+        $run    = array();
+
+        foreach ( $nodes as $node ) {
+            if ( XML_COMMENT_NODE === $node->nodeType || XML_ELEMENT_NODE !== $node->nodeType && XML_TEXT_NODE !== $node->nodeType ) {
+                continue;
+            }
+            if ( $this->is_inline( $node ) ) {
+                $run[] = $node;
+                continue;
+            }
+            $this->flush_run( $run, $blocks );
+            $run = array();
+            foreach ( $this->section_blocks( $node ) as $block ) {
+                $blocks[] = $block;
+            }
+        }
+        $this->flush_run( $run, $blocks );
+
+        return $blocks;
+    }
+
+    /** One element in sections mode: a native text block, a section block, or the sections inside a plain wrapper. */
+    private function section_blocks( DOMElement $el ) {
+        if ( $this->is_leaf( $el ) ) {
+            $block = $this->leaf_block( $el );
+            return $block ? array( $block ) : array();
+        }
+        // A wrapper without a class (main, a plain div) is not a section itself: walk into it when it holds sections.
+        $tag = strtolower( $el->nodeName );
+        if ( in_array( $tag, array( 'div', 'main' ), true ) && '' === trim( (string) $el->getAttribute( 'class' ) ) && $this->has_section_child( $el ) ) {
+            return $this->section_nodes( iterator_to_array( $el->childNodes ) );
+        }
+        return array( $this->section_block( $el ) );
+    }
+
+    /** True when a wrapper holds at least one section-like child (a section tag or a classed element). */
+    private function has_section_child( DOMElement $el ) {
+        foreach ( $el->childNodes as $child ) {
+            if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+                continue;
+            }
+            if ( in_array( strtolower( $child->nodeName ), self::SECTION_TAGS, true ) || '' !== trim( (string) $child->getAttribute( 'class' ) ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A heading or paragraph that can be a native text block: plain attributes, rich-text content, some text. */
+    private function is_leaf( DOMElement $el ) {
+        if ( ! in_array( strtolower( $el->nodeName ), self::LEAF_TAGS, true ) ) {
+            return false;
+        }
+        foreach ( $el->attributes as $attr ) {
+            if ( ! in_array( strtolower( $attr->nodeName ), self::LEAF_ATTRS, true ) ) {
+                return false;
+            }
+        }
+        $children = iterator_to_array( $el->childNodes );
+        if ( 'p' === strtolower( $el->nodeName ) && ! $this->only_inline( $children ) ) {
+            return false;
+        }
+        foreach ( $el->getElementsByTagName( '*' ) as $child ) {
+            if ( $child->hasAttribute( 'data-snn-raw' ) ) {
+                return false;
+            }
+        }
+        $rich = $this->rich_nodes( $children );
+        return null !== $rich && '' !== trim( strip_tags( $rich ) );
+    }
+
+    /** core/heading or core/paragraph for a text leaf, named from the design. Null when it cannot be a native block. */
+    private function leaf_block( DOMElement $el ) {
+        $tag  = strtolower( $el->nodeName );
+        $rich = $this->rich_nodes( iterator_to_array( $el->childNodes ) );
+        if ( null === $rich ) {
+            return null;
+        }
+        list( $attrs, $classes ) = $this->common( $el );
+        $attrs = array( 'metadata' => array( 'name' => $this->node_name( $el, true ) ) ) + $attrs;
+        $this->leaves++;
+
+        if ( 'p' === $tag ) {
+            return $this->block( 'paragraph', $attrs, '<p' . $this->class_attr( $classes ) . $this->id_attr( $attrs ) . '>' . trim( $rich ) . '</p>' );
+        }
+        $level = (int) substr( $tag, 1 );
+        if ( 2 !== $level ) {
+            $attrs = array( 'level' => $level ) + $attrs;
+        }
+        return $this->block( 'heading', $attrs, '<' . $tag . $this->class_attr( array_merge( array( 'wp-block-heading' ), $classes ) ) . $this->id_attr( $attrs ) . '>' . trim( $rich ) . '</' . $tag . '>' );
+    }
+
+    /**
+     * A design section as one Custom HTML block: the static markup, with each text
+     * leaf replaced by its native block at the same place.
+     */
+    private function section_block( DOMElement $el ) {
+        $pieces = array();
+        $this->swap_leaves( $el, $pieces );
+        $this->mark_decor( $el );
+        $this->static_styles( $el );
+
+        $html = $this->restore_raw( $this->doc->saveHTML( $el ) );
+        $html = preg_replace_callback(
+            '/SNNLEAF(\d+)X/',
+            function ( $m ) use ( $pieces ) {
+                return "\n" . $pieces[ (int) $m[1] ] . "\n";
+            },
+            $html
+        );
+
+        $attrs = array( 'metadata' => array( 'name' => $this->node_name( $el ) ) );
+        $id    = trim( (string) $el->getAttribute( 'id' ) );
+        if ( '' !== $id && preg_match( '/^[A-Za-z][A-Za-z0-9_\-:.]*$/', $id ) ) {
+            $attrs['anchor'] = $id;
+        }
+        $this->fallbacks++;
+        return $this->block( 'html', $attrs, trim( $html ) );
+    }
+
+    /** Replace each text leaf under $el by a token; the leaf blocks go to $pieces in the same order. */
+    private function swap_leaves( DOMElement $el, array &$pieces ) {
+        $xpath = new DOMXPath( $this->doc );
+        $found = $xpath->query( './/h1|.//h2|.//h3|.//h4|.//h5|.//h6|.//p', $el );
+        foreach ( iterator_to_array( $found ) as $leaf ) {
+            if ( ! $leaf->parentNode || ! $this->is_leaf( $leaf ) ) {
+                continue;
+            }
+            $block = $this->leaf_block( $leaf );
+            if ( null === $block ) {
+                continue;
+            }
+            $pieces[] = $block;
+            $leaf->parentNode->replaceChild( $this->doc->createTextNode( 'SNNLEAF' . ( count( $pieces ) - 1 ) . 'X' ), $leaf );
+        }
+    }
+
+    /**
+     * Decoration that is fixed on screen and hidden from assistive tech (intro loader,
+     * cursor dots) gets the class snn-decor. The front end's scripts remove or hide it;
+     * the block editor runs no scripts, so page CSS hides it there.
+     */
+    private function mark_decor( DOMElement $el ) {
+        $fixed = $this->fixed_classes();
+        if ( ! $fixed ) {
+            return;
+        }
+        $nodes = iterator_to_array( $el->getElementsByTagName( '*' ) );
+        array_unshift( $nodes, $el );
+        foreach ( $nodes as $node ) {
+            if ( 'true' !== $node->getAttribute( 'aria-hidden' ) ) {
+                continue;
+            }
+            foreach ( preg_split( '/\s+/', trim( (string) $node->getAttribute( 'class' ) ), -1, PREG_SPLIT_NO_EMPTY ) as $class ) {
+                if ( isset( $fixed[ $class ] ) ) {
+                    $node->setAttribute( 'class', trim( $node->getAttribute( 'class' ) . ' snn-decor' ) );
+                    break;
+                }
+            }
+        }
+    }
+
+    /** Class names that the design CSS sets to position: fixed. Read once per conversion. */
+    private function fixed_classes() {
+        if ( null === $this->fixed ) {
+            $this->fixed = array();
+            $css         = implode( "\n", $this->css_blocks );
+            // Every rule whose declarations set position: fixed; all classes of its selector list count.
+            if ( preg_match_all( '/([^{}]+)\{[^{}]*position\s*:\s*fixed/i', $css, $rules ) ) {
+                foreach ( $rules[1] as $selectors ) {
+                    if ( preg_match_all( '/\.([A-Za-z_][\w-]*)/', $selectors, $names ) ) {
+                        foreach ( $names[1] as $class ) {
+                            $this->fixed[ $class ] = true;
+                        }
+                    }
+                }
+            }
+        }
+        return $this->fixed;
+    }
+
+    /** Inline style="" on the static part becomes a generated class and a rule, as in the other modes. */
+    private function static_styles( DOMElement $el ) {
+        $nodes = iterator_to_array( $el->getElementsByTagName( '*' ) );
+        array_unshift( $nodes, $el );
+        foreach ( $nodes as $node ) {
+            if ( ! $node->hasAttribute( 'style' ) ) {
+                continue;
+            }
+            $classes = $this->classes( $node );
+            $this->style_class( $node, $classes );
+            $node->setAttribute( 'class', implode( ' ', array_values( array_unique( $classes ) ) ) );
+            $node->removeAttribute( 'style' );
+        }
+    }
+
+    /**
+     * Name shown in List View, taken from the design: the first usable class (BEM read
+     * as "Block / element"), then the id, then the tag. Text without a class gets its tag.
+     */
+    private function node_name( DOMElement $el, $with_parent = false ) {
+        $tag   = strtolower( $el->nodeName );
+        $label = $this->class_label( $el );
+        if ( '' === $label && 'p' !== $tag && ! preg_match( '/^h[1-6]$/', $tag ) ) {
+            $label = $this->humanize( (string) $el->getAttribute( 'id' ) );
+        }
+        if ( '' !== $label ) {
+            return $label;
+        }
+
+        if ( 'p' === $tag ) {
+            $label = 'Paragraph';
+        } elseif ( preg_match( '/^h([1-6])$/', $tag, $m ) ) {
+            $label = 'Heading ' . $m[1];
+        } else {
+            $label = ucfirst( $tag );
+        }
+        // Text without its own class is named after the nearest classed element around it.
+        $parent = $with_parent ? $this->ancestor_label( $el ) : '';
+        return '' !== $parent ? $parent . ' / ' . $label : $label;
+    }
+
+    /** Label of the first usable class of an element ("hero__title" becomes "Hero / title"), or ''. */
+    private function class_label( DOMElement $el ) {
+        foreach ( $this->classes( $el ) as $class ) {
+            if ( preg_match( '/^(container|wrap|wrapper|inner|grid|row|col|is-|has-|js-)/i', $class ) ) {
+                continue;
+            }
+            return $this->humanize( $class );
+        }
+        return '';
+    }
+
+    /** Label of the nearest ancestor with a usable class, or ''. */
+    private function ancestor_label( DOMElement $el ) {
+        for ( $node = $el->parentNode; $node instanceof DOMElement; $node = $node->parentNode ) {
+            if ( 'snn-root' === $node->getAttribute( 'id' ) ) {
+                break;
+            }
+            $label = $this->class_label( $node );
+            if ( '' !== $label ) {
+                return $label;
+            }
+        }
+        return '';
+    }
+
+    private function humanize( $text ) {
+        $name = str_replace( array( '__', '--' ), ' / ', (string) $text );
+        $name = str_replace( array( '-', '_' ), ' ', $name );
+        return mb_substr( ucfirst( trim( $name ) ), 0, 60 );
     }
 
     /** Elements and attributes that a native block cannot keep, so the element stays as HTML. */
