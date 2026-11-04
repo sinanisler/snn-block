@@ -1,0 +1,223 @@
+
+.snn-rich-text-editor-container {
+    max-width: 100%;
+    margin: 1em 0;
+    background: #fff;
+    border-radius: 8px;
+    position: relative;
+}
+
+.snn-rich-text-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+    padding: 6px;
+    background: #f8f9fa;
+    border-radius: 5px 5px 0 0;
+}
+
+/* Groups dissolve so every control wraps on its own and rows fill up evenly. */
+.snn-rich-text-editor-toolbar-group {
+    display: contents;
+}
+/* Keep each color label next to its swatch. */
+.snn-rich-text-editor-toolbar-group:has(.snn-rich-text-editor-color-picker) {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.snn-rich-text-editor-toolbar-group label {
+    font-size: 12px;
+}
+
+.snn-rich-text-editor-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 26px;
+    min-width: 26px;
+    padding: 0 6px;
+    line-height: 1;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: .2s;
+}
+.snn-rich-text-editor-btn:hover {
+    background: #e9ecef;
+}
+.snn-rich-text-editor-btn.active {
+    background: #e2e5e9;
+}
+
+.snn-rich-text-editor-select {
+    box-sizing: border-box;
+    height: 26px !important;
+    min-height: 26px !important;
+    line-height: 1 !important;
+    font-size: 13px !important;
+    padding: 0 20px 0 6px !important;
+    background-position: right 4px top 55% !important;
+    background-size: 12px 12px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0;
+    flex: 0 0 auto;
+    margin:0 !important;
+}
+
+.snn-rich-text-editor-font-family {
+    min-width: 150px;
+}
+
+.snn-rich-text-editor-color-picker {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    background: none;
+    border-radius: 5px;
+}
+
+.snn-rich-text-editor-main {
+    min-height: 200px;
+    padding: 10px;
+    outline: none;
+    overflow-y: auto;
+    line-height: 1.6;
+    border-radius: 0 0 5px 5px;
+    background: #f8f9fa;
+}
+.snn-rich-text-editor-main:focus {
+    box-shadow: inset 0 0 0 1px #1971c2;
+}
+.snn-rich-text-editor-main img {
+    max-width: 100%;
+    height: auto;
+}
+
+.snn-rich-text-editor-image-tools {
+    display: none;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 6px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #eee;
+}
+.snn-rich-text-editor-main img.snn-img-align-left {
+    float: left;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+.snn-rich-text-editor-main img.snn-img-align-right {
+    float: right;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+.snn-rich-text-editor-main img.snn-img-align-center {
+    display: block;
+    float: none;
+    margin: auto;
+    margin-bottom: 10px;
+}
+.snn-rich-text-editor-main img.snn-img-align-none {
+    display: block;
+    float: none;
+    margin: 0 0 10px;
+}
+.snn-rich-text-editor-main img.snn-selected-image {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+.snn-rich-text-editor-main p {
+    margin: 0 0 1em 0;
+}
+
+/* Restore content styles that wp-admin's common.css resets (lists, quotes, headings). */
+.snn-rich-text-editor-main ul,
+.snn-rich-text-editor-main ol {
+    margin: 0 0 1em 0;
+    padding-left: 1.8em;
+}
+.snn-rich-text-editor-main ul { list-style: disc outside; }
+.snn-rich-text-editor-main ul ul { list-style-type: circle; }
+.snn-rich-text-editor-main ul ul ul { list-style-type: square; }
+.snn-rich-text-editor-main ol { list-style: decimal outside; }
+.snn-rich-text-editor-main ol ol { list-style-type: lower-alpha; }
+.snn-rich-text-editor-main ol ol ol { list-style-type: lower-roman; }
+.snn-rich-text-editor-main li {
+    display: list-item;
+    margin: 0 0 .3em 0;
+}
+.snn-rich-text-editor-main li > ul,
+.snn-rich-text-editor-main li > ol {
+    margin: .3em 0 0 0;
+}
+.snn-rich-text-editor-main blockquote {
+    margin: 0 0 1em 0;
+    padding: .5em 1em;
+    border-left: 4px solid #c3c4c7;
+    background: #fff;
+    color: #50575e;
+    font-style: italic;
+}
+.snn-rich-text-editor-main blockquote p:last-child { margin-bottom: 0; }
+.snn-rich-text-editor-main hr {
+    border: 0;
+    border-top: 1px solid #c3c4c7;
+    margin: 1.2em 0;
+}
+.snn-rich-text-editor-main h2,
+.snn-rich-text-editor-main h3,
+.snn-rich-text-editor-main h4,
+.snn-rich-text-editor-main h5,
+.snn-rich-text-editor-main h6 {
+    margin: 0 0 .6em 0;
+    line-height: 1.3;
+    font-weight: 600;
+    color: inherit;
+}
+.snn-rich-text-editor-main h2 { font-size: 1.6em; }
+.snn-rich-text-editor-main h3 { font-size: 1.35em; }
+.snn-rich-text-editor-main h4 { font-size: 1.15em; }
+.snn-rich-text-editor-main h5 { font-size: 1em; }
+.snn-rich-text-editor-main h6 { font-size: .9em; text-transform: uppercase; }
+.snn-rich-text-editor-main pre {
+    margin: 0 0 1em 0;
+    padding: .6em .8em;
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 4px;
+    font-family: Consolas, Monaco, monospace;
+    white-space: pre-wrap;
+}
+.snn-rich-text-editor-main a { color: #2271b1; text-decoration: underline; }
+
+/* HTML source mode */
+.snn-rich-text-editor-source-mode {
+    margin-bottom: 0;
+}
+.snn-rich-text-editor-source-mode .snn-rich-text-editor-toolbar-group:not(:last-child) > * {
+    opacity: .4;
+    pointer-events: none;
+}
+textarea.snn-rich-text-editor-source {
+    width: 100%;
+    max-width: 100% !important;
+    min-height: 200px !important;
+    box-sizing: border-box;
+    display: block;
+    margin: 0;
+    resize: vertical;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    background: #f8f9fa;
+}
