@@ -1004,6 +1004,9 @@ class SNN_HTML_To_Blocks {
         $this->fallbacks++;
         $html = '';
         foreach ( $nodes as $node ) {
+            if ( $node instanceof DOMElement ) {
+                $this->static_styles( $node );
+            }
             $html .= $this->doc->saveHTML( $node );
         }
         return $this->block( 'html', array(), $this->restore_raw( $html ) );
@@ -1011,6 +1014,9 @@ class SNN_HTML_To_Blocks {
 
     private function fallback( DOMNode $node ) {
         $this->fallbacks++;
+        if ( $node instanceof DOMElement ) {
+            $this->static_styles( $node );
+        }
         return $this->block( 'html', array(), $this->restore_raw( $this->doc->saveHTML( $node ) ) );
     }
 
