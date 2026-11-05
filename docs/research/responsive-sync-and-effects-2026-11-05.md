@@ -1,6 +1,6 @@
 # Viewport sync, effects and the Style tab (5 Nov 2026)
 
-Research and a v2 panel mock. Nothing is built into the theme. Nothing is committed.
+Research on responsive sync and effects. Nothing is built into the theme. Nothing is committed.
 
 Sources: WordPress 7.1.4 on blocks.local (`wp-includes/js/dist/editor.js` and `block-editor.js`), a live probe on blocks.local, and Bricks 2.4.5 on bricks.local (`includes/`, `assets/js/frontend.js`).
 
@@ -75,21 +75,6 @@ Nine group cards (`elements/base.php` 274 to 330, matching the screenshot you se
 - Flex and grid primitives are on the Content (default) tab (`bricks-foundation-controls-2026-11-05.md`): display, direction, wrap, justify, align, row and column gap, grid templates, flex grow, shrink and basis, order.
 
 Responsiveness: `base.php` has no per-control `responsive` flag (0 matches), so the source does not say which controls take breakpoint values. The live builder would show it. Not checked yet, so we do not claim opacity or overflow is per-breakpoint in Bricks.
-
-## 5. The v2 mock
-
-Files (in `docs/research/controls-screens-2026-11-05/lab/`):
-- `panel-v2.html`: the mock. Opens with `?tab=default|style&device=desktop|tablet|mobile`.
-- `panel-v2-default-desktop.png`, `panel-v2-style-tablet.png`, `panel-v2-style-mobile.png`: panel captures at 2x.
-- `live-editor-tablet-canvas.png`, `live-editor-desktop-canvas.png`: the blocks.local editor after `setDeviceType`.
-
-What the mock shows:
-- Header: the element and a Desktop, Tablet and Mobile switch. The selected segment shows the view being edited, so there is no extra line. The switch is meant to be two-way with the editor View menu.
-- Default tab: Element (tag), Layout (display, direction, justify), and Effects (trigger, visible at %, animation, start state, duration, delay, run once). Effects are marked "all viewports". Opacity and overflow are not here any more (v1 had them).
-- Style tab: Spacing (padding top and bottom, gap), Size (max width), Visibility (opacity, overflow), then six collapsed cards.
-- Per-viewport logic: a value is either set for this view (blue dot, "set for Tablet", Reset) or inherited from the wider view ("from Desktop (96 px)"). Mobile inherits from Tablet, then Desktop.
-
-Not in the mock: a real connection to WordPress. It is a static prototype of the controls and their states.
 
 ## 6. Decisions (for you)
 

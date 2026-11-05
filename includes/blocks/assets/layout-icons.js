@@ -1,6 +1,6 @@
 /**
  * SNN layout icons: the pictures of the flex and grid settings, drawn as in the version 12 mock (the panel
- * previews: docs/research/controls-screens-2026-11-05/lab/panel-v2.html). Each picture is 14 by 14 with filled
+ * previews: docs/research/controls-screens-2026-11-05/lab/panel-v3.html). Each picture is 14 by 14 with filled
  * boxes and a line for the axis. A flex column turns its pictures a quarter turn (the rotated flag).
  *
  * Exposes window.snnLayoutIcons: main(value, rotated), cross(value, rotated), direction(value), columns(n).

@@ -5,9 +5,7 @@ Date: 2026-11-05. Site: blocks.local (WordPress 7.1.4). Reference: Bricks 2.4.5 
 ## Big picture
 
 - **Controllability is the real gap.** A user who wants to change a font size from 20 px to 30 px, a max width, a max height, or a flex or grid layout needs a control. Core blocks give a fixed subset. Bricks gives a control for almost every CSS property on every element.
-- **The fix is a universal style layer, not more core blocks.** We built a working prototype on blocks.local. Any block (core, SNN, or converted section) gets one "SNN style" panel. Values are stored per block and compiled to CSS, with breakpoints and a hover state. The font-size change from 30 px to 40 px saved and rendered on the front end.
 - **Design fidelity still matters, but it is not enough.** The earlier results (native rebuild, converter bug, Additional CSS limits) remain true and are listed below.
-- **The converter's Custom HTML sections are the blocker for control.** Each section has no controls at all. The universal layer fixes this by letting a section carry the same panel.
 
 ## 0. Priorities from your notes (5 Nov 2026)
 
@@ -183,28 +181,6 @@ Bricks writes 98 distinct CSS properties. Core's style vocabulary (theme.json pr
 
 The child theme adds 34 elements to Bricks. Their own controls: `snn-query-nestable` 44, `snn-video-player` 26, `snn-consent-cookie-block` 16, `conditions` 15, `frontend-post-form` 15, `animated-headline` 15, `snn-audio-player` 15, `snn-marquee-slider` 14, `comment-form` 14, `openstreetmap` 11, `snn-custom-cursor` 11, and others (flipbox, timeline, compare-image, matrix-rain, lottie, consent). Built-in Bricks elements were not enough for this site, and these 34 are the list SNN Block would need as blocks, not as a Bricks-only feature.
 
-## 2. The universal style layer: prototype results
-
-Prototype on blocks.local (lab plugin, not in the repo). Every block gets `snnStyle`: a per-block object with a stable id, base CSS values, and `tablet`, `mobile` and `hover` sub-objects. An "SNN style (lab)" panel in the sidebar sets the values. The PHP compiles them to one scoped class per block, adds the class to the block's first element on the front end (for static and dynamic blocks), and gives the editor the same CSS for saved content. Ten properties in the panel: font size, text colour, max width, max height, display, flex direction, justify content, gap, padding, opacity.
-
-| ID | Test | Result |
-|---|---|---|
-| U1 | Panel on core paragraph, core group, and Custom HTML (converter section) | Works. Paragraph and group show the panel in the default tab; Custom HTML shows it on the Settings tab (its Content tab is empty). [screenshot](screenshots-2026-11-05/universal-editor-html-settings.jpg) |
-| U2 | Front end, desktop: paragraph font size and max width | 30 px and 600 px. Verified. |
-| U3 | Front end, desktop: group layout and spacing | Display flex, row, gap 20 px, padding 24 px, max width 720 px. Verified. |
-| U4 | Front end, desktop: Custom HTML section | Padding 40 px, background colour, max height 300 px. Verified (a section that core cannot style). |
-| U5 | Responsive, tablet (700 px) and phone (400 px) | Paragraph 24 px at tablet and 18 px at phone. Group flex direction changes to column at 400 px. Verified. |
-| U6 | Hover state in the generated CSS | The rule is generated (`.class:hover`). Core cannot do this for a paragraph (T20). Not checked by hovering. |
-| U7 | Change font size 30 px to 40 px through the panel's data path, then save | Front end shows 40 px after save. Verified. |
-| U8 | Editor canvas after save and reload | Paragraph 30 px and then 40 px after reload, group flex, Custom HTML padding and max height. Verified. [screenshot](screenshots-2026-11-05/universal-editor-canvas.jpg) |
-| U9 | Editor canvas, live (before save) | **Does not update.** The canvas CSS comes from saved content. A live update needs JavaScript that injects the compiled CSS into the canvas document. Not built. |
-| U10 | Editor canvas, max width | **Not applied:** the canvas shows 645 px, not 600 px, because the editor's own layout rule wins on specificity. A doubled selector or `!important` in the editor CSS should fix it. Not tested. |
-| U11 | Grid template columns | Same code path as the other properties. Not separately tested. |
-
-Prototype size, as a cost indicator: about 110 lines of editor JavaScript and about 120 lines of PHP, for ten properties, two breakpoints and one state.
-
-What the prototype proves: any block can carry a Bricks-style control, the values survive save and the front end, responsive and state CSS can be generated for blocks that core would not allow, and Custom HTML sections can be styled. What it does not prove yet: the full control set, live preview in the editor, the editor specificity fix in general, global classes and variables, and interactions.
-
 ## 3. Verified results (earlier tests, still valid)
 
 | ID | Test | Result | Evidence |
@@ -260,21 +236,6 @@ Corrections to earlier notes: the 20 sections measured earlier are 25 across the
 | I. Block styles | Named variants | T11 | Limited to the variant |
 | J. Interactivity presets | Behaviour on the front end | T24 | Not visible in the editor; no no-code UI yet |
 | K. Bindings to post meta | Dynamic text | T27 | Meta registration |
-
-## 5. Recommendation (agency-first)
-
-Priority order, from your notes (section 0): the foundations first (section, container, text, image, video, and the global style system), then the rest of this list. The universal style layer is part of each foundation block, not a separate later step.
-
-1. **Build the universal style layer for every block.** Bricks-style controls on core blocks, SNN blocks and converted sections. Start with a declarative control list: a control has a type, a label, a group, a CSS property, and an optional condition. The same list drives the panel and the compiler, as in Bricks.
-2. **Convert sections to SNN containers, not Custom HTML.** A container carries the layer and holds inner blocks. The design's own CSS stays as the page's base layer, and the controls sit on top.
-3. **Keep core blocks where they fit** (heading, paragraph, button, image, list, table, query, navigation). The layer adds controls to them rather than replacing them.
-4. **Match Bricks' breakpoints and states at the API level.** Four breakpoints (Bricks defaults, configurable) and a set of states (hover, focus, active, focus-visible, disabled, first and last child), instead of core's two breakpoints and two-state allowlist.
-5. **Fix the editor preview.** Inject the compiled CSS into the canvas on every change (U9), and use a doubled selector or equivalent in the editor so the layout rules do not win (U10).
-6. **Add the global layer after the panel works:** global classes, variables and theme styles, the parts of Bricks that make a site consistent. Store them in theme.json so they ship with the theme.
-7. **Interactions last.** Use the Interactivity API with a curated set of the 17 triggers and 19 actions, and a few animation presets, not all 97.
-8. **Elements come from the child theme's list.** Prioritise the 34 `snn-*` elements by how many controls they need and how often they are used. Build as SNN blocks on the same layer.
-
-Immediate next step, if you agree: fix T1 (small, needs approval), then turn the prototype into a control schema of about 60 to 80 properties, with four breakpoints and the states above, and test it against the native rebuild of Neon Schedule.
 
 ## 6. Not tested
 
