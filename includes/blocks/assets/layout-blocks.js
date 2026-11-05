@@ -94,7 +94,12 @@
 	/** The block's attributes, with its own display and direction as their defaults. */
 	function withBlockLayout( attributes, name ) {
 		const own = layoutDefaults( name );
-		return Object.assign( {}, attributes, {
+		// The Style properties of the table (style-props.php): each an empty text attribute.
+		const style = {};
+		( window.snnStyleTable || [] ).forEach( ( row ) => {
+			style[ row[ 0 ] ] = { type: 'string', default: '' };
+		} );
+		return Object.assign( {}, attributes, style, {
 			display: { type: 'string', default: own.display },
 			flexDirection: { type: 'string', default: own.flexDirection },
 		} );
@@ -458,6 +463,11 @@
 		if ( a.backgroundColor && COLOR_OK.test( a.backgroundColor ) ) {
 			css.backgroundColor = a.backgroundColor;
 		}
+
+		// The Style properties (spacing, sizing, typography, background, gradient, border, transform, filters, transitions).
+		window.snnStyleProps.declarations( a, window.snnStyleTable || [] ).forEach( ( d ) => {
+			css[ window.snnStyleProps.camel( d[ 0 ] ) ] = d[ 1 ];
+		} );
 
 		return Object.keys( css ).length ? css : undefined;
 	}
@@ -1154,21 +1164,6 @@
 	}
 
 	/** The style settings: the background colour, with the colour variables first in its picker. */
-	function StyleFields( { a, set } ) {
-		return h(
-			Row,
-			{ label: __( 'Background', 'snn' ), changed: !! a.backgroundColor },
-			h( TextField, {
-				label: __( 'Background colour', 'snn' ),
-				value: a.backgroundColor,
-				placeholder: __( '#ffffff', 'snn' ),
-				variables: VARIABLE_GROUPS,
-				kind: 'color',
-				onChange: ( v ) => set( { backgroundColor: v } ),
-			} )
-		);
-	}
-
 	/** The three views of the header. The choice is the editor's own device, so the two move together. */
 	const VIEWS = [
 		{ value: 'Desktop', label: __( 'Desktop', 'snn' ), title: __( 'Desktop: base styles', 'snn' ) },
@@ -1263,6 +1258,73 @@
 			},
 			control
 		);
+	}
+
+	/** The rows of each Style group, in order. Each row is one property of the table (style-props.php) or a view value. */
+	const STYLE_GROUPS = {
+		spacing: [ 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap' ],
+		sizing: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ],
+		positioning: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ],
+		misc: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ],
+		typography: [ 'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textAlign', 'textTransform', 'textDecoration', 'textWrap', 'whiteSpace', 'textShadow' ],
+		background: [ 'backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat' ],
+		gradient: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ],
+		border: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius', 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ],
+		transform: [ 'transformOrigin', 'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY' ],
+		css: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia', 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ],
+	};
+
+	/** The label of each Style row. */
+	const STYLE_LABEL = {
+		marginTop: __( 'Margin top', 'snn' ), marginRight: __( 'Margin right', 'snn' ), marginBottom: __( 'Margin bottom', 'snn' ), marginLeft: __( 'Margin left', 'snn' ),
+		paddingTop: __( 'Padding top', 'snn' ), paddingBottom: __( 'Padding bottom', 'snn' ), paddingLeft: __( 'Padding left', 'snn' ), paddingRight: __( 'Padding right', 'snn' ), gap: __( 'Gap', 'snn' ),
+		width: __( 'Width', 'snn' ), minWidth: __( 'Min. width', 'snn' ), maxWidth: __( 'Max. width', 'snn' ), height: __( 'Height', 'snn' ), minHeight: __( 'Min. height', 'snn' ), maxHeight: __( 'Max. height', 'snn' ), aspectRatio: __( 'Aspect ratio', 'snn' ),
+		position: __( 'Position', 'snn' ), top: __( 'Top', 'snn' ), right: __( 'Right', 'snn' ), bottom: __( 'Bottom', 'snn' ), left: __( 'Left', 'snn' ), zIndex: __( 'Z-index', 'snn' ), scrollSnapAlign: __( 'Scroll snap', 'snn' ),
+		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
+		color: __( 'Colour', 'snn' ), fontFamily: __( 'Font family', 'snn' ), fontSize: __( 'Font size', 'snn' ), fontWeight: __( 'Font weight', 'snn' ), fontStyle: __( 'Font style', 'snn' ), lineHeight: __( 'Line height', 'snn' ), letterSpacing: __( 'Letter spacing', 'snn' ), textAlign: __( 'Text align', 'snn' ), textTransform: __( 'Text transform', 'snn' ), textDecoration: __( 'Decoration', 'snn' ), textWrap: __( 'Text wrap', 'snn' ), whiteSpace: __( 'White space', 'snn' ), textShadow: __( 'Text shadow', 'snn' ),
+		backgroundColor: __( 'Background colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
+		gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ), gradientColor1: __( 'Colour 1', 'snn' ), gradientStop1: __( 'Stop 1', 'snn' ), gradientColor2: __( 'Colour 2', 'snn' ), gradientStop2: __( 'Stop 2', 'snn' ),
+		borderWidth: __( 'Border width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
+		boxShadowX: __( 'Shadow x', 'snn' ), boxShadowY: __( 'Shadow y', 'snn' ), boxShadowBlur: __( 'Shadow blur', 'snn' ), boxShadowSpread: __( 'Shadow spread', 'snn' ), boxShadowColor: __( 'Shadow colour', 'snn' ),
+		transformOrigin: __( 'Origin', 'snn' ), translateX: __( 'Move x', 'snn' ), translateY: __( 'Move y', 'snn' ), rotate: __( 'Rotate', 'snn' ), scale: __( 'Scale', 'snn' ), skewX: __( 'Skew x', 'snn' ), skewY: __( 'Skew y', 'snn' ),
+		filterBlur: __( 'Blur', 'snn' ), filterBrightness: __( 'Brightness', 'snn' ), filterContrast: __( 'Contrast', 'snn' ), filterGrayscale: __( 'Grayscale', 'snn' ), filterHueRotate: __( 'Hue rotate', 'snn' ), filterInvert: __( 'Invert', 'snn' ), filterSaturate: __( 'Saturate', 'snn' ), filterSepia: __( 'Sepia', 'snn' ),
+		transitionProperty: __( 'Property', 'snn' ), transitionDuration: __( 'Duration', 'snn' ), transitionTiming: __( 'Timing', 'snn' ), transitionDelay: __( 'Delay', 'snn' ),
+	};
+
+	/** The unit a row shows after its field (sizes show px). */
+	const STYLE_UNIT = { opacity: '%', gradientAngle: 'deg', gradientStop1: '%', gradientStop2: '%', rotate: 'deg', skewX: 'deg', skewY: 'deg', filterBrightness: '%', filterContrast: '%', filterGrayscale: '%', filterInvert: '%', filterSaturate: '%', filterSepia: '%', filterHueRotate: 'deg' };
+	/** The rows that are colours, whatever the table says (the background colour is a view value). */
+	const STYLE_COLOUR = [ 'backgroundColor' ];
+	/** The view values that are not in the table: their types. */
+	const STYLE_EXTRA = { gap: 'size', paddingTop: 'size', paddingBottom: 'size', maxWidth: 'size', opacity: 'number' };
+	/** The types a size field shows px for. */
+	const STYLE_SIZE = [ 'length', 'margin', 'size', 'sizenone', 'width', 'lengthnormal', 'keywordlength' ];
+
+	/** The rows the table's types decide: a select for keywords, a colour field, a size field, or a plain field. */
+	function StyleRow( { a, set, device, k } ) {
+		const label = STYLE_LABEL[ k ] || k;
+		if ( k === 'overflow' ) {
+			return h( ViewValue, { a, set, device, k, label, kind: 'select', options: OVERFLOW_OPTIONS } );
+		}
+		const spec = ( window.snnStyleTable || [] ).find( ( row ) => row[ 0 ] === k );
+		const type = STYLE_COLOUR.indexOf( k ) !== -1 ? 'color' : spec ? spec[ 2 ] : STYLE_EXTRA[ k ] || 'text';
+		if ( type === 'keyword' ) {
+			const options = ( spec ? spec[ 3 ] : [] ).map( ( o ) => ( { value: o, label: o.charAt( 0 ).toUpperCase() + o.slice( 1 ) } ) );
+			return h( ViewValue, { a, set, device, k, label, kind: 'select', options } );
+		}
+		if ( type === 'color' ) {
+			return h( ViewValue, { a, set, device, k, label, kind: 'color' } );
+		}
+		if ( STYLE_SIZE.indexOf( type ) !== -1 || type === 'size' ) {
+			return h( ViewValue, { a, set, device, k, label, unit: ' px', kind: 'size', placeholder: '0' } );
+		}
+		return h( ViewValue, { a, set, device, k, label, unit: STYLE_UNIT[ k ] } );
+	}
+
+	/** The note of a card: how many of its rows are set. */
+	function countSet( a, keys ) {
+		const n = keys.filter( ( k ) => a[ k ] !== undefined && a[ k ] !== '' ).length;
+		return n ? n + ' ' + __( 'set', 'snn' ) : __( 'None', 'snn' );
 	}
 
 	/**
@@ -1383,38 +1445,28 @@
 			)
 		);
 
-		// Style: the values each view can set (spacing, size, visibility), then the collapsed groups of the mock.
+		// Style: the layout groups (spacing, sizing, positioning, misc), then the cards: typography, background,
+		// gradient, border and box shadow, transform, and the CSS filters and transitions. Each value is per view.
+		const styleRows = ( keys ) => keys.map( ( k ) => h( StyleRow, { key: k, a, set, device, k } ) );
+		const styleCard = ( title, keys ) =>
+			h(
+				Disclosure,
+				{ card: true, title, note: countSet( a, keys ) },
+				styleRows( keys )
+			);
 		const stylePane = h(
 			'div',
 			{ className: 'snn-pane' },
-			h(
-				Group,
-				{ title: __( 'Spacing', 'snn' ), note: __( 'responsive', 'snn' ) },
-				h( ViewValue, { a, set, device, k: 'paddingTop', label: __( 'Padding top', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } ),
-				h( ViewValue, { a, set, device, k: 'paddingBottom', label: __( 'Padding bottom', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } ),
-				h( ViewValue, { a, set, device, k: 'gap', label: __( 'Gap', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } )
-			),
-			h(
-				Group,
-				{ title: __( 'Size', 'snn' ), note: __( 'responsive', 'snn' ) },
-				h( ViewValue, { a, set, device, k: 'maxWidth', label: __( 'Max width', 'snn' ), unit: ' px', kind: 'size', placeholder: __( 'none', 'snn' ) } )
-			),
-			h(
-				Group,
-				{ title: __( 'Visibility', 'snn' ), note: __( 'responsive', 'snn' ) },
-				h( ViewValue, { a, set, device, k: 'opacity', label: __( 'Opacity', 'snn' ), unit: '%', kind: 'number', placeholder: '100' } ),
-				h( ViewValue, { a, set, device, k: 'overflow', label: __( 'Overflow', 'snn' ), kind: 'select', options: OVERFLOW_OPTIONS } )
-			),
-			h( Disclosure, { card: true, title: __( 'Typography', 'snn' ), note: __( 'Inherit', 'snn' ), planned: true } ),
-			h(
-				Disclosure,
-				{ card: true, title: __( 'Background', 'snn' ), note: a.backgroundColor || __( 'None', 'snn' ) },
-				h( StyleFields, { a, set } )
-			),
-			h( Disclosure, { card: true, title: __( 'Border / Box shadow', 'snn' ), note: __( 'None', 'snn' ), planned: true } ),
-			h( Disclosure, { card: true, title: __( 'Gradient / Overlay', 'snn' ), note: __( 'None', 'snn' ), planned: true } ),
-			h( Disclosure, { card: true, title: __( 'Transform', 'snn' ), note: __( 'Motion effects', 'snn' ), planned: true } ),
-			h( Disclosure, { card: true, title: __( 'CSS', 'snn' ), note: __( 'Filters, transition', 'snn' ), planned: true } )
+			h( Group, { title: __( 'Spacing', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.spacing ) ),
+			h( Group, { title: __( 'Sizing', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.sizing ) ),
+			h( Group, { title: __( 'Positioning', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.positioning ) ),
+			h( Group, { title: __( 'Misc', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.misc ) ),
+			styleCard( __( 'Typography', 'snn' ), STYLE_GROUPS.typography ),
+			styleCard( __( 'Background', 'snn' ), STYLE_GROUPS.background ),
+			styleCard( __( 'Gradient / Overlay', 'snn' ), STYLE_GROUPS.gradient ),
+			styleCard( __( 'Border / Box shadow', 'snn' ), STYLE_GROUPS.border ),
+			styleCard( __( 'Transform', 'snn' ), STYLE_GROUPS.transform ),
+			styleCard( __( 'CSS', 'snn' ), STYLE_GROUPS.css )
 		);
 
 		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.

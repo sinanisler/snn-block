@@ -26,5 +26,6 @@ require_once __DIR__ . '/block-defaults.php';
 require_once __DIR__ . '/global-styles.php';
 require_once __DIR__ . '/dynamic-data.php';
 require_once __DIR__ . '/query-loop.php';
+require_once __DIR__ . '/style-props.php';
 require_once __DIR__ . '/block-tools.php';
 require_once __DIR__ . '/layout-blocks.php';

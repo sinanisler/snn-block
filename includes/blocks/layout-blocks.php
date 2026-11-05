@@ -63,7 +63,7 @@ class SNN_Layout_Blocks {
 	);
 
 	/** The settings a view can set for itself. Each is the attribute of the same name. */
-	const VIEW_KEYS = array( 'gap', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow' );
+	const VIEW_KEYS = array( 'gap', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow', 'backgroundColor' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
@@ -147,7 +147,7 @@ class SNN_Layout_Blocks {
 			'query'          => array( 'type' => 'object', 'default' => SNN_Query_Loop::defaults() ),
 			'conditions'      => array( 'type' => 'array', 'default' => array() ),
 			'interactions'    => array( 'type' => 'array', 'default' => array() ),
-		);
+		) + SNN_Style_Props::attributes();
 	}
 
 	/* ------------------------------------------------------------------
@@ -407,7 +407,8 @@ class SNN_Layout_Blocks {
 			$css[] = 'overflow:' . $overflow;
 		}
 
-		return implode( ';', $css );
+		// The Style groups (spacing, sizing, typography, background, border, transform, filters, transitions).
+		return implode( ';', array_merge( $css, SNN_Style_Props::declarations( $a ) ) );
 	}
 
 	/** A length for spacing and width: px, rem, em, %, vw or vh, zero, or a spacing variable. Negative values are dropped. */
@@ -449,7 +450,7 @@ class SNN_Layout_Blocks {
 				continue;
 			}
 			$own = array();
-			foreach ( self::VIEW_KEYS as $key ) {
+			foreach ( array_merge( self::VIEW_KEYS, SNN_Style_Props::keys() ) as $key ) {
 				if ( isset( $value[ $view ][ $key ] ) && is_scalar( $value[ $view ][ $key ] ) && '' !== (string) $value[ $view ][ $key ] ) {
 					$own[ $key ] = mb_substr( (string) $value[ $view ][ $key ], 0, 300 );
 				}
@@ -630,6 +631,9 @@ class SNN_Layout_Blocks {
 		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'gridAreas', 'gridAutoColumns', 'gridAutoRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'columnStart', 'rowStart', 'gridArea', 'order', 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity' ) as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
+		foreach ( SNN_Style_Props::keys() as $key ) {
+			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
+		}
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
 		$out['overflow']     = self::pick( $out['overflow'], self::OVERFLOW, '' );
 		$out['responsive']   = self::clean_responsive( $out['responsive'] );
@@ -705,6 +709,7 @@ class SNN_Layout_Blocks {
 		$icons  = 'includes/blocks/assets/layout-icons.js';
 		$blocks = 'includes/blocks/assets/layout-blocks.js';
 		$tools  = 'includes/blocks/assets/block-tools.js';
+		$style  = 'includes/blocks/assets/style-props.js';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data' ), self::version( $js ), true );
@@ -723,7 +728,9 @@ class SNN_Layout_Blocks {
 				'tags'      => self::TAGS,
 			)
 		);
-		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools' ), self::version( $blocks ), true );
+		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
+		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
+		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' ), self::version( $blocks ), true );
 	}
 
 	private static function version( $file ) {
