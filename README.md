@@ -1,6 +1,6 @@
 # SNN Block
 
-SNN Block is a WordPress child theme of **Twenty Twenty-Five** with the SNN feature set. It is forked from `snn-brx-child-theme` with every Bricks Builder feature removed.
+SNN Block is a standalone WordPress block theme with the SNN feature set. It is forked from `snn-brx-child-theme` with every Bricks Builder feature removed.
 
 ## What is included
 
@@ -23,7 +23,7 @@ All code that depends on Bricks Builder: the page elements, dynamic data tags, q
 ## Requirements
 
 - WordPress 6.9 or newer.
-- Twenty Twenty-Five (the parent theme). The theme has no page templates of its own.
+- No parent theme. The theme ships one minimal `index` template and an empty `theme.json`.
 - PHP 8.2 (the version used for testing).
 
 ## Development

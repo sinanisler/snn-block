@@ -9,6 +9,9 @@ define( 'SNN_URL_ASSETS', trailingslashit( SNN_URL . 'assets' ) );
 // Feature on/off switches (admin.php?page=snn-settings > Customizations)
 require_once SNN_PATH . 'includes/features/feature-toggles.php';
 
+// Clean slate: core and theme defaults removed on the front end and in the block editor (always on)
+require_once SNN_PATH . 'includes/features/clean-slate.php';
+
 
 // Main Features and Settings
 require_once SNN_PATH . 'includes/features/settings-page.php';
