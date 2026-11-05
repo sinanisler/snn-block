@@ -125,7 +125,7 @@
 			back: [ h( 'path', { key: 'a', d: 'M10 3.5 5.5 8l4.5 4.5' } ) ],
 			close: [ h( 'path', { key: 'a', d: 'M4 4l8 8M12 4l-8 8' } ) ],
 		};
-		return h( 'svg', { className: 'snn-glyph', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, ...( parts[ name ] || [] ) );
+		return h( 'svg', { className: 'snn-bt-icon', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, ...( parts[ name ] || [] ) );
 	}
 
 	/** A small icon button for the ID bar and the sub-panels. */
@@ -134,7 +134,7 @@
 			'button',
 			{
 				type: 'button',
-				className: 'snn-idbtn' + ( className ? ' ' + className : '' ) + ( pressed ? ' is-on' : '' ),
+				className: 'snn-bt-idbtn' + ( className ? ' ' + className : '' ) + ( pressed ? ' is-on' : '' ),
 				title: label,
 				'aria-label': label,
 				'aria-pressed': pressed === undefined ? undefined : pressed ? 'true' : 'false',
@@ -146,7 +146,7 @@
 	}
 
 	function RemoveButton( { label, onClick } ) {
-		return h( 'button', { type: 'button', className: 'snn-x', title: label, 'aria-label': label, onClick }, glyph( 'close' ) );
+		return h( 'button', { type: 'button', className: 'snn-bt-x', title: label, 'aria-label': label, onClick }, glyph( 'close' ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -161,21 +161,21 @@
 		];
 		return h(
 			'div',
-			{ className: 'snn-head-icons', role: 'group', 'aria-label': __( 'Element settings', 'snn' ) },
+			{ className: 'snn-bt-head-icons', role: 'group', 'aria-label': __( 'Element settings', 'snn' ) },
 			items.map( ( it ) =>
 				h(
 					'button',
 					{
 						key: it.key,
 						type: 'button',
-						className: 'snn-head-btn' + ( open === it.key ? ' is-on' : '' ) + ( it.used ? ' is-used' : '' ),
+						className: 'snn-bt-head-btn' + ( open === it.key ? ' is-on' : '' ) + ( it.used ? ' is-used' : '' ),
 						title: it.label,
 						'aria-label': it.label,
 						'aria-pressed': open === it.key ? 'true' : 'false',
 						onClick: () => onOpen( open === it.key ? null : it.key ),
 					},
 					glyph( it.name ),
-					it.used ? h( 'span', { className: 'snn-head-dot', 'aria-hidden': 'true' } ) : null
+					it.used ? h( 'span', { className: 'snn-bt-head-dot', 'aria-hidden': 'true' } ) : null
 				)
 			)
 		);
@@ -202,11 +202,11 @@
 			null,
 			h(
 				'div',
-				{ className: 'snn-idbar' },
-				h( 'span', { className: 'snn-hash', 'aria-hidden': 'true' }, '#' ),
+				{ className: 'snn-bt-idbar' },
+				h( 'span', { className: 'snn-bt-hash', 'aria-hidden': 'true' }, '#' ),
 				h( 'input', {
 					type: 'text',
-					className: 'snn-input snn-id',
+					className: 'snn-input snn-bt-id',
 					value: id,
 					placeholder: __( 'no-id', 'snn' ),
 					spellCheck: false,
@@ -217,7 +217,7 @@
 					'button',
 					{
 						type: 'button',
-						className: 'snn-chip-btn' + ( classesOpen ? ' is-on' : '' ),
+						className: 'snn-bt-chip-btn' + ( classesOpen ? ' is-on' : '' ),
 						'aria-expanded': classesOpen ? 'true' : 'false',
 						title: __( 'Custom classes', 'snn' ),
 						onClick: onToggleClasses,
@@ -243,7 +243,7 @@
 				} ),
 				canPaste ? h( IconButton, { label: __( 'Paste styles', 'snn' ), name: 'paste', onClick: onPasteStyles } ) : null
 			),
-			duplicate ? h( 'div', { className: 'snn-warn' }, __( 'Another block uses this ID.', 'snn' ) ) : null
+			duplicate ? h( 'div', { className: 'snn-bt-warn' }, __( 'Another block uses this ID.', 'snn' ) ) : null
 		);
 	}
 
@@ -271,15 +271,15 @@
 		const remove = ( n ) => onChange( list.filter( ( x ) => x !== n ).join( ' ' ) );
 		return h(
 			'div',
-			{ className: 'snn-classes' },
+			{ className: 'snn-bt-classes' },
 			list.length
 				? h(
 						'div',
-						{ className: 'snn-chips' },
+						{ className: 'snn-bt-chips' },
 						list.map( ( n ) =>
 							h(
 								'span',
-								{ key: n, className: 'snn-chip' },
+								{ key: n, className: 'snn-bt-chip' },
 								n,
 								h( RemoveButton, { label: __( 'Remove class', 'snn' ) + ' ' + n, onClick: () => remove( n ) } )
 							)
@@ -313,20 +313,20 @@
 	function SubPanel( { title, onBack, children } ) {
 		return h(
 			'div',
-			{ className: 'snn-sub' },
+			{ className: 'snn-bt-sub' },
 			h(
 				'div',
-				{ className: 'snn-sub-head' },
+				{ className: 'snn-bt-sub-head' },
 				h( 'button', {
 					type: 'button',
-					className: 'snn-sub-back',
+					className: 'snn-bt-sub-back',
 					title: __( 'Back to the settings', 'snn' ),
 					'aria-label': __( 'Back to the settings', 'snn' ),
 					onClick: onBack,
 				}, glyph( 'back' ) ),
-				h( 'span', { className: 'snn-sub-title' }, title )
+				h( 'span', { className: 'snn-bt-sub-title' }, title )
 			),
-			h( 'div', { className: 'snn-sub-body' }, children )
+			h( 'div', { className: 'snn-bt-sub-body' }, children )
 		);
 	}
 
@@ -379,10 +379,10 @@
 		const def = findCondition( c.key );
 		return h(
 			'div',
-			{ className: 'snn-cond' },
+			{ className: 'snn-bt-cond' },
 			h(
 				'div',
-				{ className: 'snn-cond-line' },
+				{ className: 'snn-bt-cond-line' },
 				h(
 					'select',
 					{
@@ -407,7 +407,7 @@
 			def.left
 				? h(
 						'div',
-						{ className: 'snn-cond-line' },
+						{ className: 'snn-bt-cond-line' },
 						h( TextField, {
 							label: __( 'Dynamic data', 'snn' ),
 							value: c.dynamic || '',
@@ -418,10 +418,10 @@
 				: null,
 			h(
 				'div',
-				{ className: 'snn-cond-line' },
+				{ className: 'snn-bt-cond-line' },
 				h(
 					'div',
-					{ className: 'snn-cond-compare' },
+					{ className: 'snn-bt-cond-compare' },
 					h( Select, {
 						value: c.compare,
 						options: def.compare,
@@ -429,7 +429,7 @@
 						onChange: ( v ) => onPatch( { compare: v } ),
 					} )
 				),
-				h( 'div', { className: 'snn-cond-value' }, valueField( def, c, onPatch ) )
+				h( 'div', { className: 'snn-bt-cond-value' }, valueField( def, c, onPatch ) )
 			)
 		);
 	}
@@ -455,17 +455,17 @@
 		const body = [];
 		list.forEach( ( set, si ) => {
 			if ( si > 0 ) {
-				body.push( h( 'div', { key: 'or' + si, className: 'snn-join' }, __( 'Or', 'snn' ) ) );
+				body.push( h( 'div', { key: 'or' + si, className: 'snn-bt-join' }, __( 'Or', 'snn' ) ) );
 			}
 			body.push(
 				h(
 					'div',
-					{ key: 'set' + si, className: 'snn-set' },
+					{ key: 'set' + si, className: 'snn-bt-set' },
 					set.map( ( c, ci ) =>
 						h(
 							Fragment,
 							{ key: 'c' + ci },
-							ci > 0 ? h( 'div', { className: 'snn-join' }, __( 'And', 'snn' ) ) : null,
+							ci > 0 ? h( 'div', { className: 'snn-bt-join' }, __( 'And', 'snn' ) ) : null,
 							h( ConditionRow, {
 								c,
 								onKey: ( key ) => replaceAt( si, ci, freshCondition( findCondition( key ) ) ),
@@ -474,23 +474,23 @@
 							} )
 						)
 					),
-					h( 'button', { type: 'button', className: 'snn-link', onClick: () => addTo( si ) }, __( 'Add condition', 'snn' ) )
+					h( 'button', { type: 'button', className: 'snn-bt-link', onClick: () => addTo( si ) }, __( 'Add condition', 'snn' ) )
 				)
 			);
 		} );
 
 		return h(
 			'div',
-			{ className: 'snn-conds' },
+			{ className: 'snn-bt-conds' },
 			list.length
 				? body
 				: h( 'p', { className: 'snn-hint' }, __( 'Shown always. Add a condition to show this element only when it holds.', 'snn' ) ),
 			h(
 				'div',
-				{ className: 'snn-conds-end' },
+				{ className: 'snn-bt-conds-end' },
 				list.length
-					? h( 'button', { type: 'button', className: 'snn-link', onClick: addOrGroup }, __( 'Add Or group', 'snn' ) )
-					: h( 'button', { type: 'button', className: 'snn-link', onClick: start }, __( 'Add condition', 'snn' ) )
+					? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: addOrGroup }, __( 'Add Or group', 'snn' ) )
+					: h( 'button', { type: 'button', className: 'snn-bt-link', onClick: start }, __( 'Add condition', 'snn' ) )
 			)
 		);
 	}
@@ -513,7 +513,7 @@
 
 		return h(
 			'div',
-			{ className: 'snn-acts' },
+			{ className: 'snn-bt-acts' },
 			list.length === 0
 				? h( 'p', { className: 'snn-hint' }, __( 'Nothing happens yet. When a trigger happens, do an action.', 'snn' ) )
 				: null,
@@ -522,10 +522,10 @@
 				const custom = it.target !== 'self';
 				return h(
 					'div',
-					{ key: i, className: 'snn-card' },
+					{ key: i, className: 'snn-bt-card' },
 					h(
 						'div',
-						{ className: 'snn-card-head' },
+						{ className: 'snn-bt-card-head' },
 						h( 'span', null, __( 'Interaction', 'snn' ) + ' ' + ( i + 1 ) ),
 						h( RemoveButton, { label: __( 'Remove interaction', 'snn' ), onClick: () => removeAt( i ) } )
 					),
@@ -550,8 +550,8 @@
 								{ label: __( 'ID', 'snn' ) },
 								h(
 									'div',
-									{ className: 'snn-idwrap' },
-									h( 'span', { className: 'snn-hash', 'aria-hidden': 'true' }, '#' ),
+									{ className: 'snn-bt-idwrap' },
+									h( 'span', { className: 'snn-bt-hash', 'aria-hidden': 'true' }, '#' ),
 									h( 'input', {
 										type: 'text',
 										className: 'snn-input',
@@ -581,7 +581,7 @@
 						: null
 				);
 			} ),
-			h( 'button', { type: 'button', className: 'snn-link', onClick: add }, __( 'Add interaction', 'snn' ) )
+			h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add }, __( 'Add interaction', 'snn' ) )
 		);
 	}
 

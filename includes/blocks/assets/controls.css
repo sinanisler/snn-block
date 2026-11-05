@@ -299,7 +299,7 @@
 	margin-top: 6px;
 }
 
-.snn-name-row {
+.snn-bt-name-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -308,13 +308,13 @@
 }
 
 /* Conditions and Interactions: icon buttons at the top right, a dot when the block uses them */
-.snn-head-icons {
+.snn-bt-head-icons {
 	display: flex;
 	flex: 0 0 auto;
 	gap: 2px;
 }
 
-.snn-head-btn {
+.snn-bt-head-btn {
 	position: relative;
 	display: flex;
 	align-items: center;
@@ -330,23 +330,23 @@
 	cursor: pointer;
 }
 
-.snn-head-btn:hover {
+.snn-bt-head-btn:hover {
 	background: #f0f0f1;
 	border-color: #8c8f94;
 }
 
-.snn-head-btn.is-on {
+.snn-bt-head-btn.is-on {
 	color: #fff;
 	background: #2271b1;
 	border-color: #2271b1;
 }
 
-.snn-head-btn:focus-visible {
+.snn-bt-head-btn:focus-visible {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
 }
 
-.snn-head-dot {
+.snn-bt-head-dot {
 	position: absolute;
 	top: -3px;
 	right: -3px;
@@ -357,13 +357,13 @@
 	box-shadow: 0 0 0 1.5px #fff;
 }
 
-.snn-head-btn.is-on .snn-head-dot {
+.snn-bt-head-btn.is-on .snn-bt-head-dot {
 	background: #fff;
 	box-shadow: 0 0 0 1.5px #2271b1;
 }
 
 /* Line icons for the header, the ID bar and the sub-panels */
-.snn-glyph {
+.snn-bt-icon {
 	display: block;
 	width: 16px;
 	height: 16px;
@@ -375,27 +375,27 @@
 }
 
 /* ID bar: the CSS ID, the classes button, then the copy and paste icons */
-.snn-idbar {
+.snn-bt-idbar {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	min-width: 0;
 }
 
-.snn-hash {
+.snn-bt-hash {
 	flex: 0 0 auto;
 	font-family: Consolas, Menlo, monospace;
 	font-size: 12px;
 	color: #646970;
 }
 
-.snn-id {
+.snn-bt-id {
 	flex: 1 1 auto;
 	min-width: 0;
 	font-family: Consolas, Menlo, monospace;
 }
 
-.snn-chip-btn {
+.snn-bt-chip-btn {
 	flex: 0 0 auto;
 	height: 26px;
 	margin: 0;
@@ -410,26 +410,26 @@
 	cursor: pointer;
 }
 
-.snn-chip-btn:hover {
+.snn-bt-chip-btn:hover {
 	background: #f0f0f1;
 }
 
-.snn-chip-btn.is-on {
+.snn-bt-chip-btn.is-on {
 	color: #fff;
 	background: #2271b1;
 	border-color: #2271b1;
 }
 
-.snn-chip-btn:focus-visible,
-.snn-idbtn:focus-visible,
-.snn-x:focus-visible,
-.snn-link:focus-visible,
-.snn-sub-back:focus-visible {
+.snn-bt-chip-btn:focus-visible,
+.snn-bt-idbtn:focus-visible,
+.snn-bt-x:focus-visible,
+.snn-bt-link:focus-visible,
+.snn-bt-sub-back:focus-visible {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
 }
 
-.snn-idbtn {
+.snn-bt-idbtn {
 	flex: 0 0 auto;
 	display: flex;
 	align-items: center;
@@ -445,40 +445,40 @@
 	cursor: pointer;
 }
 
-.snn-idbtn:hover:not(:disabled) {
+.snn-bt-idbtn:hover:not(:disabled) {
 	background: #f0f0f1;
 }
 
-.snn-idbtn:disabled {
+.snn-bt-idbtn:disabled {
 	opacity: 0.4;
 	cursor: default;
 }
 
-.snn-idbtn.is-on {
+.snn-bt-idbtn.is-on {
 	color: #fff;
 	background: #2271b1;
 	border-color: #2271b1;
 }
 
-.snn-warn {
+.snn-bt-warn {
 	font-size: 11px;
 	color: #b32d2e;
 }
 
 /* Custom classes: chips and a field to add more */
-.snn-classes {
+.snn-bt-classes {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 }
 
-.snn-chips {
+.snn-bt-chips {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px;
 }
 
-.snn-chip {
+.snn-bt-chip {
 	display: inline-flex;
 	align-items: center;
 	gap: 2px;
@@ -491,7 +491,7 @@
 	border-radius: 2px;
 }
 
-.snn-x {
+.snn-bt-x {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -506,18 +506,18 @@
 	cursor: pointer;
 }
 
-.snn-x:hover {
+.snn-bt-x:hover {
 	color: #b32d2e;
 	background: #fcf0f1;
 }
 
-.snn-x .snn-glyph {
+.snn-bt-x .snn-bt-icon {
 	width: 12px;
 	height: 12px;
 }
 
 /* Sub-panels (Conditions, Interactions): they take the place of the tabs, with a back button */
-.snn-sub-head {
+.snn-bt-sub-head {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -526,7 +526,7 @@
 	border-bottom: 1px solid #dcdcde;
 }
 
-.snn-sub-back {
+.snn-bt-sub-back {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -541,20 +541,20 @@
 	cursor: pointer;
 }
 
-.snn-sub-back:hover {
+.snn-bt-sub-back:hover {
 	background: #f0f0f1;
 }
 
-.snn-sub-title {
+.snn-bt-sub-title {
 	font-size: 12px;
 	font-weight: 600;
 }
 
-.snn-sub-body {
+.snn-bt-sub-body {
 	padding: 8px 0 10px;
 }
 
-.snn-link {
+.snn-bt-link {
 	align-self: flex-start;
 	margin: 0;
 	padding: 0;
@@ -566,12 +566,12 @@
 	cursor: pointer;
 }
 
-.snn-link:hover {
+.snn-bt-link:hover {
 	color: #135e96;
 	text-decoration: underline;
 }
 
-.snn-join {
+.snn-bt-join {
 	font-size: 10px;
 	font-weight: 600;
 	letter-spacing: 0.04em;
@@ -581,20 +581,20 @@
 }
 
 /* Conditions: sets (Or) of rows (And) */
-.snn-conds,
-.snn-acts {
+.snn-bt-conds,
+.snn-bt-acts {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	padding: 0 16px;
 }
 
-.snn-conds .snn-hint,
-.snn-acts .snn-hint {
+.snn-bt-conds .snn-hint,
+.snn-bt-acts .snn-hint {
 	padding: 0;
 }
 
-.snn-set {
+.snn-bt-set {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -604,7 +604,7 @@
 	border-radius: 3px;
 }
 
-.snn-cond {
+.snn-bt-cond {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -614,44 +614,44 @@
 	border-radius: 3px;
 }
 
-.snn-cond-line {
+.snn-bt-cond-line {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	min-width: 0;
 }
 
-.snn-cond-line > .snn-select {
+.snn-bt-cond-line > .snn-select {
 	flex: 1 1 auto;
 	width: auto;
 	min-width: 0;
 }
 
-.snn-cond-line .snn-field {
+.snn-bt-cond-line .snn-field {
 	flex: 1 1 auto;
 	min-width: 0;
 }
 
-.snn-cond-compare {
+.snn-bt-cond-compare {
 	flex: 0 0 40%;
 	min-width: 0;
 }
 
-.snn-cond-value {
+.snn-bt-cond-value {
 	flex: 1 1 auto;
 	min-width: 0;
 }
 
-.snn-cond-value > .snn-input {
+.snn-bt-cond-value > .snn-input {
 	width: 100%;
 }
 
-.snn-conds-end {
+.snn-bt-conds-end {
 	padding-top: 2px;
 }
 
 /* Interactions: one card each, with label-left rows */
-.snn-card {
+.snn-bt-card {
 	display: flex;
 	flex-direction: column;
 	padding: 4px 6px 6px;
@@ -660,7 +660,7 @@
 	border-radius: 3px;
 }
 
-.snn-card-head {
+.snn-bt-card-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -670,12 +670,12 @@
 	color: #3c434a;
 }
 
-.snn-card > .snn-row {
+.snn-bt-card > .snn-row {
 	grid-template-columns: 60px minmax(0, 1fr);
 	padding: 1px 0;
 }
 
-.snn-idwrap {
+.snn-bt-idwrap {
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -683,7 +683,7 @@
 	width: 100%;
 }
 
-.snn-idwrap .snn-input {
+.snn-bt-idwrap .snn-input {
 	flex: 1 1 auto;
 	min-width: 0;
 }

@@ -1019,7 +1019,7 @@
 			{ className: 'snn-head' },
 			h(
 				'div',
-				{ className: 'snn-name-row' },
+				{ className: 'snn-bt-name-row' },
 				h( 'div', { className: 'snn-name' }, title ),
 				h( HeadIcons, {
 					conditions: conditions.length,
