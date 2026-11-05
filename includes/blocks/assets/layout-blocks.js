@@ -1062,7 +1062,6 @@
 			h(
 				'div',
 				{ className: 'snn-bt-name-row' },
-				h( 'div', { className: 'snn-name' }, title ),
 				h( HeadIcons, {
 					conditions: conditions.length,
 					interactions: interactions.length,
@@ -1278,12 +1277,11 @@
 		};
 	}
 
-	/** One block type. def: the block name, title, default tag and description. */
+	/** One block type. def: the block name, title, default tag. */
 	function registerLayout( def ) {
 		registerBlockType( def.name, {
 			apiVersion: 3,
 			title: def.title,
-			description: def.description,
 			category: 'design',
 			icon: def.icon,
 			// Our panel carries these settings. The core panels (colour, spacing, dimensions and so on)
@@ -1374,21 +1372,18 @@
 	registerLayout( {
 		name: 'snn/section',
 		title: __( 'Section', 'snn' ),
-		description: __( 'A full-width band of the page, with its own layout and an optional query loop.', 'snn' ),
 		tag: 'section',
 		icon: 'editor-table',
 	} );
 	registerLayout( {
 		name: 'snn/container',
 		title: __( 'Container', 'snn' ),
-		description: __( 'A wrapper for content, with its own layout and an optional query loop.', 'snn' ),
 		tag: 'div',
 		icon: 'editor-expand',
 	} );
 	registerLayout( {
 		name: 'snn/div',
 		title: __( 'Div', 'snn' ),
-		description: __( 'An empty div with layout options. Display is block unless you change it.', 'snn' ),
 		tag: 'div',
 		icon: 'editor-code',
 	} );
