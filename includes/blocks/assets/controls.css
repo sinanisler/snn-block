@@ -16,14 +16,23 @@
 	padding: 0 0 6px;
 }
 
+/* The panel's spacing: the side inset, the label column and the gap between label and control. Every
+ * left edge (rows, headings, accordions) uses the inset, so they line up. The label column fits the longest
+ * label the panel shows with its changed dot (Padding bottom, about 97 px), so no label is cut off. */
+:root {
+	--snn-inset: 12px;
+	--snn-label: 98px;
+	--snn-label-gap: 6px;
+}
+
 /* Row: label left, control right */
 .snn-row {
 	display: grid;
-	grid-template-columns: 100px minmax(0, 1fr);
+	grid-template-columns: var(--snn-label) minmax(0, 1fr);
 	align-items: center;
-	column-gap: 8px;
+	column-gap: var(--snn-label-gap);
 	min-height: 26px;
-	padding: 1px 16px;
+	padding: 1px var(--snn-inset);
 }
 
 .snn-row-label {
@@ -198,7 +207,7 @@
 	width: 100%;
 	min-height: 28px;
 	margin: 0;
-	padding: 3px 16px;
+	padding: 3px var(--snn-inset);
 	font: inherit;
 	font-weight: 600;
 	color: #1e1e1e;
@@ -286,7 +295,7 @@
 
 /* Panel header: the block name and its ID and classes, then the view (Desktop, Tablet, Mobile) */
 .snn-head {
-	padding: 4px 16px 8px;
+	padding: 4px var(--snn-inset) 8px;
 	border-bottom: 1px solid #dcdcde;
 }
 
@@ -757,7 +766,7 @@
 
 /* A short note inside a section (the item settings, when the parent is not flex or grid) */
 .snn-hint {
-	padding: 2px 16px 6px;
+	padding: 2px var(--snn-inset) 6px;
 	font-size: 11px;
 	color: #646970;
 }
@@ -773,7 +782,7 @@
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 8px;
-	padding: 0 16px;
+	padding: 0 var(--snn-inset);
 	margin-bottom: 4px;
 }
 
@@ -802,7 +811,7 @@
 	gap: 8px;
 	width: 100%;
 	margin: 0;
-	padding: 10px 16px;
+	padding: 10px var(--snn-inset);
 	font: inherit;
 	color: #1e1e1e;
 	background: none;
@@ -833,7 +842,7 @@
 }
 
 .snn-disc.is-card .snn-disc-head {
-	padding: 12px 16px;
+	padding: 12px var(--snn-inset);
 }
 
 .snn-disc-card-title {
