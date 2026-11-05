@@ -11,11 +11,12 @@
  *                   offset, child of, sticky, include and exclude, authors, main query.
  *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
  *                   justify self, column and row span. Only the settings its parent needs show.
- *   Header          the name, with the Conditions and Interactions buttons at the top right; the CSS ID (the
- *                   field is the rename), the classes button, copy ID, copy styles and paste styles; the
- *                   classes as chips. Conditions and Interactions open as sub-panels in place of the tabs
- *                   (block-tools.js).
- *   Advanced        Custom CSS (planned).
+ *   Header          the Conditions and Interactions buttons at the top right, and the view. Conditions and
+ *                   Interactions open as sub-panels in place of the tabs (block-tools.js).
+ *   Advanced        the custom classes, as chips, then Custom CSS (planned).
+ *
+ * Every block gets its CSS ID by default: a new one when it is created, and a new one when a copy would
+ * share an ID with another block (see the Edit function). The ID is not shown in the panel.
  *
  * Every text-like field has the dynamic data button and every size field can take a variable.
  * The editor shows each block once. On the front end a query loop repeats the block for every
@@ -25,12 +26,12 @@
 	const { registerBlockType } = wp.blocks;
 	const { InnerBlocks, InspectorControls, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
-	const { createElement: h, Fragment, useState } = wp.element;
+	const { createElement: h, Fragment, useState, useEffect } = wp.element;
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
-	const { HeadIcons, IdBar, ClassesEditor, ConditionsEditor, InteractionsEditor, readClip, writeClip, styleValues } = window.snnBlockTools;
+	const { HeadIcons, ClassesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -76,9 +77,6 @@
 		columnSpan: '',
 		rowSpan: '',
 	};
-
-	/** The style settings: what Copy styles takes and Paste styles gives (layout, item and background). */
-	const STYLE_KEYS = [ ...Object.keys( LAYOUT_DEFAULTS ), ...Object.keys( ITEM_DEFAULTS ), 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow' ];
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
 	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
@@ -914,21 +912,18 @@
 	}
 
 	/**
-	 * The inspector, as in the version 12 layout: the header (the name, the ID and classes, the view), then the
-	 * Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
+	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
+	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, duplicateId, device } ) {
+	function Panel( { a, set, tag, parent, title, device } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
 		// null, 'conditions' or 'interactions': a sub-panel that takes the whole view (see the end of this function).
 		const [ sub, setSub ] = useState( null );
-		const [ classesOpen, setClassesOpen ] = useState( false );
 		const [ openQuery, setOpenQuery ] = useState( false );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
-		const classCount = ( a.cssClasses || '' ).split( /\s+/ ).filter( Boolean ).length;
-		const clip = readClip();
 		const tabButton = ( id, label ) =>
 			h(
 				'button',
@@ -955,18 +950,6 @@
 					onOpen: setSub,
 				} )
 			),
-			h( IdBar, {
-				htmlId: a.htmlId,
-				onIdChange: ( v ) => set( { htmlId: v } ),
-				classCount,
-				classesOpen,
-				onToggleClasses: () => setClassesOpen( ! classesOpen ),
-				onCopyStyles: () => writeClip( { ...styleValues( a, STYLE_KEYS ), responsive: a.responsive || {} } ),
-				canPaste: !! clip,
-				onPasteStyles: () => set( { ...styleValues( clip.styles, STYLE_KEYS ), responsive: clip.styles.responsive || {} } ),
-				duplicate: !! duplicateId,
-			} ),
-			classesOpen ? h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } ) : null,
 			h( ViewSwitch, null )
 		);
 
@@ -1030,6 +1013,11 @@
 				{ title: __( 'Advanced', 'snn' ) },
 				h(
 					Row,
+					{ label: __( 'Classes', 'snn' ) },
+					h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } )
+				),
+				h(
+					Row,
 					{ label: __( 'Custom CSS', 'snn' ) },
 					h(
 						'div',
@@ -1076,7 +1064,7 @@
 		);
 
 		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.
-		// The name, the ID bar, the view and the tabs are hidden.
+		// The view and the tabs are hidden.
 		if ( sub ) {
 			return h(
 				'div',
@@ -1120,6 +1108,16 @@
 			' · ' +
 			( q.perPage || '10' )
 		);
+	}
+
+	/** A CSS ID for a block: 'snn-' and eight lowercase letters or digits. */
+	function newBlockId() {
+		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+		let id = 'snn-';
+		for ( let i = 0; i < 8; i++ ) {
+			id += chars.charAt( Math.floor( Math.random() * chars.length ) );
+		}
+		return id;
 	}
 
 	/** The attributes of the layout and item settings: the defaults the PHP side registers too. */
@@ -1201,7 +1199,7 @@
 					display: ( parentAttrs && parentAttrs.display ) || '',
 					flexDirection: ( parentAttrs && parentAttrs.flexDirection ) || 'row',
 				};
-				// Another block with the same CSS ID: the panel warns, since the interactions find elements by ID.
+				// Another block with the same CSS ID (a copied block): this one gets a new ID below.
 				const duplicateId = useSelect(
 					( select ) => {
 						const id = a.htmlId;
@@ -1215,6 +1213,13 @@
 					},
 					[ clientId, a.htmlId ]
 				);
+				// Every block gets its CSS ID by default: a new one when it has none, and a new one when another
+				// block already has this one. The ID is saved with the block, so the interactions can find it.
+				useEffect( () => {
+					if ( ! a.htmlId || duplicateId ) {
+						setAttributes( { htmlId: newBlockId() } );
+					}
+				}, [ a.htmlId, duplicateId ] );
 				// The view the editor shows (Desktop, Tablet or Mobile): the values of that view are drawn on the canvas.
 				const device = useSelect( ( select ) => {
 					try {
@@ -1235,7 +1240,7 @@
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, duplicateId, device } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device } ) ),
 					h(
 						'div',
 						blockProps,

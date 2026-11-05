@@ -380,14 +380,6 @@
 	stroke-linejoin: round;
 }
 
-/* ID bar: the CSS ID, the classes button, then the copy and paste icons */
-.snn-bt-idbar {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	min-width: 0;
-}
-
 .snn-bt-hash {
 	flex: 0 0 auto;
 	font-family: Consolas, Menlo, monospace;
@@ -395,80 +387,11 @@
 	color: #646970;
 }
 
-.snn-bt-id {
-	flex: 1 1 auto;
-	min-width: 0;
-	font-family: Consolas, Menlo, monospace;
-}
-
-.snn-bt-chip-btn {
-	flex: 0 0 auto;
-	height: 26px;
-	margin: 0;
-	padding: 0 8px;
-	font: inherit;
-	font-size: 11px;
-	color: #3c434a;
-	white-space: nowrap;
-	background: #f6f7f7;
-	border: 1px solid #8c8f94;
-	border-radius: 2px;
-	cursor: pointer;
-}
-
-.snn-bt-chip-btn:hover {
-	background: #f0f0f1;
-}
-
-.snn-bt-chip-btn.is-on {
-	color: #fff;
-	background: #2271b1;
-	border-color: #2271b1;
-}
-
-.snn-bt-chip-btn:focus-visible,
-.snn-bt-idbtn:focus-visible,
 .snn-bt-x:focus-visible,
 .snn-bt-link:focus-visible,
 .snn-bt-sub-back:focus-visible {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
-}
-
-.snn-bt-idbtn {
-	flex: 0 0 auto;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 26px;
-	height: 26px;
-	margin: 0;
-	padding: 0;
-	color: #1e1e1e;
-	background: #f6f7f7;
-	border: 1px solid #8c8f94;
-	border-radius: 2px;
-	cursor: pointer;
-}
-
-.snn-bt-idbtn:hover:not(:disabled) {
-	background: #f0f0f1;
-}
-
-.snn-bt-idbtn:disabled {
-	opacity: 0.4;
-	cursor: default;
-}
-
-.snn-bt-idbtn.is-on {
-	color: #fff;
-	background: #2271b1;
-	border-color: #2271b1;
-}
-
-.snn-bt-warn {
-	font-size: 11px;
-	color: #b32d2e;
 }
 
 /* Custom classes: chips and a field to add more */

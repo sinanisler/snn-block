@@ -2,7 +2,6 @@
  * SNN block tools for the block editor: the parts of the panel header and of its sub-panels.
  *
  *   HeadIcons           the Conditions and Interactions buttons, top right of the panel
- *   IdBar               the CSS ID (the field is the rename), the classes button, copy ID, copy styles and paste styles
  *   ClassesEditor       the custom classes, as chips, added with Enter
  *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
@@ -13,14 +12,13 @@
  * Exposes window.snnBlockTools. Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp, C ) {
-	const { createElement: h, Fragment, useState, useRef } = wp.element;
+	const { createElement: h, Fragment, useState } = wp.element;
 	const { __ } = wp.i18n;
 	const { Row, Select, TextField } = C;
 	const data = window.snnBlockToolsData || {};
 	const CATALOG = data.conditions || [];
 	const GROUPS = data.groups || {};
 	const CLASS_ACTIONS = data.classActions || [];
-	const CLIP_KEY = 'snn.copiedStyles';
 
 	/* ------------------------------------------------------------------
 	 * Helpers
@@ -41,65 +39,6 @@
 		return String( v || '' ).replace( /[^A-Za-z0-9_\- ]/g, '' );
 	}
 
-	/** The values of the given keys that the source holds. Used for copying and pasting styles. */
-	function styleValues( source, keys ) {
-		const out = {};
-		keys.forEach( ( k ) => {
-			if ( source && source[ k ] !== undefined ) {
-				out[ k ] = source[ k ];
-			}
-		} );
-		return out;
-	}
-
-	/** The copied styles, or null. Kept in the browser (a per-user convenience), so a failure is harmless. */
-	function readClip() {
-		try {
-			const raw = window.localStorage.getItem( CLIP_KEY );
-			const value = raw ? JSON.parse( raw ) : null;
-			return value && value.styles && typeof value.styles === 'object' ? value : null;
-		} catch ( e ) {
-			return null;
-		}
-	}
-
-	function writeClip( styles ) {
-		try {
-			window.localStorage.setItem( CLIP_KEY, JSON.stringify( { source: 'snn', styles } ) );
-		} catch ( e ) {
-			// Storage is off: the styles cannot be pasted later. The panel still works.
-		}
-	}
-
-	/** Copies text. The clipboard API needs a secure page, so a hidden text area is the fallback. */
-	function copyText( text ) {
-		try {
-			if ( window.isSecureContext && navigator.clipboard ) {
-				navigator.clipboard.writeText( text ).catch( () => legacyCopy( text ) );
-				return;
-			}
-		} catch ( e ) {
-			// Fall through to the text area.
-		}
-		legacyCopy( text );
-	}
-
-	function legacyCopy( text ) {
-		const area = document.createElement( 'textarea' );
-		area.value = text;
-		area.setAttribute( 'readonly', '' );
-		area.style.position = 'fixed';
-		area.style.opacity = '0';
-		document.body.appendChild( area );
-		area.select();
-		try {
-			document.execCommand( 'copy' );
-		} catch ( e ) {
-			// No clipboard here: nothing more to do.
-		}
-		document.body.removeChild( area );
-	}
-
 	/* ------------------------------------------------------------------
 	 * Glyphs: 16 px line icons, drawn in the panel's colour
 	 * ---------------------------------------------------------------- */
@@ -112,37 +51,10 @@
 				h( 'path', { key: 'c', d: 'M2.5 11.1 8 13.8l5.5-2.7' } ),
 			],
 			interactions: [ h( 'path', { key: 'a', d: 'M4.5 2.5v9.9l2.5-2.3 1.8 3.7 1.7-.8-1.8-3.6h3.4z' } ) ],
-			copy: [
-				h( 'rect', { key: 'a', x: 5.5, y: 5.5, width: 8, height: 8, rx: 1 } ),
-				h( 'path', { key: 'b', d: 'M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2' } ),
-			],
-			styles: [ h( 'path', { key: 'a', d: 'M8 2C8 2 4 6.5 4 9.2a4 4 0 0 0 8 0C12 6.5 8 2 8 2z' } ) ],
-			paste: [
-				h( 'rect', { key: 'a', x: 3.5, y: 3, width: 9, height: 11, rx: 1 } ),
-				h( 'rect', { key: 'b', x: 6, y: 1.5, width: 4, height: 2.5, rx: 0.6 } ),
-			],
-			check: [ h( 'path', { key: 'a', d: 'M3 8.5l3.2 3L13 4.5' } ) ],
 			back: [ h( 'path', { key: 'a', d: 'M10 3.5 5.5 8l4.5 4.5' } ) ],
 			close: [ h( 'path', { key: 'a', d: 'M4 4l8 8M12 4l-8 8' } ) ],
 		};
 		return h( 'svg', { className: 'snn-bt-icon', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, ...( parts[ name ] || [] ) );
-	}
-
-	/** A small icon button for the ID bar and the sub-panels. */
-	function IconButton( { label, name, onClick, disabled, pressed, className } ) {
-		return h(
-			'button',
-			{
-				type: 'button',
-				className: 'snn-bt-idbtn' + ( className ? ' ' + className : '' ) + ( pressed ? ' is-on' : '' ),
-				title: label,
-				'aria-label': label,
-				'aria-pressed': pressed === undefined ? undefined : pressed ? 'true' : 'false',
-				disabled: !! disabled,
-				onClick,
-			},
-			glyph( name )
-		);
 	}
 
 	function RemoveButton( { label, onClick } ) {
@@ -178,72 +90,6 @@
 					it.used ? h( 'span', { className: 'snn-bt-head-dot', 'aria-hidden': 'true' } ) : null
 				)
 			)
-		);
-	}
-
-	/**
-	 * The ID bar: the CSS ID (typing in it is the rename), the classes button, then copy ID, copy styles
-	 * and, once something is copied, paste styles. A warning shows when another block has the same ID.
-	 */
-	function IdBar( { htmlId, onIdChange, classCount, classesOpen, onToggleClasses, onCopyStyles, canPaste, onPasteStyles, duplicate } ) {
-		const [ flash, setFlash ] = useState( '' );
-		const timer = useRef( null );
-		const say = ( what ) => {
-			setFlash( what );
-			clearTimeout( timer.current );
-			timer.current = setTimeout( () => setFlash( '' ), 1200 );
-		};
-		const id = htmlId || '';
-		const classLabel =
-			classCount === 0 ? __( 'No classes', 'snn' ) : classCount === 1 ? __( '1 class', 'snn' ) : classCount + ' ' + __( 'classes', 'snn' );
-
-		return h(
-			Fragment,
-			null,
-			h(
-				'div',
-				{ className: 'snn-bt-idbar' },
-				h( 'span', { className: 'snn-bt-hash', 'aria-hidden': 'true' }, '#' ),
-				h( 'input', {
-					type: 'text',
-					className: 'snn-input snn-bt-id',
-					value: id,
-					placeholder: __( 'no-id', 'snn' ),
-					spellCheck: false,
-					'aria-label': __( 'CSS ID', 'snn' ),
-					onChange: ( e ) => onIdChange( sanitizeId( e.target.value ) ),
-				} ),
-				h(
-					'button',
-					{
-						type: 'button',
-						className: 'snn-bt-chip-btn' + ( classesOpen ? ' is-on' : '' ),
-						'aria-expanded': classesOpen ? 'true' : 'false',
-						title: __( 'Custom classes', 'snn' ),
-						onClick: onToggleClasses,
-					},
-					classLabel
-				),
-				h( IconButton, {
-					label: flash === 'id' ? __( 'Copied', 'snn' ) : __( 'Copy ID', 'snn' ),
-					name: flash === 'id' ? 'check' : 'copy',
-					disabled: ! id,
-					onClick: () => {
-						copyText( '#' + id );
-						say( 'id' );
-					},
-				} ),
-				h( IconButton, {
-					label: flash === 'styles' ? __( 'Copied', 'snn' ) : __( 'Copy styles', 'snn' ),
-					name: flash === 'styles' ? 'check' : 'styles',
-					onClick: () => {
-						onCopyStyles();
-						say( 'styles' );
-					},
-				} ),
-				canPaste ? h( IconButton, { label: __( 'Paste styles', 'snn' ), name: 'paste', onClick: onPasteStyles } ) : null
-			),
-			duplicate ? h( 'div', { className: 'snn-bt-warn' }, __( 'Another block uses this ID.', 'snn' ) ) : null
 		);
 	}
 
@@ -290,7 +136,7 @@
 				type: 'text',
 				className: 'snn-input',
 				value: draft,
-				placeholder: __( 'Add a class, then Enter', 'snn' ),
+				placeholder: __( 'Add a class', 'snn' ),
 				spellCheck: false,
 				'aria-label': __( 'Add a class', 'snn' ),
 				onChange: ( e ) => setDraft( e.target.value ),
@@ -566,13 +412,9 @@
 
 	window.snnBlockTools = {
 		HeadIcons,
-		IdBar,
 		ClassesEditor,
 		ConditionsEditor,
 		InteractionsEditor,
-		readClip,
-		writeClip,
-		styleValues,
 		sanitizeId,
 	};
 } )( window.wp, window.snnControls );
