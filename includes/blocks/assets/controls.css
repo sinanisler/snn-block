@@ -1050,3 +1050,66 @@
 	border-radius: 3px;
 	pointer-events: none;
 }
+
+/* Select Animation (layout-blocks.js, AnimationPicker): the choice button, the chips of the choices, the list. */
+.snn-anim {
+	position: relative;
+	min-width: 0;
+}
+
+.snn-anim-button {
+	box-sizing: border-box;
+	width: 100%;
+	height: 26px;
+	margin: 0;
+	padding: 0 6px;
+	font-size: 12px;
+	text-align: left;
+	color: #1e1e1e;
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+	cursor: pointer;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snn-anim-button[aria-expanded="true"] {
+	border-color: #2271b1;
+}
+
+.snn-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.snn-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	max-width: 100%;
+	padding: 1px 2px 1px 6px;
+	font-size: 11px;
+	background: #f0f0f1;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+}
+
+.snn-chip-x {
+	margin: 0;
+	padding: 0 3px;
+	font-size: 13px;
+	line-height: 1;
+	color: #646970;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+/* The popover of the picker: the variables popover's position, a little narrower to fit the panel. */
+.snn-anim-pop {
+	width: 236px;
+}

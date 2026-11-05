@@ -147,6 +147,7 @@ class SNN_Layout_Blocks {
 			'query'          => array( 'type' => 'object', 'default' => SNN_Query_Loop::defaults() ),
 			'conditions'      => array( 'type' => 'array', 'default' => array() ),
 			'interactions'    => array( 'type' => 'array', 'default' => array() ),
+			'animation'       => array( 'type' => 'array', 'default' => array() ),
 		) + SNN_Style_Props::attributes();
 	}
 
@@ -232,6 +233,12 @@ class SNN_Layout_Blocks {
 		);
 		if ( '' !== $id ) {
 			$extra['id'] = $id;
+		}
+		// Select Animation: the presets and modifiers the block plays (assets/js/gsap-data-animate.js reads them).
+		$animation = SNN_Animation::data_animate( $a['animation'] );
+		if ( '' !== $animation ) {
+			$extra['data-animate'] = $animation;
+			SNN_Animation::enqueue_front();
 		}
 		// The interactions travel on the element as JSON; the front end script (assets/interactions.js) runs them.
 		$interactions = SNN_Block_Tools::interactions_attribute( $a['interactions'] );
@@ -634,6 +641,7 @@ class SNN_Layout_Blocks {
 		foreach ( SNN_Style_Props::keys() as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
+		$out['animation'] = SNN_Animation::clean_tokens( $out['animation'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
 		$out['overflow']     = self::pick( $out['overflow'], self::OVERFLOW, '' );
 		$out['responsive']   = self::clean_responsive( $out['responsive'] );
@@ -724,6 +732,7 @@ class SNN_Layout_Blocks {
 				'variables' => self::variables(),
 				'postTypes' => SNN_Query_Loop::post_type_options(),
 					'taxonomies' => SNN_Query_Loop::taxonomy_options(),
+					'animations' => SNN_Animation::options(),
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,
 			)

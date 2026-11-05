@@ -17,10 +17,11 @@ window.onload = function () {
   setTimeout(() => {
     const animateElements = document.querySelectorAll('[data-animate]');
 
+    // The SNN breakpoints: tablet up to 991 px, mobile up to 478 px (the team's copy used 767 px).
     function getDevice() {
       const width = window.innerWidth;
-      if (width >= 991) return 'desktop';
-      if (width < 991 && width > 767) return 'tablet';
+      if (width > 991) return 'desktop';
+      if (width > 478) return 'tablet';
       return 'mobile';
     }
     function shouldDisableForDevice(options) {
