@@ -12,6 +12,9 @@ require_once SNN_PATH . 'includes/features/feature-toggles.php';
 // Clean slate: core and theme defaults removed on the front end and in the block editor (always on)
 require_once SNN_PATH . 'includes/features/clean-slate.php';
 
+// Blocks: global styles, block defaults, fonts and (next) our own blocks and their controls (always on)
+require_once SNN_PATH . 'includes/blocks/blocks.php';
+
 
 // Main Features and Settings
 require_once SNN_PATH . 'includes/features/settings-page.php';
