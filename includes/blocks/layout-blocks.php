@@ -30,7 +30,8 @@ class SNN_Layout_Blocks {
 	const CONTEXT_INDEX = 'snn/queryIndex';
 	const CONTEXT_COUNT = 'snn/queryCount';
 
-	const DISPLAYS       = array( 'block', 'flex', 'grid' );
+	/** The display values: block, the inline ones, flex and grid (and their inline forms), and none (hidden). */
+	const DISPLAYS       = array( 'block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'inline-grid', 'none' );
 	const FLEX_DIRECTION = array( 'row', 'row-reverse', 'column', 'column-reverse' );
 	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
 	const JUSTIFY        = array( 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' );
@@ -116,6 +117,13 @@ class SNN_Layout_Blocks {
 			'flexBasis'      => array( 'type' => 'string', 'default' => '' ),
 			'columnSpan'     => array( 'type' => 'string', 'default' => '' ),
 			'rowSpan'        => array( 'type' => 'string', 'default' => '' ),
+			'columnStart'    => array( 'type' => 'string', 'default' => '' ),
+			'rowStart'       => array( 'type' => 'string', 'default' => '' ),
+			'gridArea'       => array( 'type' => 'string', 'default' => '' ),
+			'gridAreas'      => array( 'type' => 'string', 'default' => '' ),
+			'gridAutoColumns' => array( 'type' => 'string', 'default' => '' ),
+			'gridAutoRows'   => array( 'type' => 'string', 'default' => '' ),
+			'order'          => array( 'type' => 'string', 'default' => '' ),
 			'backgroundColor' => array( 'type' => 'string', 'default' => '' ),
 			'paddingTop'      => array( 'type' => 'string', 'default' => '' ),
 			'paddingBottom'   => array( 'type' => 'string', 'default' => '' ),
@@ -237,16 +245,21 @@ class SNN_Layout_Blocks {
 	 * block inside a flex or grid parent, so they are written whatever the block's own display is.
 	 */
 	public static function style( array $a, array $dyn = array() ) {
-		$css  = array();
-		$flex = 'flex' === $a['display'];
-		$grid = 'grid' === $a['display'];
+		$css     = array();
+		$display = $a['display'];
+		$flex    = in_array( $display, array( 'flex', 'inline-flex' ), true );
+		$grid    = in_array( $display, array( 'grid', 'inline-grid' ), true );
+		$wrap    = self::pick( $a['flexWrap'], self::FLEX_WRAP, 'nowrap' );
+
+		// Every display but block is written: the inline ones, none, and flex and grid with their own settings.
+		if ( 'block' !== $display ) {
+			$css[] = 'display:' . $display;
+		}
 
 		if ( $flex ) {
-			$css[] = 'display:flex';
 			$css[] = 'flex-direction:' . self::pick( $a['flexDirection'], self::FLEX_DIRECTION, 'row' );
-			$css[] = 'flex-wrap:' . self::pick( $a['flexWrap'], self::FLEX_WRAP, 'nowrap' );
+			$css[] = 'flex-wrap:' . $wrap;
 		} elseif ( $grid ) {
-			$css[]   = 'display:grid';
 			$columns = self::columns( SNN_Dynamic_Data::render( $a['gridColumns'], $dyn, 'plain' ) );
 			if ( '' !== $columns ) {
 				$css[] = 'grid-template-columns:' . $columns;
@@ -254,6 +267,18 @@ class SNN_Layout_Blocks {
 			$rows = self::template( SNN_Dynamic_Data::render( $a['gridRows'], $dyn, 'plain' ) );
 			if ( '' !== $rows ) {
 				$css[] = 'grid-template-rows:' . $rows;
+			}
+			$areas = self::areas( SNN_Dynamic_Data::render( $a['gridAreas'], $dyn, 'plain' ) );
+			if ( '' !== $areas ) {
+				$css[] = 'grid-template-areas:' . $areas;
+			}
+			$auto_columns = self::template( SNN_Dynamic_Data::render( $a['gridAutoColumns'], $dyn, 'plain' ) );
+			if ( '' !== $auto_columns ) {
+				$css[] = 'grid-auto-columns:' . $auto_columns;
+			}
+			$auto_rows = self::template( SNN_Dynamic_Data::render( $a['gridAutoRows'], $dyn, 'plain' ) );
+			if ( '' !== $auto_rows ) {
+				$css[] = 'grid-auto-rows:' . $auto_rows;
 			}
 			if ( $a['gridDense'] || 'column' === $a['gridAutoFlow'] ) {
 				$css[] = 'grid-auto-flow:' . $a['gridAutoFlow'] . ( $a['gridDense'] ? ' dense' : '' );
@@ -274,14 +299,18 @@ class SNN_Layout_Blocks {
 				$css[] = 'align-items:' . $align;
 			}
 			if ( $grid ) {
-				$items   = self::grid_word( self::pick( $a['justifyItems'], self::JUSTIFY_ITEMS, '' ) );
-				$content = self::grid_word( self::pick( $a['alignContent'], self::ALIGN_CONTENT, '' ) );
+				$items = self::grid_word( self::pick( $a['justifyItems'], self::JUSTIFY_ITEMS, '' ) );
 				if ( '' !== $items ) {
 					$css[] = 'justify-items:' . $items;
 				}
-				if ( '' !== $content ) {
-					$css[] = 'align-content:' . $content;
-				}
+			}
+			// The lines of a grid, or of a flex box that wraps, are packed by align content.
+			$content = self::pick( $a['alignContent'], self::ALIGN_CONTENT, '' );
+			if ( $grid ) {
+				$content = self::grid_word( $content );
+			}
+			if ( '' !== $content && ( $grid || 'nowrap' !== $wrap ) ) {
+				$css[] = 'align-content:' . $content;
 			}
 			$gap = self::gap( SNN_Dynamic_Data::render( $a['gap'], $dyn, 'plain' ) );
 			if ( '' !== $gap ) {
@@ -306,6 +335,10 @@ class SNN_Layout_Blocks {
 		if ( '' !== $jself ) {
 			$css[] = 'justify-self:' . $jself;
 		}
+		$order = self::integer( SNN_Dynamic_Data::render( $a['order'], $dyn, 'plain' ) );
+		if ( '' !== $order ) {
+			$css[] = 'order:' . $order;
+		}
 		$grow = self::number( SNN_Dynamic_Data::render( $a['flexGrow'], $dyn, 'plain' ) );
 		if ( '' !== $grow ) {
 			$css[] = 'flex-grow:' . $grow;
@@ -318,13 +351,18 @@ class SNN_Layout_Blocks {
 		if ( '' !== $basis ) {
 			$css[] = 'flex-basis:' . $basis;
 		}
-		$column_span = self::span( SNN_Dynamic_Data::render( $a['columnSpan'], $dyn, 'plain' ) );
-		if ( '' !== $column_span ) {
-			$css[] = 'grid-column:span ' . $column_span;
+		// A named area first, so that a column or row set on the same block wins over it.
+		$area = self::ident( SNN_Dynamic_Data::render( $a['gridArea'], $dyn, 'plain' ) );
+		if ( '' !== $area ) {
+			$css[] = 'grid-area:' . $area;
 		}
-		$row_span = self::span( SNN_Dynamic_Data::render( $a['rowSpan'], $dyn, 'plain' ) );
-		if ( '' !== $row_span ) {
-			$css[] = 'grid-row:span ' . $row_span;
+		$column = self::placement( SNN_Dynamic_Data::render( $a['columnStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['columnSpan'], $dyn, 'plain' ) );
+		if ( '' !== $column ) {
+			$css[] = 'grid-column:' . $column;
+		}
+		$row = self::placement( SNN_Dynamic_Data::render( $a['rowStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['rowSpan'], $dyn, 'plain' ) );
+		if ( '' !== $row ) {
+			$css[] = 'grid-row:' . $row;
 		}
 
 		$background = self::color( SNN_Dynamic_Data::render( $a['backgroundColor'], $dyn, 'plain' ) );
@@ -480,6 +518,50 @@ class SNN_Layout_Blocks {
 		return preg_match( '/^(1[0-2]|[1-9])$/', $value ) ? $value : '';
 	}
 
+	/** A grid line for an item: 1 to 99, or nothing. */
+	public static function line( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^[1-9]\d?$/', $value ) ? $value : '';
+	}
+
+	/**
+	 * Where an item sits on a grid line: a start line, a span, or both (start / span N). A start alone places the
+	 * item at that line; a span alone spans from the automatic place. Returns '' when neither is set.
+	 */
+	public static function placement( $start, $span ) {
+		$start = self::line( $start );
+		$span  = self::span( $span );
+		if ( '' === $start ) {
+			return '' === $span ? '' : 'span ' . $span;
+		}
+		return $start . ( '' === $span ? '' : ' / span ' . $span );
+	}
+
+	/** An order for a flex or grid item: a whole number, negative or not, up to three digits. */
+	public static function integer( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^-?\d{1,3}$/', $value ) ? $value : '';
+	}
+
+	/** A grid area name: a letter, then letters, digits, underscores or hyphens. */
+	public static function ident( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^[A-Za-z][A-Za-z0-9_-]{0,39}$/', $value ) ? $value : '';
+	}
+
+	/**
+	 * The rows of a grid's areas: each row a quoted string of names (a dot is an empty cell), such as "a a b" "c c b".
+	 * Only letters, digits, dots, hyphens, underscores, spaces and the quotes pass, so a value cannot write a declaration.
+	 */
+	public static function areas( $value ) {
+		$value = trim( (string) $value );
+		if ( strlen( $value ) > 300 ) {
+			return '';
+		}
+		$row = '"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*"';
+		return preg_match( '/^' . $row . '(\s+' . $row . ')*$/', $value ) ? $value : '';
+	}
+
 	/** A non-negative number, for flex grow and shrink. */
 	public static function number( $value ) {
 		$value = trim( (string) $value );
@@ -528,7 +610,7 @@ class SNN_Layout_Blocks {
 		$out['alignContent']   = self::pick( $out['alignContent'], self::ALIGN_CONTENT, '' );
 		$out['alignSelf']      = self::pick( $out['alignSelf'], self::ALIGN_SELF, '' );
 		$out['justifySelf']    = self::pick( $out['justifySelf'], self::JUSTIFY_SELF, '' );
-		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity' ) as $key ) {
+		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'gridAreas', 'gridAutoColumns', 'gridAutoRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'columnStart', 'rowStart', 'gridArea', 'order', 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity' ) as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );

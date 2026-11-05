@@ -65,6 +65,9 @@
 		gridDense: false,
 		justifyItems: '',
 		alignContent: '',
+		gridAutoColumns: '',
+		gridAutoRows: '',
+		gridAreas: '',
 	};
 
 	/** The item settings: how the block sits in its flex or grid parent. */
@@ -76,6 +79,10 @@
 		flexBasis: '',
 		columnSpan: '',
 		rowSpan: '',
+		columnStart: '',
+		rowStart: '',
+		gridArea: '',
+		order: '',
 	};
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
@@ -166,6 +173,11 @@
 		return /^\d{1,3}$/.test( t ) && Number( t ) <= 100 ? String( Number( t ) / 100 ) : '';
 	}
 	const SPAN_OK = /^(1[0-2]|[1-9])$/;
+	const LINE_OK = /^[1-9]\d?$/;
+	const INT_OK = /^-?\d{1,3}$/;
+	const IDENT_OK = /^[A-Za-z][A-Za-z0-9_-]{0,39}$/;
+	/** The rows of a grid's areas: quoted names, one string per row. The same rule as areas() in layout-blocks.php. */
+	const AREAS_OK = /^"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*"(\s+"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*")*$/;
 
 	/* ------------------------------------------------------------------
 	 * Pictures and choices
@@ -195,9 +207,14 @@
 	const ALIGN_CONTENT_PICS = [ 'stretch', 'flex-start', 'center', 'flex-end', 'space-between' ];
 
 	const DISPLAY_OPTIONS = [
-		{ value: 'flex', label: __( 'Flex', 'snn' ) },
 		{ value: 'block', label: __( 'Block', 'snn' ) },
+		{ value: 'flex', label: __( 'Flex', 'snn' ) },
 		{ value: 'grid', label: __( 'Grid', 'snn' ) },
+		{ value: 'inline-flex', label: __( 'Inline flex', 'snn' ) },
+		{ value: 'inline-grid', label: __( 'Inline grid', 'snn' ) },
+		{ value: 'inline-block', label: __( 'Inline block', 'snn' ) },
+		{ value: 'inline', label: __( 'Inline', 'snn' ) },
+		{ value: 'none', label: __( 'None (hidden)', 'snn' ) },
 	];
 
 	/** The two flows, as pictures: a row or a column. */
@@ -256,17 +273,51 @@
 		return GAP_OK.test( t ) ? t : '';
 	}
 
+	/** The settings of a block inside its parent (the item settings). They go on the block's wrapper, the grid or flex item. */
+	const ITEM_CSS = [ 'alignSelf', 'justifySelf', 'order', 'flexGrow', 'flexShrink', 'flexBasis', 'gridArea', 'gridColumn', 'gridRow' ];
+
+	/**
+	 * Splits a style into the item part (for the block's wrapper) and the layout part (for the list that holds the
+	 * children). The item part is what the block does inside its parent; the rest is what the block holds.
+	 */
+	function splitStyle( css ) {
+		const item = {};
+		const layout = {};
+		Object.keys( css || {} ).forEach( ( key ) => {
+			( ITEM_CSS.indexOf( key ) !== -1 ? item : layout )[ key ] = css[ key ];
+		} );
+		return {
+			item: Object.keys( item ).length ? item : undefined,
+			layout: Object.keys( layout ).length ? layout : undefined,
+		};
+	}
+
+	/** A grid line for an item: a start line, a span, or both (start / span N). Mirrors placement() in layout-blocks.php. */
+	function placementCss( start, span ) {
+		const line = str( start ).trim();
+		const count = str( span ).trim();
+		const lineOk = LINE_OK.test( line ) ? line : '';
+		const countOk = SPAN_OK.test( count ) ? count : '';
+		if ( ! lineOk ) {
+			return countOk ? 'span ' + countOk : '';
+		}
+		return lineOk + ( countOk ? ' / span ' + countOk : '' );
+	}
+
 	function styleFor( a ) {
 		const css = {};
-		const flex = a.display === 'flex';
-		const grid = a.display === 'grid';
+		const flex = a.display === 'flex' || a.display === 'inline-flex';
+		const grid = a.display === 'grid' || a.display === 'inline-grid';
+
+		// Every display but block is written, as the front end writes it.
+		if ( a.display && a.display !== 'block' ) {
+			css.display = a.display;
+		}
 
 		if ( flex ) {
-			css.display = 'flex';
 			css.flexDirection = a.flexDirection || 'row';
 			css.flexWrap = a.flexWrap || 'nowrap';
 		} else if ( grid ) {
-			css.display = 'grid';
 			const cols = columnsCss( a.gridColumns );
 			if ( cols ) {
 				css.gridTemplateColumns = cols;
@@ -274,6 +325,18 @@
 			const rows = templateCss( a.gridRows );
 			if ( rows ) {
 				css.gridTemplateRows = rows;
+			}
+			const areas = str( a.gridAreas ).trim();
+			if ( areas.length <= 300 && AREAS_OK.test( areas ) ) {
+				css.gridTemplateAreas = areas;
+			}
+			const autoColumns = templateCss( a.gridAutoColumns );
+			if ( autoColumns ) {
+				css.gridAutoColumns = autoColumns;
+			}
+			const autoRows = templateCss( a.gridAutoRows );
+			if ( autoRows ) {
+				css.gridAutoRows = autoRows;
 			}
 			if ( a.gridDense || a.gridAutoFlow === 'column' ) {
 				css.gridAutoFlow = a.gridAutoFlow + ( a.gridDense ? ' dense' : '' );
@@ -287,13 +350,12 @@
 			if ( a.alignItems ) {
 				css.alignItems = grid ? gridWord( a.alignItems ) : a.alignItems;
 			}
-			if ( grid ) {
-				if ( a.justifyItems ) {
-					css.justifyItems = gridWord( a.justifyItems );
-				}
-				if ( a.alignContent ) {
-					css.alignContent = gridWord( a.alignContent );
-				}
+			if ( grid && a.justifyItems ) {
+				css.justifyItems = gridWord( a.justifyItems );
+			}
+			// The lines of a grid, or of a flex box that wraps, are packed by align content.
+			if ( a.alignContent && ( grid || a.flexWrap !== 'nowrap' ) ) {
+				css.alignContent = grid ? gridWord( a.alignContent ) : a.alignContent;
 			}
 			if ( GAP_OK.test( withPx( a.gap ) ) ) {
 				css.gap = withPx( a.gap );
@@ -313,6 +375,10 @@
 		if ( a.justifySelf ) {
 			css.justifySelf = gridWord( a.justifySelf );
 		}
+		const order = str( a.order ).trim();
+		if ( INT_OK.test( order ) ) {
+			css.order = order;
+		}
 		if ( NUMBER_OK.test( str( a.flexGrow ) ) ) {
 			css.flexGrow = a.flexGrow;
 		}
@@ -323,11 +389,17 @@
 		if ( basis ) {
 			css.flexBasis = basis;
 		}
-		if ( SPAN_OK.test( str( a.columnSpan ).trim() ) ) {
-			css.gridColumn = 'span ' + str( a.columnSpan ).trim();
+		const area = str( a.gridArea ).trim();
+		if ( IDENT_OK.test( area ) ) {
+			css.gridArea = area;
 		}
-		if ( SPAN_OK.test( str( a.rowSpan ).trim() ) ) {
-			css.gridRow = 'span ' + str( a.rowSpan ).trim();
+		const column = placementCss( a.columnStart, a.columnSpan );
+		if ( column ) {
+			css.gridColumn = column;
+		}
+		const row = placementCss( a.rowStart, a.rowSpan );
+		if ( row ) {
+			css.gridRow = row;
 		}
 
 		// Spacing, width, opacity and overflow: the same rules as the front end (layout-blocks.php).
@@ -515,8 +587,8 @@
 	 * it applies to the display chosen. The pictures are the version 12 mock's (layout-icons.js).
 	 */
 	function LayoutFields( { a, set } ) {
-		const flex = a.display === 'flex';
-		const grid = a.display === 'grid';
+		const flex = a.display === 'flex' || a.display === 'inline-flex';
+		const grid = a.display === 'grid' || a.display === 'inline-grid';
 		const box = flex || grid;
 		const axis = /^column/.test( a.flexDirection ) ? 'y' : 'x';
 		const reverse = /reverse$/.test( a.flexDirection );
@@ -603,6 +675,36 @@
 				),
 				h(
 					Row,
+					{ key: 'auto-columns', label: __( 'Auto columns', 'snn' ), changed: a.gridAutoColumns !== '' },
+					h( TextField, {
+						label: __( 'Auto columns', 'snn' ),
+						value: a.gridAutoColumns,
+						placeholder: __( 'auto', 'snn' ),
+						onChange: ( v ) => set( { gridAutoColumns: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'auto-rows', label: __( 'Auto rows', 'snn' ), changed: a.gridAutoRows !== '' },
+					h( TextField, {
+						label: __( 'Auto rows', 'snn' ),
+						value: a.gridAutoRows,
+						placeholder: __( 'auto', 'snn' ),
+						onChange: ( v ) => set( { gridAutoRows: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'areas', label: __( 'Areas', 'snn' ), changed: a.gridAreas !== '' },
+					h( TextField, {
+						label: __( 'Grid areas', 'snn' ),
+						value: a.gridAreas,
+						placeholder: '"header header" "main side"',
+						onChange: ( v ) => set( { gridAreas: v } ),
+					} )
+				),
+				h(
+					Row,
 					{ key: 'flow', label: __( 'Flow', 'snn' ), changed: a.gridAutoFlow !== 'row' },
 					h( Segmented, {
 						label: __( 'Flow', 'snn' ),
@@ -646,6 +748,20 @@
 			);
 		}
 
+		if ( flex && a.flexWrap !== 'nowrap' ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'flex-align-content', label: __( 'Align content', 'snn' ), changed: !! a.alignContent },
+					h( Segmented, {
+						label: __( 'Align content', 'snn' ),
+						value: a.alignContent || 'stretch',
+						options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( v ) => mainPic( v, ! turned ) ),
+						onChange: ( v ) => set( { alignContent: v } ),
+					} )
+				)
+			);
+		}
 		if ( grid ) {
 			rows.push(
 				h(
@@ -703,8 +819,8 @@
 
 	/** The item settings. They depend on the parent: flex or grid, or neither (then only a hint). */
 	function ItemFields( { a, set, parent } ) {
-		const flex = parent.display === 'flex';
-		const grid = parent.display === 'grid';
+		const flex = parent.display === 'flex' || parent.display === 'inline-flex';
+		const grid = parent.display === 'grid' || parent.display === 'inline-grid';
 		if ( ! flex && ! grid ) {
 			return h( 'div', { className: 'snn-hint' }, __( 'Put this block inside a flex or grid block to set its place in it.', 'snn' ) );
 		}
@@ -721,6 +837,19 @@
 			),
 		];
 
+		rows.push(
+			h(
+				Row,
+				{ key: 'order', label: __( 'Order', 'snn' ), changed: a.order !== '' },
+				h( TextField, {
+					label: __( 'Order', 'snn' ),
+					value: a.order,
+					placeholder: '0',
+					inputMode: 'numeric',
+					onChange: ( v ) => set( { order: v } ),
+				} )
+			)
+		);
 		if ( grid ) {
 			rows.push(
 				h(
@@ -731,6 +860,17 @@
 						value: a.justifySelf || 'stretch',
 						options: toOptions( CHOICES.cell ),
 						onChange: ( v ) => set( { justifySelf: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'column-start', label: __( 'Column start', 'snn' ), changed: !! a.columnStart },
+					h( TextField, {
+						label: __( 'Column start', 'snn' ),
+						value: a.columnStart,
+						placeholder: __( 'auto', 'snn' ),
+						inputMode: 'numeric',
+						onChange: ( v ) => set( { columnStart: v } ),
 					} )
 				),
 				h(
@@ -746,6 +886,17 @@
 				),
 				h(
 					Row,
+					{ key: 'row-start', label: __( 'Row start', 'snn' ), changed: !! a.rowStart },
+					h( TextField, {
+						label: __( 'Row start', 'snn' ),
+						value: a.rowStart,
+						placeholder: __( 'auto', 'snn' ),
+						inputMode: 'numeric',
+						onChange: ( v ) => set( { rowStart: v } ),
+					} )
+				),
+				h(
+					Row,
 					{ key: 'row-span', label: __( 'Row span', 'snn' ), changed: !! a.rowSpan },
 					h( TextField, {
 						label: __( 'Row span', 'snn' ),
@@ -753,6 +904,16 @@
 						placeholder: '1',
 						inputMode: 'numeric',
 						onChange: ( v ) => set( { rowSpan: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'area', label: __( 'Area', 'snn' ), changed: !! a.gridArea },
+					h( TextField, {
+						label: __( 'Grid area', 'snn' ),
+						value: a.gridArea,
+						placeholder: __( 'name', 'snn' ),
+						onChange: ( v ) => set( { gridArea: v } ),
 					} )
 				)
 			);
@@ -1136,6 +1297,9 @@
 			rowGap: { type: 'string', default: LAYOUT_DEFAULTS.rowGap },
 			gridColumns: { type: 'string', default: LAYOUT_DEFAULTS.gridColumns },
 			gridRows: { type: 'string', default: LAYOUT_DEFAULTS.gridRows },
+			gridAutoColumns: { type: 'string', default: LAYOUT_DEFAULTS.gridAutoColumns },
+			gridAutoRows: { type: 'string', default: LAYOUT_DEFAULTS.gridAutoRows },
+			gridAreas: { type: 'string', default: LAYOUT_DEFAULTS.gridAreas },
 			gridAutoFlow: { type: 'string', default: LAYOUT_DEFAULTS.gridAutoFlow },
 			gridDense: { type: 'boolean', default: LAYOUT_DEFAULTS.gridDense },
 			justifyItems: { type: 'string', default: LAYOUT_DEFAULTS.justifyItems },
@@ -1147,6 +1311,10 @@
 			flexBasis: { type: 'string', default: ITEM_DEFAULTS.flexBasis },
 			columnSpan: { type: 'string', default: ITEM_DEFAULTS.columnSpan },
 			rowSpan: { type: 'string', default: ITEM_DEFAULTS.rowSpan },
+			columnStart: { type: 'string', default: ITEM_DEFAULTS.columnStart },
+			rowStart: { type: 'string', default: ITEM_DEFAULTS.rowStart },
+			gridArea: { type: 'string', default: ITEM_DEFAULTS.gridArea },
+			order: { type: 'string', default: ITEM_DEFAULTS.order },
 			backgroundColor: { type: 'string', default: '' },
 			paddingTop: { type: 'string', default: '' },
 			paddingBottom: { type: 'string', default: '' },
@@ -1228,14 +1396,17 @@
 						return 'Desktop';
 					}
 				}, [] );
+				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
+				const parts = splitStyle( styleFor( effectiveValues( a, device ) ) );
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses ].filter( Boolean ).join( ' ' ),
+					style: parts.item,
 				} );
 				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
 				// puts its own list element between the block wrapper and the children, so a style on the
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
-				const innerProps = useInnerBlocksProps( { style: styleFor( effectiveValues( a, device ) ) }, { __unstableDisableLayoutClassNames: true } );
+				const innerProps = useInnerBlocksProps( { style: parts.layout }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
 				return h(
 					Fragment,
