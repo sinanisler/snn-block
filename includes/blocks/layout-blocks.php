@@ -40,6 +40,19 @@ class SNN_Layout_Blocks {
 	const GRID_FLOW      = array( 'row', 'column' );
 	const ALIGN_SELF     = array( 'auto', 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
 	const JUSTIFY_SELF   = array( 'stretch', 'flex-start', 'center', 'flex-end' );
+	const OVERFLOW       = array( 'visible', 'hidden', 'clip' );
+
+	/**
+	 * The views that can set their own values, and the widest width each one covers (the view menu's
+	 * Tablet and Mobile). A value a view does not set comes from the view above it, then from Desktop.
+	 */
+	const VIEW_WIDTHS = array(
+		'tablet' => 991,
+		'mobile' => 478,
+	);
+
+	/** The settings a view can set for itself. Each is the attribute of the same name. */
+	const VIEW_KEYS = array( 'gap', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
@@ -104,6 +117,13 @@ class SNN_Layout_Blocks {
 			'columnSpan'     => array( 'type' => 'string', 'default' => '' ),
 			'rowSpan'        => array( 'type' => 'string', 'default' => '' ),
 			'backgroundColor' => array( 'type' => 'string', 'default' => '' ),
+			'paddingTop'      => array( 'type' => 'string', 'default' => '' ),
+			'paddingBottom'   => array( 'type' => 'string', 'default' => '' ),
+			'maxWidth'        => array( 'type' => 'string', 'default' => '' ),
+			'opacity'         => array( 'type' => 'string', 'default' => '' ),
+			'overflow'        => array( 'type' => 'string', 'default' => '' ),
+			// The values a view sets for itself: responsive = array( 'tablet' => array( 'gap' => '16' ), 'mobile' => ... ).
+			'responsive'      => array( 'type' => 'object', 'default' => array() ),
 			'query'          => array( 'type' => 'object', 'default' => SNN_Query_Loop::defaults() ),
 			'conditions'      => array( 'type' => 'array', 'default' => array() ),
 			'interactions'    => array( 'type' => 'array', 'default' => array() ),
@@ -176,6 +196,17 @@ class SNN_Layout_Blocks {
 		// The block's own class (wp-block-snn-section and so on) first, then the author's classes.
 		$classes = array_merge( array( self::block_class( $name ) ), $custom );
 
+		// A view that sets its own values needs media rules, and an inline style would beat them. So the whole
+		// style goes into a class rule, followed by the media rules. Without per-view values the style stays inline.
+		$prefix = '';
+		$views  = self::view_rules( $a, $dyn );
+		if ( '' !== $views ) {
+			$class     = 'snn-r-' . substr( md5( $style . $views ), 0, 10 );
+			$classes[] = $class;
+			$prefix    = '<style>.' . $class . '{' . $style . '}' . str_replace( '%CLASS%', $class, $views ) . '</style>';
+			$style     = '';
+		}
+
 		$extra = array(
 			'class' => implode( ' ', $classes ),
 		);
@@ -196,7 +227,7 @@ class SNN_Layout_Blocks {
 			$attrs .= ' style="' . esc_attr( $style ) . '"';
 		}
 
-		return '<' . $a['tagName'] . ' ' . $attrs . '>' . $inner . '</' . $a['tagName'] . '>';
+		return $prefix . '<' . $a['tagName'] . ' ' . $attrs . '>' . $inner . '</' . $a['tagName'] . '>';
 	}
 
 	/**
@@ -301,7 +332,98 @@ class SNN_Layout_Blocks {
 			$css[] = 'background-color:' . $background;
 		}
 
+		// Spacing, width, opacity and overflow. A view that sets its own value gets its own rule (see element()).
+		$padding_top = self::size_value( SNN_Dynamic_Data::render( $a['paddingTop'], $dyn, 'plain' ) );
+		if ( '' !== $padding_top ) {
+			$css[] = 'padding-top:' . $padding_top;
+		}
+		$padding_bottom = self::size_value( SNN_Dynamic_Data::render( $a['paddingBottom'], $dyn, 'plain' ) );
+		if ( '' !== $padding_bottom ) {
+			$css[] = 'padding-bottom:' . $padding_bottom;
+		}
+		$max_width = self::size_value( SNN_Dynamic_Data::render( $a['maxWidth'], $dyn, 'plain' ) );
+		if ( '' !== $max_width ) {
+			// A limited width sits in the middle of its parent.
+			$css[] = 'max-width:' . $max_width;
+			$css[] = 'margin-left:auto';
+			$css[] = 'margin-right:auto';
+		}
+		$opacity = self::opacity( SNN_Dynamic_Data::render( $a['opacity'], $dyn, 'plain' ) );
+		if ( '' !== $opacity ) {
+			$css[] = 'opacity:' . $opacity;
+		}
+		$overflow = self::pick( $a['overflow'], self::OVERFLOW, '' );
+		if ( '' !== $overflow ) {
+			$css[] = 'overflow:' . $overflow;
+		}
+
 		return implode( ';', $css );
+	}
+
+	/** A length for spacing and width: px, rem, em, %, vw or vh, zero, or a spacing variable. Negative values are dropped. */
+	public static function size_value( $value ) {
+		$value = trim( (string) $value );
+		if ( preg_match( '/^\d+(\.\d+)?$/', $value ) && '0' !== $value ) {
+			$value .= 'px'; // A bare number is pixels, as the panel's unit says.
+		}
+		if ( preg_match( '/^(var\(--[a-z][a-z0-9-]*\)|\d+(\.\d+)?(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
+			return $value;
+		}
+		return '';
+	}
+
+	/** An opacity from 0 to 100 (a percentage), written as 0 to 1. Anything else is dropped. */
+	public static function opacity( $value ) {
+		$value = trim( (string) $value );
+		if ( ! preg_match( '/^\d{1,3}$/', $value ) || (int) $value > 100 ) {
+			return '';
+		}
+		return (string) ( (int) $value / 100 );
+	}
+
+	/**
+	 * The values each view sets: only the keys in VIEW_KEYS, only the views in VIEW_WIDTHS, and only values
+	 * that are not empty. The values themselves are checked where they are written (style()).
+	 */
+	public static function clean_responsive( $value ) {
+		$out = array();
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		foreach ( array_keys( self::VIEW_WIDTHS ) as $view ) {
+			if ( ! isset( $value[ $view ] ) || ! is_array( $value[ $view ] ) ) {
+				continue;
+			}
+			$own = array();
+			foreach ( self::VIEW_KEYS as $key ) {
+				if ( isset( $value[ $view ][ $key ] ) && is_scalar( $value[ $view ][ $key ] ) && '' !== (string) $value[ $view ][ $key ] ) {
+					$own[ $key ] = mb_substr( (string) $value[ $view ][ $key ], 0, 300 );
+				}
+			}
+			if ( $own ) {
+				$out[ $view ] = $own;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * The media rules for the views that set their own values. Each rule holds the whole style of that view
+	 * (the base, then the views above it, then its own), because a rule for a narrower view must win over the
+	 * base. Returns '' when no view sets a value. The class is a placeholder until the caller fills it in.
+	 */
+	private static function view_rules( array $a, array $dyn ) {
+		$own   = is_array( $a['responsive'] ) ? $a['responsive'] : array();
+		$css   = '';
+		$merge = $a;
+		foreach ( self::VIEW_WIDTHS as $view => $width ) {
+			if ( empty( $own[ $view ] ) ) {
+				continue;
+			}
+			$merge = array_merge( $merge, $own[ $view ] );
+			$css  .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn ) . '}}';
+		}
+		return $css;
 	}
 
 	/**
@@ -310,6 +432,9 @@ class SNN_Layout_Blocks {
 	 */
 	public static function gap( $value ) {
 		$value = trim( (string) $value );
+		if ( preg_match( '/^\d+(\.\d+)?$/', $value ) && '0' !== $value ) {
+			$value .= 'px'; // A bare number is pixels, as the panel's unit says.
+		}
 		if ( preg_match( '/^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
 			return $value;
 		}
@@ -403,10 +528,12 @@ class SNN_Layout_Blocks {
 		$out['alignContent']   = self::pick( $out['alignContent'], self::ALIGN_CONTENT, '' );
 		$out['alignSelf']      = self::pick( $out['alignSelf'], self::ALIGN_SELF, '' );
 		$out['justifySelf']    = self::pick( $out['justifySelf'], self::JUSTIFY_SELF, '' );
-		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'backgroundColor' ) as $key ) {
+		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity' ) as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
+		$out['overflow']     = self::pick( $out['overflow'], self::OVERFLOW, '' );
+		$out['responsive']   = self::clean_responsive( $out['responsive'] );
 		$out['conditions']   = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions'] = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		return $out;

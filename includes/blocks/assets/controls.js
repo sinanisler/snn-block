@@ -314,7 +314,7 @@
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
 	 * what it resolves to under the field.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -346,6 +346,7 @@
 					spellCheck: false,
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
+				unit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
 				variables && variables.length
 					? h(
 							'button',
@@ -388,6 +389,157 @@
 		);
 	}
 
+	/* ------------------------------------------------------------------
+	 * Groups and per-view values (the version 12 layout)
+	 * ---------------------------------------------------------------- */
+
+	/** A group of rows: a title in small capitals, a note on the right, then the rows. */
+	function Group( { title, note, children } ) {
+		return h(
+			'div',
+			{ className: 'snn-group' },
+			h(
+				'div',
+				{ className: 'snn-group-head' },
+				h( 'span', { className: 'snn-group-title' }, title ),
+				note ? h( 'span', { className: 'snn-group-note' }, note ) : null
+			),
+			children
+		);
+	}
+
+	/**
+	 * A part that opens and closes, closed at first. card: a row of the Style tab, with its value on the right.
+	 * planned: its content is not built yet, so opening it says so (unless it has content).
+	 */
+	function Disclosure( { title, note, card, planned, startOpen, children } ) {
+		const [ open, setOpen ] = useState( !! startOpen );
+		return h(
+			'div',
+			{ className: 'snn-disc' + ( card ? ' is-card' : '' ) + ( open ? ' is-open' : '' ) },
+			h(
+				'button',
+				{
+					type: 'button',
+					className: 'snn-disc-head',
+					'aria-expanded': open ? 'true' : 'false',
+					onClick: () => setOpen( ! open ),
+				},
+				h( 'span', { className: card ? 'snn-disc-card-title' : 'snn-group-title' }, title ),
+				planned ? h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) ) : null,
+				note ? h( 'span', { className: 'snn-group-note' }, note ) : null,
+				h(
+					'svg',
+					{ className: 'snn-chev', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' },
+					h( 'path', { d: open ? 'M4 6l4 4 4-4' : 'M6 4l4 4-4 4' } )
+				)
+			),
+			open
+				? h(
+						'div',
+						{ className: 'snn-disc-body' },
+						children || ( planned ? h( 'p', { className: 'snn-hint' }, __( 'Planned. Not saved yet.', 'snn' ) ) : null )
+				  )
+				: null
+		);
+	}
+
+	/**
+	 * A value that can differ per view. The line under the label says where the value comes from: "from Desktop
+	 * (96 px)", or "set for Tablet" when this view sets its own, with a Reset that takes the value back.
+	 */
+	function ViewRow( { label, device, own, from, value, unit, onReset, children } ) {
+		let hint = '';
+		if ( device !== 'Desktop' ) {
+			hint = own ? __( 'set for', 'snn' ) + ' ' + device : __( 'from', 'snn' ) + ' ' + from + ( value === '' ? '' : ' (' + value + ( unit || '' ) + ')' );
+		}
+		return h(
+			'div',
+			{ className: 'snn-row snn-view-row' + ( own ? ' is-own' : '' ) },
+			h(
+				'span',
+				{ className: 'snn-row-label snn-view-label' },
+				h( 'span', { className: 'snn-row-title' }, label, own ? h( Dot ) : null ),
+				hint ? h( 'span', { className: 'snn-view-hint' }, hint ) : null
+			),
+			h(
+				'div',
+				{ className: 'snn-row-control snn-view-control' },
+				children,
+				own && onReset ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset }, __( 'Reset', 'snn' ) ) : null
+			)
+		);
+	}
+
+	/** The views that can set their own values, by device name. Desktop holds the base values. */
+	const VIEW_OF = { Tablet: 'tablet', Mobile: 'mobile' };
+
+	/** The value a view sets for itself, or undefined when it does not (Desktop never does). */
+	function ownValue( a, device, key ) {
+		const view = VIEW_OF[ device ];
+		const own = view && a.responsive ? a.responsive[ view ] : null;
+		return own && own[ key ] !== undefined && own[ key ] !== '' ? own[ key ] : undefined;
+	}
+
+	/** The value a view inherits: from Tablet for Mobile when Tablet sets it, otherwise from Desktop. */
+	function inheritedValue( a, device, key ) {
+		if ( device === 'Mobile' ) {
+			const tablet = ownValue( a, 'Tablet', key );
+			if ( tablet !== undefined ) {
+				return { value: tablet, from: 'Tablet' };
+			}
+		}
+		return { value: a[ key ], from: 'Desktop' };
+	}
+
+	/** The values a device shows: the base, then the views above it, then its own (as the front end resolves them). */
+	function effectiveValues( a, device ) {
+		const out = { ...a };
+		const layers = device === 'Mobile' ? [ 'tablet', 'mobile' ] : device === 'Tablet' ? [ 'tablet' ] : [];
+		layers.forEach( ( view ) => {
+			const own = a.responsive && a.responsive[ view ] ? a.responsive[ view ] : {};
+			Object.keys( own ).forEach( ( k ) => {
+				if ( own[ k ] !== undefined && own[ k ] !== '' ) {
+					out[ k ] = own[ k ];
+				}
+			} );
+		} );
+		return out;
+	}
+
+	/** Sets a value for the device: the base on Desktop, the device's own value on Tablet and Mobile. An empty value clears it. */
+	function setValue( a, set, device, key, value ) {
+		if ( device === 'Desktop' ) {
+			set( { [ key ]: value } );
+			return;
+		}
+		const view = VIEW_OF[ device ];
+		if ( value === '' || value === undefined ) {
+			clearValue( a, set, device, key );
+			return;
+		}
+		const responsive = { ...( a.responsive || {} ) };
+		responsive[ view ] = { ...( responsive[ view ] || {} ), [ key ]: value };
+		set( { responsive } );
+	}
+
+	/** Takes a view's own value back, so the view inherits again. A view with nothing left is removed. */
+	function clearValue( a, set, device, key ) {
+		const view = VIEW_OF[ device ];
+		if ( ! view ) {
+			return;
+		}
+		const responsive = { ...( a.responsive || {} ) };
+		const own = { ...( responsive[ view ] || {} ) };
+		delete own[ key ];
+		if ( Object.keys( own ).length ) {
+			responsive[ view ] = own;
+		} else {
+			delete responsive[ view ];
+		}
+		set( { responsive } );
+	}
+
 	window.snnControls = {
 		Bolt,
 		Dot,
@@ -398,5 +550,13 @@
 		Select,
 		Segmented,
 		TextField,
+		Group,
+		Disclosure,
+		ViewRow,
+		ownValue,
+		inheritedValue,
+		effectiveValues,
+		setValue,
+		clearValue,
 	};
 } )( window.wp );

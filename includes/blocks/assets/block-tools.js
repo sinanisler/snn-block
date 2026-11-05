@@ -4,7 +4,7 @@
  *   HeadIcons           the Conditions and Interactions buttons, top right of the panel
  *   IdBar               the CSS ID (the field is the rename), the classes button, copy ID, copy styles and paste styles
  *   ClassesEditor       the custom classes, as chips, added with Enter
- *   SubPanel            a sub-panel that replaces the tabs, with a back button (not a popup)
+ *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
  *   InteractionsEditor  when a trigger happens, do an action on this element or on the one with an ID
  *
@@ -309,27 +309,6 @@
 		);
 	}
 
-	/** A sub-panel with a back button. It takes the place of the tabs, as Bricks's panels do. */
-	function SubPanel( { title, onBack, children } ) {
-		return h(
-			'div',
-			{ className: 'snn-bt-sub' },
-			h(
-				'div',
-				{ className: 'snn-bt-sub-head' },
-				h( 'button', {
-					type: 'button',
-					className: 'snn-bt-sub-back',
-					title: __( 'Back to the settings', 'snn' ),
-					'aria-label': __( 'Back to the settings', 'snn' ),
-					onClick: onBack,
-				}, glyph( 'back' ) ),
-				h( 'span', { className: 'snn-bt-sub-title' }, title )
-			),
-			h( 'div', { className: 'snn-bt-sub-body' }, children )
-		);
-	}
-
 	/* ------------------------------------------------------------------
 	 * Conditions
 	 * ---------------------------------------------------------------- */
@@ -589,7 +568,6 @@
 		HeadIcons,
 		IdBar,
 		ClassesEditor,
-		SubPanel,
 		ConditionsEditor,
 		InteractionsEditor,
 		readClip,

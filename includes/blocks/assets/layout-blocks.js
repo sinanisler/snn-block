@@ -29,8 +29,8 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { Glyph, arrange, columns, BLOCK_SHAPE, GRID_SHAPE, ARROWS } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField } = C;
-	const { HeadIcons, IdBar, ClassesEditor, SubPanel, ConditionsEditor, InteractionsEditor, readClip, writeClip, styleValues } = window.snnBlockTools;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
+	const { HeadIcons, IdBar, ClassesEditor, ConditionsEditor, InteractionsEditor, readClip, writeClip, styleValues } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -78,7 +78,7 @@
 	};
 
 	/** The style settings: what Copy styles takes and Paste styles gives (layout, item and background). */
-	const STYLE_KEYS = [ ...Object.keys( LAYOUT_DEFAULTS ), ...Object.keys( ITEM_DEFAULTS ), 'backgroundColor' ];
+	const STYLE_KEYS = [ ...Object.keys( LAYOUT_DEFAULTS ), ...Object.keys( ITEM_DEFAULTS ), 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow' ];
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
 	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
@@ -160,6 +160,19 @@
 	const GAP_OK = /^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
 	const TEMPLATE_OK = /^[A-Za-z0-9 .,()%+-]{1,160}$/;
 	const NUMBER_OK = /^\d+(\.\d+)?$/;
+	/** A length for padding and width (no minus): the same rule as size_value() in layout-blocks.php. */
+	const SIZE_OK = /^(var\(--[a-z][a-z0-9-]*\)|\d+(\.\d+)?(px|rem|em|%|vw|vh)|0)$/;
+	const OVERFLOW_OK = [ 'visible', 'hidden', 'clip' ];
+	/** An opacity from 0 to 100, written as 0 to 1, as the front end writes it. Anything else is empty. */
+	/** A bare number is pixels (the panel shows px next to the field). */
+	function withPx( v ) {
+		const t = str( v ).trim();
+		return /^\d+(\.\d+)?$/.test( t ) && t !== '0' ? t + 'px' : t;
+	}
+	function opacityCss( v ) {
+		const t = str( v ).trim();
+		return /^\d{1,3}$/.test( t ) && Number( t ) <= 100 ? String( Number( t ) / 100 ) : '';
+	}
 	const SPAN_OK = /^(1[0-2]|[1-9])$/;
 
 	/* ------------------------------------------------------------------
@@ -405,14 +418,14 @@
 					css.alignContent = gridWord( a.alignContent );
 				}
 			}
-			if ( GAP_OK.test( str( a.gap ) ) ) {
-				css.gap = a.gap;
+			if ( GAP_OK.test( withPx( a.gap ) ) ) {
+				css.gap = withPx( a.gap );
 			}
-			if ( GAP_OK.test( str( a.columnGap ) ) ) {
-				css.columnGap = a.columnGap;
+			if ( GAP_OK.test( withPx( a.columnGap ) ) ) {
+				css.columnGap = withPx( a.columnGap );
 			}
-			if ( GAP_OK.test( str( a.rowGap ) ) ) {
-				css.rowGap = a.rowGap;
+			if ( GAP_OK.test( withPx( a.rowGap ) ) ) {
+				css.rowGap = withPx( a.rowGap );
 			}
 		}
 
@@ -438,6 +451,26 @@
 		}
 		if ( SPAN_OK.test( str( a.rowSpan ).trim() ) ) {
 			css.gridRow = 'span ' + str( a.rowSpan ).trim();
+		}
+
+		// Spacing, width, opacity and overflow: the same rules as the front end (layout-blocks.php).
+		if ( SIZE_OK.test( withPx( a.paddingTop ) ) ) {
+			css.paddingTop = withPx( a.paddingTop );
+		}
+		if ( SIZE_OK.test( withPx( a.paddingBottom ) ) ) {
+			css.paddingBottom = withPx( a.paddingBottom );
+		}
+		if ( SIZE_OK.test( withPx( a.maxWidth ) ) ) {
+			css.maxWidth = withPx( a.maxWidth );
+			css.marginLeft = 'auto';
+			css.marginRight = 'auto';
+		}
+		const opacity = opacityCss( a.opacity );
+		if ( opacity ) {
+			css.opacity = opacity;
+		}
+		if ( OVERFLOW_OK.indexOf( a.overflow ) !== -1 ) {
+			css.overflow = a.overflow;
 		}
 
 		if ( a.backgroundColor && COLOR_OK.test( a.backgroundColor ) ) {
@@ -620,20 +653,8 @@
 					options: displayOptions(),
 					onChange: ( v ) => set( { display: v } ),
 				} )
-			),
-			h(
-				Row,
-				{ key: 'tag', label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
-				h( Select, {
-					label: __( 'HTML tag', 'snn' ),
-					value: a.tagName,
-					options: TAG_OPTIONS,
-					onChange: ( v ) => set( { tagName: v } ),
-				} )
 			)
 		);
-		// The version 12 mock lists the HTML tag first, then the display.
-		rows.reverse();
 
 		if ( flex ) {
 			rows.push(
@@ -767,17 +788,6 @@
 
 		if ( box ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'gap', label: __( 'Gap', 'snn' ), changed: !! a.gap },
-					h( TextField, {
-						label: __( 'Gap', 'snn' ),
-						value: a.gap,
-						placeholder: '0',
-						variables: VARIABLE_GROUPS, kind: 'size',
-						onChange: ( v ) => set( { gap: v } ),
-					} )
-				),
 				h(
 					Row,
 					{ key: 'column-gap', label: __( 'Column gap', 'snn' ), changed: !! a.columnGap },
@@ -974,45 +984,77 @@
 		);
 	}
 
-	/** A group the version 12 mock shows that the editor does not build yet. It says so and holds nothing. */
-	function PlannedGroup( { title, note, startOpen } ) {
-		const [ open, setOpen ] = useState( !! startOpen );
+	/** The overflow choices of the Visibility group. */
+	const OVERFLOW_OPTIONS = [
+		{ value: 'visible', label: __( 'Visible', 'snn' ) },
+		{ value: 'hidden', label: __( 'Hidden', 'snn' ) },
+		{ value: 'clip', label: __( 'Clip', 'snn' ) },
+	];
+
+	/**
+	 * One value a view can set: its field, in a row with the hint and the Reset (see ViewRow in controls.js).
+	 * The field shows the device's own value, or the value it inherits.
+	 */
+	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder } ) {
+		const own = ownValue( a, device, k );
+		const inherited = inheritedValue( a, device, k );
+		const value = own !== undefined ? own : inherited.value;
+		const change = ( v ) => setValue( a, set, device, k, v );
+		const control =
+			kind === 'select'
+				? h( Select, { label, value: value || options[ 0 ].value, options, onChange: change } )
+				: h( TextField, {
+						label,
+						value: value === undefined || value === null ? '' : String( value ),
+						placeholder,
+						unit,
+						variables: kind === 'size' ? VARIABLE_GROUPS : undefined,
+						kind: kind === 'size' ? 'size' : undefined,
+						onChange: change,
+				  } );
 		return h(
-			Accordion,
-			{ title, planned: true, note, open, onToggle: setOpen },
-			h( 'p', { className: 'snn-hint' }, __( 'Planned. Not saved yet.', 'snn' ) )
+			ViewRow,
+			{
+				label,
+				device,
+				own: own !== undefined,
+				from: inherited.from,
+				value: inherited.value === undefined ? '' : inherited.value,
+				unit,
+				onReset: () => clearValue( a, set, device, k ),
+			},
+			control
 		);
 	}
 
 	/**
-	 * The inspector, as in the version 12 panel: the header (block name, ID and classes, and the view),
-	 * then the Default and Style tabs.
+	 * The inspector, as in the version 12 layout: the header (the name, the ID and classes, the view), then the
+	 * Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, duplicateId } ) {
+	function Panel( { a, set, tag, parent, title, duplicateId, device } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
-		// null, 'conditions' or 'interactions': a sub-panel that takes the place of the tabs.
+		// null, 'conditions' or 'interactions': a sub-panel that takes the whole view (see the end of this function).
 		const [ sub, setSub ] = useState( null );
 		const [ classesOpen, setClassesOpen ] = useState( false );
 		const [ openQuery, setOpenQuery ] = useState( false );
-		const [ openLayout, setOpenLayout ] = useState( true );
-		const [ openItem, setOpenItem ] = useState( false );
-		const [ openEffects, setOpenEffects ] = useState( false );
-		const [ openAdvanced, setOpenAdvanced ] = useState( false );
-		const [ openBackground, setOpenBackground ] = useState( false );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
 		const classCount = ( a.cssClasses || '' ).split( /\s+/ ).filter( Boolean ).length;
 		const clip = readClip();
 		const tabButton = ( id, label ) =>
-			h( 'button', {
-				type: 'button',
-				role: 'tab',
-				className: 'snn-tab',
-				'aria-selected': tab === id ? 'true' : 'false',
-				onClick: () => setTab( id ),
-			}, label );
+			h(
+				'button',
+				{
+					type: 'button',
+					role: 'tab',
+					className: 'snn-tab',
+					'aria-selected': tab === id ? 'true' : 'false',
+					onClick: () => setTab( id ),
+				},
+				label
+			);
 
 		const header = h(
 			'div',
@@ -1034,132 +1076,154 @@
 				classCount,
 				classesOpen,
 				onToggleClasses: () => setClassesOpen( ! classesOpen ),
-				onCopyStyles: () => writeClip( styleValues( a, STYLE_KEYS ) ),
+				onCopyStyles: () => writeClip( { ...styleValues( a, STYLE_KEYS ), responsive: a.responsive || {} } ),
 				canPaste: !! clip,
-				onPasteStyles: () => set( styleValues( clip.styles, STYLE_KEYS ) ),
+				onPasteStyles: () => set( { ...styleValues( clip.styles, STYLE_KEYS ), responsive: clip.styles.responsive || {} } ),
 				duplicate: !! duplicateId,
 			} ),
 			classesOpen ? h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } ) : null,
 			h( ViewSwitch, null )
 		);
 
-		// Default: the query loop, the layout, the item, the effects (planned), and the advanced fields.
+		// Default: the element, the query loop, the layout, the item, the effects (planned), and the advanced fields.
 		const defaultPane = h(
 			'div',
 			{ className: 'snn-pane' },
-			h( SwitchRow, {
-				label: __( 'Query loop', 'snn' ),
-				checked: q.enabled,
-				onChange: ( v ) => {
-					setQ( { enabled: v } );
-					if ( v ) {
-						setOpenQuery( true );
-					}
-				},
-			} ),
 			h(
-				Accordion,
-				{
-					title: __( 'Query', 'snn' ),
-					open: openQuery,
-					onToggle: setOpenQuery,
-					disabled: ! q.enabled,
-					changed: changedQuery( q ),
-					hint: __( 'Turn on Query loop first.', 'snn' ),
-				},
-				h( QueryFields, { q, setQ } )
+				Group,
+				{ title: __( 'Element', 'snn' ), note: __( 'all viewports', 'snn' ) },
+				h(
+					Row,
+					{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
+					h( Select, {
+						label: __( 'HTML tag', 'snn' ),
+						value: a.tagName,
+						options: TAG_OPTIONS,
+						onChange: ( v ) => set( { tagName: v } ),
+					} )
+				)
 			),
 			h(
-				Accordion,
-				{
-					title: __( 'Layout', 'snn' ),
-					open: openLayout,
-					onToggle: setOpenLayout,
-					changed: layoutChanged( a, tag ),
-				},
+				Group,
+				{ title: __( 'Query loop', 'snn' ) },
+				h( SwitchRow, {
+					label: __( 'Query loop', 'snn' ),
+					checked: q.enabled,
+					onChange: ( v ) => {
+						setQ( { enabled: v } );
+						if ( v ) {
+							setOpenQuery( true );
+						}
+					},
+				} ),
+				h(
+					Accordion,
+					{
+						title: __( 'Query', 'snn' ),
+						open: openQuery,
+						onToggle: setOpenQuery,
+						disabled: ! q.enabled,
+						changed: changedQuery( q ),
+						hint: __( 'Turn on Query loop first.', 'snn' ),
+					},
+					h( QueryFields, { q, setQ } )
+				)
+			),
+			h(
+				Group,
+				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
 				h( Presets, { a, set } ),
 				h( LayoutFields, { a, set, tag } )
 			),
 			h(
-				Accordion,
-				{
-					title: __( 'Item', 'snn' ),
-					open: openItem,
-					onToggle: setOpenItem,
-					changed: itemChanged( a ),
-				},
+				Disclosure,
+				{ title: __( 'Item', 'snn' ), note: __( 'all viewports', 'snn' ) },
 				h( ItemFields, { a, set, parent } )
 			),
+			h( Disclosure, { title: __( 'Effects', 'snn' ), note: __( 'all viewports', 'snn' ), planned: true } ),
 			h(
-				Accordion,
-				{ title: __( 'Effects', 'snn' ), planned: true, open: openEffects, onToggle: setOpenEffects },
-				h( 'p', { className: 'snn-hint' }, __( 'Planned. Not saved yet.', 'snn' ) )
-			),
-			h(
-				Accordion,
-				{
-					title: __( 'Advanced', 'snn' ),
-					open: openAdvanced,
-					onToggle: setOpenAdvanced,
-				},
-				h( Fragment, null,
-					h( Row, { label: __( 'Custom CSS', 'snn' ) },
-						h( 'div', { className: 'snn-planned-row' },
-							h( 'button', { type: 'button', className: 'snn-input', disabled: true }, __( 'Edit CSS (admins)', 'snn' ) ),
-							h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) )
-						)
+				Disclosure,
+				{ title: __( 'Advanced', 'snn' ) },
+				h(
+					Row,
+					{ label: __( 'Custom CSS', 'snn' ) },
+					h(
+						'div',
+						{ className: 'snn-planned-row' },
+						h( 'button', { type: 'button', className: 'snn-input', disabled: true }, __( 'Edit CSS (admins)', 'snn' ) ),
+						h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) )
 					)
 				)
 			)
 		);
 
-		// Style: the groups of the mock. Background is built; the rest are planned.
+		// Style: the values each view can set (spacing, size, visibility), then the collapsed groups of the mock.
 		const stylePane = h(
 			'div',
 			{ className: 'snn-pane' },
-			h( PlannedGroup, { title: __( 'Spacing', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
-			h( PlannedGroup, { title: __( 'Size', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
-			h( PlannedGroup, { title: __( 'Visibility', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
 			h(
-				Accordion,
-				{
-					title: __( 'Background', 'snn' ),
-					open: openBackground,
-					onToggle: setOpenBackground,
-					changed: !! a.backgroundColor,
-					note: a.backgroundColor ? a.backgroundColor : __( 'None', 'snn' ),
-				},
+				Group,
+				{ title: __( 'Spacing', 'snn' ), note: __( 'responsive', 'snn' ) },
+				h( ViewValue, { a, set, device, k: 'paddingTop', label: __( 'Padding top', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } ),
+				h( ViewValue, { a, set, device, k: 'paddingBottom', label: __( 'Padding bottom', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } ),
+				h( ViewValue, { a, set, device, k: 'gap', label: __( 'Gap', 'snn' ), unit: ' px', kind: 'size', placeholder: '0' } )
+			),
+			h(
+				Group,
+				{ title: __( 'Size', 'snn' ), note: __( 'responsive', 'snn' ) },
+				h( ViewValue, { a, set, device, k: 'maxWidth', label: __( 'Max width', 'snn' ), unit: ' px', kind: 'size', placeholder: __( 'none', 'snn' ) } )
+			),
+			h(
+				Group,
+				{ title: __( 'Visibility', 'snn' ), note: __( 'responsive', 'snn' ) },
+				h( ViewValue, { a, set, device, k: 'opacity', label: __( 'Opacity', 'snn' ), unit: '%', kind: 'number', placeholder: '100' } ),
+				h( ViewValue, { a, set, device, k: 'overflow', label: __( 'Overflow', 'snn' ), kind: 'select', options: OVERFLOW_OPTIONS } )
+			),
+			h( Disclosure, { card: true, title: __( 'Typography', 'snn' ), note: __( 'Inherit', 'snn' ), planned: true } ),
+			h(
+				Disclosure,
+				{ card: true, title: __( 'Background', 'snn' ), note: a.backgroundColor || __( 'None', 'snn' ) },
 				h( StyleFields, { a, set } )
 			),
-			h( PlannedGroup, { title: __( 'Typography', 'snn' ), note: __( 'Inherit', 'snn' ) } ),
-			h( PlannedGroup, { title: __( 'Border and box shadow', 'snn' ), note: __( 'None', 'snn' ) } ),
-			h( PlannedGroup, { title: __( 'Transform', 'snn' ), note: __( 'Motion', 'snn' ) } ),
-			h( PlannedGroup, { title: __( 'CSS filters and transition', 'snn' ) } )
+			h( Disclosure, { card: true, title: __( 'Border / Box shadow', 'snn' ), note: __( 'None', 'snn' ), planned: true } ),
+			h( Disclosure, { card: true, title: __( 'Gradient / Overlay', 'snn' ), note: __( 'None', 'snn' ), planned: true } ),
+			h( Disclosure, { card: true, title: __( 'Transform', 'snn' ), note: __( 'Motion effects', 'snn' ), planned: true } ),
+			h( Disclosure, { card: true, title: __( 'CSS', 'snn' ), note: __( 'Filters, transition', 'snn' ), planned: true } )
 		);
 
-		let body;
-		if ( sub === 'conditions' ) {
-			body = h(
-				SubPanel,
-				{ title: __( 'Conditions', 'snn' ), onBack: () => setSub( null ) },
-				h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
-			);
-		} else if ( sub === 'interactions' ) {
-			body = h(
-				SubPanel,
-				{ title: __( 'Interactions', 'snn' ), onBack: () => setSub( null ) },
-				h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
-			);
-		} else {
-			body = h(
-				Fragment,
-				null,
-				h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
-				tab === 'default' ? defaultPane : stylePane
+		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.
+		// The name, the ID bar, the view and the tabs are hidden.
+		if ( sub ) {
+			return h(
+				'div',
+				{ className: 'snn-panel' },
+				h(
+					'div',
+					{ className: 'snn-head' },
+					h(
+						'div',
+						{ className: 'snn-bt-name-row' },
+						h( 'div', { className: 'snn-name' }, sub === 'conditions' ? __( 'Conditions', 'snn' ) : __( 'Interactions', 'snn' ) ),
+						h( HeadIcons, { conditions: conditions.length, interactions: interactions.length, open: sub, onOpen: setSub } )
+					)
+				),
+				h(
+					'div',
+					{ className: 'snn-bt-sub-body' },
+					sub === 'conditions'
+						? h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
+						: h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
+				)
 			);
 		}
 
-		return h( 'div', { className: 'snn-panel' }, header, body );
+		return h(
+			'div',
+			{ className: 'snn-panel' },
+			header,
+			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+			tab === 'default' ? defaultPane : stylePane
+		);
 	}
 
 
@@ -1202,6 +1266,12 @@
 			columnSpan: { type: 'string', default: ITEM_DEFAULTS.columnSpan },
 			rowSpan: { type: 'string', default: ITEM_DEFAULTS.rowSpan },
 			backgroundColor: { type: 'string', default: '' },
+			paddingTop: { type: 'string', default: '' },
+			paddingBottom: { type: 'string', default: '' },
+			maxWidth: { type: 'string', default: '' },
+			opacity: { type: 'string', default: '' },
+			overflow: { type: 'string', default: '' },
+			responsive: { type: 'object', default: {} },
 			conditions: { type: 'array', default: [] },
 			interactions: { type: 'array', default: [] },
 			query: { type: 'object', default: QUERY_DEFAULTS },
@@ -1262,6 +1332,14 @@
 					},
 					[ clientId, a.htmlId ]
 				);
+				// The view the editor shows (Desktop, Tablet or Mobile): the values of that view are drawn on the canvas.
+				const device = useSelect( ( select ) => {
+					try {
+						return select( 'core/editor' ).getDeviceType() || 'Desktop';
+					} catch ( e ) {
+						return 'Desktop';
+					}
+				}, [] );
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses ].filter( Boolean ).join( ' ' ),
@@ -1269,12 +1347,12 @@
 				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
 				// puts its own list element between the block wrapper and the children, so a style on the
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
-				const innerProps = useInnerBlocksProps( { style: styleFor( a ) }, { __unstableDisableLayoutClassNames: true } );
+				const innerProps = useInnerBlocksProps( { style: styleFor( effectiveValues( a, device ) ) }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, duplicateId } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, duplicateId, device } ) ),
 					h(
 						'div',
 						blockProps,

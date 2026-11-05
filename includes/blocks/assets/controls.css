@@ -871,6 +871,153 @@
 	color: #646970;
 }
 
+/* Groups (the version 12 layout): a title in small capitals with a note on the right, then the rows */
+.snn-group {
+	padding: 10px 0 6px;
+	border-top: 1px solid #dcdcde;
+}
+
+.snn-group-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 0 16px;
+	margin-bottom: 4px;
+}
+
+.snn-group-title {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #646970;
+}
+
+.snn-group-note {
+	font-size: 11px;
+	color: #646970;
+	text-align: right;
+}
+
+/* Parts that open and close (Item, Effects, Advanced) and the rows of the Style tab */
+.snn-disc {
+	border-top: 1px solid #dcdcde;
+}
+
+.snn-disc-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	margin: 0;
+	padding: 10px 16px;
+	font: inherit;
+	color: #1e1e1e;
+	background: none;
+	border: 0;
+	cursor: pointer;
+	text-align: left;
+}
+
+.snn-disc-head:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+.snn-disc-head .snn-group-title {
+	flex: 1 1 auto;
+}
+
+.snn-disc-head .snn-group-note {
+	flex: 0 0 auto;
+}
+
+.snn-disc-head .snn-chev {
+	flex: 0 0 auto;
+}
+
+.snn-disc-body {
+	padding: 0 0 8px;
+}
+
+.snn-disc.is-card .snn-disc-head {
+	padding: 12px 16px;
+}
+
+.snn-disc-card-title {
+	flex: 1 1 auto;
+	font-size: 13px;
+	color: #1e1e1e;
+}
+
+.snn-disc.is-card .snn-group-note {
+	font-size: 12px;
+	color: #50575e;
+}
+
+/* A value a view can set: the label with its hint under it, the field, and a Reset when the view sets its own */
+.snn-view-row .snn-row-label {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1px;
+}
+
+.snn-row-title {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	color: #3c434a;
+}
+
+.snn-view-hint {
+	max-width: 100%;
+	font-size: 10px;
+	color: #8c8f94;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snn-view-row.is-own .snn-view-hint {
+	color: #2271b1;
+}
+
+.snn-view-control {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 2px;
+}
+
+.snn-reset {
+	align-self: flex-start;
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 10px;
+	color: #2271b1;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.snn-reset:hover {
+	text-decoration: underline;
+}
+
+.snn-reset:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+/* The unit after a size field (px, %) */
+.snn-unit {
+	flex: 0 0 auto;
+	padding-right: 4px;
+	font-size: 11px;
+	color: #646970;
+}
+
 /* Popovers: dynamic data list and variables */
 .snn-pop {
 	position: absolute;
