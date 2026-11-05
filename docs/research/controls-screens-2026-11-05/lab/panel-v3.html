@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel v3: how the block panel will look</title>
+<link rel="stylesheet" href="controls.css">
+<style>
+/* Mock only. The rows, switches, accordions, icon rows and the lightning and V pickers come from
+   controls.css, the same file the editor loads (copied here on 5 Nov 2026; keep the two in step).
+   Everything below is the page around the panel and the parts that are planned, not built. */
+body{margin:0;background:#f0f0f1;padding:14px;width:max-content;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1e1e1e}
+.stage{width:300px;background:#fff;border:1px solid #dcdcde;border-radius:4px;overflow:hidden}
+.stage .snn-panel{padding-bottom:0}
+
+/* Header: the block, and the view the Style values are shown for */
+.mock-head{padding:10px 16px 8px;border-bottom:1px solid #dcdcde}
+.mock-name{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px}
+.mock-name span{font-size:11px;font-weight:400;color:#646970;font-family:Consolas,Menlo,monospace}
+.views{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#f0f0f1;border-radius:3px;padding:2px}
+.views button{height:26px;border:0;background:transparent;border-radius:2px;font:inherit;font-size:12px;color:#50575e;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.views button[aria-pressed="true"]{background:#fff;color:#1e1e1e;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.views button:focus-visible{outline:2px solid #2271b1;outline-offset:1px}
+.views svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.4}
+.mock-tabs{display:flex;border-bottom:1px solid #dcdcde}
+.mock-tab{flex:1;height:32px;border:0;background:none;font:inherit;font-size:12px;color:#50575e;cursor:pointer;border-bottom:2px solid transparent}
+.mock-tab[aria-selected="true"]{color:#1e1e1e;font-weight:600;border-bottom-color:#2271b1}
+.pane[hidden]{display:none}
+.snn-panel [hidden]{display:none!important}
+
+/* Things the panel shows that are not built yet */
+.mock-tag{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#8a5a00;background:#f6e9cc;border-radius:999px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.mock-value{margin-left:auto;font-size:11px;font-weight:400;color:#646970}
+
+/* Per-view lines under a value: what it inherits, and the reset */
+.snn-row.has-hint .snn-row-control{flex-direction:column;align-items:stretch;gap:1px;padding:0}
+.snn-view-line{display:flex;justify-content:space-between;align-items:center;min-height:12px;font-size:10px;color:#646970;margin-top:2px}
+.snn-view-line .own{color:#2271b1}
+.snn-reset{border:0;background:none;color:#2271b1;font:inherit;font-size:10px;padding:0;cursor:pointer}
+.snn-row.own .snn-dot{display:inline-block}
+.snn-row .snn-dot{display:none}
+.snn-row.is-changed .snn-dot,.snn-row.always-dot .snn-dot{display:inline-block}
+.snn-chev{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:#50575e;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.snn-seg-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.snn-acc-body .snn-row:first-child{margin-top:2px}
+.snn-acc-body{padding-bottom:4px}
+.snn-acc.is-disabled .snn-acc-title{font-weight:600}
+.mock-card .snn-acc-head{font-weight:500}
+
+.mock-note{padding:9px 16px 10px;font-size:11px;line-height:1.45;color:#50575e;border-top:1px solid #dcdcde;background:#fafafa}
+.mock-note b{color:#1e1e1e}
+.mock-note .mock-tag{margin:0 2px}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="snn-panel" id="panel" data-device="desktop" data-tab="default">
+
+  <!-- Header: the block, and the view it is shown for. Two-way with the editor's own device switch. -->
+  <div class="mock-head">
+    <div class="mock-name">Section <span>#hero · 2 classes</span></div>
+    <div class="views" role="group" aria-label="View">
+      <button type="button" data-device="desktop" aria-pressed="true" title="Desktop: base styles"><svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="8.5" rx="1"/><path d="M5.5 13.5h5M8 11v2.5"/></svg>Desktop</button>
+      <button type="button" data-device="tablet" aria-pressed="false" title="Tablet: up to 991 px"><svg viewBox="0 0 16 16"><rect x="3.5" y="1.5" width="9" height="13" rx="1.5"/><path d="M7 12.5h2"/></svg>Tablet</button>
+      <button type="button" data-device="mobile" aria-pressed="false" title="Mobile: up to 478 px"><svg viewBox="0 0 16 16"><rect x="5" y="1.5" width="6" height="13" rx="1.2"/><path d="M7.2 12.5h1.6"/></svg>Mobile</button>
+    </div>
+  </div>
+
+  <div class="mock-tabs" role="tablist">
+    <button class="mock-tab" type="button" role="tab" data-tab="default" aria-selected="true">Default</button>
+    <button class="mock-tab" type="button" role="tab" data-tab="style" aria-selected="false">Style</button>
+  </div>
+
+  <!-- DEFAULT: the query loop, the layout, the effects (planned) and the advanced fields -->
+  <div class="pane" data-pane="default">
+
+    <div class="snn-row" data-role="query-row">
+      <span class="snn-row-label">Query loop<i class="snn-dot"></i></span>
+      <div class="snn-row-control"><button type="button" class="snn-switch is-on" role="switch" aria-checked="true" aria-label="Query loop" data-role="query-switch"><span class="snn-switch-knob"></span></button></div>
+    </div>
+
+    <!-- Query: an accordion. Disabled (greyed, cannot open) while the switch above is off. -->
+    <div class="snn-acc" data-acc="query">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false">
+        <svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        <span class="snn-acc-title">Query</span><i class="snn-dot" data-role="query-dot"></i>
+      </button>
+      <div class="snn-acc-body">
+        <div class="snn-row"><span class="snn-row-label">Post type</span><div class="snn-row-control"><select class="snn-select" aria-label="Post type"><option>Post</option><option>Page</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Order by</span><div class="snn-row-control"><select class="snn-select" aria-label="Order by"><option>Date</option><option>Modified date</option><option>Title</option><option>Menu order</option><option>Random</option><option>ID</option><option>Comment count</option><option>Slug</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Order</span><div class="snn-row-control"><select class="snn-select" aria-label="Order"><option>Descending</option><option>Ascending</option></select></div></div>
+
+        <div class="snn-row"><span class="snn-row-label">Per page</span><div class="snn-row-control"><div class="snn-field">
+          <div class="snn-input-wrap"><input class="snn-input" type="text" value="3" inputmode="numeric" aria-label="Posts per page"><button type="button" class="snn-tool snn-tool-dyn" data-pop="tags-perpage" title="Dynamic data" aria-label="Dynamic data" aria-expanded="false"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div>
+          <div class="snn-pop" data-pop-id="tags-perpage" hidden>
+            <input class="snn-input snn-pop-search" type="search" placeholder="Search dynamic data" value="">
+            <div class="snn-pop-list">
+              <div class="snn-pop-group">Post</div>
+              <button type="button" class="snn-pop-item" data-insert="{post_id}"><span class="snn-pop-label">Post ID</span><code>{post_id}</code></button>
+              <button type="button" class="snn-pop-item" data-insert="{post_title}"><span class="snn-pop-label">Post title</span><code>{post_title}</code><span class="snn-pop-hint">add :link to make it a link</span></button>
+              <div class="snn-pop-group">Date</div>
+              <button type="button" class="snn-pop-item" data-insert="{current_wp_date}"><span class="snn-pop-label">Current date (site time zone)</span><code>{current_wp_date}</code><span class="snn-pop-hint">PHP date format</span></button>
+              <div class="snn-pop-group">Query loop</div>
+              <button type="button" class="snn-pop-item" data-insert="{query_results_count}"><span class="snn-pop-label">Query results count</span><code>{query_results_count}</code></button>
+              <div class="snn-pop-empty">61 tags in 10 groups in the editor. Type to search.</div>
+            </div>
+          </div>
+        </div></div></div>
+
+        <div class="snn-row"><span class="snn-row-label">Offset</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" value="0" inputmode="numeric" aria-label="Offset"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Child of</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="Post ID" aria-label="Child of"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+
+        <div class="snn-row"><span class="snn-row-label">Ignore sticky</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Ignore sticky posts"><span class="snn-switch-knob"></span></button></div></div>
+
+        <div class="snn-row"><span class="snn-row-label">Include</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="IDs" aria-label="Include posts"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Exclude</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="IDs" aria-label="Exclude posts"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Authors</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="User IDs" aria-label="Include authors"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Not authors</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="User IDs" aria-label="Exclude authors"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Main query</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Main query"><span class="snn-switch-knob"></span></button></div></div>
+      </div>
+    </div>
+
+    <!-- Layout: element and flex settings. Each value can differ per view; the line under it says where it comes from. -->
+    <div class="snn-acc" data-acc="layout">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Layout</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row"><span class="snn-row-label">HTML tag</span><div class="snn-row-control"><select class="snn-select" aria-label="HTML tag"><option>section</option><option>div</option><option>header</option><option>footer</option><option>main</option><option>article</option><option>aside</option><option>nav</option></select></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="display"><span class="snn-row-label">Display<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><select class="snn-select" data-k="display" aria-label="Display"><option value="block">Block</option><option value="flex">Flex</option><option value="grid">Grid</option></select>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="direction" data-flex><span class="snn-row-label">Direction<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-seg" role="group" aria-label="Direction" data-k="direction">
+            <button type="button" data-val="row" title="Row" aria-pressed="true"><svg viewBox="0 0 16 16"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></svg></button>
+            <button type="button" data-val="row-reverse" title="Row reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M13.5 8h-10M7 4.5 3.5 8 7 11.5"/></svg></button>
+            <button type="button" data-val="column" title="Column" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 2.5v10M4.5 9 8 12.5 11.5 9"/></svg></button>
+            <button type="button" data-val="column-reverse" title="Column reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 13.5v-10M4.5 7 8 3.5 11.5 7"/></svg></button>
+          </div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row" data-flex><span class="snn-row-label">Wrap</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Wrap"><span class="snn-switch-knob"></span></button></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="justify" data-flex><span class="snn-row-label">Justify<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><select class="snn-select" data-k="justify" aria-label="Justify content"><option value="">Default</option><option value="flex-start">Start</option><option value="center">Center</option><option value="flex-end">End</option><option value="space-between">Space between</option><option value="space-around">Space around</option><option value="space-evenly">Space evenly</option></select>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="gap" data-gap-row><span class="snn-row-label">Gap<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field">
+            <div class="snn-input-wrap"><input class="snn-input" data-k="gap" type="text" placeholder="0" aria-label="Gap">
+              <button type="button" class="snn-tool" data-pop="vars-gap" title="Variables" aria-label="Variables" aria-expanded="false"><span class="snn-tool-text" aria-hidden="true">V</span></button>
+              <button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div>
+            <div class="snn-pop" data-pop-id="vars-gap" hidden>
+              <div class="snn-pop-list">
+                <div class="snn-pop-group">Spacing</div>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xs)"><span class="snn-pop-label">XS</span><code>var(--wp--preset--spacing--xs)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--s)"><span class="snn-pop-label">S</span><code>var(--wp--preset--spacing--s)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--m)"><span class="snn-pop-label">M</span><code>var(--wp--preset--spacing--m)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--l)"><span class="snn-pop-label">L</span><code>var(--wp--preset--spacing--l)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xl)"><span class="snn-pop-label">XL</span><code>var(--wp--preset--spacing--xl)</code></button>
+              </div>
+            </div>
+          </div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+      </div>
+    </div>
+
+    <!-- Effects: planned. Per element, all views (D19). Collapsed by default (D23). -->
+    <div class="snn-acc" data-acc="effects">
+      <button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Effects<span class="mock-tag">planned</span></span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row"><span class="snn-row-label">Trigger</span><div class="snn-row-control"><select class="snn-select" aria-label="Trigger"><option>Enter viewport</option><option>Page load</option><option>Leave viewport</option><option>Hover</option><option>Click</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Visible at</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" value="50" aria-label="Visible at"><span class="snn-tool-text" style="padding:0 6px;color:#646970;font-size:11px">%</span></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Animation</span><div class="snn-row-control"><select class="snn-select" aria-label="Animation"><option>Fade in</option><option>Fade out</option><option>Slide up in</option><option>Zoom in</option><option>Bounce</option><option>Flip in X</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Start state</span><div class="snn-row-control"><select class="snn-select" aria-label="Start state"><option>Auto</option><option>Visible</option><option>Hidden</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Duration</span><div class="snn-row-control"><select class="snn-select" aria-label="Duration"><option>Very slow</option><option>Slow</option><option selected>Normal (1 s)</option><option>Fast</option><option>Very fast</option><option>Custom</option></select></div></div>
+        <div class="snn-row"><span class="snn-row-label">Delay</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" value="0.2" inputmode="decimal" aria-label="Delay"></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Run once</span><div class="snn-row-control"><button type="button" class="snn-switch is-on" role="switch" aria-checked="true" aria-label="Run once"><span class="snn-switch-knob"></span></button></div></div>
+      </div>
+    </div>
+
+    <!-- Advanced: CSS ID, classes (built), custom CSS (planned, D24 and D25). -->
+    <div class="snn-acc" data-acc="advanced">
+      <button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Advanced</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row"><span class="snn-row-label">CSS ID</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="my-id" aria-label="CSS ID"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">CSS classes</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" value="hero band" aria-label="CSS classes"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
+        <div class="snn-row"><span class="snn-row-label">Custom CSS</span><div class="snn-row-control" style="gap:6px"><button type="button" class="snn-input" disabled style="flex:1;text-align:left;color:#8c8f94;cursor:not-allowed">Edit CSS (admins)</button><span class="mock-tag" style="margin:0">planned</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STYLE: spacing, size and visibility, each per view. The style cards below are planned. -->
+  <div class="pane" data-pane="style" hidden>
+
+    <div class="snn-acc" data-acc="spacing">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Spacing</span><span class="mock-value">per view</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row has-hint" data-view-row data-k="padTop"><span class="snn-row-label">Padding top<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" data-k="padTop" type="text" aria-label="Padding top"><button type="button" class="snn-tool" data-pop="vars-pad" title="Variables" aria-label="Variables" aria-expanded="false"><span class="snn-tool-text" aria-hidden="true">V</span></button><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div>
+            <div class="snn-pop" data-pop-id="vars-pad" hidden><div class="snn-pop-list"><div class="snn-pop-group">Spacing</div>
+              <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--s)"><span class="snn-pop-label">S</span><code>var(--wp--preset--spacing--s)</code></button>
+              <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--m)"><span class="snn-pop-label">M</span><code>var(--wp--preset--spacing--m)</code></button>
+              <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--l)"><span class="snn-pop-label">L</span><code>var(--wp--preset--spacing--l)</code></button>
+            </div></div></div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+        <div class="snn-row has-hint" data-view-row data-k="padBottom"><span class="snn-row-label">Padding bottom<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" data-k="padBottom" type="text" aria-label="Padding bottom"><button type="button" class="snn-tool" data-pop="none" title="Variables" aria-label="Variables"><span class="snn-tool-text" aria-hidden="true">V</span></button><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+      </div>
+    </div>
+
+    <div class="snn-acc" data-acc="size">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Size</span><span class="mock-value">per view</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row has-hint" data-view-row data-k="maxWidth"><span class="snn-row-label">Max width<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" data-k="maxWidth" type="text" aria-label="Max width"><button type="button" class="snn-tool" data-pop="none" title="Variables" aria-label="Variables"><span class="snn-tool-text" aria-hidden="true">V</span></button><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+      </div>
+    </div>
+
+    <div class="snn-acc" data-acc="visibility">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Visibility</span><span class="mock-value">per view</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row has-hint" data-view-row data-k="opacity"><span class="snn-row-label">Opacity (%)<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" data-k="opacity" type="text" inputmode="numeric" aria-label="Opacity"></div></div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+        <div class="snn-row has-hint" data-view-row data-k="overflow"><span class="snn-row-label">Overflow<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><select class="snn-select" data-k="overflow" aria-label="Overflow"><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="clip">Clip</option><option value="auto">Auto</option><option value="scroll">Scroll</option></select>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+      </div>
+    </div>
+
+    <!-- Style cards: planned. Each opens into its own controls. -->
+    <div class="snn-acc mock-card" data-acc="card-type"><button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Typography<span class="mock-tag">planned</span></span><span class="mock-value">Inherit</span></button></div>
+    <div class="snn-acc mock-card" data-acc="card-bg"><button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Background<span class="mock-tag">planned</span></span><span class="mock-value">None</span></button></div>
+    <div class="snn-acc mock-card" data-acc="card-border"><button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Border and box shadow<span class="mock-tag">planned</span></span><span class="mock-value">None</span></button></div>
+    <div class="snn-acc mock-card" data-acc="card-transform"><button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">Transform<span class="mock-tag">planned</span></span><span class="mock-value">Motion</span></button></div>
+    <div class="snn-acc mock-card" data-acc="card-css"><button type="button" class="snn-acc-head" aria-expanded="false" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/></svg><span class="snn-acc-title">CSS filters and transition<span class="mock-tag">planned</span></span><span class="mock-value"></span></button></div>
+  </div>
+
+  <div class="mock-note">
+    <b>Built in WordPress now:</b> Query loop and its fields, layout (tag, display, direction, wrap, justify, align, gap), advanced (CSS ID and classes), and the lightning and V pickers. Layout values are not per view yet.
+    <br><b>Planned:</b> the per-view values and the Style tab (with the view switch), Effects, the style cards, custom CSS. Planned items carry a <span class="mock-tag">planned</span> tag.
+  </div>
+</div>
+</div>
+
+<script>
+// The mock's state comes from the address, so each screenshot is one URL:
+// ?device=desktop|tablet|mobile  &tab=default|style  &query=on|off  &open=query,layout,...  &pop=tags-perpage|vars-gap|vars-pad
+(function () {
+  var panel = document.getElementById('panel');
+  document.querySelectorAll('.snn-seg button').forEach(function (b) { b.classList.add('snn-seg-btn'); });
+  var q = new URLSearchParams(location.search);
+  var state = {
+    device: q.get('device') || 'desktop',
+    tab: q.get('tab') || 'default',
+    query: q.get('query') !== 'off',
+    open: (q.get('open') || 'query,layout').split(','),
+    pop: q.get('pop') || ''
+  };
+  // Own value per view. null = not set here, so it comes from the wider view above it.
+  var values = {
+    display:   { desktop: 'flex', tablet: null, mobile: 'block' },
+    direction: { desktop: 'row', tablet: 'column', mobile: null },
+    justify:   { desktop: 'flex-start', tablet: null, mobile: null },
+    gap:       { desktop: '24px', tablet: 'var(--wp--preset--spacing--s)', mobile: null },
+    padTop:    { desktop: '96px', tablet: null, mobile: '64px' },
+    padBottom: { desktop: '96px', tablet: null, mobile: '64px' },
+    maxWidth:  { desktop: '1200px', tablet: null, mobile: null },
+    opacity:   { desktop: '100', tablet: null, mobile: null },
+    overflow:  { desktop: 'visible', tablet: null, mobile: 'hidden' }
+  };
+  var names = { desktop: 'Desktop', tablet: 'Tablet', mobile: 'Mobile' };
+
+  function resolve(key, device) {
+    var v = values[key];
+    if (device === 'desktop') return { value: v.desktop, own: true };
+    if (device === 'tablet') return v.tablet !== null ? { value: v.tablet, own: true } : { value: v.desktop, own: false, from: 'Desktop' };
+    if (v.mobile !== null) return { value: v.mobile, own: true };
+    if (v.tablet !== null) return { value: v.tablet, own: false, from: 'Tablet' };
+    return { value: v.desktop, own: false, from: 'Desktop' };
+  }
+  function short(s) { return s && s.indexOf('var(') === 0 ? s.replace('var(--wp--preset--spacing--', '').replace(')', '') : s; }
+
+  function render() {
+    panel.dataset.device = state.device;
+    document.querySelectorAll('[data-device]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.device === state.device)); });
+    document.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)); });
+    document.querySelectorAll('[data-pane]').forEach(function (p) { p.hidden = p.dataset.pane !== state.tab; });
+
+    // Per-view values
+    Object.keys(values).forEach(function (key) {
+      var r = resolve(key, state.device);
+      document.querySelectorAll('[data-k="' + key + '"]').forEach(function (el) {
+        if (el.classList.contains('snn-seg')) {
+          el.querySelectorAll('button').forEach(function (b) {
+            var on = b.dataset.val === r.value;
+            b.setAttribute('aria-pressed', String(on));
+            b.classList.toggle('is-on', on);
+          });
+        } else if (el.value !== undefined) {
+          el.value = r.value === null ? '' : r.value;
+        }
+        var row = el.closest('[data-view-row]');
+        if (!row) return;
+        var own = r.own && state.device !== 'desktop';
+        row.classList.toggle('own', own);
+        row.classList.toggle('is-changed', own);
+        var hint = row.querySelector('.snn-view-hint');
+        var reset = row.querySelector('.snn-reset');
+        if (state.device === 'desktop') {
+          hint.textContent = '';
+        } else if (r.own) {
+          hint.innerHTML = '<span class="own">set for ' + names[state.device] + '</span>';
+        } else {
+          hint.textContent = 'from ' + r.from + ' · ' + short(r.value);
+        }
+        reset.hidden = !own;
+      });
+    });
+    // Flex settings only when the display is flex; the gap when it is flex or grid.
+    var disp = resolve('display', state.device).value;
+    document.querySelectorAll('[data-flex]').forEach(function (el) { el.hidden = disp !== 'flex'; });
+    document.querySelectorAll('[data-gap-row]').forEach(function (el) { el.hidden = disp === 'block'; });
+
+    // Query switch, its dot, and the accordion that it controls
+    var qs = document.querySelector('[data-role="query-switch"]');
+    qs.classList.toggle('is-on', state.query);
+    qs.setAttribute('aria-checked', String(state.query));
+    document.querySelector('[data-role="query-row"]').classList.toggle('is-changed', state.query);
+    document.querySelector('[data-role="query-dot"]').style.display = state.query ? 'inline-block' : 'none';
+
+    // Accordions: open when listed in the address, and never while disabled
+    document.querySelectorAll('[data-acc]').forEach(function (acc) {
+      var key = acc.dataset.acc;
+      var disabled = key === 'query' && !state.query;
+      var isOpen = !disabled && state.open.indexOf(key) !== -1;
+      var head = acc.querySelector('.snn-acc-head');
+      var body = acc.querySelector('.snn-acc-body');
+      acc.classList.toggle('is-disabled', disabled);
+      acc.classList.toggle('is-open', isOpen);
+      head.setAttribute('aria-disabled', String(disabled));
+      head.setAttribute('aria-expanded', String(isOpen));
+      var chev = head.querySelector('.snn-chev path');
+      if (chev) chev.setAttribute('d', isOpen ? 'M4 6l4 4 4-4' : 'M6 4l4 4-4 4');
+      if (body) body.hidden = !isOpen;
+    });
+
+    // Popovers: one at a time
+    document.querySelectorAll('[data-pop-id]').forEach(function (p) { p.hidden = p.dataset.popId !== state.pop; });
+    document.querySelectorAll('[data-pop]').forEach(function (b) {
+      if (b.dataset.pop !== 'none') b.setAttribute('aria-expanded', String(b.dataset.pop === state.pop));
+    });
+  }
+
+  // Events
+  document.querySelectorAll('[data-device]').forEach(function (b) { b.addEventListener('click', function () { state.device = b.dataset.device; render(); }); });
+  document.querySelectorAll('[data-tab]').forEach(function (b) { b.addEventListener('click', function () { state.tab = b.dataset.tab; render(); }); });
+  document.querySelector('[data-role="query-switch"]').addEventListener('click', function () { state.query = !state.query; render(); });
+  document.querySelectorAll('.snn-switch:not([data-role])').forEach(function (s) {
+    s.addEventListener('click', function () { var on = s.getAttribute('aria-checked') !== 'true'; s.setAttribute('aria-checked', String(on)); s.classList.toggle('is-on', on); });
+  });
+  document.querySelectorAll('.snn-acc-head').forEach(function (h) {
+    h.addEventListener('click', function () {
+      var acc = h.closest('[data-acc]');
+      var key = acc.dataset.acc;
+      if (key === 'query' && !state.query) return;
+      var i = state.open.indexOf(key);
+      if (i === -1) state.open.push(key); else state.open.splice(i, 1);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-pop]').forEach(function (b) {
+    b.addEventListener('click', function () { if (b.dataset.pop === 'none') return; state.pop = state.pop === b.dataset.pop ? '' : b.dataset.pop; render(); });
+  });
+  document.querySelectorAll('[data-insert]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var input = b.closest('.snn-field').querySelector('input');
+      input.value = input.value + b.dataset.insert;
+    });
+  });
+  document.querySelectorAll('[data-set]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var key = b.closest('[data-view-row]').dataset.k;
+      values[key][state.device] = b.dataset.set;
+      state.pop = '';
+      render();
+    });
+  });
+  document.querySelectorAll('[data-k]').forEach(function (el) {
+    if (el.tagName === 'SELECT' || (el.tagName === 'INPUT')) {
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'change', function () { values[el.dataset.k][state.device] = el.value; render(); });
+    }
+  });
+  document.querySelectorAll('.snn-seg button').forEach(function (b) {
+    b.addEventListener('click', function () { var key = b.closest('.snn-seg').dataset.k; values[key][state.device] = b.dataset.val; render(); });
+  });
+  document.querySelectorAll('.snn-reset').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var row = b.closest('[data-view-row]');
+      values[row.dataset.k][state.device] = null;
+      render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+/*
+ * SNN controls: compact panel rows for the SNN layout blocks (controls.js, layout-blocks.js).
+ * Rows are about 28 px high. Labels sit on the left, controls on the right. Used in the block
+ * editor only; the front end never loads this file.
+ */
+
+.snn-panel {
+	font-size: 12px;
+	line-height: 1.25;
+	color: #1e1e1e;
+	padding: 0 0 6px;
+}
+
+/* Row: label left, control right */
+.snn-row {
+	display: grid;
+	grid-template-columns: 100px minmax(0, 1fr);
+	align-items: center;
+	column-gap: 8px;
+	min-height: 26px;
+	padding: 1px 16px;
+}
+
+.snn-row-label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	color: #3c434a;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+
+.snn-row-control {
+	min-width: 0;
+	display: flex;
+	align-items: center;
+}
+
+.snn-dot {
+	flex: 0 0 auto;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: #2271b1;
+}
+
+/* Inputs and selects */
+.snn-select,
+.snn-input {
+	box-sizing: border-box;
+	width: 100%;
+	height: 26px;
+	margin: 0;
+	padding: 0 6px;
+	font-size: 12px;
+	line-height: 1.2;
+	color: #1e1e1e;
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+}
+
+.snn-select:focus,
+.snn-input:focus {
+	outline: 2px solid #2271b1;
+	outline-offset: -1px;
+}
+
+.snn-input::placeholder {
+	color: #8c8f94;
+}
+
+.snn-field {
+	position: relative;
+	width: 100%;
+	min-width: 0;
+}
+
+.snn-input-wrap {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	width: 100%;
+}
+
+.snn-input-wrap .snn-input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* Lightning (dynamic data) and V (variables) buttons, beside a field */
+.snn-tool {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	color: #1e1e1e;
+	background: #f6f7f7;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-tool:hover {
+	background: #f0f0f1;
+}
+
+.snn-tool[aria-expanded="true"],
+.snn-tool.is-on {
+	color: #fff;
+	background: #2271b1;
+	border-color: #2271b1;
+}
+
+.snn-tool:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.snn-tool-text {
+	font-size: 11px;
+	font-weight: 600;
+	font-family: Consolas, Menlo, monospace;
+}
+
+.snn-tool-dyn .snn-bolt {
+	display: block;
+}
+
+.snn-preview {
+	margin-top: 2px;
+	font-size: 11px;
+	color: #50575e;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Switch: a pill with a knob (not a checkbox) */
+.snn-switch {
+	position: relative;
+	flex: 0 0 auto;
+	width: 30px;
+	height: 16px;
+	margin: 0 0 0 auto;
+	padding: 0;
+	background: #8c8f94;
+	border: 0;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background-color 0.12s;
+}
+
+.snn-switch.is-on {
+	background: #2271b1;
+}
+
+.snn-switch-knob {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 12px;
+	height: 12px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.12s;
+}
+
+.snn-switch.is-on .snn-switch-knob {
+	transform: translateX(14px);
+}
+
+.snn-switch:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Accordion: a section that opens. Disabled when its switch is off. */
+.snn-acc {
+	border-top: 1px solid #dcdcde;
+}
+
+.snn-acc-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	min-height: 28px;
+	margin: 0;
+	padding: 3px 16px;
+	font: inherit;
+	font-weight: 600;
+	color: #1e1e1e;
+	text-align: left;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.snn-acc-head:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+.snn-acc-head .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	color: #50575e;
+}
+
+.snn-acc-title {
+	flex: 0 1 auto;
+}
+
+.snn-acc-head .snn-dot {
+	margin-left: 2px;
+}
+
+.snn-acc.is-disabled .snn-acc-head {
+	color: #a7aaad;
+	cursor: not-allowed;
+}
+
+.snn-acc.is-disabled .snn-acc-head .dashicons {
+	color: #c3c4c7;
+}
+
+.snn-acc-body {
+	padding: 2px 0 8px;
+}
+
+/* Icon buttons (direction) */
+.snn-seg {
+	display: flex;
+	width: 100%;
+	height: 26px;
+	overflow: hidden;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+}
+
+.snn-seg-btn {
+	flex: 1 1 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	color: #1e1e1e;
+	background: #fff;
+	border: 0;
+	border-right: 1px solid #8c8f94;
+	cursor: pointer;
+}
+
+.snn-seg-btn:last-child {
+	border-right: 0;
+}
+
+.snn-seg-btn.is-on {
+	color: #fff;
+	background: #2271b1;
+}
+
+.snn-seg-btn .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+}
+
+/* Popovers: dynamic data list and variables */
+.snn-pop {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	z-index: 100000;
+	display: flex;
+	flex-direction: column;
+	width: 260px;
+	max-height: 320px;
+	margin-top: 4px;
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.snn-pop-search {
+	flex: 0 0 auto;
+	width: calc(100% - 12px);
+	margin: 6px;
+}
+
+.snn-pop-list {
+	overflow-y: auto;
+	padding-bottom: 4px;
+}
+
+.snn-pop-group {
+	padding: 6px 10px 2px;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #646970;
+}
+
+.snn-pop-item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	column-gap: 6px;
+	width: 100%;
+	margin: 0;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: #1e1e1e;
+	text-align: left;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.snn-pop-item:hover,
+.snn-pop-item:focus-visible {
+	background: #f0f6fc;
+	outline: none;
+}
+
+.snn-pop-item code {
+	padding: 0;
+	font-size: 11px;
+	color: #2271b1;
+	background: none;
+}
+
+.snn-pop-hint {
+	flex-basis: 100%;
+	font-size: 10px;
+	color: #646970;
+}
+
+.snn-pop-empty {
+	padding: 8px 10px;
+	color: #646970;
+}
+
+/* Badge on the block in the editor while a query loop is on */
+.wp-block-snn-section,
+.wp-block-snn-container,
+.wp-block-snn-div {
+	position: relative;
+}
+
+.snn-loop-badge {
+	position: absolute;
+	top: -9px;
+	right: 6px;
+	z-index: 2;
+	padding: 1px 6px;
+	font-size: 10px;
+	line-height: 1.5;
+	color: #fff;
+	background: #2271b1;
+	border-radius: 3px;
+	pointer-events: none;
+}

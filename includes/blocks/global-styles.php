@@ -6,9 +6,9 @@
  * How it works
  * - One option, snn_global_styles, holds the values. Every save is sanitised.
  * - The values go into the theme layer of theme.json (filter wp_theme_json_data_theme). Core
- *   then emits them everywhere it reads theme.json: the front end, the block editor (palette,
- *   font families, font sizes, widths, shadows) and the Site Editor. Colours become
- *   --wp--preset--color--{slug}, fonts --wp--preset--font-family--{slug}, and so on.
+ *   then emits them everywhere it reads theme.json: the front end, the block editor (
+ *   font families, widths, shadows) and the Site Editor.
+ *   Fonts keep their WordPress names (--wp--preset--font-family--{slug}). Colours and sizes are plain variables (--black, --size-20).
  * - Fonts: Google Fonts are downloaded to this site (fonts.php) and listed in the option. Each
  *   font is a theme.json font family with its @font-face files, so every block's font menu can
  *   use it, with no request to Google on the page.
@@ -34,6 +34,9 @@ class SNN_Global_Styles {
 	const REST_ROUTE = '/global-styles';
 	const MAX_COLORS = 12;
 	const MAX_FONTS  = 12;
+	const MAX_SIZES  = 12;
+	/** The paths a fluid size can belong to: a size variable, or a heading size. */
+	const FLUID_PATH_RE = '/^(sizes\.[a-z0-9-]+|typography\.headings\.h[1-6])$/';
 	const LENGTH_RE  = '/^(0|\d+(\.\d+)?(px|rem|em|%|vw|vh|ch|vmin|vmax))$/';
 	const FAMILY_RE  = '/^[A-Za-z][A-Za-z0-9 ]{0,59}$/';
 
@@ -47,6 +50,8 @@ class SNN_Global_Styles {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin' ) );
 		add_action( 'admin_bar_menu', array( __CLASS__, 'admin_bar_item' ), 90 );
 		add_action( 'wp_head', array( __CLASS__, 'front_root_size' ), 5 );
+		add_action( 'wp_head', array( __CLASS__, 'front_variables' ), 5 );
+		add_filter( 'block_editor_settings_all', array( __CLASS__, 'editor_styles' ) );
 	}
 
 	public static function can_edit() {
@@ -60,19 +65,23 @@ class SNN_Global_Styles {
 	/** The defaults: black and white only. Every key here is a key of the stored values. */
 	public static function defaults() {
 		return array(
+			// A colour's name is its variable name (--black). There is no separate label.
 			'colors'     => array(
-				array( 'name' => 'Black', 'slug' => 'black', 'color' => '#000000' ),
-				array( 'name' => 'White', 'slug' => 'white', 'color' => '#ffffff' ),
+				array( 'slug' => 'black', 'color' => '#000000' ),
+				array( 'slug' => 'white', 'color' => '#ffffff' ),
 			),
 			'fonts'      => array(),
+			// One list of size variables, for spacing and font sizes. Each name is the variable (--size-20).
+			'sizes'      => array(
+				'size-10' => '0.5rem',
+				'size-20' => '0.875rem',
+				'size-30' => '1rem',
+				'size-40' => '1.5rem',
+				'size-50' => '2.25rem',
+				'size-60' => '3rem',
+				'size-70' => '4rem',
+			),
 			'typography' => array(
-				'sizes'    => array(
-					'small'    => '0.875rem',
-					'medium'   => '1.125rem',
-					'large'    => '1.375rem',
-					'x-large'  => '1.75rem',
-					'xx-large' => '2.25rem',
-				),
 				'headings' => array(
 					'h1' => '2.5rem',
 					'h2' => '2rem',
@@ -95,6 +104,8 @@ class SNN_Global_Styles {
 					'large'  => '0 12px 32px rgba(0, 0, 0, 0.14)',
 				),
 			),
+			// Fluid sizes: a clamp between two viewport widths, keyed by path (see fluid_css()).
+			'fluid'      => array(),
 			'blocks'     => SNN_Block_Defaults::defaults(),
 			'editor'     => SNN_Block_Editor_Settings::defaults(),
 		);
@@ -132,16 +143,10 @@ class SNN_Global_Styles {
 				continue;
 			}
 			$hex  = self::hex( $item['color'] ?? '' );
-			$name = mb_substr( trim( sanitize_text_field( (string) ( $item['name'] ?? '' ) ) ), 0, 40 );
-			if ( null === $hex || '' === $name ) {
+			// The variable name is the slug. An old "name" field is read only when there is no slug.
+			$slug = sanitize_title( (string) ( $item['slug'] ?? ( $item['name'] ?? '' ) ) );
+			if ( null === $hex || '' === $slug ) {
 				continue;
-			}
-			$slug = sanitize_title( (string) ( $item['slug'] ?? '' ) );
-			if ( '' === $slug ) {
-				$slug = sanitize_title( $name );
-			}
-			if ( '' === $slug ) {
-				$slug = 'color';
 			}
 			$unique = $slug;
 			$n      = 2;
@@ -149,7 +154,7 @@ class SNN_Global_Styles {
 				$unique = $slug . '-' . $n;
 				$n++;
 			}
-			$colors[] = array( 'name' => $name, 'slug' => $unique, 'color' => $hex );
+			$colors[] = array( 'slug' => $unique, 'color' => $hex );
 		}
 		if ( ! $colors ) {
 			$colors = $d['colors'];
@@ -161,7 +166,6 @@ class SNN_Global_Styles {
 		// Typography sizes and heading sizes.
 		$t          = is_array( $input['typography'] ?? null ) ? $input['typography'] : array();
 		$typography = array(
-			'sizes'    => self::lengths( $t['sizes'] ?? null, $d['typography']['sizes'] ),
 			'headings' => self::lengths( $t['headings'] ?? null, $d['typography']['headings'] ),
 		);
 
@@ -177,24 +181,68 @@ class SNN_Global_Styles {
 			$shape['shadows'][ $key ] = self::shadow( $shadows[ $key ] ?? null, $default );
 		}
 
+		// Fluid sizes: a clamp between two viewport widths, for a size variable or a heading. The value
+		// is written from these settings below, so the two cannot disagree (a stored clamp is read back
+		// through them, since a clamp is not a plain length).
+		$fluid = array();
+		foreach ( is_array( $input['fluid'] ?? null ) ? $input['fluid'] : array() as $path => $f ) {
+			$settings = self::fluid_settings( $f );
+			if ( is_string( $path ) && preg_match( self::FLUID_PATH_RE, $path ) && null !== $settings ) {
+				$fluid[ $path ] = $settings;
+			}
+		}
+
+		// Size variables: one list for spacing and font sizes (any slug, up to MAX_SIZES). Empty input keeps the defaults.
+		$sizes = array();
+		foreach ( is_array( $input['sizes'] ?? null ) ? $input['sizes'] : array() as $key => $value ) {
+			if ( count( $sizes ) >= self::MAX_SIZES ) {
+				break;
+			}
+			$slug = sanitize_title( (string) $key );
+			$path = 'sizes.' . $slug;
+			$len  = isset( $fluid[ $path ] ) ? self::fluid_css( $fluid[ $path ] ) : self::length( is_scalar( $value ) ? $value : '', '' );
+			if ( '' === $slug || '' === $len || isset( $sizes[ $slug ] ) ) {
+				continue;
+			}
+			$sizes[ $slug ] = $len;
+		}
+		if ( ! $sizes ) {
+			$sizes = $d['sizes'];
+		}
+
 		// Block defaults, against the choices above.
 		$refs   = array(
 			'colors'  => array_column( $colors, 'slug' ),
 			'fonts'   => array_merge( array( 'system' ), array_column( $fonts, 'slug' ) ),
-			'sizes'   => array_keys( $typography['sizes'] ),
+			'sizes'   => array_keys( $sizes ),
 			'radius'  => array_keys( $shape['radius'] ),
 			'shadows' => array_keys( $shape['shadows'] ),
 			'weights' => self::weights(),
 		);
 		$blocks = SNN_Block_Defaults::sanitize( $input['blocks'] ?? array(), $refs );
 
-		return array(
+		$out = array(
 			'colors'     => $colors,
 			'fonts'      => $fonts,
+			'sizes'      => $sizes,
 			'typography' => $typography,
 			'shape'      => $shape,
+			'fluid'      => array(),
 			'blocks'     => $blocks,
 		);
+		// A fluid setting is kept only when its size exists, and its value becomes the clamp.
+		foreach ( $fluid as $path => $settings ) {
+			$parts = explode( '.', $path );
+			// "sizes.size-20" is one level down; "typography.headings.h1" is two.
+			if ( 2 === count( $parts ) && isset( $out[ $parts[0] ][ $parts[1] ] ) ) {
+				$out[ $parts[0] ][ $parts[1] ] = self::fluid_css( $settings );
+				$out['fluid'][ $path ]         = $settings;
+			} elseif ( 3 === count( $parts ) && isset( $out[ $parts[0] ][ $parts[1] ][ $parts[2] ] ) ) {
+				$out[ $parts[0] ][ $parts[1] ][ $parts[2] ] = self::fluid_css( $settings );
+				$out['fluid'][ $path ]                      = $settings;
+			}
+		}
+		return $out;
 	}
 
 	public static function hex( $value ) {
@@ -451,11 +499,6 @@ class SNN_Global_Styles {
 
 	/** The theme.json fragment for a set of sanitised values. */
 	public static function theme_data( array $v ) {
-		$palette = array();
-		foreach ( $v['colors'] as $c ) {
-			$palette[] = array( 'slug' => $c['slug'], 'name' => $c['name'], 'color' => $c['color'] );
-		}
-
 		$families = array(
 			array( 'slug' => 'system', 'name' => __( 'System', 'snn' ), 'fontFamily' => SNN_Block_Defaults::SYSTEM_FONT ),
 		);
@@ -477,11 +520,6 @@ class SNN_Global_Styles {
 				'fontFamily' => '"' . $font['name'] . '", sans-serif',
 				'fontFace'   => $faces,
 			);
-		}
-
-		$sizes = array();
-		foreach ( $v['typography']['sizes'] as $slug => $size ) {
-			$sizes[] = array( 'slug' => $slug, 'name' => ucwords( str_replace( '-', ' ', $slug ) ), 'size' => $size );
 		}
 
 		$shadows = array();
@@ -509,13 +547,13 @@ class SNN_Global_Styles {
 			}
 		}
 
+		// Colours and sizes are not theme presets (no --wp--preset-- names). They are our own variables,
+		// written as plain custom properties by variables_css().
 		$data = array(
 			'version'  => 3,
 			'settings' => array(
-				'color'      => array( 'palette' => $palette ),
-				'typography' => array( 'fontFamilies' => $families, 'fontSizes' => $sizes ),
+				'typography' => array( 'fontFamilies' => $families ),
 				'shadow'     => array( 'presets' => $shadows ),
-				'spacing'    => array( 'spacingSizes' => self::spacing_sizes() ),
 			),
 			'styles'   => $styles,
 		);
@@ -523,28 +561,93 @@ class SNN_Global_Styles {
 	}
 
 	/**
-	 * The spacing scale: theme presets (--wp--preset--spacing--xs and so on). The Gap field of our
-	 * blocks offers them as variables. Fixed for now; editing it comes with the spacing tokens.
+	 * The variables as CSS custom properties: --size-20 and --black. The names are the variable names, with
+	 * no WordPress prefix. The front end and the block editor both load this (see below).
 	 */
-	public static function spacing_sizes() {
+	public static function variables_css( array $v ) {
+		$declarations = array();
+		foreach ( $v['sizes'] as $slug => $size ) {
+			$declarations[] = '--' . $slug . ':' . $size;
+		}
+		foreach ( $v['colors'] as $c ) {
+			$declarations[] = '--' . $c['slug'] . ':' . $c['color'];
+		}
+		return ':root{' . implode( ';', $declarations ) . '}';
+	}
+
+	/** The front end: the variables, in the head. The values are checked when they are saved. */
+	public static function front_variables() {
+		echo '<style id="snn-variables">' . self::variables_css( self::get_values() ) . "</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	/** The block editor: the variables, as a style of the canvas (its :root becomes the canvas wrapper). */
+	public static function editor_styles( $settings ) {
+		if ( is_array( $settings ) && isset( $settings['styles'] ) && is_array( $settings['styles'] ) ) {
+			$settings['styles'][] = array(
+				'css'            => self::variables_css( self::get_values() ),
+				'__unstableType' => 'snn-variables',
+				'isGlobalStyles' => false,
+			);
+		}
+		return $settings;
+	}
+
+	/**
+	 * The CSS of a fluid size: clamp(min, calc(intercept + slope * 100vw), max). The size is min at the
+	 * minimum viewport and max at the maximum viewport, and it stays between min and max outside them.
+	 * All numbers are px. The editor (global-styles.js) writes the same string, so both show one value.
+	 */
+	public static function fluid_css( array $f ) {
+		$lo = min( $f['min'], $f['max'] );
+		$hi = max( $f['min'], $f['max'] );
+		if ( $f['maxVp'] === $f['minVp'] ) {
+			return self::css_px( $f['min'] );
+		}
+		$slope     = ( $f['max'] - $f['min'] ) / ( $f['maxVp'] - $f['minVp'] );
+		$intercept = $f['min'] - $slope * $f['minVp'];
+		$vw        = $slope * 100;
+		$operator  = $vw < 0 ? ' - ' : ' + ';
+		return 'clamp(' . self::css_px( $lo ) . ', calc(' . self::css_px( $intercept ) . $operator . self::css_px( abs( $vw ), 'vw' ) . '), ' . self::css_px( $hi ) . ')';
+	}
+
+	/** A fluid size's four settings as numbers (px), or null when one is missing or out of range. */
+	private static function fluid_settings( $f ) {
+		if ( ! is_array( $f ) ) {
+			return null;
+		}
+		$read = function ( $value, $min, $max ) {
+			return is_numeric( $value ) && (float) $value >= $min && (float) $value <= $max ? round( (float) $value, 2 ) : null;
+		};
+		$min   = $read( $f['min'] ?? null, 0, 1000 );
+		$max   = $read( $f['max'] ?? null, 0, 1000 );
+		$min_v = $read( $f['minVp'] ?? null, 1, 4000 );
+		$max_v = $read( $f['maxVp'] ?? null, 1, 4000 );
+		if ( null === $min || null === $max || null === $min_v || null === $max_v || $min_v === $max_v ) {
+			return null;
+		}
 		return array(
-			array( 'slug' => 'xs', 'name' => __( 'XS', 'snn' ), 'size' => '0.5rem' ),
-			array( 'slug' => 's', 'name' => __( 'S', 'snn' ), 'size' => '1rem' ),
-			array( 'slug' => 'm', 'name' => __( 'M', 'snn' ), 'size' => '1.5rem' ),
-			array( 'slug' => 'l', 'name' => __( 'L', 'snn' ), 'size' => '2.5rem' ),
-			array( 'slug' => 'xl', 'name' => __( 'XL', 'snn' ), 'size' => '4rem' ),
+			'min'   => $min,
+			'max'   => $max,
+			'minVp' => $min_v,
+			'maxVp' => $max_v,
 		);
+	}
+
+	/** A number in px (or another unit), without trailing zeros. */
+	private static function css_px( $x, $unit = 'px' ) {
+		$x = abs( $x ) < 0.005 ? 0 : $x; // no "-0"
+		return self::number( $x, -100000, 100000 ) . $unit;
 	}
 
 	/** The theme.json value for one block field. Colours, fonts, sizes and shadows are presets. */
 	private static function style_value( array $field, $value, array $v ) {
 		switch ( $field['type'] ) {
 			case 'color':
-				return 'var:preset|color|' . $value;
+				return 'var(--' . $value . ')';
 			case 'font':
 				return 'var:preset|font-family|' . $value;
 			case 'size':
-				return 'var:preset|font-size|' . $value;
+				return 'var(--' . $value . ')';
 			case 'shadow':
 				return 'var:preset|shadow|' . $value;
 			case 'radius':
@@ -678,11 +781,26 @@ class SNN_Global_Styles {
 			return array( 'path' => $path, 'label' => $label, 'type' => 'length' );
 		};
 
+		// A size: a length, or a fluid clamp (the Fluid switch under it).
+		$size = function ( $path, $label ) {
+			return array( 'path' => $path, 'label' => $label, 'type' => 'size' );
+		};
+
 		return array(
 			array(
 				'id'      => 'colors',
 				'label'   => __( 'Colours', 'snn' ),
 				'palette' => true,
+			),
+			array(
+				'id'     => 'sizes',
+				'label'  => __( 'Sizes', 'snn' ),
+				'groups' => array(
+					array(
+						'title' => __( 'Size variables', 'snn' ),
+						'sizes' => true,
+					),
+				),
 			),
 			array(
 				'id'     => 'typography',
@@ -693,24 +811,14 @@ class SNN_Global_Styles {
 						'fonts' => true,
 					),
 					array(
-						'title'  => __( 'Font size presets', 'snn' ),
-						'fields' => array(
-							$length( 'typography.sizes.small', __( 'Small', 'snn' ) ),
-							$length( 'typography.sizes.medium', __( 'Medium', 'snn' ) ),
-							$length( 'typography.sizes.large', __( 'Large', 'snn' ) ),
-							$length( 'typography.sizes.x-large', __( 'X large', 'snn' ) ),
-							$length( 'typography.sizes.xx-large', __( 'XX large', 'snn' ) ),
-						),
-					),
-					array(
 						'title'  => __( 'Heading sizes', 'snn' ),
 						'fields' => array(
-							$length( 'typography.headings.h1', 'H1' ),
-							$length( 'typography.headings.h2', 'H2' ),
-							$length( 'typography.headings.h3', 'H3' ),
-							$length( 'typography.headings.h4', 'H4' ),
-							$length( 'typography.headings.h5', 'H5' ),
-							$length( 'typography.headings.h6', 'H6' ),
+							$size( 'typography.headings.h1', 'H1' ),
+							$size( 'typography.headings.h2', 'H2' ),
+							$size( 'typography.headings.h3', 'H3' ),
+							$size( 'typography.headings.h4', 'H4' ),
+							$size( 'typography.headings.h5', 'H5' ),
+							$size( 'typography.headings.h6', 'H6' ),
 						),
 					),
 				),
@@ -895,6 +1003,7 @@ class SNN_Global_Styles {
 				'defaults'  => self::defaults(),
 				'schema'    => self::schema(),
 				'maxColors' => self::MAX_COLORS,
+				'maxSizes'  => self::MAX_SIZES,
 				'maxFonts'  => self::MAX_FONTS,
 				'rootSize'  => self::root_size(),
 				'subsets'   => self::SUBSETS,
@@ -919,11 +1028,21 @@ class SNN_Global_Styles {
 					'discard'          => __( 'Close without saving your changes?', 'snn' ),
 					'inherit'          => __( 'Inherit', 'snn' ),
 					'addColour'        => __( 'Add colour', 'snn' ),
+					'addSize'          => __( 'Add size', 'snn' ),
+					'sizesHint'        => __( 'Each size is a variable named by its name, for example --size-20. It is used for gaps, padding, margins, widths, heights and font sizes. A fluid size scales between two viewport widths; its values are in px.', 'snn' ),
+					'fluid'            => __( 'Fluid', 'snn' ),
+					'minSize'          => __( 'Min size', 'snn' ),
+					'maxSize'          => __( 'Max size', 'snn' ),
+					'minViewport'      => __( 'Min viewport', 'snn' ),
+					'maxViewport'      => __( 'Max viewport', 'snn' ),
+					'fluidError'       => __( 'A fluid size needs numbers: sizes from 0 to 1000 px, viewports from 1 to 4000 px, and two different viewport widths.', 'snn' ),
+					'sizeName'         => __( 'Variable name', 'snn' ),
+					'sizeNameError'    => __( 'A variable name can use letters, digits and dashes. It must be new.', 'snn' ),
 					'newColour'        => __( 'Colour', 'snn' ),
 					'remove'           => __( 'Remove', 'snn' ),
 					'colourName'       => __( 'Colour name', 'snn' ),
 					'colourValue'      => __( 'Colour value', 'snn' ),
-					'paletteHint'      => __( 'The names show in the colour pickers. Each colour is also a CSS variable, --wp--preset--color--slug, on the front end and in the editor.', 'snn' ),
+					'paletteHint'      => __( 'Each colour is a variable named by its name, for example --black. It is used in every colour field, on the front end and in the editor.', 'snn' ),
 					'nameNeeded'       => __( 'Every colour needs a name.', 'snn' ),
 					'lengthError'      => __( 'Use a number with a unit, for example 1rem, 16px or 0.', 'snn' ),
 					'lineError'        => __( 'Line height must be between 0.8 and 3.', 'snn' ),

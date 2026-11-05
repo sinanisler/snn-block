@@ -93,6 +93,11 @@ so the UI findings come from your screenshots and the source.
 - **D40. A loop repeats the element and its children for each post** (Bricks's behaviour). The editor shows one copy with a badge: `Query loop · Post · 3`.
 - **D41. A value that is not valid is dropped, not shown.** A gap that is not a length or a spacing variable writes nothing.
 
+## The panel: how it looks now and how it will look
+
+- The editor panel is the reference. Its look is in `includes/blocks/assets/controls.css`; the label column is 100 px (it was 92 px, which clipped "Padding bottom").
+- The mock of the future panel is `docs/research/controls-screens-2026-11-05/lab/panel-v3.html`, with `controls.css` beside it. It shows the built parts and the planned ones (per-view values, the Style tab, Effects, the style cards, custom CSS), marked "planned". Eight states are in `docs/research/controls-screens-2026-11-05/lab/panel-v3-*.png`. The artifact shows them in its Panel v2 section (Version 18).
+
 ## Tests
 
 | Suite | Result |

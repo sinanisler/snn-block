@@ -35,6 +35,11 @@ class SNN_Layout_Blocks {
 	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
 	const JUSTIFY        = array( 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' );
 	const ALIGN          = array( 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
+	const ALIGN_CONTENT  = array( 'flex-start', 'center', 'flex-end', 'stretch', 'space-between', 'space-around', 'space-evenly' );
+	const JUSTIFY_ITEMS  = array( 'stretch', 'flex-start', 'center', 'flex-end' );
+	const GRID_FLOW      = array( 'row', 'column' );
+	const ALIGN_SELF     = array( 'auto', 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
+	const JUSTIFY_SELF   = array( 'stretch', 'flex-start', 'center', 'flex-end' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
@@ -83,6 +88,22 @@ class SNN_Layout_Blocks {
 			'justifyContent' => array( 'type' => 'string', 'default' => '' ),
 			'alignItems'     => array( 'type' => 'string', 'default' => '' ),
 			'gap'            => array( 'type' => 'string', 'default' => '' ),
+			'columnGap'      => array( 'type' => 'string', 'default' => '' ),
+			'rowGap'         => array( 'type' => 'string', 'default' => '' ),
+			'gridColumns'    => array( 'type' => 'string', 'default' => '' ),
+			'gridRows'       => array( 'type' => 'string', 'default' => '' ),
+			'gridAutoFlow'   => array( 'type' => 'string', 'default' => 'row' ),
+			'gridDense'      => array( 'type' => 'boolean', 'default' => false ),
+			'justifyItems'   => array( 'type' => 'string', 'default' => '' ),
+			'alignContent'   => array( 'type' => 'string', 'default' => '' ),
+			'alignSelf'      => array( 'type' => 'string', 'default' => '' ),
+			'justifySelf'    => array( 'type' => 'string', 'default' => '' ),
+			'flexGrow'       => array( 'type' => 'string', 'default' => '' ),
+			'flexShrink'     => array( 'type' => 'string', 'default' => '' ),
+			'flexBasis'      => array( 'type' => 'string', 'default' => '' ),
+			'columnSpan'     => array( 'type' => 'string', 'default' => '' ),
+			'rowSpan'        => array( 'type' => 'string', 'default' => '' ),
+			'backgroundColor' => array( 'type' => 'string', 'default' => '' ),
 			'query'          => array( 'type' => 'object', 'default' => SNN_Query_Loop::defaults() ),
 		);
 	}
@@ -152,42 +173,119 @@ class SNN_Layout_Blocks {
 		if ( '' !== $id ) {
 			$extra['id'] = $id;
 		}
-		if ( '' !== $style ) {
-			$extra['style'] = $style;
-		}
 		$attrs = get_block_wrapper_attributes( $extra );
+		// The style is written here, not through the wrapper: WordPress passes inline styles through its
+		// own list of CSS properties, which has no grid-auto-flow, so that declaration would be dropped.
+		// Every value in $style has already been checked by style().
+		if ( '' !== $style ) {
+			$attrs .= ' style="' . esc_attr( $style ) . '"';
+		}
 
 		return '<' . $a['tagName'] . ' ' . $attrs . '>' . $inner . '</' . $a['tagName'] . '>';
 	}
 
 	/**
-	 * The inline layout style. Block display needs none, so it adds nothing and the theme's
-	 * own rules apply. Flex and grid add their display, and flex adds its settings. Gap applies
-	 * to flex and grid only.
+	 * The inline layout style. Block display needs none, so it adds nothing and the theme's own
+	 * rules apply. Flex and grid add their display and their own settings. Gap, column gap and row
+	 * gap apply to flex and grid. The item settings (align self, grow, span and so on) act on the
+	 * block inside a flex or grid parent, so they are written whatever the block's own display is.
 	 */
 	public static function style( array $a, array $dyn = array() ) {
-		$css = array();
-		if ( 'flex' === $a['display'] ) {
+		$css  = array();
+		$flex = 'flex' === $a['display'];
+		$grid = 'grid' === $a['display'];
+
+		if ( $flex ) {
 			$css[] = 'display:flex';
 			$css[] = 'flex-direction:' . self::pick( $a['flexDirection'], self::FLEX_DIRECTION, 'row' );
 			$css[] = 'flex-wrap:' . self::pick( $a['flexWrap'], self::FLEX_WRAP, 'nowrap' );
+		} elseif ( $grid ) {
+			$css[]   = 'display:grid';
+			$columns = self::columns( SNN_Dynamic_Data::render( $a['gridColumns'], $dyn, 'plain' ) );
+			if ( '' !== $columns ) {
+				$css[] = 'grid-template-columns:' . $columns;
+			}
+			$rows = self::template( SNN_Dynamic_Data::render( $a['gridRows'], $dyn, 'plain' ) );
+			if ( '' !== $rows ) {
+				$css[] = 'grid-template-rows:' . $rows;
+			}
+			if ( $a['gridDense'] || 'column' === $a['gridAutoFlow'] ) {
+				$css[] = 'grid-auto-flow:' . $a['gridAutoFlow'] . ( $a['gridDense'] ? ' dense' : '' );
+			}
+		}
+
+		if ( $flex || $grid ) {
 			$justify = self::pick( $a['justifyContent'], self::JUSTIFY, '' );
+			$align   = self::pick( $a['alignItems'], self::ALIGN, '' );
+			if ( $grid ) {
+				$justify = self::grid_word( $justify );
+				$align   = self::grid_word( $align );
+			}
 			if ( '' !== $justify ) {
 				$css[] = 'justify-content:' . $justify;
 			}
-			$align = self::pick( $a['alignItems'], self::ALIGN, '' );
 			if ( '' !== $align ) {
 				$css[] = 'align-items:' . $align;
 			}
-		} elseif ( 'grid' === $a['display'] ) {
-			$css[] = 'display:grid';
-		}
-		if ( in_array( $a['display'], array( 'flex', 'grid' ), true ) ) {
+			if ( $grid ) {
+				$items   = self::grid_word( self::pick( $a['justifyItems'], self::JUSTIFY_ITEMS, '' ) );
+				$content = self::grid_word( self::pick( $a['alignContent'], self::ALIGN_CONTENT, '' ) );
+				if ( '' !== $items ) {
+					$css[] = 'justify-items:' . $items;
+				}
+				if ( '' !== $content ) {
+					$css[] = 'align-content:' . $content;
+				}
+			}
 			$gap = self::gap( SNN_Dynamic_Data::render( $a['gap'], $dyn, 'plain' ) );
 			if ( '' !== $gap ) {
 				$css[] = 'gap:' . $gap;
 			}
+			$column_gap = self::gap( SNN_Dynamic_Data::render( $a['columnGap'], $dyn, 'plain' ) );
+			if ( '' !== $column_gap ) {
+				$css[] = 'column-gap:' . $column_gap;
+			}
+			$row_gap = self::gap( SNN_Dynamic_Data::render( $a['rowGap'], $dyn, 'plain' ) );
+			if ( '' !== $row_gap ) {
+				$css[] = 'row-gap:' . $row_gap;
+			}
 		}
+
+		// Item settings: how this block sits inside its flex or grid parent.
+		$self = self::grid_word( self::pick( $a['alignSelf'], self::ALIGN_SELF, '' ) );
+		if ( '' !== $self ) {
+			$css[] = 'align-self:' . $self;
+		}
+		$jself = self::grid_word( self::pick( $a['justifySelf'], self::JUSTIFY_SELF, '' ) );
+		if ( '' !== $jself ) {
+			$css[] = 'justify-self:' . $jself;
+		}
+		$grow = self::number( SNN_Dynamic_Data::render( $a['flexGrow'], $dyn, 'plain' ) );
+		if ( '' !== $grow ) {
+			$css[] = 'flex-grow:' . $grow;
+		}
+		$shrink = self::number( SNN_Dynamic_Data::render( $a['flexShrink'], $dyn, 'plain' ) );
+		if ( '' !== $shrink ) {
+			$css[] = 'flex-shrink:' . $shrink;
+		}
+		$basis = self::length_or_auto( SNN_Dynamic_Data::render( $a['flexBasis'], $dyn, 'plain' ) );
+		if ( '' !== $basis ) {
+			$css[] = 'flex-basis:' . $basis;
+		}
+		$column_span = self::span( SNN_Dynamic_Data::render( $a['columnSpan'], $dyn, 'plain' ) );
+		if ( '' !== $column_span ) {
+			$css[] = 'grid-column:span ' . $column_span;
+		}
+		$row_span = self::span( SNN_Dynamic_Data::render( $a['rowSpan'], $dyn, 'plain' ) );
+		if ( '' !== $row_span ) {
+			$css[] = 'grid-row:span ' . $row_span;
+		}
+
+		$background = self::color( SNN_Dynamic_Data::render( $a['backgroundColor'], $dyn, 'plain' ) );
+		if ( '' !== $background ) {
+			$css[] = 'background-color:' . $background;
+		}
+
 		return implode( ';', $css );
 	}
 
@@ -197,10 +295,70 @@ class SNN_Layout_Blocks {
 	 */
 	public static function gap( $value ) {
 		$value = trim( (string) $value );
-		if ( preg_match( '/^(var\(--wp--preset--spacing--[a-z0-9-]+\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
+		if ( preg_match( '/^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
 			return $value;
 		}
 		return '';
+	}
+
+	/**
+	 * A colour: a hex value, rgb(), rgba(), hsl(), hsla(), a theme colour variable, or transparent.
+	 * Anything else is dropped, so a value cannot write other CSS.
+	 */
+	public static function color( $value ) {
+		$value = trim( (string) $value );
+		if ( preg_match( '/^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(rgba?|hsla?)\([0-9a-z.,%\s\/+-]{1,60}\)|var\(--[a-z][a-z0-9-]*\)|transparent)$/i', $value ) ) {
+			return $value;
+		}
+		return '';
+	}
+
+	/** A grid column count (1 to 12) is that many equal columns. Anything else is a track template. */
+	public static function columns( $value ) {
+		$value = trim( (string) $value );
+		if ( preg_match( '/^(1[0-2]|[1-9])$/', $value ) ) {
+			return 'repeat(' . $value . ', minmax(0, 1fr))';
+		}
+		if ( preg_match( '/^\d+$/', $value ) ) {
+			return ''; // a bare number outside 1 to 12 is not a template
+		}
+		return self::template( $value );
+	}
+
+	/**
+	 * A track template, such as 1fr 2fr or repeat(auto-fill, minmax(240px, 1fr)). Only letters, digits,
+	 * spaces, and ( ) , . % + - are kept, so a template cannot write a declaration or a URL.
+	 */
+	public static function template( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^[A-Za-z0-9 .,()%+-]{1,160}$/', $value ) ? $value : '';
+	}
+
+	/** A span for a grid item: 1 to 12, or nothing. */
+	public static function span( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^(1[0-2]|[1-9])$/', $value ) ? $value : '';
+	}
+
+	/** A non-negative number, for flex grow and shrink. */
+	public static function number( $value ) {
+		$value = trim( (string) $value );
+		return preg_match( '/^\d+(\.\d+)?$/', $value ) ? $value : '';
+	}
+
+	/** A flex basis: auto, or a length or spacing variable (as for the gap). */
+	public static function length_or_auto( $value ) {
+		$value = trim( (string) $value );
+		return 'auto' === $value ? 'auto' : self::gap( $value );
+	}
+
+	/** Grid has start and end, where flex has flex-start and flex-end. The grid words are written. */
+	private static function grid_word( $value ) {
+		$words = array(
+			'flex-start' => 'start',
+			'flex-end'   => 'end',
+		);
+		return $words[ $value ] ?? $value;
 	}
 
 	/* ------------------------------------------------------------------
@@ -224,7 +382,13 @@ class SNN_Layout_Blocks {
 		$out['flexWrap']       = self::pick( $out['flexWrap'], self::FLEX_WRAP, 'nowrap' );
 		$out['justifyContent'] = self::pick( $out['justifyContent'], self::JUSTIFY, '' );
 		$out['alignItems']     = self::pick( $out['alignItems'], self::ALIGN, '' );
-		foreach ( array( 'htmlId', 'cssClasses', 'gap' ) as $key ) {
+		$out['gridAutoFlow']   = self::pick( $out['gridAutoFlow'], self::GRID_FLOW, 'row' );
+		$out['gridDense']      = true === $out['gridDense'] || 1 === $out['gridDense'] || 'true' === $out['gridDense'];
+		$out['justifyItems']   = self::pick( $out['justifyItems'], self::JUSTIFY_ITEMS, '' );
+		$out['alignContent']   = self::pick( $out['alignContent'], self::ALIGN_CONTENT, '' );
+		$out['alignSelf']      = self::pick( $out['alignSelf'], self::ALIGN_SELF, '' );
+		$out['justifySelf']    = self::pick( $out['justifySelf'], self::JUSTIFY_SELF, '' );
+		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'backgroundColor' ) as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
@@ -248,35 +412,43 @@ class SNN_Layout_Blocks {
 	 * Editor
 	 * ---------------------------------------------------------------- */
 
-	/** Spacing variables for the Gap field: the spacing sizes of the theme, from Global Styles. */
+	/**
+	 * The variables the V button offers, from Global Styles: colours and sizes, as plain variables (--black, --size-20).
+	 * Each group has a kind, 'color' or 'size', so the picker can show the groups of the field's kind first (see controls.js).
+	 */
 	public static function variables() {
+		$v      = SNN_Global_Styles::get_values();
+		$colors = array();
+		foreach ( $v['colors'] as $c ) {
+			$colors[] = array(
+				'label' => $c['slug'],
+				'value' => 'var(--' . $c['slug'] . ')',
+				'color' => $c['color'], // a swatch in the picker
+			);
+		}
+		$sizes = array();
+		foreach ( $v['sizes'] as $slug => $size ) {
+			$sizes[] = array(
+				'label' => $slug,
+				'value' => 'var(--' . $slug . ')',
+			);
+		}
 		$groups = array();
-		$sets   = array(
-			'spacing' => array( __( 'Spacing', 'snn' ), array( 'spacing', 'spacingSizes' ), 'spacing--%s' ),
-		);
-		foreach ( $sets as $key => $set ) {
-			list( $label, $path, $format ) = $set;
-			$items = array();
-			$list  = wp_get_global_settings( $path );
-			if ( is_array( $list ) && isset( $list['theme'] ) && is_array( $list['theme'] ) ) {
-				$list = $list['theme'];
-			}
-			foreach ( is_array( $list ) ? $list : array() as $entry ) {
-				if ( empty( $entry['slug'] ) ) {
-					continue;
-				}
-				$items[] = array(
-					'label' => $entry['name'] ?? $entry['slug'],
-					'value' => 'var(--wp--preset--' . sprintf( $format, $entry['slug'] ) . ')',
-				);
-			}
-			if ( $items ) {
-				$groups[] = array(
-					'key'   => $key,
-					'label' => $label,
-					'items' => $items,
-				);
-			}
+		if ( $colors ) {
+			$groups[] = array(
+				'key'   => 'color',
+				'label' => __( 'Colours', 'snn' ),
+				'kind'  => 'color',
+				'items' => $colors,
+			);
+		}
+		if ( $sizes ) {
+			$groups[] = array(
+				'key'   => 'size',
+				'label' => __( 'Sizes', 'snn' ),
+				'kind'  => 'size',
+				'items' => $sizes,
+			);
 		}
 		return $groups;
 	}
@@ -287,10 +459,12 @@ class SNN_Layout_Blocks {
 		}
 		$css    = 'includes/blocks/assets/controls.css';
 		$js     = 'includes/blocks/assets/controls.js';
+		$icons  = 'includes/blocks/assets/layout-icons.js';
 		$blocks = 'includes/blocks/assets/layout-blocks.js';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data' ), self::version( $js ), true );
+		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_localize_script(
 			'snn-controls',
 			'snnControlsData',
@@ -302,7 +476,7 @@ class SNN_Layout_Blocks {
 				'tags'      => self::TAGS,
 			)
 		);
-		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-i18n', 'snn-controls' ), self::version( $blocks ), true );
+		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons' ), self::version( $blocks ), true );
 	}
 
 	private static function version( $file ) {

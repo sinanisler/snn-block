@@ -5,19 +5,27 @@
  *   Query loop      a switch. Turned on, the Query section below it can open.
  *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
  *                   offset, child of, sticky, include and exclude, authors, main query.
- *   Layout          HTML tag, display (block, flex, grid), flex direction, wrap, justify, align, gap.
+ *   Layout          presets (visual tiles), then display (block, flex, grid) with its settings:
+ *                   flex direction, wrap, justify, align and gaps; grid columns, rows, flow,
+ *                   justify items and align content. The settings are icons where a choice has a
+ *                   picture (layout-icons.js), and the pictures follow the direction.
+ *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
+ *                   justify self, column and row span. Only the settings its parent needs show.
  *   Advanced        CSS ID and CSS classes.
  *
  * Every text-like field has the dynamic data button and every size field can take a variable.
  * The editor shows each block once. On the front end a query loop repeats the block for every
- * post (rendered in includes/blocks/layout-blocks.php).
+ * post (rendered in includes/blocks/layout-blocks.php, whose style rules this file mirrors).
  */
-( function ( wp, C ) {
+( function ( wp, C, I ) {
 	const { registerBlockType } = wp.blocks;
-	const { InnerBlocks, InspectorControls, useBlockProps } = wp.blockEditor;
+	const { InnerBlocks, InspectorControls, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
+	const { useSelect } = wp.data;
 	const { createElement: h, Fragment, useState } = wp.element;
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
+	const { Glyph, arrange, columns, BLOCK_SHAPE, GRID_SHAPE, ARROWS } = I;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField } = C;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -35,70 +43,405 @@
 		isMain: false,
 	};
 
+	/** The layout settings and their defaults. A preset sets all of them at once. */
+	const LAYOUT_DEFAULTS = {
+		display: 'block',
+		flexDirection: 'row',
+		flexWrap: 'nowrap',
+		justifyContent: '',
+		alignItems: '',
+		gap: '',
+		columnGap: '',
+		rowGap: '',
+		gridColumns: '',
+		gridRows: '',
+		gridAutoFlow: 'row',
+		gridDense: false,
+		justifyItems: '',
+		alignContent: '',
+	};
+
+	/** The item settings: how the block sits in its flex or grid parent. */
+	const ITEM_DEFAULTS = {
+		alignSelf: '',
+		justifySelf: '',
+		flexGrow: '',
+		flexShrink: '',
+		flexBasis: '',
+		columnSpan: '',
+		rowSpan: '',
+	};
+
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
-	const DISPLAY_OPTIONS = [
-		{ value: 'block', label: __( 'Block', 'snn' ) },
-		{ value: 'flex', label: __( 'Flex', 'snn' ) },
-		{ value: 'grid', label: __( 'Grid', 'snn' ) },
-	];
-	const DIRECTION_OPTIONS = [
-		{ value: 'row', label: __( 'Row', 'snn' ), icon: 'dashicons-arrow-right-alt' },
-		{ value: 'row-reverse', label: __( 'Row reverse', 'snn' ), icon: 'dashicons-arrow-left-alt' },
-		{ value: 'column', label: __( 'Column', 'snn' ), icon: 'dashicons-arrow-down-alt' },
-		{ value: 'column-reverse', label: __( 'Column reverse', 'snn' ), icon: 'dashicons-arrow-up-alt' },
-	];
-	const JUSTIFY_OPTIONS = [
-		{ value: '', label: __( 'Default', 'snn' ) },
-		{ value: 'flex-start', label: __( 'Start', 'snn' ) },
-		{ value: 'center', label: __( 'Center', 'snn' ) },
-		{ value: 'flex-end', label: __( 'End', 'snn' ) },
-		{ value: 'space-between', label: __( 'Space between', 'snn' ) },
-		{ value: 'space-around', label: __( 'Space around', 'snn' ) },
-		{ value: 'space-evenly', label: __( 'Space evenly', 'snn' ) },
-	];
-	const ALIGN_OPTIONS = [
-		{ value: '', label: __( 'Default', 'snn' ) },
-		{ value: 'stretch', label: __( 'Stretch', 'snn' ) },
-		{ value: 'flex-start', label: __( 'Start', 'snn' ) },
-		{ value: 'center', label: __( 'Center', 'snn' ) },
-		{ value: 'flex-end', label: __( 'End', 'snn' ) },
-		{ value: 'baseline', label: __( 'Baseline', 'snn' ) },
-	];
+	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
+	const ORDER_BY_OPTIONS = data.orderBy || [ { value: 'date', label: __( 'Date', 'snn' ) } ];
 	const ORDER_OPTIONS = [
 		{ value: 'DESC', label: __( 'Descending', 'snn' ) },
 		{ value: 'ASC', label: __( 'Ascending', 'snn' ) },
 	];
-	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
-	const ORDER_BY_OPTIONS = data.orderBy || [ { value: 'date', label: __( 'Date', 'snn' ) } ];
-	const VARIABLE_GROUPS = ( data.variables || [] ).filter( ( g ) => g.key === 'spacing' );
+	// All the variable groups: colours and sizes. Each group has a kind, which the picker uses (controls.js).
+	const VARIABLE_GROUPS = data.variables || [];
+	const WRAP_OPTIONS = [
+		{ value: 'nowrap', label: __( 'No wrap', 'snn' ) },
+		{ value: 'wrap', label: __( 'Wrap', 'snn' ) },
+		{ value: 'wrap-reverse', label: __( 'Wrap reverse', 'snn' ) },
+	];
+	const COLOR_OK = /^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(rgba?|hsla?)\([0-9a-z.,%\s\/+-]{1,60}\)|var\(--[a-z][a-z0-9-]*\)|transparent)$/i;
 
-	const GAP_OK = /^(var\(--wp--preset--spacing--[a-z0-9-]+\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
+	const WORD = {
+		start: __( 'Start', 'snn' ),
+		center: __( 'Center', 'snn' ),
+		end: __( 'End', 'snn' ),
+		stretch: __( 'Stretch', 'snn' ),
+		baseline: __( 'Baseline', 'snn' ),
+		auto: __( 'Auto', 'snn' ),
+		between: __( 'Space between', 'snn' ),
+		around: __( 'Space around', 'snn' ),
+		evenly: __( 'Space evenly', 'snn' ),
+	};
 
-	/** The inline style, as the front end writes it (includes/blocks/layout-blocks.php). */
-	function styleFor( a ) {
-		if ( a.display !== 'flex' && a.display !== 'grid' ) {
-			return undefined;
+	/** The choices of each setting, as [value, label] pairs (the value is the CSS keyword). */
+	const CHOICES = {
+		justify: [
+			[ 'flex-start', WORD.start ],
+			[ 'center', WORD.center ],
+			[ 'flex-end', WORD.end ],
+			[ 'space-between', WORD.between ],
+			[ 'space-around', WORD.around ],
+			[ 'space-evenly', WORD.evenly ],
+		],
+		align: [
+			[ 'stretch', WORD.stretch ],
+			[ 'flex-start', WORD.start ],
+			[ 'center', WORD.center ],
+			[ 'flex-end', WORD.end ],
+			[ 'baseline', WORD.baseline ],
+		],
+		alignContent: [
+			[ 'flex-start', WORD.start ],
+			[ 'center', WORD.center ],
+			[ 'flex-end', WORD.end ],
+			[ 'stretch', WORD.stretch ],
+			[ 'space-between', WORD.between ],
+			[ 'space-around', WORD.around ],
+			[ 'space-evenly', WORD.evenly ],
+		],
+		cell: [
+			[ 'stretch', WORD.stretch ],
+			[ 'flex-start', WORD.start ],
+			[ 'center', WORD.center ],
+			[ 'flex-end', WORD.end ],
+		],
+		alignSelf: [
+			[ 'auto', WORD.auto ],
+			[ 'stretch', WORD.stretch ],
+			[ 'flex-start', WORD.start ],
+			[ 'center', WORD.center ],
+			[ 'flex-end', WORD.end ],
+			[ 'baseline', WORD.baseline ],
+		],
+	};
+
+	const DIRECTIONS = [
+		[ 'row', __( 'Row', 'snn' ) ],
+		[ 'row-reverse', __( 'Row reverse', 'snn' ) ],
+		[ 'column', __( 'Column', 'snn' ) ],
+		[ 'column-reverse', __( 'Column reverse', 'snn' ) ],
+	];
+
+	const GAP_OK = /^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
+	const TEMPLATE_OK = /^[A-Za-z0-9 .,()%+-]{1,160}$/;
+	const NUMBER_OK = /^\d+(\.\d+)?$/;
+	const SPAN_OK = /^(1[0-2]|[1-9])$/;
+
+	/* ------------------------------------------------------------------
+	 * Pictures and choices
+	 * ---------------------------------------------------------------- */
+
+	/** Options from [value, label] pairs, each with its picture. */
+	function options( pairs, glyph ) {
+		return pairs.map( ( [ value, label ] ) => ( { value, label, glyph: glyph( value ) } ) );
+	}
+
+	/** A main-axis picture: the boxes along the flow (justify, align content). */
+	function mainGlyph( axis, reverse ) {
+		return ( value ) => h( Glyph, { rects: arrange( { axis, kind: 'main', mode: value, reverse } ) } );
+	}
+
+	/** A cross-axis picture: the boxes lined up across the flow (align, justify items, align self). */
+	function crossGlyph( axis ) {
+		return ( value ) => h( Glyph, { rects: arrange( { axis, kind: 'cross', mode: value } ) } );
+	}
+
+	function displayOptions() {
+		return [
+			{ value: 'block', label: __( 'Block', 'snn' ), glyph: h( Glyph, { rects: BLOCK_SHAPE } ) },
+			{ value: 'flex', label: __( 'Flex', 'snn' ), glyph: h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'flex-start' } ) } ) },
+			{ value: 'grid', label: __( 'Grid', 'snn' ), glyph: h( Glyph, { rects: GRID_SHAPE } ) },
+		];
+	}
+
+	function directionOptions() {
+		return DIRECTIONS.map( ( [ value, label ] ) => ( { value, label, glyph: h( Glyph, { arrow: ARROWS[ value ] } ) } ) );
+	}
+
+	function columnOptions() {
+		return [ 1, 2, 3, 4, 5, 6 ].map( ( n ) => ( {
+			value: String( n ),
+			label: n === 1 ? __( '1 column', 'snn' ) : n + ' ' + __( 'columns', 'snn' ),
+			glyph: h( Glyph, { rects: columns( n ) } ),
+		} ) );
+	}
+
+	function flowOptions() {
+		return [
+			{ value: 'row', label: __( 'Row', 'snn' ), glyph: h( Glyph, { arrow: ARROWS.row } ) },
+			{ value: 'column', label: __( 'Column', 'snn' ), glyph: h( Glyph, { arrow: ARROWS.column } ) },
+		];
+	}
+
+	/* ------------------------------------------------------------------
+	 * Presets: one tap sets the whole layout (the settings not listed go back to their defaults)
+	 * ---------------------------------------------------------------- */
+
+	const PRESETS = [
+		{
+			id: 'spread',
+			label: __( 'Spread', 'snn' ),
+			title: __( 'Row, space between', 'snn' ),
+			values: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+			glyph: () => h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'space-between' } ) } ),
+		},
+		{
+			id: 'row-center',
+			label: __( 'Center', 'snn' ),
+			title: __( 'Row, centred, 16 px gap', 'snn' ),
+			values: { display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '16px' },
+			glyph: () => h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'center' } ) } ),
+		},
+		{
+			id: 'stack',
+			label: __( 'Stack', 'snn' ),
+			title: __( 'Column from the top, full width, 16 px gap', 'snn' ),
+			values: { display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'stretch', gap: '16px' },
+			glyph: () => h( Glyph, { rects: arrange( { axis: 'y', kind: 'main', mode: 'flex-start' } ) } ),
+		},
+		{
+			id: 'middle',
+			label: __( 'Middle', 'snn' ),
+			title: __( 'Column, centred, 16 px gap', 'snn' ),
+			values: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px' },
+			glyph: () => h( Glyph, { rects: arrange( { axis: 'y', kind: 'main', mode: 'center' } ) } ),
+		},
+		{
+			id: 'wrap',
+			label: __( 'Wrap', 'snn' ),
+			title: __( 'Row that wraps, for cards, 24 px gap', 'snn' ),
+			values: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'stretch', gap: '24px' },
+			glyph: () =>
+				h( Glyph, {
+					rects: [
+						{ x: 3, y: 3, w: 8.25, h: 8.25 },
+						{ x: 12.75, y: 3, w: 8.25, h: 8.25 },
+						{ x: 3, y: 12.75, w: 8.25, h: 8.25 },
+						{ x: 12.75, y: 12.75, w: 8.25, h: 8.25 },
+					],
+				} ),
+		},
+		{
+			id: 'cols-2',
+			label: __( '2 cols', 'snn' ),
+			title: __( 'Grid, 2 equal columns, 24 px gap', 'snn' ),
+			values: { display: 'grid', gridColumns: '2', gap: '24px' },
+			glyph: () => h( Glyph, { rects: columns( 2 ) } ),
+		},
+		{
+			id: 'cols-3',
+			label: __( '3 cols', 'snn' ),
+			title: __( 'Grid, 3 equal columns, 24 px gap', 'snn' ),
+			values: { display: 'grid', gridColumns: '3', gap: '24px' },
+			glyph: () => h( Glyph, { rects: columns( 3 ) } ),
+		},
+		{
+			id: 'cols-4',
+			label: __( '4 cols', 'snn' ),
+			title: __( 'Grid, 4 equal columns, 16 px gap', 'snn' ),
+			values: { display: 'grid', gridColumns: '4', gap: '16px' },
+			glyph: () => h( Glyph, { rects: columns( 4 ) } ),
+		},
+		{
+			id: 'sidebar',
+			label: __( '1 : 2', 'snn' ),
+			title: __( 'Grid, a narrow and a wide column (1fr 2fr), 24 px gap', 'snn' ),
+			values: { display: 'grid', gridColumns: '1fr 2fr', gap: '24px' },
+			glyph: () => h( Glyph, { rects: columns( 2, [ 1, 2 ] ) } ),
+		},
+		{
+			id: 'auto',
+			label: __( 'Auto', 'snn' ),
+			title: __( 'Grid of cards at least 240 px wide, as many as fit, 24 px gap', 'snn' ),
+			values: { display: 'grid', gridColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' },
+			glyph: () =>
+				h( Glyph, {
+					rects: [ 0, 1, 2 ].flatMap( ( c ) => [ 0, 1 ].map( ( r ) => ( { x: 3 + c * 6.5, y: 3 + r * 9.75, w: 5, h: 8.25 } ) ) ),
+				} ),
+		},
+	];
+
+	/** A preset is on when every layout setting matches what it sets (the rest at their defaults). */
+	function presetOn( a, preset ) {
+		const want = { ...LAYOUT_DEFAULTS, ...preset.values };
+		return Object.keys( LAYOUT_DEFAULTS ).every( ( k ) => a[ k ] === want[ k ] );
+	}
+
+	function Presets( { a, set } ) {
+		return h(
+			'div',
+			{ className: 'snn-presets', role: 'group', 'aria-label': __( 'Presets', 'snn' ) },
+			PRESETS.map( ( p ) => {
+				const on = presetOn( a, p );
+				return h(
+					'button',
+					{
+						key: p.id,
+						type: 'button',
+						className: 'snn-preset' + ( on ? ' is-on' : '' ),
+						'aria-pressed': on ? 'true' : 'false',
+						title: p.title,
+						onClick: () => set( { ...LAYOUT_DEFAULTS, ...p.values } ),
+					},
+					p.glyph(),
+					h( 'span', null, p.label )
+				);
+			} )
+		);
+	}
+
+	/* ------------------------------------------------------------------
+	 * The inline style, as the front end writes it (includes/blocks/layout-blocks.php)
+	 * ---------------------------------------------------------------- */
+
+	const str = ( v ) => ( v === undefined || v === null ? '' : String( v ) );
+
+	/** Grid has start and end; flex-start and flex-end become them (as on the front end). */
+	function gridWord( v ) {
+		if ( v === 'flex-start' ) {
+			return 'start';
 		}
+		if ( v === 'flex-end' ) {
+			return 'end';
+		}
+		return v;
+	}
+
+	function columnsCss( v ) {
+		const t = str( v ).trim();
+		if ( SPAN_OK.test( t ) ) {
+			return 'repeat(' + t + ', minmax(0, 1fr))';
+		}
+		if ( /^\d+$/.test( t ) ) {
+			return '';
+		}
+		return TEMPLATE_OK.test( t ) ? t : '';
+	}
+
+	function templateCss( v ) {
+		const t = str( v ).trim();
+		return TEMPLATE_OK.test( t ) ? t : '';
+	}
+
+	function lengthCss( v ) {
+		const t = str( v ).trim();
+		if ( t === 'auto' ) {
+			return 'auto';
+		}
+		return GAP_OK.test( t ) ? t : '';
+	}
+
+	function styleFor( a ) {
 		const css = {};
-		if ( a.display === 'flex' ) {
+		const flex = a.display === 'flex';
+		const grid = a.display === 'grid';
+
+		if ( flex ) {
 			css.display = 'flex';
 			css.flexDirection = a.flexDirection || 'row';
 			css.flexWrap = a.flexWrap || 'nowrap';
+		} else if ( grid ) {
+			css.display = 'grid';
+			const cols = columnsCss( a.gridColumns );
+			if ( cols ) {
+				css.gridTemplateColumns = cols;
+			}
+			const rows = templateCss( a.gridRows );
+			if ( rows ) {
+				css.gridTemplateRows = rows;
+			}
+			if ( a.gridDense || a.gridAutoFlow === 'column' ) {
+				css.gridAutoFlow = a.gridAutoFlow + ( a.gridDense ? ' dense' : '' );
+			}
+		}
+
+		if ( flex || grid ) {
 			if ( a.justifyContent ) {
-				css.justifyContent = a.justifyContent;
+				css.justifyContent = grid ? gridWord( a.justifyContent ) : a.justifyContent;
 			}
 			if ( a.alignItems ) {
-				css.alignItems = a.alignItems;
+				css.alignItems = grid ? gridWord( a.alignItems ) : a.alignItems;
 			}
-		} else {
-			css.display = 'grid';
+			if ( grid ) {
+				if ( a.justifyItems ) {
+					css.justifyItems = gridWord( a.justifyItems );
+				}
+				if ( a.alignContent ) {
+					css.alignContent = gridWord( a.alignContent );
+				}
+			}
+			if ( GAP_OK.test( str( a.gap ) ) ) {
+				css.gap = a.gap;
+			}
+			if ( GAP_OK.test( str( a.columnGap ) ) ) {
+				css.columnGap = a.columnGap;
+			}
+			if ( GAP_OK.test( str( a.rowGap ) ) ) {
+				css.rowGap = a.rowGap;
+			}
 		}
-		// A gap that still holds a tag is resolved on the front end only.
-		if ( a.gap && GAP_OK.test( a.gap ) ) {
-			css.gap = a.gap;
+
+		// Item settings act on the block inside its parent, so they are written whatever the display.
+		if ( a.alignSelf ) {
+			css.alignSelf = gridWord( a.alignSelf );
 		}
-		return css;
+		if ( a.justifySelf ) {
+			css.justifySelf = gridWord( a.justifySelf );
+		}
+		if ( NUMBER_OK.test( str( a.flexGrow ) ) ) {
+			css.flexGrow = a.flexGrow;
+		}
+		if ( NUMBER_OK.test( str( a.flexShrink ) ) ) {
+			css.flexShrink = a.flexShrink;
+		}
+		const basis = lengthCss( a.flexBasis );
+		if ( basis ) {
+			css.flexBasis = basis;
+		}
+		if ( SPAN_OK.test( str( a.columnSpan ).trim() ) ) {
+			css.gridColumn = 'span ' + str( a.columnSpan ).trim();
+		}
+		if ( SPAN_OK.test( str( a.rowSpan ).trim() ) ) {
+			css.gridRow = 'span ' + str( a.rowSpan ).trim();
+		}
+
+		if ( a.backgroundColor && COLOR_OK.test( a.backgroundColor ) ) {
+			css.backgroundColor = a.backgroundColor;
+		}
+
+		return Object.keys( css ).length ? css : undefined;
 	}
+
+	/* ------------------------------------------------------------------
+	 * Query (unchanged from the first version)
+	 * ---------------------------------------------------------------- */
 
 	function changedQuery( q ) {
 		return (
@@ -123,9 +466,9 @@
 			Fragment,
 			null,
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Post type', 'snn' ), changed: q.postType !== 'post' },
-				h( C.Select, {
+				h( Select, {
 					label: __( 'Post type', 'snn' ),
 					value: q.postType,
 					options: POST_TYPE_OPTIONS,
@@ -133,9 +476,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Order by', 'snn' ), changed: q.orderBy !== 'date' },
-				h( C.Select, {
+				h( Select, {
 					label: __( 'Order by', 'snn' ),
 					value: q.orderBy,
 					options: ORDER_BY_OPTIONS,
@@ -143,9 +486,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Order', 'snn' ), changed: q.order !== 'DESC' },
-				h( C.Select, {
+				h( Select, {
 					label: __( 'Order', 'snn' ),
 					value: q.order,
 					options: ORDER_OPTIONS,
@@ -153,9 +496,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Per page', 'snn' ), changed: q.perPage !== '10' },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Posts per page', 'snn' ),
 					value: q.perPage,
 					inputMode: 'numeric',
@@ -163,9 +506,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Offset', 'snn' ), changed: q.offset !== '0' },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Offset', 'snn' ),
 					value: q.offset,
 					inputMode: 'numeric',
@@ -173,24 +516,24 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Child of', 'snn' ), changed: !! q.parent },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Child of', 'snn' ),
 					value: q.parent,
 					placeholder: __( 'Post ID', 'snn' ),
 					onChange: ( v ) => setQ( { parent: v } ),
 				} )
 			),
-			h( C.SwitchRow, {
+			h( SwitchRow, {
 				label: __( 'Ignore sticky', 'snn' ),
 				checked: q.ignoreSticky,
 				onChange: ( v ) => setQ( { ignoreSticky: v } ),
 			} ),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Include', 'snn' ), changed: !! q.include },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Include posts', 'snn' ),
 					value: q.include,
 					placeholder: __( 'IDs', 'snn' ),
@@ -198,9 +541,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Exclude', 'snn' ), changed: !! q.exclude },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Exclude posts', 'snn' ),
 					value: q.exclude,
 					placeholder: __( 'IDs', 'snn' ),
@@ -208,9 +551,9 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Authors', 'snn' ), changed: !! q.includeAuthors },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Include authors', 'snn' ),
 					value: q.includeAuthors,
 					placeholder: __( 'User IDs', 'snn' ),
@@ -218,16 +561,16 @@
 				} )
 			),
 			h(
-				C.Row,
+				Row,
 				{ label: __( 'Not authors', 'snn' ), changed: !! q.excludeAuthors },
-				h( C.TextField, {
+				h( TextField, {
 					label: __( 'Exclude authors', 'snn' ),
 					value: q.excludeAuthors,
 					placeholder: __( 'User IDs', 'snn' ),
 					onChange: ( v ) => setQ( { excludeAuthors: v } ),
 				} )
 			),
-			h( C.SwitchRow, {
+			h( SwitchRow, {
 				label: __( 'Main query', 'snn' ),
 				checked: q.isMain,
 				onChange: ( v ) => setQ( { isMain: v } ),
@@ -235,134 +578,443 @@
 		);
 	}
 
+	/* ------------------------------------------------------------------
+	 * Layout and item rows
+	 * ---------------------------------------------------------------- */
+
 	function layoutChanged( a, tag ) {
-		return a.tagName !== tag || a.display !== 'block' || !! a.gap;
+		return a.tagName !== tag || Object.keys( LAYOUT_DEFAULTS ).some( ( k ) => a[ k ] !== LAYOUT_DEFAULTS[ k ] );
 	}
 
+	function itemChanged( a ) {
+		return Object.keys( ITEM_DEFAULTS ).some( ( k ) => a[ k ] !== ITEM_DEFAULTS[ k ] );
+	}
+
+	/**
+	 * The flex and grid settings, in the order they are used. A grid lists its tracks first. Each
+	 * row shows only when it applies to the display chosen.
+	 */
 	function LayoutFields( { a, set, tag } ) {
 		const flex = a.display === 'flex';
 		const grid = a.display === 'grid';
-		return h(
-			Fragment,
-			null,
+		const box = flex || grid;
+		const axis = /^column/.test( a.flexDirection ) ? 'y' : 'x';
+		const reverse = /reverse$/.test( a.flexDirection );
+		const rows = [];
+
+		rows.push(
 			h(
-				C.Row,
-				{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
-				h( C.Select, {
+				Row,
+				{ key: 'display', label: __( 'Display', 'snn' ), changed: a.display !== 'block' },
+				h( Segmented, {
+					label: __( 'Display', 'snn' ),
+					value: a.display,
+					options: displayOptions(),
+					onChange: ( v ) => set( { display: v } ),
+				} )
+			),
+			h(
+				Row,
+				{ key: 'tag', label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
+				h( Select, {
 					label: __( 'HTML tag', 'snn' ),
 					value: a.tagName,
 					options: TAG_OPTIONS,
 					onChange: ( v ) => set( { tagName: v } ),
 				} )
-			),
+			)
+		);
+		// The version 12 mock lists the HTML tag first, then the display.
+		rows.reverse();
+
+		if ( flex ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: a.flexDirection !== 'row' },
+					h( Segmented, {
+						label: __( 'Direction', 'snn' ),
+						value: a.flexDirection,
+						options: directionOptions(),
+						onChange: ( v ) => set( { flexDirection: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'wrap', label: __( 'Wrap', 'snn' ), changed: a.flexWrap !== 'nowrap' },
+					h( Select, {
+						label: __( 'Wrap', 'snn' ),
+						value: a.flexWrap,
+						options: WRAP_OPTIONS,
+						onChange: ( v ) => set( { flexWrap: v } ),
+					} )
+				)
+			);
+		}
+
+		if ( grid ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'columns', label: __( 'Columns', 'snn' ), changed: a.gridColumns !== '' },
+					h( Segmented, {
+						label: __( 'Columns', 'snn' ),
+						value: a.gridColumns,
+						options: columnOptions(),
+						onChange: ( v ) => set( { gridColumns: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'template', label: __( 'Template', 'snn' ), changed: a.gridColumns !== '' && ! /^\d+$/.test( a.gridColumns ) },
+					h( TextField, {
+						label: __( 'Column template', 'snn' ),
+						value: a.gridColumns,
+						placeholder: __( '1fr 2fr', 'snn' ),
+						onChange: ( v ) => set( { gridColumns: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'rows', label: __( 'Rows', 'snn' ), changed: a.gridRows !== '' },
+					h( TextField, {
+						label: __( 'Row template', 'snn' ),
+						value: a.gridRows,
+						placeholder: __( 'auto', 'snn' ),
+						onChange: ( v ) => set( { gridRows: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'flow', label: __( 'Flow', 'snn' ), changed: a.gridAutoFlow !== 'row' },
+					h( Segmented, {
+						label: __( 'Flow', 'snn' ),
+						value: a.gridAutoFlow,
+						options: flowOptions(),
+						onChange: ( v ) => set( { gridAutoFlow: v } ),
+					} )
+				),
+				h( SwitchRow, {
+					key: 'dense',
+					label: __( 'Dense', 'snn' ),
+					checked: a.gridDense,
+					onChange: ( v ) => set( { gridDense: v } ),
+				} )
+			);
+		}
+
+		if ( box ) {
+			// In a grid, justify content and align items act on the columns and the rows.
+			const mainAxis = grid ? 'x' : axis;
+			const mainReverse = grid ? false : reverse;
+			const crossAxis = grid ? 'x' : axis;
+			rows.push(
+				h(
+					Row,
+					{ key: 'justify', label: __( 'Justify', 'snn' ), changed: !! a.justifyContent },
+					h( Segmented, {
+						label: __( 'Justify content', 'snn' ),
+						value: a.justifyContent || 'flex-start',
+						options: options( CHOICES.justify, mainGlyph( mainAxis, mainReverse ) ),
+						onChange: ( v ) => set( { justifyContent: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'align', label: __( 'Align', 'snn' ), changed: !! a.alignItems },
+					h( Segmented, {
+						label: __( 'Align items', 'snn' ),
+						value: a.alignItems || 'stretch',
+						options: options( CHOICES.align, crossGlyph( crossAxis ) ),
+						onChange: ( v ) => set( { alignItems: v } ),
+					} )
+				)
+			);
+		}
+
+		if ( grid ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'justify-items', label: __( 'Justify items', 'snn' ), changed: !! a.justifyItems },
+					h( Segmented, {
+						label: __( 'Justify items', 'snn' ),
+						value: a.justifyItems || 'stretch',
+						options: options( CHOICES.cell, crossGlyph( 'y' ) ),
+						onChange: ( v ) => set( { justifyItems: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'align-content', label: __( 'Align content', 'snn' ), changed: !! a.alignContent },
+					h( Segmented, {
+						label: __( 'Align content', 'snn' ),
+						value: a.alignContent || 'stretch',
+						options: options( CHOICES.alignContent, mainGlyph( 'y', false ) ),
+						onChange: ( v ) => set( { alignContent: v } ),
+					} )
+				)
+			);
+		}
+
+		if ( box ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'gap', label: __( 'Gap', 'snn' ), changed: !! a.gap },
+					h( TextField, {
+						label: __( 'Gap', 'snn' ),
+						value: a.gap,
+						placeholder: '0',
+						variables: VARIABLE_GROUPS, kind: 'size',
+						onChange: ( v ) => set( { gap: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'column-gap', label: __( 'Column gap', 'snn' ), changed: !! a.columnGap },
+					h( TextField, {
+						label: __( 'Column gap', 'snn' ),
+						value: a.columnGap,
+						placeholder: '0',
+						variables: VARIABLE_GROUPS, kind: 'size',
+						onChange: ( v ) => set( { columnGap: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'row-gap', label: __( 'Row gap', 'snn' ), changed: !! a.rowGap },
+					h( TextField, {
+						label: __( 'Row gap', 'snn' ),
+						value: a.rowGap,
+						placeholder: '0',
+						variables: VARIABLE_GROUPS, kind: 'size',
+						onChange: ( v ) => set( { rowGap: v } ),
+					} )
+				)
+			);
+		}
+
+		return h( Fragment, null, rows );
+	}
+
+	/** The item settings. They depend on the parent: flex or grid, or neither (then only a hint). */
+	function ItemFields( { a, set, parent } ) {
+		const flex = parent.display === 'flex';
+		const grid = parent.display === 'grid';
+		if ( ! flex && ! grid ) {
+			return h( 'div', { className: 'snn-hint' }, __( 'Put this block inside a flex or grid block to set its place in it.', 'snn' ) );
+		}
+		const parentAxis = /^column/.test( parent.flexDirection ) ? 'y' : 'x';
+		const rows = [
 			h(
-				C.Row,
-				{ label: __( 'Display', 'snn' ), changed: a.display !== 'block' },
-				h( C.Select, {
-					label: __( 'Display', 'snn' ),
-					value: a.display,
-					options: DISPLAY_OPTIONS,
-					onChange: ( v ) => set( { display: v } ),
+				Row,
+				{ key: 'align-self', label: __( 'Align self', 'snn' ), changed: !! a.alignSelf },
+				h( Segmented, {
+					label: __( 'Align self', 'snn' ),
+					value: a.alignSelf || 'auto',
+					options: options( CHOICES.alignSelf, crossGlyph( flex ? parentAxis : 'x' ) ),
+					onChange: ( v ) => set( { alignSelf: v } ),
 				} )
 			),
-			flex
-				? h(
-						C.Row,
-						{ label: __( 'Direction', 'snn' ), changed: a.flexDirection !== 'row' },
-						h( C.Segmented, {
-							label: __( 'Direction', 'snn' ),
-							value: a.flexDirection,
-							options: DIRECTION_OPTIONS,
-							onChange: ( v ) => set( { flexDirection: v } ),
-						} )
-				  )
-				: null,
-			flex
-				? h( C.SwitchRow, {
-						label: __( 'Wrap', 'snn' ),
-						checked: a.flexWrap === 'wrap',
-						onChange: ( v ) => set( { flexWrap: v ? 'wrap' : 'nowrap' } ),
-				  } )
-				: null,
-			flex
-				? h(
-						C.Row,
-						{ label: __( 'Justify', 'snn' ), changed: !! a.justifyContent },
-						h( C.Select, {
-							label: __( 'Justify content', 'snn' ),
-							value: a.justifyContent,
-							options: JUSTIFY_OPTIONS,
-							onChange: ( v ) => set( { justifyContent: v } ),
-						} )
-				  )
-				: null,
-			flex
-				? h(
-						C.Row,
-						{ label: __( 'Align', 'snn' ), changed: !! a.alignItems },
-						h( C.Select, {
-							label: __( 'Align items', 'snn' ),
-							value: a.alignItems,
-							options: ALIGN_OPTIONS,
-							onChange: ( v ) => set( { alignItems: v } ),
-						} )
-				  )
-				: null,
-			flex || grid
-				? h(
-						C.Row,
-						{ label: __( 'Gap', 'snn' ), changed: !! a.gap },
-						h( C.TextField, {
-							label: __( 'Gap', 'snn' ),
-							value: a.gap,
-							placeholder: '0',
-							variables: VARIABLE_GROUPS,
-							onChange: ( v ) => set( { gap: v } ),
-						} )
-				  )
-				: null
+		];
+
+		if ( grid ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'justify-self', label: __( 'Justify self', 'snn' ), changed: !! a.justifySelf },
+					h( Segmented, {
+						label: __( 'Justify self', 'snn' ),
+						value: a.justifySelf || 'stretch',
+						options: options( CHOICES.cell, crossGlyph( 'y' ) ),
+						onChange: ( v ) => set( { justifySelf: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'column-span', label: __( 'Column span', 'snn' ), changed: !! a.columnSpan },
+					h( TextField, {
+						label: __( 'Column span', 'snn' ),
+						value: a.columnSpan,
+						placeholder: '1',
+						inputMode: 'numeric',
+						onChange: ( v ) => set( { columnSpan: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'row-span', label: __( 'Row span', 'snn' ), changed: !! a.rowSpan },
+					h( TextField, {
+						label: __( 'Row span', 'snn' ),
+						value: a.rowSpan,
+						placeholder: '1',
+						inputMode: 'numeric',
+						onChange: ( v ) => set( { rowSpan: v } ),
+					} )
+				)
+			);
+		}
+
+		if ( flex ) {
+			rows.push(
+				h(
+					Row,
+					{ key: 'grow', label: __( 'Grow', 'snn' ), changed: !! a.flexGrow },
+					h( TextField, {
+						label: __( 'Flex grow', 'snn' ),
+						value: a.flexGrow,
+						placeholder: '0',
+						inputMode: 'decimal',
+						onChange: ( v ) => set( { flexGrow: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'shrink', label: __( 'Shrink', 'snn' ), changed: !! a.flexShrink },
+					h( TextField, {
+						label: __( 'Flex shrink', 'snn' ),
+						value: a.flexShrink,
+						placeholder: '1',
+						inputMode: 'decimal',
+						onChange: ( v ) => set( { flexShrink: v } ),
+					} )
+				),
+				h(
+					Row,
+					{ key: 'basis', label: __( 'Basis', 'snn' ), changed: !! a.flexBasis },
+					h( TextField, {
+						label: __( 'Flex basis', 'snn' ),
+						value: a.flexBasis,
+						placeholder: __( 'auto', 'snn' ),
+						variables: VARIABLE_GROUPS, kind: 'size',
+						onChange: ( v ) => set( { flexBasis: v } ),
+					} )
+				)
+			);
+		}
+
+		return h( Fragment, null, rows );
+	}
+
+	/** The style settings: the background colour, with the colour variables first in its picker. */
+	function StyleFields( { a, set } ) {
+		return h(
+			Row,
+			{ label: __( 'Background', 'snn' ), changed: !! a.backgroundColor },
+			h( TextField, {
+				label: __( 'Background colour', 'snn' ),
+				value: a.backgroundColor,
+				placeholder: __( '#ffffff', 'snn' ),
+				variables: VARIABLE_GROUPS,
+				kind: 'color',
+				onChange: ( v ) => set( { backgroundColor: v } ),
+			} )
 		);
 	}
 
-	function AdvancedFields( { a, set } ) {
+	/** The three views of the header. The choice is the editor's own device, so the two move together. */
+	const VIEWS = [
+		{ value: 'Desktop', label: __( 'Desktop', 'snn' ), title: __( 'Desktop: base styles', 'snn' ) },
+		{ value: 'Tablet', label: __( 'Tablet', 'snn' ), title: __( 'Tablet: up to 991 px', 'snn' ) },
+		{ value: 'Mobile', label: __( 'Mobile', 'snn' ), title: __( 'Mobile: up to 478 px', 'snn' ) },
+	];
+
+	/** The icon of a view, as in the version 12 panel mock. */
+	function viewIcon( value ) {
+		if ( value === 'Tablet' ) {
+			return [ h( 'rect', { x: 3.5, y: 1.5, width: 9, height: 13, rx: 1.5 } ), h( 'path', { d: 'M7 12.5h2' } ) ];
+		}
+		if ( value === 'Mobile' ) {
+			return [ h( 'rect', { x: 5, y: 1.5, width: 6, height: 13, rx: 1.2 } ), h( 'path', { d: 'M7.2 12.5h1.6' } ) ];
+		}
+		return [ h( 'rect', { x: 1.5, y: 2.5, width: 13, height: 8.5, rx: 1 } ), h( 'path', { d: 'M5.5 13.5h5M8 11v2.5' } ) ];
+	}
+
+	/** The view switch in the panel header. It reads and sets the editor's device switch. */
+	function ViewSwitch() {
+		const current = useSelect( ( select ) => {
+			try {
+				return select( 'core/editor' ).getDeviceType();
+			} catch ( e ) {
+				return 'Desktop';
+			}
+		}, [] );
 		return h(
-			Fragment,
-			null,
-			h(
-				C.Row,
-				{ label: __( 'CSS ID', 'snn' ), changed: !! a.htmlId },
-				h( C.TextField, {
-					label: __( 'CSS ID', 'snn' ),
-					value: a.htmlId,
-					placeholder: __( 'my-id', 'snn' ),
-					onChange: ( v ) => set( { htmlId: v } ),
-				} )
-			),
-			h(
-				C.Row,
-				{ label: __( 'CSS classes', 'snn' ), changed: !! a.cssClasses },
-				h( C.TextField, {
-					label: __( 'CSS classes', 'snn' ),
-					value: a.cssClasses,
-					placeholder: __( 'class-a class-b', 'snn' ),
-					onChange: ( v ) => set( { cssClasses: v } ),
-				} )
+			'div',
+			{ className: 'snn-views', role: 'group', 'aria-label': __( 'View', 'snn' ) },
+			VIEWS.map( ( v ) =>
+				h(
+					'button',
+					{
+						key: v.value,
+						type: 'button',
+						'aria-pressed': ( current || 'Desktop' ) === v.value ? 'true' : 'false',
+						title: v.title,
+						onClick: () => {
+							try {
+								wp.data.dispatch( 'core/editor' ).setDeviceType( v.value );
+							} catch ( e ) {
+								// No device switch on this screen: nothing to change.
+							}
+						},
+					},
+					h( 'svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, viewIcon( v.value ) ),
+					v.label
+				)
 			)
 		);
 	}
 
-	/** The inspector: switch, query accordion, layout and advanced sections. */
-	function Panel( { a, set, tag } ) {
+	/** A group the version 12 mock shows that the editor does not build yet. It says so and holds nothing. */
+	function PlannedGroup( { title, note, startOpen } ) {
+		const [ open, setOpen ] = useState( !! startOpen );
+		return h(
+			Accordion,
+			{ title, planned: true, note, open, onToggle: setOpen },
+			h( 'p', { className: 'snn-hint' }, __( 'Planned. Not saved yet.', 'snn' ) )
+		);
+	}
+
+	/**
+	 * The inspector, as in the version 12 panel: the header (block name, ID and classes, and the view),
+	 * then the Default and Style tabs.
+	 */
+	function Panel( { a, set, tag, parent, title } ) {
 		const q = a.query;
+		const [ tab, setTab ] = useState( 'default' );
 		const [ openQuery, setOpenQuery ] = useState( false );
 		const [ openLayout, setOpenLayout ] = useState( true );
+		const [ openItem, setOpenItem ] = useState( false );
+		const [ openEffects, setOpenEffects ] = useState( false );
 		const [ openAdvanced, setOpenAdvanced ] = useState( false );
+		const [ openBackground, setOpenBackground ] = useState( false );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
+		const classCount = ( a.cssClasses || '' ).split( /\s+/ ).filter( Boolean ).length;
+		const meta = [ a.htmlId ? '#' + a.htmlId : null, classCount ? classCount + ( classCount === 1 ? ' class' : ' classes' ) : null ]
+			.filter( Boolean )
+			.join( ' · ' );
+		const tabButton = ( id, label ) =>
+			h( 'button', {
+				type: 'button',
+				role: 'tab',
+				className: 'snn-tab',
+				'aria-selected': tab === id ? 'true' : 'false',
+				onClick: () => setTab( id ),
+			}, label );
 
-		return h(
+		const header = h(
 			'div',
-			{ className: 'snn-panel' },
-			h( C.SwitchRow, {
+			{ className: 'snn-head' },
+			h( 'div', { className: 'snn-name' }, title, meta ? h( 'span', null, meta ) : null ),
+			h( ViewSwitch, null )
+		);
+
+		// Default: the query loop, the layout, the item, the effects (planned), and the advanced fields.
+		const defaultPane = h(
+			'div',
+			{ className: 'snn-pane' },
+			h( SwitchRow, {
 				label: __( 'Query loop', 'snn' ),
 				checked: q.enabled,
 				onChange: ( v ) => {
@@ -373,7 +1025,7 @@
 				},
 			} ),
 			h(
-				C.Accordion,
+				Accordion,
 				{
 					title: __( 'Query', 'snn' ),
 					open: openQuery,
@@ -385,24 +1037,108 @@
 				h( QueryFields, { q, setQ } )
 			),
 			h(
-				C.Accordion,
+				Accordion,
 				{
 					title: __( 'Layout', 'snn' ),
 					open: openLayout,
 					onToggle: setOpenLayout,
 					changed: layoutChanged( a, tag ),
 				},
+				h( Presets, { a, set } ),
 				h( LayoutFields, { a, set, tag } )
 			),
 			h(
-				C.Accordion,
+				Accordion,
+				{
+					title: __( 'Item', 'snn' ),
+					open: openItem,
+					onToggle: setOpenItem,
+					changed: itemChanged( a ),
+				},
+				h( ItemFields, { a, set, parent } )
+			),
+			h(
+				Accordion,
+				{ title: __( 'Effects', 'snn' ), planned: true, open: openEffects, onToggle: setOpenEffects },
+				h( 'p', { className: 'snn-hint' }, __( 'Planned. Not saved yet.', 'snn' ) )
+			),
+			h(
+				Accordion,
 				{
 					title: __( 'Advanced', 'snn' ),
 					open: openAdvanced,
 					onToggle: setOpenAdvanced,
 					changed: !! ( a.htmlId || a.cssClasses ),
 				},
-				h( AdvancedFields, { a, set } )
+				h( Fragment, null,
+					h( AdvancedFields, { a, set } ),
+					h( Row, { label: __( 'Custom CSS', 'snn' ) },
+						h( 'div', { className: 'snn-planned-row' },
+							h( 'button', { type: 'button', className: 'snn-input', disabled: true }, __( 'Edit CSS (admins)', 'snn' ) ),
+							h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) )
+						)
+					)
+				)
+			)
+		);
+
+		// Style: the groups of the mock. Background is built; the rest are planned.
+		const stylePane = h(
+			'div',
+			{ className: 'snn-pane' },
+			h( PlannedGroup, { title: __( 'Spacing', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
+			h( PlannedGroup, { title: __( 'Size', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
+			h( PlannedGroup, { title: __( 'Visibility', 'snn' ), note: __( 'per view', 'snn' ), startOpen: true } ),
+			h(
+				Accordion,
+				{
+					title: __( 'Background', 'snn' ),
+					open: openBackground,
+					onToggle: setOpenBackground,
+					changed: !! a.backgroundColor,
+					note: a.backgroundColor ? a.backgroundColor : __( 'None', 'snn' ),
+				},
+				h( StyleFields, { a, set } )
+			),
+			h( PlannedGroup, { title: __( 'Typography', 'snn' ), note: __( 'Inherit', 'snn' ) } ),
+			h( PlannedGroup, { title: __( 'Border and box shadow', 'snn' ), note: __( 'None', 'snn' ) } ),
+			h( PlannedGroup, { title: __( 'Transform', 'snn' ), note: __( 'Motion', 'snn' ) } ),
+			h( PlannedGroup, { title: __( 'CSS filters and transition', 'snn' ) } )
+		);
+
+		return h(
+			'div',
+			{ className: 'snn-panel' },
+			header,
+			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+			tab === 'default' ? defaultPane : stylePane
+		);
+	}
+
+
+	function AdvancedFields( { a, set } ) {
+		return h(
+			Fragment,
+			null,
+			h(
+				Row,
+				{ label: __( 'CSS ID', 'snn' ), changed: !! a.htmlId },
+				h( TextField, {
+					label: __( 'CSS ID', 'snn' ),
+					value: a.htmlId,
+					placeholder: __( 'my-id', 'snn' ),
+					onChange: ( v ) => set( { htmlId: v } ),
+				} )
+			),
+			h(
+				Row,
+				{ label: __( 'CSS classes', 'snn' ), changed: !! a.cssClasses },
+				h( TextField, {
+					label: __( 'CSS classes', 'snn' ),
+					value: a.cssClasses,
+					placeholder: __( 'class-a class-b', 'snn' ),
+					onChange: ( v ) => set( { cssClasses: v } ),
+				} )
 			)
 		);
 	}
@@ -418,21 +1154,40 @@
 		);
 	}
 
-	/** One block type. def: the block name, title, default tag and description. */
-	function registerLayout( def ) {
-		const attributes = {
+	/** The attributes of the layout and item settings: the defaults the PHP side registers too. */
+	function layoutAttributes( def ) {
+		return {
 			tagName: { type: 'string', default: def.tag },
 			htmlId: { type: 'string', default: '' },
 			cssClasses: { type: 'string', default: '' },
-			display: { type: 'string', default: 'block' },
-			flexDirection: { type: 'string', default: 'row' },
-			flexWrap: { type: 'string', default: 'nowrap' },
-			justifyContent: { type: 'string', default: '' },
-			alignItems: { type: 'string', default: '' },
-			gap: { type: 'string', default: '' },
+			display: { type: 'string', default: LAYOUT_DEFAULTS.display },
+			flexDirection: { type: 'string', default: LAYOUT_DEFAULTS.flexDirection },
+			flexWrap: { type: 'string', default: LAYOUT_DEFAULTS.flexWrap },
+			justifyContent: { type: 'string', default: LAYOUT_DEFAULTS.justifyContent },
+			alignItems: { type: 'string', default: LAYOUT_DEFAULTS.alignItems },
+			gap: { type: 'string', default: LAYOUT_DEFAULTS.gap },
+			columnGap: { type: 'string', default: LAYOUT_DEFAULTS.columnGap },
+			rowGap: { type: 'string', default: LAYOUT_DEFAULTS.rowGap },
+			gridColumns: { type: 'string', default: LAYOUT_DEFAULTS.gridColumns },
+			gridRows: { type: 'string', default: LAYOUT_DEFAULTS.gridRows },
+			gridAutoFlow: { type: 'string', default: LAYOUT_DEFAULTS.gridAutoFlow },
+			gridDense: { type: 'boolean', default: LAYOUT_DEFAULTS.gridDense },
+			justifyItems: { type: 'string', default: LAYOUT_DEFAULTS.justifyItems },
+			alignContent: { type: 'string', default: LAYOUT_DEFAULTS.alignContent },
+			alignSelf: { type: 'string', default: ITEM_DEFAULTS.alignSelf },
+			justifySelf: { type: 'string', default: ITEM_DEFAULTS.justifySelf },
+			flexGrow: { type: 'string', default: ITEM_DEFAULTS.flexGrow },
+			flexShrink: { type: 'string', default: ITEM_DEFAULTS.flexShrink },
+			flexBasis: { type: 'string', default: ITEM_DEFAULTS.flexBasis },
+			columnSpan: { type: 'string', default: ITEM_DEFAULTS.columnSpan },
+			rowSpan: { type: 'string', default: ITEM_DEFAULTS.rowSpan },
+			backgroundColor: { type: 'string', default: '' },
 			query: { type: 'object', default: QUERY_DEFAULTS },
 		};
+	}
 
+	/** One block type. def: the block name, title, default tag and description. */
+	function registerLayout( def ) {
 		registerBlockType( def.name, {
 			apiVersion: 3,
 			title: def.title,
@@ -456,28 +1211,41 @@
 				shadow: false,
 				position: false,
 			},
-			attributes,
-			edit: function Edit( { attributes: saved, setAttributes } ) {
+			attributes: layoutAttributes( def ),
+			edit: function Edit( { attributes: saved, setAttributes, clientId } ) {
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
 				const a = { ...saved, query: { ...QUERY_DEFAULTS, ...( saved.query || {} ) } };
+				// The parent decides which item settings show: its display and its direction.
+				const parentId = useSelect( ( select ) => select( 'core/block-editor' ).getBlockRootClientId( clientId ), [ clientId ] );
+				const parentAttrs = useSelect(
+					( select ) => ( parentId ? select( 'core/block-editor' ).getBlockAttributes( parentId ) : null ),
+					[ parentId ]
+				);
+				const parent = {
+					display: ( parentAttrs && parentAttrs.display ) || '',
+					flexDirection: ( parentAttrs && parentAttrs.flexDirection ) || 'row',
+				};
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses ].filter( Boolean ).join( ' ' ),
-					style: styleFor( a ),
 				} );
+				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
+				// puts its own list element between the block wrapper and the children, so a style on the
+				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
+				const innerProps = useInnerBlocksProps( { style: styleFor( a ) }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title } ) ),
 					h(
 						'div',
 						blockProps,
 						a.query.enabled
 							? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 							: null,
-						h( InnerBlocks, null )
+						h( 'div', innerProps )
 					)
 				);
 			},
@@ -510,4 +1278,4 @@
 		tag: 'div',
 		icon: 'editor-code',
 	} );
-} )( window.wp, window.snnControls );
+} )( window.wp, window.snnControls, window.snnLayoutIcons );

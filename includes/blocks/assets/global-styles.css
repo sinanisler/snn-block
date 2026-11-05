@@ -239,6 +239,115 @@
 	font: inherit;
 }
 
+/* Sizes: a value, the Fluid switch, and (when fluid) the clamp settings */
+.snn-gs-size-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.snn-gs-size-head > label:first-child {
+	margin-bottom: 0;
+}
+
+.snn-gs-size-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 30px;
+	padding: 4px 8px;
+	border: 1px solid #8c8f94;
+	border-radius: 6px;
+	font: inherit;
+	font-weight: 500;
+}
+
+.snn-gs-fluid-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 !important;
+	font-size: 12px;
+	font-weight: 400 !important;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.snn-gs-size-row {
+	padding: 8px 0 10px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.snn-gs-size-list {
+	display: grid;
+	gap: 0;
+}
+
+/* One size on one line: the name, the switch and the remove link, then the value beside them */
+.snn-gs-size-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+	gap: 6px 8px;
+	align-items: center;
+}
+
+.snn-gs-size-row > .snn-gs-size-head {
+	grid-column: 1;
+	margin-bottom: 0;
+}
+
+.snn-gs-size-row > input[type="text"] {
+	grid-column: 2;
+}
+
+.snn-gs-size-row > .snn-gs-fluid {
+	grid-column: 1 / -1;
+}
+
+.snn-gs-size-row .snn-gs-size-name {
+	height: 34px;
+}
+
+.snn-gs-sizes > .snn-gs-button {
+	margin-top: 10px;
+}
+
+.snn-gs-fluid {
+	margin-top: 6px;
+}
+
+.snn-gs-fluid-grid {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 6px;
+}
+
+.snn-gs-fluid-field {
+	min-width: 0;
+	font-size: 11px;
+	color: #50575e;
+}
+
+.snn-gs-fluid-field span {
+	display: block;
+	margin-bottom: 2px;
+}
+
+.snn-gs-fluid-field input[type="text"] {
+	width: 100%;
+	height: 28px;
+	padding: 2px 6px;
+	border: 1px solid #8c8f94;
+	border-radius: 6px;
+	font: inherit;
+	font-size: 12px;
+}
+
+.snn-gs-clamp {
+	word-break: break-all;
+}
+
 .snn-gs-slug {
 	font-size: 12px;
 	color: #646970;

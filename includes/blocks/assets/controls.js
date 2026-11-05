@@ -79,7 +79,7 @@
 	 * A section that opens and closes. When disabled, the header is greyed and cannot open, and
 	 * the hint says why (for example: turn on the query loop first).
 	 */
-	function Accordion( { title, open, onToggle, disabled, changed, hint, children } ) {
+	function Accordion( { title, open, onToggle, disabled, changed, hint, planned, note, children } ) {
 		const isOpen = !! open && ! disabled;
 		return h(
 			'div',
@@ -98,12 +98,19 @@
 						}
 					},
 				},
-				h( 'span', {
-					className: 'dashicons ' + ( isOpen ? 'dashicons-arrow-down-alt2' : 'dashicons-arrow-right-alt2' ),
-					'aria-hidden': 'true',
-				} ),
-				h( 'span', { className: 'snn-acc-title' }, title ),
-				changed ? h( Dot ) : null
+				h(
+					'svg',
+					{ className: 'snn-chev', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' },
+					h( 'path', { d: isOpen ? 'M4 6l4 4 4-4' : 'M6 4l4 4-4 4' } )
+				),
+				h(
+					'span',
+					{ className: 'snn-acc-title' },
+					title,
+					planned ? h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) ) : null
+				),
+				changed ? h( Dot ) : null,
+				note ? h( 'span', { className: 'snn-note' }, note ) : null
 			),
 			isOpen ? h( 'div', { className: 'snn-acc-body' }, children ) : null
 		);
@@ -122,7 +129,7 @@
 		);
 	}
 
-	/** A row of icon buttons, one per option. options: { value, label, icon (dashicon class) }. */
+	/** A row of icon buttons, one per option. options: { value, label, glyph (an icon element) }. */
 	function Segmented( { value, options, onChange, label } ) {
 		return h(
 			'div',
@@ -139,7 +146,7 @@
 						title: o.label,
 						onClick: () => onChange( o.value ),
 					},
-					h( 'span', { className: 'dashicons ' + o.icon, 'aria-hidden': 'true' } )
+					o.glyph || null
 				)
 			)
 		);
@@ -258,29 +265,45 @@
 		);
 	}
 
-	/** Variables: the theme's presets. Click one to use it as the value. */
-	function VariablePicker( { groups, onPick } ) {
+	/**
+	 * Variables: the theme's presets. Click one to use it as the value. The groups of the field's kind
+	 * ('color' or 'size') come first. The other kind sits in a closed section at the bottom, so an
+	 * exact name can still be found and clicked.
+	 */
+	function VariablePicker( { groups, kind, onPick } ) {
+		const same = kind ? groups.filter( ( g ) => g.kind === kind ) : groups;
+		const other = kind ? groups.filter( ( g ) => g.kind !== kind ) : [];
+		const otherLabel = kind === 'color' ? __( 'Sizes', 'snn' ) : __( 'Colours', 'snn' );
+		const group = ( g ) =>
+			h(
+				Fragment,
+				{ key: g.key },
+				h( 'div', { className: 'snn-pop-group' }, g.label ),
+				g.items.map( ( it ) =>
+					h(
+						'button',
+						{ key: it.value, type: 'button', className: 'snn-pop-item', onClick: () => onPick( it.value ) },
+						it.color ? h( 'span', { className: 'snn-swatch', style: { background: it.color }, 'aria-hidden': 'true' } ) : null,
+						h( 'span', { className: 'snn-pop-label' }, it.label ),
+						h( 'code', null, it.value )
+					)
+				)
+			);
 		return h(
 			'div',
 			{ className: 'snn-pop snn-var-pop', role: 'dialog', 'aria-label': __( 'Variables', 'snn' ) },
 			h(
 				'div',
 				{ className: 'snn-pop-list' },
-				groups.map( ( g ) =>
-					h(
-						Fragment,
-						{ key: g.key },
-						h( 'div', { className: 'snn-pop-group' }, g.label ),
-						g.items.map( ( it ) =>
-							h(
-								'button',
-								{ key: it.value, type: 'button', className: 'snn-pop-item', onClick: () => onPick( it.value ) },
-								h( 'span', { className: 'snn-pop-label' }, it.label ),
-								h( 'code', null, it.value )
-							)
-						)
-					)
-				),
+				same.map( group ),
+				other.length
+					? h(
+							'details',
+							{ className: 'snn-pop-more' },
+							h( 'summary', { className: 'snn-pop-group snn-pop-more-title' }, otherLabel ),
+							other.map( group )
+					  )
+					: null,
 				groups.length === 0 ? h( 'div', { className: 'snn-pop-empty' }, __( 'No variables yet.', 'snn' ) ) : null
 			)
 		);
@@ -291,7 +314,7 @@
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
 	 * what it resolves to under the field.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, inputMode } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -355,6 +378,7 @@
 			picker === 'vars'
 				? h( VariablePicker, {
 						groups: variables || [],
+						kind,
 						onPick: ( v ) => {
 							onChange( v );
 							setPicker( null );

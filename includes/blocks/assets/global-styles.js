@@ -19,6 +19,9 @@
 	var schema = cfg.schema || [];
 	var maxColors = cfg.maxColors || 12;
 	var maxFonts = cfg.maxFonts || 12;
+	var maxSizes = cfg.maxSizes || 12;
+	// Starting values for a fluid size: 16 px at 380 px of viewport, 24 px at 1400 px.
+	var FLUID_DEFAULT = { min: 16, max: 24, minVp: 380, maxVp: 1400 };
 	var subsetChoices = cfg.subsets || [ 'latin' ];
 	var weightChoices = [ '300', '400', '500', '600', '700', '800', '900' ];
 	var state = null; // { draft, saved, tab, opener }
@@ -118,7 +121,7 @@
 	function validate( draft ) {
 		var errors = [];
 		if ( ! draft.colors.length || draft.colors.some( function ( c ) {
-			return ! String( c.name || '' ).trim();
+			return ! String( c.slug || '' ).trim();
 		} ) ) {
 			errors.push( t.nameNeeded );
 		}
@@ -130,7 +133,7 @@
 					if ( value === '' && field.optional ) {
 						return;
 					}
-					if ( field.type === 'length' && ! LENGTH_RE.test( value ) ) {
+					if ( ( field.type === 'length' || ( field.type === 'size' && ! draft.fluid[ field.path ] ) ) && ! LENGTH_RE.test( value ) ) {
 						errors.push( field.label + ': ' + t.lengthError );
 					} else if ( field.type === 'number' ) {
 						var n = parseFloat( value.replace( ',', '.' ) );
@@ -143,12 +146,253 @@
 				} );
 			} );
 		} );
+		// Spacing sizes: a plain length unless fluid. Fluid settings must be in range.
+		Object.keys( draft.sizes ).forEach( function ( slug ) {
+			var key = 'sizes.' + slug;
+			var value = String( draft.sizes[ slug ] ).trim().toLowerCase();
+			if ( ! draft.fluid[ key ] && ! LENGTH_RE.test( value ) ) {
+				errors.push( slug + ': ' + t.lengthError );
+			}
+		} );
+		if ( Object.keys( draft.fluid ).some( function ( key ) {
+			return ! fluidValid( draft.fluid[ key ] );
+		} ) ) {
+			errors.push( t.fluidError );
+		}
 		return errors;
 	}
 
 	/* ------------------------------------------------------------------
 	 * Form fields
 	 * ---------------------------------------------------------------- */
+
+	/* ------------------------------------------------------------------
+	 * Sizes: a length, or a fluid clamp between two viewport widths
+	 * ---------------------------------------------------------------- */
+
+	/** A draft from the server's values. PHP sends an empty array for an empty fluid map; it must be an object. */
+	function prepare( values ) {
+		var v = clone( values );
+		if ( ! v.fluid || Array.isArray( v.fluid ) ) {
+			v.fluid = {};
+		}
+		return v;
+	}
+
+	function round2( x ) {
+		return Math.round( x * 100 ) / 100;
+	}
+
+	/** The CSS of a fluid size. Mirrors SNN_Global_Styles::fluid_css(); the server writes the final value. */
+	function fluidCss( f ) {
+		var lo = Math.min( f.min, f.max );
+		var hi = Math.max( f.min, f.max );
+		if ( f.maxVp === f.minVp ) {
+			return round2( f.min ) + 'px';
+		}
+		var slope = ( f.max - f.min ) / ( f.maxVp - f.minVp );
+		var intercept = f.min - slope * f.minVp;
+		var vw = slope * 100;
+		return 'clamp(' + round2( lo ) + 'px, calc(' + round2( intercept ) + 'px' + ( vw < 0 ? ' - ' : ' + ' ) + round2( Math.abs( vw ) ) + 'vw), ' + round2( hi ) + 'px)';
+	}
+
+	/** The four settings are in range and the two viewport widths differ. */
+	function fluidValid( f ) {
+		var nums = [ f.min, f.max, f.minVp, f.maxVp ];
+		return nums.every( function ( n ) {
+			return typeof n === 'number' && isFinite( n );
+		} ) && f.min >= 0 && f.min <= 1000 && f.max >= 0 && f.max <= 1000 &&
+			f.minVp >= 1 && f.minVp <= 4000 && f.maxVp >= 1 && f.maxVp <= 4000 && f.minVp !== f.maxVp;
+	}
+
+	function toNumber( value ) {
+		var n = parseFloat( String( value ).replace( ',', '.' ) );
+		return isNaN( n ) ? NaN : n;
+	}
+
+	/** The four fields of a fluid size. Each valid change rewrites the value (the clamp). */
+	function fluidFields( key, f ) {
+		var preview = el( 'code', { class: 'snn-gs-slug snn-gs-clamp', text: fluidCss( f ) } );
+		var fields = [
+			[ 'min', t.minSize ],
+			[ 'max', t.maxSize ],
+			[ 'minVp', t.minViewport ],
+			[ 'maxVp', t.maxViewport ],
+		];
+		return el( 'div', { class: 'snn-gs-field snn-gs-fluid' }, [
+			el( 'div', { class: 'snn-gs-fluid-grid' }, fields.map( function ( pair ) {
+				return el( 'label', { class: 'snn-gs-fluid-field' }, [
+					el( 'span', { text: pair[ 1 ] } ),
+					el( 'input', {
+						type: 'text',
+						inputmode: 'decimal',
+						value: String( f[ pair[ 0 ] ] ),
+						on: { input: function ( event ) {
+							f[ pair[ 0 ] ] = toNumber( event.target.value );
+							if ( fluidValid( f ) ) {
+								var css = fluidCss( f );
+								setPath( state.draft, key, css );
+								preview.textContent = css;
+							}
+						} },
+					} ),
+				] );
+			} ) ),
+			el( 'p', { class: 'snn-gs-hint' }, [ preview ] ),
+		] );
+	}
+
+	/**
+	 * The controls of one size: its value, and the Fluid switch. Fluid, the value is the clamp and the
+	 * four fields below set it. Returns the parts, so a row can place them.
+	 */
+	function sizeControls( key, idBase ) {
+		var fluid = state.draft.fluid[ key ] || null;
+		var id = idBase + '-' + key.replace( /[^A-Za-z0-9_-]+/g, '-' );
+		var value = getPath( state.draft, key );
+		var input = el( 'input', {
+			id: id,
+			type: 'text',
+			value: value === null || value === undefined ? '' : String( value ),
+			spellcheck: 'false',
+			disabled: fluid ? true : null,
+			on: { input: function ( event ) {
+				setPath( state.draft, key, event.target.value );
+			} },
+		} );
+		var toggle = el( 'input', {
+			type: 'checkbox',
+			checked: fluid ? true : null,
+			on: { change: function ( event ) {
+				var f = state.draft.fluid[ key ];
+				if ( event.target.checked ) {
+					state.draft.fluid[ key ] = clone( FLUID_DEFAULT );
+					setPath( state.draft, key, fluidCss( FLUID_DEFAULT ) );
+				} else if ( f ) {
+					// Off again: the size is the minimum, as a plain length the user can change.
+					delete state.draft.fluid[ key ];
+					setPath( state.draft, key, round2( f.min ) + 'px' );
+				}
+				showTab( state.tab );
+			} },
+		} );
+		return {
+			id: id,
+			input: input,
+			toggle: toggle,
+			fluid: fluid ? fluidFields( key, fluid ) : null,
+		};
+	}
+
+	/** A size in a form: its label, the Fluid switch, the value and (when fluid) the four fields. */
+	function sizeField( field ) {
+		var c = sizeControls( field.path, 'snn-gs' );
+		return el( 'div', { class: 'snn-gs-field snn-gs-size' }, [
+			el( 'div', { class: 'snn-gs-size-head' }, [
+				el( 'label', { for: c.id, text: field.label } ),
+				el( 'label', { class: 'snn-gs-fluid-switch' }, [ c.toggle, el( 'span', { text: t.fluid } ) ] ),
+			] ),
+			c.input,
+			c.fluid,
+		] );
+	}
+
+	function nextSizeSlug( slugs ) {
+		var top = 0;
+		slugs.forEach( function ( s ) {
+			var m = /^size-(\d+)$/.exec( s );
+			if ( m ) {
+				top = Math.max( top, parseInt( m[ 1 ], 10 ) );
+			}
+		} );
+		var n = top ? top + 10 : 10;
+		while ( slugs.indexOf( 'size-' + n ) !== -1 ) {
+			n += 10;
+		}
+		return 'size-' + n;
+	}
+
+	/** Rename a spacing size (its variable name). The name becomes the key, and its fluid settings follow. */
+	function renameSize( slug, raw ) {
+		var next = String( raw || '' ).trim().toLowerCase().replace( /[^a-z0-9-]+/g, '-' ).replace( /^-+|-+$/g, '' );
+		var sizes = state.draft.sizes;
+		if ( next === slug ) {
+			return;
+		}
+		if ( ! next || Object.prototype.hasOwnProperty.call( sizes, next ) ) {
+			setStatus( t.sizeNameError, 'error' );
+			showTab( 'sizes' );
+			return;
+		}
+		var rebuilt = {};
+		Object.keys( sizes ).forEach( function ( k ) {
+			rebuilt[ k === slug ? next : k ] = sizes[ k ];
+		} );
+		state.draft.sizes = rebuilt;
+		retarget( 'sizes', slug, next );
+		var from = 'sizes.' + slug;
+		if ( state.draft.fluid[ from ] ) {
+			state.draft.fluid[ 'sizes.' + next ] = state.draft.fluid[ from ];
+			delete state.draft.fluid[ from ];
+		}
+		showTab( 'sizes' );
+	}
+
+	/** The spacing sizes: one row per size variable (name, value, fluid), and a button to add one. */
+	function sizeListEditor() {
+		var sizes = state.draft.sizes;
+		var slugs = Object.keys( sizes );
+		var rows = slugs.map( function ( slug ) {
+			var key = 'sizes.' + slug;
+			var c = sizeControls( key, 'snn-gs-sp-' + slug );
+			return el( 'div', { class: 'snn-gs-field snn-gs-size-row' }, [
+				el( 'div', { class: 'snn-gs-size-head' }, [
+					el( 'input', {
+						type: 'text',
+						class: 'snn-gs-size-name',
+						value: slug,
+						maxlength: 40,
+						spellcheck: 'false',
+						'aria-label': t.sizeName,
+						on: { change: function ( event ) {
+							renameSize( slug, event.target.value );
+						} },
+					} ),
+					el( 'label', { class: 'snn-gs-fluid-switch' }, [ c.toggle, el( 'span', { text: t.fluid } ) ] ),
+					el( 'button', {
+						type: 'button',
+						class: 'snn-gs-link',
+						text: t.remove,
+						disabled: slugs.length <= 1,
+						on: { click: function () {
+							delete sizes[ slug ];
+							delete state.draft.fluid[ key ];
+							showTab( 'sizes' );
+						} },
+					} ),
+				] ),
+				c.input,
+				c.fluid,
+			] );
+		} );
+
+		var add = el( 'button', {
+			type: 'button',
+			class: 'snn-gs-button',
+			text: t.addSize,
+			disabled: slugs.length >= maxSizes,
+			on: { click: function () {
+				sizes[ nextSizeSlug( slugs ) ] = '1rem';
+				showTab( 'sizes' );
+			} },
+		} );
+
+		return el( 'div', { class: 'snn-gs-sizes' }, [
+			el( 'p', { class: 'snn-gs-hint', text: t.sizesHint } ),
+			el( 'div', { class: 'snn-gs-size-list' }, rows ),
+			add,
+		] );
+	}
 
 	/** The choices of a select. Optional fields start with "Inherit" (the empty value). */
 	function fieldOptions( field ) {
@@ -157,14 +401,14 @@
 		switch ( field.options_from ) {
 			case 'palette':
 				return list.concat( draft.colors.map( function ( c ) {
-					return { value: c.slug, label: c.name };
+					return { value: c.slug, label: c.slug };
 				} ) );
 			case 'fonts':
 				return list.concat( [ { value: 'system', label: t.system } ], ( draft.fonts || [] ).map( function ( f ) {
 					return { value: f.slug, label: f.name };
 				} ) );
 			case 'sizes':
-				return list.concat( Object.keys( draft.typography.sizes ).map( function ( k ) {
+				return list.concat( Object.keys( draft.sizes ).map( function ( k ) {
 					return { value: k, label: labelise( k ) };
 				} ) );
 			case 'radius':
@@ -180,6 +424,9 @@
 	}
 
 	function fieldNode( field ) {
+		if ( field.type === 'size' ) {
+			return sizeField( field );
+		}
 		var id = 'snn-gs-' + field.path.replace( /[^A-Za-z0-9_-]+/g, '-' );
 		var value = getPath( state.draft, field.path );
 		var current = value === null || value === undefined ? '' : String( value );
@@ -248,7 +495,52 @@
 		] );
 	}
 
-	/** The colour list: colour, name, and the variable name the blocks refer to. */
+	/** A variable name: lower case letters, digits and dashes. Empty when nothing usable is left. */
+	function variableName( raw ) {
+		return String( raw || '' ).trim().toLowerCase().replace( /[^a-z0-9-]+/g, '-' ).replace( /^-+|-+$/g, '' );
+	}
+
+	/**
+	 * A renamed variable keeps its block defaults: every field whose choices come from `optionsFrom`
+	 * and that holds `from` now holds `to`.
+	 */
+	function retarget( optionsFrom, from, to ) {
+		( function walk( nodes ) {
+			( nodes || [] ).forEach( function ( node ) {
+				( node.fields || [] ).forEach( function ( field ) {
+					if ( field.options_from === optionsFrom && getPath( state.draft, field.path ) === from ) {
+						setPath( state.draft, field.path, to );
+					}
+				} );
+				walk( node.groups );
+			} );
+		} )( schema );
+	}
+
+	/** Rename a colour variable. Its name is its slug, and the block defaults that use it follow. */
+	function renameColour( oldSlug, raw ) {
+		var next = variableName( raw );
+		var colors = state.draft.colors;
+		if ( next === oldSlug ) {
+			return;
+		}
+		if ( ! next || colors.some( function ( c ) {
+			return c.slug === next;
+		} ) ) {
+			setStatus( t.sizeNameError, 'error' );
+			showTab( 'colors' );
+			return;
+		}
+		colors.forEach( function ( c ) {
+			if ( c.slug === oldSlug ) {
+				c.slug = next;
+			}
+		} );
+		retarget( 'palette', oldSlug, next );
+		showTab( 'colors' );
+	}
+
+	/** The colour list: the colour, its variable name (the name is the variable, --black), and remove. */
 	function paletteEditor() {
 		var colors = state.draft.colors;
 		var rows = colors.map( function ( c, index ) {
@@ -263,14 +555,16 @@
 				} ),
 				el( 'input', {
 					type: 'text',
-					value: c.name,
+					class: 'snn-gs-size-name',
+					value: c.slug,
 					maxlength: 40,
-					'aria-label': t.colourName,
-					on: { input: function ( event ) {
-						c.name = event.target.value;
+					spellcheck: 'false',
+					'aria-label': t.sizeName,
+					on: { change: function ( event ) {
+						renameColour( c.slug, event.target.value );
 					} },
 				} ),
-				el( 'code', { class: 'snn-gs-slug', text: '--wp--preset--color--' + c.slug } ),
+				el( 'code', { class: 'snn-gs-slug', text: '--' + c.slug } ),
 				el( 'button', {
 					type: 'button',
 					class: 'snn-gs-link',
@@ -290,8 +584,7 @@
 			text: t.addColour,
 			disabled: colors.length >= maxColors,
 			on: { click: function () {
-				var name = t.newColour + ' ' + ( colors.length + 1 );
-				colors.push( { name: name, slug: newSlug( name, colors ), color: '#808080' } );
+				colors.push( { slug: newSlug( t.newColour, colors ), color: '#808080' } );
 				showTab( 'colors' );
 			} },
 		} );
@@ -417,6 +710,12 @@
 	function groupNode( group ) {
 		if ( group.fonts ) {
 			return fontLibraryGroup( group );
+		}
+		if ( group.sizes ) {
+			return el( 'section', { class: 'snn-gs-group' }, [
+				el( 'h3', { class: 'snn-gs-group-title', text: group.title } ),
+				sizeListEditor(),
+			] );
 		}
 		var children = [];
 		if ( group.fields && group.fields.length ) {
@@ -570,7 +869,7 @@
 
 	function resetDraft() {
 		var fonts = state.draft.fonts; // Installed fonts are not defaults: they stay.
-		state.draft = clone( cfg.defaults );
+		state.draft = prepare( cfg.defaults );
 		state.draft.fonts = fonts;
 		showTab( state.tab );
 		setStatus( t.resetDone, '' );
@@ -584,8 +883,8 @@
 		}
 		setStatus( t.saving, '' );
 		api( { method: 'POST', data: { values: state.draft } } ).then( function ( response ) {
-			state.draft = clone( response.values );
-			state.saved = clone( response.values );
+			state.draft = prepare( response.values );
+			state.saved = prepare( response.values );
 			showTab( state.tab ); // Redraw, so the fields and the colour list work on the new draft.
 			if ( inEditor() ) {
 				setStatus( t.savedEditor, 'ok', true );
@@ -704,8 +1003,8 @@
 		document.body.appendChild( overlay );
 		setStatus( t.loading, '' );
 		api( { method: 'GET' } ).then( function ( response ) {
-			state.draft = clone( response.values );
-			state.saved = clone( response.values );
+			state.draft = prepare( response.values );
+			state.saved = prepare( response.values );
 			renderTabs();
 			showTab( state.tab );
 			setStatus( '', '' );

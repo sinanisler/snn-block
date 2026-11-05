@@ -14,7 +14,7 @@
 /* Row: label left, control right */
 .snn-row {
 	display: grid;
-	grid-template-columns: 92px minmax(0, 1fr);
+	grid-template-columns: 100px minmax(0, 1fr);
 	align-items: center;
 	column-gap: 8px;
 	min-height: 26px;
@@ -232,6 +232,152 @@
 	color: #c3c4c7;
 }
 
+/* Accordion parts from the version 12 panel mock: the chevron, the planned tag, the value on the right */
+.snn-chev {
+	width: 16px;
+	height: 16px;
+	flex: 0 0 auto;
+	fill: none;
+	stroke: #50575e;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.snn-planned {
+	margin-left: 6px;
+	vertical-align: 1px;
+	padding: 1px 6px;
+	font-size: 9px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #8a5a00;
+	background: #f6e9cc;
+	border-radius: 999px;
+}
+
+.snn-note {
+	margin-left: auto;
+	font-size: 11px;
+	font-weight: 400;
+	color: #646970;
+}
+
+/* A planned control: a disabled button with its tag beside it */
+.snn-planned-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+}
+
+.snn-planned-row .snn-input {
+	flex: 1 1 auto;
+	text-align: left;
+	color: #8c8f94;
+	cursor: not-allowed;
+}
+
+/* Panel header: the block name and its ID and classes, then the view (Desktop, Tablet, Mobile) */
+.snn-head {
+	padding: 10px 16px 8px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.snn-name {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.snn-name span {
+	font-size: 11px;
+	font-weight: 400;
+	color: #646970;
+	font-family: Consolas, Menlo, monospace;
+}
+
+.snn-views {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 2px;
+	padding: 2px;
+	background: #f0f0f1;
+	border-radius: 3px;
+}
+
+.snn-views button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 12px;
+	color: #50575e;
+	background: transparent;
+	border: 0;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-views button[aria-pressed="true"] {
+	color: #1e1e1e;
+	font-weight: 600;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.snn-views button:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.snn-views svg {
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.4;
+}
+
+/* Tabs: Default and Style */
+.snn-tabs {
+	display: flex;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.snn-tab {
+	flex: 1 1 0;
+	height: 32px;
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 12px;
+	color: #50575e;
+	background: none;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	cursor: pointer;
+}
+
+.snn-tab[aria-selected="true"] {
+	color: #1e1e1e;
+	font-weight: 600;
+	border-bottom-color: #2271b1;
+}
+
+.snn-tab:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
 .snn-acc-body {
 	padding: 2px 0 8px;
 }
@@ -269,10 +415,73 @@
 	background: #2271b1;
 }
 
-.snn-seg-btn .dashicons {
-	width: 16px;
-	height: 16px;
-	font-size: 16px;
+.snn-seg-btn .snn-glyph {
+	display: block;
+	flex: 0 0 auto;
+}
+
+/* Presets: visual tiles that set a whole layout at once */
+.snn-presets {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 4px;
+	padding: 2px 16px 6px;
+}
+
+.snn-preset {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	min-width: 0;
+	margin: 0;
+	padding: 4px 2px 3px;
+	font: inherit;
+	font-size: 10px;
+	line-height: 1.15;
+	color: #3c434a;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.snn-preset:hover {
+	border-color: #8c8f94;
+}
+
+.snn-preset.is-on {
+	color: #1e1e1e;
+	border-color: #2271b1;
+	box-shadow: inset 0 0 0 1px #2271b1;
+}
+
+.snn-preset .snn-glyph {
+	display: block;
+	color: #1e1e1e;
+}
+
+.snn-preset.is-on .snn-glyph {
+	color: #2271b1;
+}
+
+.snn-preset span:last-child {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snn-preset:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+/* A short note inside a section (the item settings, when the parent is not flex or grid) */
+.snn-hint {
+	padding: 2px 16px 6px;
+	font-size: 11px;
+	color: #646970;
 }
 
 /* Popovers: dynamic data list and variables */
@@ -345,6 +554,41 @@
 	flex-basis: 100%;
 	font-size: 10px;
 	color: #646970;
+}
+
+/* A colour variable's swatch in the picker */
+.snn-swatch {
+	flex: 0 0 auto;
+	align-self: center;
+	width: 12px;
+	height: 12px;
+	margin-right: 2px;
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	border-radius: 50%;
+}
+
+/* The other kind of variables: a closed section at the bottom of the picker */
+.snn-pop-more {
+	border-top: 1px solid #dcdcde;
+}
+
+.snn-pop-more-title {
+	cursor: pointer;
+	list-style: none;
+}
+
+.snn-pop-more-title::-webkit-details-marker {
+	display: none;
+}
+
+.snn-pop-more-title::before {
+	content: "\25B8";
+	display: inline-block;
+	margin-right: 6px;
+}
+
+.snn-pop-more[open] > .snn-pop-more-title::before {
+	content: "\25BE";
 }
 
 .snn-pop-empty {
