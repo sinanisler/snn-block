@@ -32,6 +32,16 @@ class SNN_Layout_Blocks {
 
 	/** The display values: block, the inline ones, flex and grid (and their inline forms), and none (hidden). */
 	const DISPLAYS       = array( 'block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'inline-grid', 'none' );
+
+	/**
+	 * The display and direction each block starts with. Section and Container stack their children (a flex column,
+	 * as Bricks's sections and containers do); Div is a plain block. The editor reads the same table (BLOCK_LAYOUT).
+	 */
+	const LAYOUT = array(
+		'snn/section'   => array( 'display' => 'flex', 'flexDirection' => 'column' ),
+		'snn/container' => array( 'display' => 'flex', 'flexDirection' => 'column' ),
+		'snn/div'       => array( 'display' => 'block', 'flexDirection' => 'row' ),
+	);
 	const FLEX_DIRECTION = array( 'row', 'row-reverse', 'column', 'column-reverse' );
 	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
 	const JUSTIFY        = array( 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' );
@@ -65,7 +75,7 @@ class SNN_Layout_Blocks {
 			register_block_type(
 				$name,
 				array(
-					'attributes'      => self::attributes( $tag ),
+					'attributes'      => self::attributes( $name ),
 					'render_callback' => array( __CLASS__, 'render' ),
 					// A loop passes its post and index to the blocks inside it, down the tree.
 					'uses_context'    => array( self::CONTEXT_POST, self::CONTEXT_INDEX, self::CONTEXT_COUNT ),
@@ -91,13 +101,15 @@ class SNN_Layout_Blocks {
 	}
 
 	/** The attributes of one block. The editor reads the same names and defaults. */
-	public static function attributes( $default_tag ) {
+	public static function attributes( $name ) {
+		$default_tag = self::BLOCKS[ $name ] ?? 'div';
+		$layout      = self::LAYOUT[ $name ] ?? self::LAYOUT['snn/div'];
 		return array(
 			'tagName'        => array( 'type' => 'string', 'default' => $default_tag ),
 			'htmlId'         => array( 'type' => 'string', 'default' => '' ),
 			'cssClasses'     => array( 'type' => 'string', 'default' => '' ),
-			'display'        => array( 'type' => 'string', 'default' => 'block' ),
-			'flexDirection'  => array( 'type' => 'string', 'default' => 'row' ),
+			'display'        => array( 'type' => 'string', 'default' => $layout['display'] ),
+			'flexDirection'  => array( 'type' => 'string', 'default' => $layout['flexDirection'] ),
 			'flexWrap'       => array( 'type' => 'string', 'default' => 'nowrap' ),
 			'justifyContent' => array( 'type' => 'string', 'default' => '' ),
 			'alignItems'     => array( 'type' => 'string', 'default' => '' ),
@@ -590,8 +602,9 @@ class SNN_Layout_Blocks {
 	/** The attributes, cleaned: right type, allowed values, defaults for anything missing. */
 	public static function clean( $attributes, $name ) {
 		$attributes = is_array( $attributes ) ? $attributes : array();
-		$default    = self::BLOCKS[ $name ] ?? 'div';
-		$defaults   = self::attributes( $default );
+		$block    = isset( self::BLOCKS[ $name ] ) ? $name : 'snn/div';
+		$default  = self::BLOCKS[ $block ];
+		$defaults = self::attributes( $block );
 
 		$out = array();
 		foreach ( $defaults as $key => $spec ) {
@@ -599,8 +612,8 @@ class SNN_Layout_Blocks {
 		}
 
 		$out['tagName']        = in_array( $out['tagName'], self::TAGS, true ) ? $out['tagName'] : $default;
-		$out['display']        = self::pick( $out['display'], self::DISPLAYS, 'block' );
-		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, 'row' );
+		$out['display']        = self::pick( $out['display'], self::DISPLAYS, self::LAYOUT[ $block ]['display'] );
+		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, self::LAYOUT[ $block ]['flexDirection'] );
 		$out['flexWrap']       = self::pick( $out['flexWrap'], self::FLEX_WRAP, 'nowrap' );
 		$out['justifyContent'] = self::pick( $out['justifyContent'], self::JUSTIFY, '' );
 		$out['alignItems']     = self::pick( $out['alignItems'], self::ALIGN, '' );

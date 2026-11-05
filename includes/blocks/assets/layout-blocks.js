@@ -70,6 +70,30 @@
 		gridAreas: '',
 	};
 
+	/**
+	 * The display and direction each block starts with (the same table as LAYOUT in layout-blocks.php). Section and
+	 * Container stack their children; Div is a plain block.
+	 */
+	const BLOCK_LAYOUT = {
+		'snn/section': { display: 'flex', flexDirection: 'column' },
+		'snn/container': { display: 'flex', flexDirection: 'column' },
+		'snn/div': { display: 'block', flexDirection: 'row' },
+	};
+
+	/** The layout defaults of one block: the shared defaults, with the block's own display and direction. */
+	function layoutDefaults( name ) {
+		return Object.assign( {}, LAYOUT_DEFAULTS, BLOCK_LAYOUT[ name ] || {} );
+	}
+
+	/** The block's attributes, with its own display and direction as their defaults. */
+	function withBlockLayout( attributes, name ) {
+		const own = layoutDefaults( name );
+		return Object.assign( {}, attributes, {
+			display: { type: 'string', default: own.display },
+			flexDirection: { type: 'string', default: own.flexDirection },
+		} );
+	}
+
 	/** The item settings: how the block sits in its flex or grid parent. */
 	const ITEM_DEFAULTS = {
 		alignSelf: '',
@@ -586,13 +610,14 @@
 	 * columns and rows, its flow, its justify items and align content, and its gaps. Each row shows only when
 	 * it applies to the display chosen. The pictures are the version 12 mock's (layout-icons.js).
 	 */
-	function LayoutFields( { a, set } ) {
+	function LayoutFields( { a, set, base } ) {
 		const flex = a.display === 'flex' || a.display === 'inline-flex';
 		const grid = a.display === 'grid' || a.display === 'inline-grid';
 		const box = flex || grid;
 		const axis = /^column/.test( a.flexDirection ) ? 'y' : 'x';
 		const reverse = /reverse$/.test( a.flexDirection );
 		const flow = a.flexDirection.replace( /-reverse$/, '' );
+		const baseFlow = base.flexDirection.replace( /-reverse$/, '' );
 		// A flex column runs its main axis down the block, so its pictures turn a quarter turn.
 		const turned = ! grid && axis === 'y';
 		const rows = [];
@@ -600,7 +625,7 @@
 		rows.push(
 			h(
 				Row,
-				{ key: 'display', label: __( 'Display', 'snn' ), changed: a.display !== 'block' },
+				{ key: 'display', label: __( 'Display', 'snn' ), changed: a.display !== base.display },
 				h( Select, {
 					label: __( 'Display', 'snn' ),
 					value: a.display,
@@ -614,7 +639,7 @@
 			rows.push(
 				h(
 					Row,
-					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: flow !== 'row' },
+					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: flow !== baseFlow },
 					h( Segmented, {
 						label: __( 'Direction', 'snn' ),
 						value: flow,
@@ -1076,7 +1101,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device } ) {
+	function Panel( { a, set, tag, parent, title, device, base } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
 		// null, 'conditions' or 'interactions': a sub-panel that takes the whole view (see the end of this function).
@@ -1135,7 +1160,7 @@
 			h(
 				Group,
 				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
-				h( LayoutFields, { a, set, tag } )
+				h( LayoutFields, { a, set, tag, base } )
 			),
 			h(
 				Group,
@@ -1352,7 +1377,7 @@
 				shadow: false,
 				position: false,
 			},
-			attributes: layoutAttributes( def ),
+			attributes: withBlockLayout( layoutAttributes( def ), def.name ),
 			edit: function Edit( { attributes: saved, setAttributes, clientId } ) {
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
@@ -1411,7 +1436,7 @@
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ) } ) ),
 					h(
 						'div',
 						blockProps,
