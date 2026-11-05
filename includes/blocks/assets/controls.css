@@ -281,7 +281,7 @@
 
 /* Panel header: the block name and its ID and classes, then the view (Desktop, Tablet, Mobile) */
 .snn-head {
-	padding: 10px 16px 8px;
+	padding: 4px 16px 8px;
 	border-bottom: 1px solid #dcdcde;
 }
 
@@ -770,99 +770,61 @@
 	padding: 2px 0 8px;
 }
 
-/* Icon buttons (direction) */
+/* Icon rows (Direction, Justify, Align, Columns, Flow): a grey track with no border, and the chosen icon on a
+   white pill, as in the version 12 mock */
 .snn-seg {
 	display: flex;
+	box-sizing: border-box;
 	width: 100%;
-	height: 26px;
-	overflow: hidden;
-	border: 1px solid #8c8f94;
-	border-radius: 2px;
+	height: 28px;
+	padding: 2px;
+	gap: 2px;
+	background: #f0f0f1;
+	border: 0;
+	border-radius: 4px;
 }
 
 .snn-seg-btn {
 	flex: 1 1 0;
+	min-width: 0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	margin: 0;
 	padding: 0;
-	color: #1e1e1e;
-	background: #fff;
+	color: #50575e;
+	background: transparent;
 	border: 0;
-	border-right: 1px solid #8c8f94;
-	cursor: pointer;
-}
-
-.snn-seg-btn:last-child {
-	border-right: 0;
-}
-
-.snn-seg-btn.is-on {
-	color: #fff;
-	background: #2271b1;
-}
-
-.snn-seg-btn .snn-glyph {
-	display: block;
-	flex: 0 0 auto;
-}
-
-/* Presets: visual tiles that set a whole layout at once */
-.snn-presets {
-	display: grid;
-	grid-template-columns: repeat(5, minmax(0, 1fr));
-	gap: 4px;
-	padding: 2px 16px 6px;
-}
-
-.snn-preset {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 2px;
-	min-width: 0;
-	margin: 0;
-	padding: 4px 2px 3px;
-	font: inherit;
-	font-size: 10px;
-	line-height: 1.15;
-	color: #3c434a;
-	background: #fff;
-	border: 1px solid #dcdcde;
 	border-radius: 3px;
 	cursor: pointer;
 }
 
-.snn-preset:hover {
-	border-color: #8c8f94;
-}
-
-.snn-preset.is-on {
-	color: #1e1e1e;
-	border-color: #2271b1;
-	box-shadow: inset 0 0 0 1px #2271b1;
-}
-
-.snn-preset .snn-glyph {
-	display: block;
+.snn-seg-btn:hover {
 	color: #1e1e1e;
 }
 
-.snn-preset.is-on .snn-glyph {
-	color: #2271b1;
+.snn-seg-btn.is-on {
+	color: #1e1e1e;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.snn-preset span:last-child {
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.snn-preset:focus-visible {
+.snn-seg-btn:focus-visible {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
+}
+
+/* The pictures of the icon rows (layout-icons.js) */
+.snn-pic {
+	display: block;
+	width: 14px;
+	height: 14px;
+	overflow: visible;
+	fill: currentColor;
+	fill-opacity: 0.85;
+	stroke: currentColor;
+	stroke-width: 1.2;
+	stroke-linecap: round;
 }
 
 /* A short note inside a section (the item settings, when the parent is not flex or grid) */

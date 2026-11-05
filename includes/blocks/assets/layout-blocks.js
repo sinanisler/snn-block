@@ -5,7 +5,7 @@
  *   Query loop      a switch. Turned on, the Query section below it can open.
  *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
  *                   offset, child of, sticky, include and exclude, authors, main query.
- *   Layout          presets (visual tiles), then display (block, flex, grid) with its settings:
+ *   Layout          display (a dropdown: flex, block, grid), then its settings:
  *                   flex direction, wrap, justify, align and gaps; grid columns, rows, flow,
  *                   justify items and align content. The settings are icons where a choice has a
  *                   picture (layout-icons.js), and the pictures follow the direction.
@@ -28,7 +28,7 @@
 	const { createElement: h, Fragment, useState } = wp.element;
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
-	const { Glyph, arrange, columns, BLOCK_SHAPE, GRID_SHAPE, ARROWS } = I;
+	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
 	const { HeadIcons, IdBar, ClassesEditor, ConditionsEditor, InteractionsEditor, readClip, writeClip, styleValues } = window.snnBlockTools;
 
@@ -48,7 +48,7 @@
 		isMain: false,
 	};
 
-	/** The layout settings and their defaults. A preset sets all of them at once. */
+	/** The layout settings and their defaults. */
 	const LAYOUT_DEFAULTS = {
 		display: 'block',
 		flexDirection: 'row',
@@ -150,12 +150,6 @@
 		],
 	};
 
-	const DIRECTIONS = [
-		[ 'row', __( 'Row', 'snn' ) ],
-		[ 'row-reverse', __( 'Row reverse', 'snn' ) ],
-		[ 'column', __( 'Column', 'snn' ) ],
-		[ 'column-reverse', __( 'Column reverse', 'snn' ) ],
-	];
 
 	const GAP_OK = /^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
 	const TEMPLATE_OK = /^[A-Za-z0-9 .,()%+-]{1,160}$/;
@@ -179,163 +173,48 @@
 	 * Pictures and choices
 	 * ---------------------------------------------------------------- */
 
-	/** Options from [value, label] pairs, each with its picture. */
+	/** Options from [value, label] pairs, each with its picture (layout-icons.js). */
 	function options( pairs, glyph ) {
 		return pairs.map( ( [ value, label ] ) => ( { value, label, glyph: glyph( value ) } ) );
 	}
 
-	/** A main-axis picture: the boxes along the flow (justify, align content). */
-	function mainGlyph( axis, reverse ) {
-		return ( value ) => h( Glyph, { rects: arrange( { axis, kind: 'main', mode: value, reverse } ) } );
+	/** Pairs as the dropdowns take them: { value, label }. */
+	function toOptions( pairs ) {
+		return pairs.map( ( [ value, label ] ) => ( { value, label } ) );
 	}
 
-	/** A cross-axis picture: the boxes lined up across the flow (align, justify items, align self). */
-	function crossGlyph( axis ) {
-		return ( value ) => h( Glyph, { rects: arrange( { axis, kind: 'cross', mode: value } ) } );
+	/** The pairs whose value has a picture in the version 12 mock, in the order of the pairs. */
+	function picked( pairs, keys ) {
+		return pairs.filter( ( [ value ] ) => keys.indexOf( value ) !== -1 );
 	}
 
-	function displayOptions() {
-		return [
-			{ value: 'block', label: __( 'Block', 'snn' ), glyph: h( Glyph, { rects: BLOCK_SHAPE } ) },
-			{ value: 'flex', label: __( 'Flex', 'snn' ), glyph: h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'flex-start' } ) } ) },
-			{ value: 'grid', label: __( 'Grid', 'snn' ), glyph: h( Glyph, { rects: GRID_SHAPE } ) },
-		];
-	}
+	/**
+	 * The values that have a picture, by setting. Baseline, space around and space evenly have no picture in the
+	 * mock, so they are not offered as icons.
+	 */
+	const JUSTIFY_PICS = [ 'flex-start', 'center', 'flex-end', 'space-between' ];
+	const ALIGN_PICS = [ 'stretch', 'flex-start', 'center', 'flex-end' ];
+	const ALIGN_CONTENT_PICS = [ 'stretch', 'flex-start', 'center', 'flex-end', 'space-between' ];
 
-	function directionOptions() {
-		return DIRECTIONS.map( ( [ value, label ] ) => ( { value, label, glyph: h( Glyph, { arrow: ARROWS[ value ] } ) } ) );
-	}
+	const DISPLAY_OPTIONS = [
+		{ value: 'flex', label: __( 'Flex', 'snn' ) },
+		{ value: 'block', label: __( 'Block', 'snn' ) },
+		{ value: 'grid', label: __( 'Grid', 'snn' ) },
+	];
 
+	/** The two flows, as pictures: a row or a column. */
+	const FLOW_PAIRS = [
+		[ 'row', __( 'Row', 'snn' ) ],
+		[ 'column', __( 'Column', 'snn' ) ],
+	];
+
+	/** The grid's columns: one to six equal columns. */
 	function columnOptions() {
 		return [ 1, 2, 3, 4, 5, 6 ].map( ( n ) => ( {
 			value: String( n ),
 			label: n === 1 ? __( '1 column', 'snn' ) : n + ' ' + __( 'columns', 'snn' ),
-			glyph: h( Glyph, { rects: columns( n ) } ),
+			glyph: columnsPic( n ),
 		} ) );
-	}
-
-	function flowOptions() {
-		return [
-			{ value: 'row', label: __( 'Row', 'snn' ), glyph: h( Glyph, { arrow: ARROWS.row } ) },
-			{ value: 'column', label: __( 'Column', 'snn' ), glyph: h( Glyph, { arrow: ARROWS.column } ) },
-		];
-	}
-
-	/* ------------------------------------------------------------------
-	 * Presets: one tap sets the whole layout (the settings not listed go back to their defaults)
-	 * ---------------------------------------------------------------- */
-
-	const PRESETS = [
-		{
-			id: 'spread',
-			label: __( 'Spread', 'snn' ),
-			title: __( 'Row, space between', 'snn' ),
-			values: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-			glyph: () => h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'space-between' } ) } ),
-		},
-		{
-			id: 'row-center',
-			label: __( 'Center', 'snn' ),
-			title: __( 'Row, centred, 16 px gap', 'snn' ),
-			values: { display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '16px' },
-			glyph: () => h( Glyph, { rects: arrange( { axis: 'x', kind: 'main', mode: 'center' } ) } ),
-		},
-		{
-			id: 'stack',
-			label: __( 'Stack', 'snn' ),
-			title: __( 'Column from the top, full width, 16 px gap', 'snn' ),
-			values: { display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'stretch', gap: '16px' },
-			glyph: () => h( Glyph, { rects: arrange( { axis: 'y', kind: 'main', mode: 'flex-start' } ) } ),
-		},
-		{
-			id: 'middle',
-			label: __( 'Middle', 'snn' ),
-			title: __( 'Column, centred, 16 px gap', 'snn' ),
-			values: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px' },
-			glyph: () => h( Glyph, { rects: arrange( { axis: 'y', kind: 'main', mode: 'center' } ) } ),
-		},
-		{
-			id: 'wrap',
-			label: __( 'Wrap', 'snn' ),
-			title: __( 'Row that wraps, for cards, 24 px gap', 'snn' ),
-			values: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'stretch', gap: '24px' },
-			glyph: () =>
-				h( Glyph, {
-					rects: [
-						{ x: 3, y: 3, w: 8.25, h: 8.25 },
-						{ x: 12.75, y: 3, w: 8.25, h: 8.25 },
-						{ x: 3, y: 12.75, w: 8.25, h: 8.25 },
-						{ x: 12.75, y: 12.75, w: 8.25, h: 8.25 },
-					],
-				} ),
-		},
-		{
-			id: 'cols-2',
-			label: __( '2 cols', 'snn' ),
-			title: __( 'Grid, 2 equal columns, 24 px gap', 'snn' ),
-			values: { display: 'grid', gridColumns: '2', gap: '24px' },
-			glyph: () => h( Glyph, { rects: columns( 2 ) } ),
-		},
-		{
-			id: 'cols-3',
-			label: __( '3 cols', 'snn' ),
-			title: __( 'Grid, 3 equal columns, 24 px gap', 'snn' ),
-			values: { display: 'grid', gridColumns: '3', gap: '24px' },
-			glyph: () => h( Glyph, { rects: columns( 3 ) } ),
-		},
-		{
-			id: 'cols-4',
-			label: __( '4 cols', 'snn' ),
-			title: __( 'Grid, 4 equal columns, 16 px gap', 'snn' ),
-			values: { display: 'grid', gridColumns: '4', gap: '16px' },
-			glyph: () => h( Glyph, { rects: columns( 4 ) } ),
-		},
-		{
-			id: 'sidebar',
-			label: __( '1 : 2', 'snn' ),
-			title: __( 'Grid, a narrow and a wide column (1fr 2fr), 24 px gap', 'snn' ),
-			values: { display: 'grid', gridColumns: '1fr 2fr', gap: '24px' },
-			glyph: () => h( Glyph, { rects: columns( 2, [ 1, 2 ] ) } ),
-		},
-		{
-			id: 'auto',
-			label: __( 'Auto', 'snn' ),
-			title: __( 'Grid of cards at least 240 px wide, as many as fit, 24 px gap', 'snn' ),
-			values: { display: 'grid', gridColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' },
-			glyph: () =>
-				h( Glyph, {
-					rects: [ 0, 1, 2 ].flatMap( ( c ) => [ 0, 1 ].map( ( r ) => ( { x: 3 + c * 6.5, y: 3 + r * 9.75, w: 5, h: 8.25 } ) ) ),
-				} ),
-		},
-	];
-
-	/** A preset is on when every layout setting matches what it sets (the rest at their defaults). */
-	function presetOn( a, preset ) {
-		const want = { ...LAYOUT_DEFAULTS, ...preset.values };
-		return Object.keys( LAYOUT_DEFAULTS ).every( ( k ) => a[ k ] === want[ k ] );
-	}
-
-	function Presets( { a, set } ) {
-		return h(
-			'div',
-			{ className: 'snn-presets', role: 'group', 'aria-label': __( 'Presets', 'snn' ) },
-			PRESETS.map( ( p ) => {
-				const on = presetOn( a, p );
-				return h(
-					'button',
-					{
-						key: p.id,
-						type: 'button',
-						className: 'snn-preset' + ( on ? ' is-on' : '' ),
-						'aria-pressed': on ? 'true' : 'false',
-						title: p.title,
-						onClick: () => set( { ...LAYOUT_DEFAULTS, ...p.values } ),
-					},
-					p.glyph(),
-					h( 'span', null, p.label )
-				);
-			} )
-		);
 	}
 
 	/* ------------------------------------------------------------------
@@ -632,25 +511,30 @@
 	}
 
 	/**
-	 * The flex and grid settings, in the order they are used. A grid lists its tracks first. Each
-	 * row shows only when it applies to the display chosen.
+	 * The flex and grid settings, in the order they are used. Display is a dropdown. A flex box has its
+	 * direction (two pictures and a Reverse switch), its wrap, its justify and its align. A grid has its
+	 * columns and rows, its flow, its justify items and align content, and its gaps. Each row shows only when
+	 * it applies to the display chosen. The pictures are the version 12 mock's (layout-icons.js).
 	 */
-	function LayoutFields( { a, set, tag } ) {
+	function LayoutFields( { a, set } ) {
 		const flex = a.display === 'flex';
 		const grid = a.display === 'grid';
 		const box = flex || grid;
 		const axis = /^column/.test( a.flexDirection ) ? 'y' : 'x';
 		const reverse = /reverse$/.test( a.flexDirection );
+		const flow = a.flexDirection.replace( /-reverse$/, '' );
+		// A flex column runs its main axis down the block, so its pictures turn a quarter turn.
+		const turned = ! grid && axis === 'y';
 		const rows = [];
 
 		rows.push(
 			h(
 				Row,
 				{ key: 'display', label: __( 'Display', 'snn' ), changed: a.display !== 'block' },
-				h( Segmented, {
+				h( Select, {
 					label: __( 'Display', 'snn' ),
 					value: a.display,
-					options: displayOptions(),
+					options: DISPLAY_OPTIONS,
 					onChange: ( v ) => set( { display: v } ),
 				} )
 			)
@@ -660,14 +544,20 @@
 			rows.push(
 				h(
 					Row,
-					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: a.flexDirection !== 'row' },
+					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: flow !== 'row' },
 					h( Segmented, {
 						label: __( 'Direction', 'snn' ),
-						value: a.flexDirection,
-						options: directionOptions(),
-						onChange: ( v ) => set( { flexDirection: v } ),
+						value: flow,
+						options: options( FLOW_PAIRS, ( v ) => directionPic( v ) ),
+						onChange: ( v ) => set( { flexDirection: reverse ? v + '-reverse' : v } ),
 					} )
 				),
+				h( SwitchRow, {
+					key: 'reverse',
+					label: __( 'Reverse', 'snn' ),
+					checked: reverse,
+					onChange: ( v ) => set( { flexDirection: flow + ( v ? '-reverse' : '' ) } ),
+				} ),
 				h(
 					Row,
 					{ key: 'wrap', label: __( 'Wrap', 'snn' ), changed: a.flexWrap !== 'nowrap' },
@@ -719,7 +609,7 @@
 					h( Segmented, {
 						label: __( 'Flow', 'snn' ),
 						value: a.gridAutoFlow,
-						options: flowOptions(),
+						options: options( FLOW_PAIRS, ( v ) => directionPic( v ) ),
 						onChange: ( v ) => set( { gridAutoFlow: v } ),
 					} )
 				),
@@ -733,10 +623,7 @@
 		}
 
 		if ( box ) {
-			// In a grid, justify content and align items act on the columns and the rows.
-			const mainAxis = grid ? 'x' : axis;
-			const mainReverse = grid ? false : reverse;
-			const crossAxis = grid ? 'x' : axis;
+			// In a grid, justify content runs along the columns and align items along the rows.
 			rows.push(
 				h(
 					Row,
@@ -744,7 +631,7 @@
 					h( Segmented, {
 						label: __( 'Justify content', 'snn' ),
 						value: a.justifyContent || 'flex-start',
-						options: options( CHOICES.justify, mainGlyph( mainAxis, mainReverse ) ),
+						options: options( picked( CHOICES.justify, JUSTIFY_PICS ), ( v ) => mainPic( v, turned ) ),
 						onChange: ( v ) => set( { justifyContent: v } ),
 					} )
 				),
@@ -754,7 +641,7 @@
 					h( Segmented, {
 						label: __( 'Align items', 'snn' ),
 						value: a.alignItems || 'stretch',
-						options: options( CHOICES.align, crossGlyph( crossAxis ) ),
+						options: options( picked( CHOICES.align, ALIGN_PICS ), ( v ) => crossPic( v, turned ) ),
 						onChange: ( v ) => set( { alignItems: v } ),
 					} )
 				)
@@ -769,7 +656,7 @@
 					h( Segmented, {
 						label: __( 'Justify items', 'snn' ),
 						value: a.justifyItems || 'stretch',
-						options: options( CHOICES.cell, crossGlyph( 'y' ) ),
+						options: options( picked( CHOICES.cell, ALIGN_PICS ), ( v ) => crossPic( v, true ) ),
 						onChange: ( v ) => set( { justifyItems: v } ),
 					} )
 				),
@@ -779,7 +666,7 @@
 					h( Segmented, {
 						label: __( 'Align content', 'snn' ),
 						value: a.alignContent || 'stretch',
-						options: options( CHOICES.alignContent, mainGlyph( 'y', false ) ),
+						options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( v ) => mainPic( v, true ) ),
 						onChange: ( v ) => set( { alignContent: v } ),
 					} )
 				)
@@ -823,15 +710,14 @@
 		if ( ! flex && ! grid ) {
 			return h( 'div', { className: 'snn-hint' }, __( 'Put this block inside a flex or grid block to set its place in it.', 'snn' ) );
 		}
-		const parentAxis = /^column/.test( parent.flexDirection ) ? 'y' : 'x';
 		const rows = [
 			h(
 				Row,
 				{ key: 'align-self', label: __( 'Align self', 'snn' ), changed: !! a.alignSelf },
-				h( Segmented, {
+				h( Select, {
 					label: __( 'Align self', 'snn' ),
 					value: a.alignSelf || 'auto',
-					options: options( CHOICES.alignSelf, crossGlyph( flex ? parentAxis : 'x' ) ),
+					options: toOptions( CHOICES.alignSelf ),
 					onChange: ( v ) => set( { alignSelf: v } ),
 				} )
 			),
@@ -842,10 +728,10 @@
 				h(
 					Row,
 					{ key: 'justify-self', label: __( 'Justify self', 'snn' ), changed: !! a.justifySelf },
-					h( Segmented, {
+					h( Select, {
 						label: __( 'Justify self', 'snn' ),
 						value: a.justifySelf || 'stretch',
-						options: options( CHOICES.cell, crossGlyph( 'y' ) ),
+						options: toOptions( CHOICES.cell ),
 						onChange: ( v ) => set( { justifySelf: v } ),
 					} )
 				),
@@ -1131,7 +1017,6 @@
 			h(
 				Group,
 				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
-				h( Presets, { a, set } ),
 				h( LayoutFields, { a, set, tag } )
 			),
 			h(
