@@ -718,6 +718,7 @@ class SNN_Layout_Blocks {
 				'dynamic'   => SNN_Dynamic_Data::for_editor(),
 				'variables' => self::variables(),
 				'postTypes' => SNN_Query_Loop::post_type_options(),
+					'taxonomies' => SNN_Query_Loop::taxonomy_options(),
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,
 			)

@@ -46,6 +46,12 @@
 		exclude: '',
 		includeAuthors: '',
 		excludeAuthors: '',
+		excludeCurrent: false,
+		taxonomy: '',
+		termsInclude: '',
+		termsExclude: '',
+		metaRelation: 'AND',
+		metaQuery: [],
 		isMain: false,
 	};
 
@@ -460,6 +466,32 @@
 	 * Query (unchanged from the first version)
 	 * ---------------------------------------------------------------- */
 
+	/** The meta query's compare operators, value types, and the operators that take no value. */
+	const META_COMPARE_OPTIONS = [
+		{ value: '=', label: __( 'Equals', 'snn' ) },
+		{ value: '!=', label: __( 'Not equal', 'snn' ) },
+		{ value: '>', label: __( 'Greater than', 'snn' ) },
+		{ value: '>=', label: __( 'Greater or equal', 'snn' ) },
+		{ value: '<', label: __( 'Less than', 'snn' ) },
+		{ value: '<=', label: __( 'Less or equal', 'snn' ) },
+		{ value: 'LIKE', label: __( 'Contains', 'snn' ) },
+		{ value: 'NOT LIKE', label: __( 'Does not contain', 'snn' ) },
+		{ value: 'IN', label: __( 'One of', 'snn' ) },
+		{ value: 'NOT IN', label: __( 'None of', 'snn' ) },
+		{ value: 'EXISTS', label: __( 'Exists', 'snn' ) },
+		{ value: 'NOT EXISTS', label: __( 'Does not exist', 'snn' ) },
+	];
+	const META_TYPE_OPTIONS = [
+		{ value: 'CHAR', label: __( 'Text', 'snn' ) },
+		{ value: 'NUMERIC', label: __( 'Number', 'snn' ) },
+		{ value: 'DECIMAL', label: __( 'Decimal', 'snn' ) },
+		{ value: 'SIGNED', label: __( 'Signed integer', 'snn' ) },
+		{ value: 'UNSIGNED', label: __( 'Unsigned integer', 'snn' ) },
+		{ value: 'DATE', label: __( 'Date', 'snn' ) },
+		{ value: 'DATETIME', label: __( 'Date and time', 'snn' ) },
+	];
+	const META_NO_VALUE = [ 'EXISTS', 'NOT EXISTS' ];
+
 	function changedQuery( q ) {
 		return (
 			q.enabled &&
@@ -474,11 +506,17 @@
 				!! q.exclude ||
 				!! q.includeAuthors ||
 				!! q.excludeAuthors ||
-				q.isMain )
+				q.isMain || !! q.taxonomy || !! q.termsInclude || !! q.termsExclude || !! q.excludeCurrent || ( q.metaQuery || [] ).length > 0 || q.metaRelation === 'OR' )
 		);
 	}
 
 	function QueryFields( { q, setQ } ) {
+		const metaRows = Array.isArray( q.metaQuery ) ? q.metaQuery : [];
+		const TAXONOMY_OPTIONS = [ { value: '', label: __( 'None', 'snn' ) } ].concat( data.taxonomies || [] );
+		const writeMeta = ( rows ) => setQ( { metaQuery: rows } );
+		const updateMeta = ( i, patch ) => writeMeta( metaRows.map( ( r, j ) => ( j === i ? Object.assign( {}, r, patch ) : r ) ) );
+		const removeMeta = ( i ) => writeMeta( metaRows.filter( ( r, j ) => j !== i ) );
+		const addMeta = () => writeMeta( metaRows.concat( [ { key: '', compare: '=', value: '', type: 'CHAR' } ] ) );
 		return h(
 			Fragment,
 			null,
@@ -587,6 +625,122 @@
 					onChange: ( v ) => setQ( { excludeAuthors: v } ),
 				} )
 			),
+			h(
+				Row,
+				{ label: __( 'Taxonomy', 'snn' ), changed: !! q.taxonomy },
+				h( Select, {
+					label: __( 'Taxonomy', 'snn' ),
+					value: q.taxonomy || '',
+					options: TAXONOMY_OPTIONS,
+					onChange: ( v ) => setQ( { taxonomy: v } ),
+				} )
+			),
+			h(
+				Row,
+				{ label: __( 'Terms in', 'snn' ), changed: !! q.termsInclude },
+				h( TextField, {
+					label: __( 'Include terms', 'snn' ),
+					value: q.termsInclude,
+					placeholder: __( 'Term IDs', 'snn' ),
+					onChange: ( v ) => setQ( { termsInclude: v } ),
+				} )
+			),
+			h(
+				Row,
+				{ label: __( 'Terms out', 'snn' ), changed: !! q.termsExclude },
+				h( TextField, {
+					label: __( 'Exclude terms', 'snn' ),
+					value: q.termsExclude,
+					placeholder: __( 'Term IDs', 'snn' ),
+					onChange: ( v ) => setQ( { termsExclude: v } ),
+				} )
+			),
+			...metaRows.map( ( r, i ) =>
+				h(
+					Fragment,
+					{ key: 'meta-' + i },
+					h(
+						Row,
+						{ label: __( 'Meta key', 'snn' ), changed: !! r.key },
+						h( TextField, {
+							label: __( 'Meta key', 'snn' ),
+							value: r.key,
+							placeholder: __( 'field_name', 'snn' ),
+							onChange: ( v ) => updateMeta( i, { key: v } ),
+						} )
+					),
+					h(
+						Row,
+						{ label: __( 'Compare', 'snn' ), changed: r.compare !== '=' },
+						h( Select, {
+							label: __( 'Compare', 'snn' ),
+							value: r.compare,
+							options: META_COMPARE_OPTIONS,
+							onChange: ( v ) => updateMeta( i, { compare: v } ),
+						} )
+					),
+					META_NO_VALUE.indexOf( r.compare ) === -1
+						? h(
+								Row,
+								{ label: __( 'Value', 'snn' ), changed: !! r.value },
+								h( TextField, {
+									label: __( 'Meta value', 'snn' ),
+									value: r.value,
+									placeholder: __( 'value', 'snn' ),
+									onChange: ( v ) => updateMeta( i, { value: v } ),
+								} )
+						  )
+						: null,
+					h(
+						Row,
+						{ label: __( 'Type', 'snn' ), changed: r.type !== 'CHAR' },
+						h( Select, {
+							label: __( 'Value type', 'snn' ),
+							value: r.type,
+							options: META_TYPE_OPTIONS,
+							onChange: ( v ) => updateMeta( i, { type: v } ),
+						} )
+					),
+					h(
+						Row,
+						{ label: '' },
+						h(
+							'button',
+							{ type: 'button', className: 'snn-reset', onClick: () => removeMeta( i ) },
+							__( 'Remove rule', 'snn' )
+						)
+					)
+				)
+			),
+			h(
+				Row,
+				{ label: __( 'Meta query', 'snn' ), changed: metaRows.length > 0 },
+				h(
+					'button',
+					{ type: 'button', className: 'snn-reset', onClick: addMeta },
+					metaRows.length ? __( 'Add another rule', 'snn' ) : __( 'Add rule', 'snn' )
+				)
+			),
+			metaRows.length > 1
+				? h(
+						Row,
+						{ label: __( 'Rules', 'snn' ), changed: q.metaRelation !== 'AND' },
+						h( Segmented, {
+							label: __( 'Rules must match', 'snn' ),
+							value: q.metaRelation || 'AND',
+							options: [
+								{ value: 'AND', label: __( 'All', 'snn' ) },
+								{ value: 'OR', label: __( 'Any', 'snn' ) },
+							],
+							onChange: ( v ) => setQ( { metaRelation: v } ),
+						} )
+				  )
+				: null,
+			h( SwitchRow, {
+				label: __( 'Exclude current', 'snn' ),
+				checked: !! q.excludeCurrent,
+				onChange: ( v ) => setQ( { excludeCurrent: v } ),
+			} ),
 			h( SwitchRow, {
 				label: __( 'Main query', 'snn' ),
 				checked: q.isMain,
