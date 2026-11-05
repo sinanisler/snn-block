@@ -271,9 +271,12 @@
 	 * exact name can still be found and clicked.
 	 */
 	function VariablePicker( { groups, kind, onPick } ) {
-		const same = kind ? groups.filter( ( g ) => g.kind === kind ) : groups;
-		const other = kind ? groups.filter( ( g ) => g.kind !== kind ) : [];
-		const otherLabel = kind === 'color' ? __( 'Sizes', 'snn' ) : __( 'Colours', 'snn' );
+		// A colour field sees colour variables only. A size field lists sizes first and the colours closed at the bottom.
+		// Every other field (numbers, text, and so on) sees all the variables in one list.
+		const own = kind === 'color' || kind === 'size' ? groups.filter( ( g ) => g.kind === kind ) : groups;
+		const same = own;
+		const other = kind === 'size' ? groups.filter( ( g ) => g.kind !== 'size' ) : [];
+		const otherLabel = __( 'Colours', 'snn' );
 		const group = ( g ) =>
 			h(
 				Fragment,
@@ -347,7 +350,7 @@
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
 				unit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
-				variables && variables.length
+				variables
 					? h(
 							'button',
 							{

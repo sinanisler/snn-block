@@ -425,6 +425,10 @@ class SNN_Layout_Blocks {
 	/** An opacity from 0 to 100 (a percentage), written as 0 to 1. Anything else is dropped. */
 	public static function opacity( $value ) {
 		$value = trim( (string) $value );
+		// A variable is written as it is: its own value is the opacity (0 to 1).
+		if ( preg_match( '/^var\(--[a-z][a-z0-9-]*\)$/', $value ) ) {
+			return $value;
+		}
 		if ( ! preg_match( '/^\d{1,3}$/', $value ) || (int) $value > 100 ) {
 			return '';
 		}
@@ -527,13 +531,13 @@ class SNN_Layout_Blocks {
 	/** A span for a grid item: 1 to 12, or nothing. */
 	public static function span( $value ) {
 		$value = trim( (string) $value );
-		return preg_match( '/^(1[0-2]|[1-9])$/', $value ) ? $value : '';
+		return preg_match( '/^((1[0-2]|[1-9])|var\(--[a-z][a-z0-9-]*\))$/', $value ) ? $value : '';
 	}
 
 	/** A grid line for an item: 1 to 99, or nothing. */
 	public static function line( $value ) {
 		$value = trim( (string) $value );
-		return preg_match( '/^[1-9]\d?$/', $value ) ? $value : '';
+		return preg_match( '/^([1-9]\d?|var\(--[a-z][a-z0-9-]*\))$/', $value ) ? $value : '';
 	}
 
 	/**
@@ -552,7 +556,7 @@ class SNN_Layout_Blocks {
 	/** An order for a flex or grid item: a whole number, negative or not, up to three digits. */
 	public static function integer( $value ) {
 		$value = trim( (string) $value );
-		return preg_match( '/^-?\d{1,3}$/', $value ) ? $value : '';
+		return preg_match( '/^(-?\d{1,3}|var\(--[a-z][a-z0-9-]*\))$/', $value ) ? $value : '';
 	}
 
 	/** A grid area name: a letter, then letters, digits, underscores or hyphens. */
@@ -577,7 +581,7 @@ class SNN_Layout_Blocks {
 	/** A non-negative number, for flex grow and shrink. */
 	public static function number( $value ) {
 		$value = trim( (string) $value );
-		return preg_match( '/^\d+(\.\d+)?$/', $value ) ? $value : '';
+		return preg_match( '/^(\d+(\.\d+)?|var\(--[a-z][a-z0-9-]*\))$/', $value ) ? $value : '';
 	}
 
 	/** A flex basis: auto, or a length or spacing variable (as for the gap). */

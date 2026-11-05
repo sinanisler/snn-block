@@ -182,7 +182,7 @@
 
 	const GAP_OK = /^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
 	const TEMPLATE_OK = /^[A-Za-z0-9 .,()%+-]{1,160}$/;
-	const NUMBER_OK = /^\d+(\.\d+)?$/;
+	const NUMBER_OK = /^(\d+(\.\d+)?|var\(--[a-z][a-z0-9-]*\))$/;
 	/** A length for padding and width (no minus): the same rule as size_value() in layout-blocks.php. */
 	const SIZE_OK = /^(var\(--[a-z][a-z0-9-]*\)|\d+(\.\d+)?(px|rem|em|%|vw|vh)|0)$/;
 	const OVERFLOW_OK = [ 'visible', 'hidden', 'clip' ];
@@ -194,11 +194,14 @@
 	}
 	function opacityCss( v ) {
 		const t = str( v ).trim();
+		if ( /^var\(--[a-z][a-z0-9-]*\)$/.test( t ) ) {
+			return t;
+		}
 		return /^\d{1,3}$/.test( t ) && Number( t ) <= 100 ? String( Number( t ) / 100 ) : '';
 	}
-	const SPAN_OK = /^(1[0-2]|[1-9])$/;
-	const LINE_OK = /^[1-9]\d?$/;
-	const INT_OK = /^-?\d{1,3}$/;
+	const SPAN_OK = /^((1[0-2]|[1-9])|var\(--[a-z][a-z0-9-]*\))$/;
+	const LINE_OK = /^([1-9]\d?|var\(--[a-z][a-z0-9-]*\))$/;
+	const INT_OK = /^(-?\d{1,3}|var\(--[a-z][a-z0-9-]*\))$/;
 	const IDENT_OK = /^[A-Za-z][A-Za-z0-9_-]{0,39}$/;
 	/** The rows of a grid's areas: quoted names, one string per row. The same rule as areas() in layout-blocks.php. */
 	const AREAS_OK = /^"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*"(\s+"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*")*$/;
@@ -683,6 +686,7 @@
 					{ key: 'template', label: __( 'Template', 'snn' ), changed: a.gridColumns !== '' && ! /^\d+$/.test( a.gridColumns ) },
 					h( TextField, {
 						label: __( 'Column template', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.gridColumns,
 						placeholder: __( '1fr 2fr', 'snn' ),
 						onChange: ( v ) => set( { gridColumns: v } ),
@@ -693,6 +697,7 @@
 					{ key: 'rows', label: __( 'Rows', 'snn' ), changed: a.gridRows !== '' },
 					h( TextField, {
 						label: __( 'Row template', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.gridRows,
 						placeholder: __( 'auto', 'snn' ),
 						onChange: ( v ) => set( { gridRows: v } ),
@@ -703,6 +708,7 @@
 					{ key: 'auto-columns', label: __( 'Auto columns', 'snn' ), changed: a.gridAutoColumns !== '' },
 					h( TextField, {
 						label: __( 'Auto columns', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.gridAutoColumns,
 						placeholder: __( 'auto', 'snn' ),
 						onChange: ( v ) => set( { gridAutoColumns: v } ),
@@ -713,6 +719,7 @@
 					{ key: 'auto-rows', label: __( 'Auto rows', 'snn' ), changed: a.gridAutoRows !== '' },
 					h( TextField, {
 						label: __( 'Auto rows', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.gridAutoRows,
 						placeholder: __( 'auto', 'snn' ),
 						onChange: ( v ) => set( { gridAutoRows: v } ),
@@ -868,6 +875,7 @@
 				{ key: 'order', label: __( 'Order', 'snn' ), changed: a.order !== '' },
 				h( TextField, {
 					label: __( 'Order', 'snn' ),
+					variables: VARIABLE_GROUPS,
 					value: a.order,
 					placeholder: '0',
 					inputMode: 'numeric',
@@ -892,6 +900,7 @@
 					{ key: 'column-start', label: __( 'Column start', 'snn' ), changed: !! a.columnStart },
 					h( TextField, {
 						label: __( 'Column start', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.columnStart,
 						placeholder: __( 'auto', 'snn' ),
 						inputMode: 'numeric',
@@ -903,6 +912,7 @@
 					{ key: 'column-span', label: __( 'Column span', 'snn' ), changed: !! a.columnSpan },
 					h( TextField, {
 						label: __( 'Column span', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.columnSpan,
 						placeholder: '1',
 						inputMode: 'numeric',
@@ -914,6 +924,7 @@
 					{ key: 'row-start', label: __( 'Row start', 'snn' ), changed: !! a.rowStart },
 					h( TextField, {
 						label: __( 'Row start', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.rowStart,
 						placeholder: __( 'auto', 'snn' ),
 						inputMode: 'numeric',
@@ -925,6 +936,7 @@
 					{ key: 'row-span', label: __( 'Row span', 'snn' ), changed: !! a.rowSpan },
 					h( TextField, {
 						label: __( 'Row span', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.rowSpan,
 						placeholder: '1',
 						inputMode: 'numeric',
@@ -951,6 +963,7 @@
 					{ key: 'grow', label: __( 'Grow', 'snn' ), changed: !! a.flexGrow },
 					h( TextField, {
 						label: __( 'Flex grow', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.flexGrow,
 						placeholder: '0',
 						inputMode: 'decimal',
@@ -962,6 +975,7 @@
 					{ key: 'shrink', label: __( 'Shrink', 'snn' ), changed: !! a.flexShrink },
 					h( TextField, {
 						label: __( 'Flex shrink', 'snn' ),
+						variables: VARIABLE_GROUPS,
 						value: a.flexShrink,
 						placeholder: '1',
 						inputMode: 'decimal',
@@ -1078,8 +1092,8 @@
 						value: value === undefined || value === null ? '' : String( value ),
 						placeholder,
 						unit,
-						variables: kind === 'size' ? VARIABLE_GROUPS : undefined,
-						kind: kind === 'size' ? 'size' : undefined,
+						variables: VARIABLE_GROUPS,
+						kind: kind === 'size' ? 'size' : kind === 'color' ? 'color' : undefined,
 						onChange: change,
 				  } );
 		return h(
