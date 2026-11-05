@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Own panel mock (no library)</title>
+<style>
+/* Zero-dependency mock: native elements, the Popover API and CSS anchor positioning. */
+:root{
+  --bg:#eeeeea; --panel:#ffffff; --line:#e2e2dd; --fg:#1c1c1a; --muted:#6b6b65;
+  --field:#f6f6f3; --chip:#ececE6; --accent:#2b6be6; --radius:6px;
+  font:12px/1.35 "Segoe UI",system-ui,sans-serif; color:var(--fg);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);padding:16px}
+.panel{width:300px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tab{flex:1;height:34px;border:0;background:none;font:inherit;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.tab[aria-selected="true"]{color:var(--fg);font-weight:600;border-bottom-color:var(--accent)}
+.group{padding:10px 12px 8px;border-bottom:1px solid var(--line)}
+.group:last-child{border-bottom:0}
+.group h3{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.row{display:grid;grid-template-columns:76px 1fr;align-items:center;gap:8px;margin:5px 0;min-height:28px}
+.row > .lbl{color:var(--muted)}
+.field{display:flex;align-items:center;height:28px;background:var(--field);border:1px solid var(--line);border-radius:var(--radius);padding:0 4px 0 8px;gap:4px;min-width:0}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(43,107,230,.15)}
+.field input{border:0;background:transparent;font:inherit;color:inherit;width:100%;min-width:0;outline:none;padding:0}
+.field .u{color:var(--muted);font-size:11px;flex:none}
+.field select{appearance:none;border:0;background:transparent;font:inherit;color:var(--muted);font-size:11px;padding:0 2px;outline:none}
+.seg{display:inline-flex;gap:2px;background:var(--chip);border-radius:var(--radius);padding:2px}
+.seg button{width:30px;height:24px;border:0;background:transparent;border-radius:4px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg svg{width:14px;height:14px;fill:currentColor;stroke:currentColor;stroke-width:1.2;fill-opacity:.85}
+.trigger{width:100%;height:28px;display:flex;align-items:center;justify-content:space-between;background:var(--field);border:1px solid var(--line);border-radius:var(--radius);padding:0 8px;font:inherit;color:var(--fg);cursor:pointer;anchor-name:--display}
+.trigger::after{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px)}
+.menu{position:fixed;inset:auto;position-anchor:--display;top:anchor(bottom);left:anchor(left);width:anchor-size(width);margin:4px 0 0;padding:4px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);position-try-fallbacks:flip-block;display:none}
+.menu:popover-open{display:block}
+.menu button{display:block;width:100%;text-align:left;height:28px;padding:0 8px;border:0;background:none;border-radius:4px;font:inherit;color:var(--fg);cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--chip);outline:none}
+.menu button[aria-checked="true"]{font-weight:600}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.four .field{padding:0 4px 0 6px}
+.four .u{display:none}
+.four .lbl-s{font-size:10px;color:var(--muted);text-align:center;margin-top:2px}
+.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:none;position:relative;overflow:hidden}
+.swatch input{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);opacity:0;cursor:pointer;border:0;padding:0}
+.range{display:flex;align-items:center;gap:8px}
+.range input{flex:1;accent-color:var(--accent);margin:0}
+.range output{width:40px;text-align:right;color:var(--muted)}
+.switch{position:relative;width:30px;height:18px;appearance:none;background:#cfcfc9;border-radius:99px;cursor:pointer;margin:0;transition:background .15s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch:checked{background:var(--accent)}
+.switch:checked::after{transform:translateX(12px)}
+.link{width:28px;height:28px;border:1px solid var(--line);background:var(--field);border-radius:var(--radius);display:grid;place-items:center;color:var(--muted);cursor:pointer;flex:none}
+.link[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.spacing{display:grid;grid-template-columns:1fr 28px;gap:8px;align-items:start}
+</style>
+</head>
+<body>
+<div class="panel" role="region" aria-label="Section style">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true">Default</button>
+    <button class="tab" role="tab" aria-selected="false">Style</button>
+  </div>
+
+  <div class="group">
+    <h3>Layout</h3>
+    <div class="row">
+      <span class="lbl">Display</span>
+      <div>
+        <button class="trigger" popovertarget="display-menu" aria-haspopup="listbox">Flex</button>
+        <div id="display-menu" popover class="menu" role="listbox" aria-label="Display">
+          <button role="option" aria-checked="false">Block</button>
+          <button role="option" aria-checked="true">Flex</button>
+          <button role="option" aria-checked="false">Grid</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Direction</span>
+      <div class="seg" role="group" aria-label="Direction">
+        <button aria-pressed="true" title="Row"><svg viewBox="0 0 14 14"><rect x="1" y="4" width="4" height="6" rx="1"/><rect x="9" y="4" width="4" height="6" rx="1"/></svg></button>
+        <button aria-pressed="false" title="Column"><svg viewBox="0 0 14 14"><rect x="4" y="1" width="6" height="4" rx="1"/><rect x="4" y="9" width="6" height="4" rx="1"/></svg></button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Justify</span>
+      <div class="seg" role="group" aria-label="Justify">
+        <button aria-pressed="true" title="Start"><svg viewBox="0 0 14 14"><path d="M2 1v12" fill="none"/><rect x="4" y="4" width="3" height="6" rx=".5"/><rect x="8" y="4" width="3" height="6" rx=".5"/></svg></button>
+        <button aria-pressed="false" title="Center"><svg viewBox="0 0 14 14"><path d="M7 1v12" fill="none"/><rect x="3" y="4" width="3" height="6" rx=".5"/><rect x="8" y="4" width="3" height="6" rx=".5"/></svg></button>
+        <button aria-pressed="false" title="End"><svg viewBox="0 0 14 14"><path d="M12 1v12" fill="none"/><rect x="2" y="4" width="3" height="6" rx=".5"/><rect x="6" y="4" width="3" height="6" rx=".5"/></svg></button>
+        <button aria-pressed="false" title="Space between"><svg viewBox="0 0 14 14"><path d="M1 1v12M13 1v12" fill="none"/><rect x="5.5" y="4" width="3" height="6" rx=".5"/></svg></button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl">Gap</span>
+      <label class="field"><input type="number" value="24" aria-label="Gap value"><span class="u">px</span></label>
+    </div>
+  </div>
+
+  <div class="group">
+    <h3>Spacing (px)</h3>
+    <div class="spacing">
+      <div class="four">
+        <div><label class="field"><input type="number" value="40" aria-label="Padding top"><span class="u">px</span></label><div class="lbl-s">Top</div></div>
+        <div><label class="field"><input type="number" value="24" aria-label="Padding right"><span class="u">px</span></label><div class="lbl-s">Right</div></div>
+        <div><label class="field"><input type="number" value="40" aria-label="Padding bottom"><span class="u">px</span></label><div class="lbl-s">Bottom</div></div>
+        <div><label class="field"><input type="number" value="24" aria-label="Padding left"><span class="u">px</span></label><div class="lbl-s">Left</div></div>
+      </div>
+      <button class="link" aria-pressed="false" title="Link all sides">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 7.5 7 5.5M4.5 6.5 3 8a1.6 1.6 0 0 0 2.3 2.3L6.8 8.8M7.5 5.2 9 3.7A1.6 1.6 0 0 0 6.7 1.4L5.2 2.9"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="group">
+    <h3>Background</h3>
+    <div class="row">
+      <span class="lbl">Colour</span>
+      <label class="field">
+        <span class="swatch" style="background:#2b6be6"><input type="color" value="#2b6be6" aria-label="Background colour picker"></span>
+        <input type="text" value="#2B6BE6" aria-label="Background hex" style="text-transform:uppercase">
+      </label>
+    </div>
+  </div>
+
+  <div class="group">
+    <h3>Effects</h3>
+    <div class="row">
+      <span class="lbl">Opacity</span>
+      <div class="range"><input type="range" min="0" max="100" value="100" aria-label="Opacity"><output>100%</output></div>
+    </div>
+    <div class="row">
+      <span class="lbl">Overflow</span>
+      <input class="switch" type="checkbox" checked aria-label="Overflow hidden">
+    </div>
+  </div>
+</div>
+
+<script>
+// Only the Display menu needs script: open it from the trigger (popovertarget does the rest), then pick an option.
+document.querySelectorAll('#display-menu [role="option"]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('#display-menu [role="option"]').forEach(function (b) { b.setAttribute('aria-checked', 'false'); });
+    btn.setAttribute('aria-checked', 'true');
+    document.querySelector('.trigger').textContent = btn.textContent;
+    document.getElementById('display-menu').hidePopover();
+  });
+});
+// Screenshot helper: ?open opens the Display menu on load.
+if (location.search.indexOf('open') !== -1) { document.getElementById('display-menu').showPopover(); }
+</script>
+</body>
+</html>
