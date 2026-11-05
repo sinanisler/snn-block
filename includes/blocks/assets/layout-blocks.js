@@ -2,13 +2,13 @@
  * SNN layout blocks for the block editor: Section, Container and Div.
  *
  * The settings sit in the block's inspector, in compact rows (see controls.js):
- *   Query loop      a switch. Turned on, the Query section below it can open.
- *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
- *                   offset, child of, sticky, include and exclude, authors, main query.
  *   Layout          display (a dropdown: flex, block, grid), then its settings:
  *                   flex direction, wrap, justify, align and gaps; grid columns, rows, flow,
  *                   justify items and align content. The settings are icons where a choice has a
  *                   picture (layout-icons.js), and the pictures follow the direction.
+ *   Query loop      a switch. Turned on, the Query section below it can open.
+ *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
+ *                   offset, child of, sticky, include and exclude, authors, main query.
  *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
  *                   justify self, column and row span. Only the settings its parent needs show.
  *   Header          the name, with the Conditions and Interactions buttons at the top right; the CSS ID (the
@@ -970,7 +970,7 @@
 			h( ViewSwitch, null )
 		);
 
-		// Default: the element, the query loop, the layout, the item, the effects (planned), and the advanced fields.
+		// Default: the element, the layout, the query loop, the item, the effects (planned), and the advanced fields.
 		const defaultPane = h(
 			'div',
 			{ className: 'snn-pane' },
@@ -987,6 +987,11 @@
 						onChange: ( v ) => set( { tagName: v } ),
 					} )
 				)
+			),
+			h(
+				Group,
+				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
+				h( LayoutFields, { a, set, tag } )
 			),
 			h(
 				Group,
@@ -1013,11 +1018,6 @@
 					},
 					h( QueryFields, { q, setQ } )
 				)
-			),
-			h(
-				Group,
-				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
-				h( LayoutFields, { a, set, tag } )
 			),
 			h(
 				Disclosure,

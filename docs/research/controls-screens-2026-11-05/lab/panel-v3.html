@@ -71,8 +71,53 @@ body{margin:0;background:#f0f0f1;padding:14px;width:max-content;font-family:-app
     <button class="mock-tab" type="button" role="tab" data-tab="style" aria-selected="false">Style</button>
   </div>
 
-  <!-- DEFAULT: the query loop, the layout, the effects (planned) and the advanced fields -->
+  <!-- DEFAULT: the layout, the query loop, the effects (planned) and the advanced fields -->
   <div class="pane" data-pane="default">
+
+    <!-- Layout: element and flex settings. Each value can differ per view; the line under it says where it comes from. -->
+    <div class="snn-acc" data-acc="layout">
+      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Layout</span></button>
+      <div class="snn-acc-body">
+        <div class="snn-row"><span class="snn-row-label">HTML tag</span><div class="snn-row-control"><select class="snn-select" aria-label="HTML tag"><option>section</option><option>div</option><option>header</option><option>footer</option><option>main</option><option>article</option><option>aside</option><option>nav</option></select></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="display"><span class="snn-row-label">Display<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><select class="snn-select" data-k="display" aria-label="Display"><option value="block">Block</option><option value="flex">Flex</option><option value="grid">Grid</option></select>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="direction" data-flex><span class="snn-row-label">Direction<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-seg" role="group" aria-label="Direction" data-k="direction">
+            <button type="button" data-val="row" title="Row" aria-pressed="true"><svg viewBox="0 0 16 16"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></svg></button>
+            <button type="button" data-val="row-reverse" title="Row reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M13.5 8h-10M7 4.5 3.5 8 7 11.5"/></svg></button>
+            <button type="button" data-val="column" title="Column" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 2.5v10M4.5 9 8 12.5 11.5 9"/></svg></button>
+            <button type="button" data-val="column-reverse" title="Column reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 13.5v-10M4.5 7 8 3.5 11.5 7"/></svg></button>
+          </div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row" data-flex><span class="snn-row-label">Wrap</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Wrap"><span class="snn-switch-knob"></span></button></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="justify" data-flex><span class="snn-row-label">Justify<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><select class="snn-select" data-k="justify" aria-label="Justify content"><option value="">Default</option><option value="flex-start">Start</option><option value="center">Center</option><option value="flex-end">End</option><option value="space-between">Space between</option><option value="space-around">Space around</option><option value="space-evenly">Space evenly</option></select>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+
+        <div class="snn-row has-hint" data-view-row data-k="gap" data-gap-row><span class="snn-row-label">Gap<i class="snn-dot"></i></span>
+          <div class="snn-row-control"><div class="snn-field">
+            <div class="snn-input-wrap"><input class="snn-input" data-k="gap" type="text" placeholder="0" aria-label="Gap">
+              <button type="button" class="snn-tool" data-pop="vars-gap" title="Variables" aria-label="Variables" aria-expanded="false"><span class="snn-tool-text" aria-hidden="true">V</span></button>
+              <button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div>
+            <div class="snn-pop" data-pop-id="vars-gap" hidden>
+              <div class="snn-pop-list">
+                <div class="snn-pop-group">Spacing</div>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xs)"><span class="snn-pop-label">XS</span><code>var(--wp--preset--spacing--xs)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--s)"><span class="snn-pop-label">S</span><code>var(--wp--preset--spacing--s)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--m)"><span class="snn-pop-label">M</span><code>var(--wp--preset--spacing--m)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--l)"><span class="snn-pop-label">L</span><code>var(--wp--preset--spacing--l)</code></button>
+                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xl)"><span class="snn-pop-label">XL</span><code>var(--wp--preset--spacing--xl)</code></button>
+              </div>
+            </div>
+          </div>
+            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
+      </div>
+    </div>
 
     <div class="snn-row" data-role="query-row">
       <span class="snn-row-label">Query loop<i class="snn-dot"></i></span>
@@ -117,51 +162,6 @@ body{margin:0;background:#f0f0f1;padding:14px;width:max-content;font-family:-app
         <div class="snn-row"><span class="snn-row-label">Authors</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="User IDs" aria-label="Include authors"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
         <div class="snn-row"><span class="snn-row-label">Not authors</span><div class="snn-row-control"><div class="snn-field"><div class="snn-input-wrap"><input class="snn-input" type="text" placeholder="User IDs" aria-label="Exclude authors"><button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div></div></div></div>
         <div class="snn-row"><span class="snn-row-label">Main query</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Main query"><span class="snn-switch-knob"></span></button></div></div>
-      </div>
-    </div>
-
-    <!-- Layout: element and flex settings. Each value can differ per view; the line under it says where it comes from. -->
-    <div class="snn-acc" data-acc="layout">
-      <button type="button" class="snn-acc-head" aria-expanded="true" aria-disabled="false"><svg class="snn-chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg><span class="snn-acc-title">Layout</span></button>
-      <div class="snn-acc-body">
-        <div class="snn-row"><span class="snn-row-label">HTML tag</span><div class="snn-row-control"><select class="snn-select" aria-label="HTML tag"><option>section</option><option>div</option><option>header</option><option>footer</option><option>main</option><option>article</option><option>aside</option><option>nav</option></select></div></div>
-
-        <div class="snn-row has-hint" data-view-row data-k="display"><span class="snn-row-label">Display<i class="snn-dot"></i></span>
-          <div class="snn-row-control"><select class="snn-select" data-k="display" aria-label="Display"><option value="block">Block</option><option value="flex">Flex</option><option value="grid">Grid</option></select>
-            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
-
-        <div class="snn-row has-hint" data-view-row data-k="direction" data-flex><span class="snn-row-label">Direction<i class="snn-dot"></i></span>
-          <div class="snn-row-control"><div class="snn-seg" role="group" aria-label="Direction" data-k="direction">
-            <button type="button" data-val="row" title="Row" aria-pressed="true"><svg viewBox="0 0 16 16"><path d="M2.5 8h10M9 4.5 12.5 8 9 11.5"/></svg></button>
-            <button type="button" data-val="row-reverse" title="Row reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M13.5 8h-10M7 4.5 3.5 8 7 11.5"/></svg></button>
-            <button type="button" data-val="column" title="Column" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 2.5v10M4.5 9 8 12.5 11.5 9"/></svg></button>
-            <button type="button" data-val="column-reverse" title="Column reverse" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M8 13.5v-10M4.5 7 8 3.5 11.5 7"/></svg></button>
-          </div>
-            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
-
-        <div class="snn-row" data-flex><span class="snn-row-label">Wrap</span><div class="snn-row-control"><button type="button" class="snn-switch" role="switch" aria-checked="false" aria-label="Wrap"><span class="snn-switch-knob"></span></button></div></div>
-
-        <div class="snn-row has-hint" data-view-row data-k="justify" data-flex><span class="snn-row-label">Justify<i class="snn-dot"></i></span>
-          <div class="snn-row-control"><select class="snn-select" data-k="justify" aria-label="Justify content"><option value="">Default</option><option value="flex-start">Start</option><option value="center">Center</option><option value="flex-end">End</option><option value="space-between">Space between</option><option value="space-around">Space around</option><option value="space-evenly">Space evenly</option></select>
-            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
-
-        <div class="snn-row has-hint" data-view-row data-k="gap" data-gap-row><span class="snn-row-label">Gap<i class="snn-dot"></i></span>
-          <div class="snn-row-control"><div class="snn-field">
-            <div class="snn-input-wrap"><input class="snn-input" data-k="gap" type="text" placeholder="0" aria-label="Gap">
-              <button type="button" class="snn-tool" data-pop="vars-gap" title="Variables" aria-label="Variables" aria-expanded="false"><span class="snn-tool-text" aria-hidden="true">V</span></button>
-              <button type="button" class="snn-tool snn-tool-dyn" data-pop="none" title="Dynamic data" aria-label="Dynamic data"><svg class="snn-bolt" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M13 2 3 14h7l-1 8 10-12h-7z" fill="currentColor"/></svg></button></div>
-            <div class="snn-pop" data-pop-id="vars-gap" hidden>
-              <div class="snn-pop-list">
-                <div class="snn-pop-group">Spacing</div>
-                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xs)"><span class="snn-pop-label">XS</span><code>var(--wp--preset--spacing--xs)</code></button>
-                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--s)"><span class="snn-pop-label">S</span><code>var(--wp--preset--spacing--s)</code></button>
-                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--m)"><span class="snn-pop-label">M</span><code>var(--wp--preset--spacing--m)</code></button>
-                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--l)"><span class="snn-pop-label">L</span><code>var(--wp--preset--spacing--l)</code></button>
-                <button type="button" class="snn-pop-item" data-set="var(--wp--preset--spacing--xl)"><span class="snn-pop-label">XL</span><code>var(--wp--preset--spacing--xl)</code></button>
-              </div>
-            </div>
-          </div>
-            <div class="snn-view-line"><span class="snn-view-hint"></span><button type="button" class="snn-reset" hidden>Reset</button></div></div></div>
       </div>
     </div>
 
