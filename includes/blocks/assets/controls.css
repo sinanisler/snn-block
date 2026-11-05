@@ -4,6 +4,11 @@
  * editor only; the front end never loads this file.
  */
 
+/* Core's block card (icon, name, description) sits above our panel and repeats its header. Hidden to save height. */
+.block-editor-block-card {
+	display: none;
+}
+
 .snn-panel {
 	font-size: 12px;
 	line-height: 1.25;
