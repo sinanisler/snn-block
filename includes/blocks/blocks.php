@@ -9,8 +9,9 @@
  *   global-styles.php    Global styles: palette, fonts, sizes, shapes, block defaults; theme.json; REST
  *   dynamic-data.php     Dynamic tags ({post_title} and so on): the tags, the parser, the preview route
  *   query-loop.php       The query of a loop: its settings and the WP_Query arguments
+ *   block-tools.php    Conditions (show when) and interactions (when X happens, do Y) of our blocks: the catalogs, checks and front end data
  *   layout-blocks.php    Our blocks: Section, Container, Div (rendering, attributes, editor assets)
- *   assets/              The modal's script and stylesheet, the editor button, the block controls
+ *   assets/              The modal's script and stylesheet, the editor button, the block controls, the block tools and the interactions script
  *
  * Loaded from functions.php. Always on.
  */
@@ -25,4 +26,5 @@ require_once __DIR__ . '/block-defaults.php';
 require_once __DIR__ . '/global-styles.php';
 require_once __DIR__ . '/dynamic-data.php';
 require_once __DIR__ . '/query-loop.php';
+require_once __DIR__ . '/block-tools.php';
 require_once __DIR__ . '/layout-blocks.php';

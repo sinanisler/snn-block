@@ -11,7 +11,11 @@
  *                   picture (layout-icons.js), and the pictures follow the direction.
  *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
  *                   justify self, column and row span. Only the settings its parent needs show.
- *   Advanced        CSS ID and CSS classes.
+ *   Header          the name, with the Conditions and Interactions buttons at the top right; the CSS ID (the
+ *                   field is the rename), the classes button, copy ID, copy styles and paste styles; the
+ *                   classes as chips. Conditions and Interactions open as sub-panels in place of the tabs
+ *                   (block-tools.js).
+ *   Advanced        Custom CSS (planned).
  *
  * Every text-like field has the dynamic data button and every size field can take a variable.
  * The editor shows each block once. On the front end a query loop repeats the block for every
@@ -26,6 +30,7 @@
 	const data = window.snnControlsData || {};
 	const { Glyph, arrange, columns, BLOCK_SHAPE, GRID_SHAPE, ARROWS } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField } = C;
+	const { HeadIcons, IdBar, ClassesEditor, SubPanel, ConditionsEditor, InteractionsEditor, readClip, writeClip, styleValues } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -71,6 +76,9 @@
 		columnSpan: '',
 		rowSpan: '',
 	};
+
+	/** The style settings: what Copy styles takes and Paste styles gives (layout, item and background). */
+	const STYLE_KEYS = [ ...Object.keys( LAYOUT_DEFAULTS ), ...Object.keys( ITEM_DEFAULTS ), 'backgroundColor' ];
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
 	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
@@ -980,9 +988,12 @@
 	 * The inspector, as in the version 12 panel: the header (block name, ID and classes, and the view),
 	 * then the Default and Style tabs.
 	 */
-	function Panel( { a, set, tag, parent, title } ) {
+	function Panel( { a, set, tag, parent, title, duplicateId } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
+		// null, 'conditions' or 'interactions': a sub-panel that takes the place of the tabs.
+		const [ sub, setSub ] = useState( null );
+		const [ classesOpen, setClassesOpen ] = useState( false );
 		const [ openQuery, setOpenQuery ] = useState( false );
 		const [ openLayout, setOpenLayout ] = useState( true );
 		const [ openItem, setOpenItem ] = useState( false );
@@ -990,10 +1001,10 @@
 		const [ openAdvanced, setOpenAdvanced ] = useState( false );
 		const [ openBackground, setOpenBackground ] = useState( false );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
+		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
+		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
 		const classCount = ( a.cssClasses || '' ).split( /\s+/ ).filter( Boolean ).length;
-		const meta = [ a.htmlId ? '#' + a.htmlId : null, classCount ? classCount + ( classCount === 1 ? ' class' : ' classes' ) : null ]
-			.filter( Boolean )
-			.join( ' · ' );
+		const clip = readClip();
 		const tabButton = ( id, label ) =>
 			h( 'button', {
 				type: 'button',
@@ -1006,7 +1017,29 @@
 		const header = h(
 			'div',
 			{ className: 'snn-head' },
-			h( 'div', { className: 'snn-name' }, title, meta ? h( 'span', null, meta ) : null ),
+			h(
+				'div',
+				{ className: 'snn-name-row' },
+				h( 'div', { className: 'snn-name' }, title ),
+				h( HeadIcons, {
+					conditions: conditions.length,
+					interactions: interactions.length,
+					open: sub,
+					onOpen: setSub,
+				} )
+			),
+			h( IdBar, {
+				htmlId: a.htmlId,
+				onIdChange: ( v ) => set( { htmlId: v } ),
+				classCount,
+				classesOpen,
+				onToggleClasses: () => setClassesOpen( ! classesOpen ),
+				onCopyStyles: () => writeClip( styleValues( a, STYLE_KEYS ) ),
+				canPaste: !! clip,
+				onPasteStyles: () => set( styleValues( clip.styles, STYLE_KEYS ) ),
+				duplicate: !! duplicateId,
+			} ),
+			classesOpen ? h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } ) : null,
 			h( ViewSwitch, null )
 		);
 
@@ -1068,10 +1101,8 @@
 					title: __( 'Advanced', 'snn' ),
 					open: openAdvanced,
 					onToggle: setOpenAdvanced,
-					changed: !! ( a.htmlId || a.cssClasses ),
 				},
 				h( Fragment, null,
-					h( AdvancedFields, { a, set } ),
 					h( Row, { label: __( 'Custom CSS', 'snn' ) },
 						h( 'div', { className: 'snn-planned-row' },
 							h( 'button', { type: 'button', className: 'snn-input', disabled: true }, __( 'Edit CSS (admins)', 'snn' ) ),
@@ -1106,42 +1137,31 @@
 			h( PlannedGroup, { title: __( 'CSS filters and transition', 'snn' ) } )
 		);
 
-		return h(
-			'div',
-			{ className: 'snn-panel' },
-			header,
-			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
-			tab === 'default' ? defaultPane : stylePane
-		);
+		let body;
+		if ( sub === 'conditions' ) {
+			body = h(
+				SubPanel,
+				{ title: __( 'Conditions', 'snn' ), onBack: () => setSub( null ) },
+				h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
+			);
+		} else if ( sub === 'interactions' ) {
+			body = h(
+				SubPanel,
+				{ title: __( 'Interactions', 'snn' ), onBack: () => setSub( null ) },
+				h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
+			);
+		} else {
+			body = h(
+				Fragment,
+				null,
+				h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+				tab === 'default' ? defaultPane : stylePane
+			);
+		}
+
+		return h( 'div', { className: 'snn-panel' }, header, body );
 	}
 
-
-	function AdvancedFields( { a, set } ) {
-		return h(
-			Fragment,
-			null,
-			h(
-				Row,
-				{ label: __( 'CSS ID', 'snn' ), changed: !! a.htmlId },
-				h( TextField, {
-					label: __( 'CSS ID', 'snn' ),
-					value: a.htmlId,
-					placeholder: __( 'my-id', 'snn' ),
-					onChange: ( v ) => set( { htmlId: v } ),
-				} )
-			),
-			h(
-				Row,
-				{ label: __( 'CSS classes', 'snn' ), changed: !! a.cssClasses },
-				h( TextField, {
-					label: __( 'CSS classes', 'snn' ),
-					value: a.cssClasses,
-					placeholder: __( 'class-a class-b', 'snn' ),
-					onChange: ( v ) => set( { cssClasses: v } ),
-				} )
-			)
-		);
-	}
 
 	function badgeText( q ) {
 		const type = POST_TYPE_OPTIONS.find( ( o ) => o.value === q.postType );
@@ -1182,6 +1202,8 @@
 			columnSpan: { type: 'string', default: ITEM_DEFAULTS.columnSpan },
 			rowSpan: { type: 'string', default: ITEM_DEFAULTS.rowSpan },
 			backgroundColor: { type: 'string', default: '' },
+			conditions: { type: 'array', default: [] },
+			interactions: { type: 'array', default: [] },
 			query: { type: 'object', default: QUERY_DEFAULTS },
 		};
 	}
@@ -1226,6 +1248,20 @@
 					display: ( parentAttrs && parentAttrs.display ) || '',
 					flexDirection: ( parentAttrs && parentAttrs.flexDirection ) || 'row',
 				};
+				// Another block with the same CSS ID: the panel warns, since the interactions find elements by ID.
+				const duplicateId = useSelect(
+					( select ) => {
+						const id = a.htmlId;
+						if ( ! id ) {
+							return false;
+						}
+						const be = select( 'core/block-editor' );
+						return be
+							.getClientIdsWithDescendants()
+							.some( ( cid ) => cid !== clientId && ( be.getBlockAttributes( cid ) || {} ).htmlId === id );
+					},
+					[ clientId, a.htmlId ]
+				);
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses ].filter( Boolean ).join( ' ' ),
@@ -1238,7 +1274,7 @@
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, duplicateId } ) ),
 					h(
 						'div',
 						blockProps,

@@ -105,6 +105,8 @@ class SNN_Layout_Blocks {
 			'rowSpan'        => array( 'type' => 'string', 'default' => '' ),
 			'backgroundColor' => array( 'type' => 'string', 'default' => '' ),
 			'query'          => array( 'type' => 'object', 'default' => SNN_Query_Loop::defaults() ),
+			'conditions'      => array( 'type' => 'array', 'default' => array() ),
+			'interactions'    => array( 'type' => 'array', 'default' => array() ),
 		);
 	}
 
@@ -117,6 +119,10 @@ class SNN_Layout_Blocks {
 		$ctx = is_array( $block->context ) ? $block->context : array();
 
 		if ( empty( $a['query']['enabled'] ) ) {
+			// The conditions are checked for a block outside a loop here, and for each loop item below.
+			if ( ! SNN_Block_Tools::passes( $a['conditions'], self::dynamic_context( $ctx ) ) ) {
+				return '';
+			}
 			return self::element( $a, $block->name, $ctx, self::children( $block, $ctx ) );
 		}
 
@@ -135,6 +141,9 @@ class SNN_Layout_Blocks {
 			$html .= SNN_Dynamic_Data::with_post(
 				$post,
 				function () use ( $a, $block, $loop_ctx ) {
+					if ( ! SNN_Block_Tools::passes( $a['conditions'], self::dynamic_context( $loop_ctx ) ) ) {
+						return '';
+					}
 					return self::element( $a, $block->name, $loop_ctx, self::children( $block, $loop_ctx ) );
 				}
 			);
@@ -172,6 +181,12 @@ class SNN_Layout_Blocks {
 		);
 		if ( '' !== $id ) {
 			$extra['id'] = $id;
+		}
+		// The interactions travel on the element as JSON; the front end script (assets/interactions.js) runs them.
+		$interactions = SNN_Block_Tools::interactions_attribute( $a['interactions'] );
+		if ( '' !== $interactions ) {
+			$extra['data-snn-interactions'] = $interactions;
+			SNN_Block_Tools::enqueue_front();
 		}
 		$attrs = get_block_wrapper_attributes( $extra );
 		// The style is written here, not through the wrapper: WordPress passes inline styles through its
@@ -392,6 +407,8 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
+		$out['conditions']   = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
+		$out['interactions'] = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		return $out;
 	}
 
@@ -461,10 +478,13 @@ class SNN_Layout_Blocks {
 		$js     = 'includes/blocks/assets/controls.js';
 		$icons  = 'includes/blocks/assets/layout-icons.js';
 		$blocks = 'includes/blocks/assets/layout-blocks.js';
+		$tools  = 'includes/blocks/assets/block-tools.js';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data' ), self::version( $js ), true );
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
+		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
+		wp_localize_script( 'snn-block-tools', 'snnBlockToolsData', SNN_Block_Tools::editor_data() );
 		wp_localize_script(
 			'snn-controls',
 			'snnControlsData',
@@ -476,7 +496,7 @@ class SNN_Layout_Blocks {
 				'tags'      => self::TAGS,
 			)
 		);
-		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons' ), self::version( $blocks ), true );
+		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools' ), self::version( $blocks ), true );
 	}
 
 	private static function version( $file ) {

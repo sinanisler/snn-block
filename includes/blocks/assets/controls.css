@@ -286,19 +286,406 @@
 }
 
 .snn-name {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	margin-bottom: 8px;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	font-size: 13px;
 	font-weight: 600;
 }
 
-.snn-name span {
-	font-size: 11px;
-	font-weight: 400;
-	color: #646970;
+/* Header rows are spaced by 6 px: name, ID bar, classes, view */
+.snn-head > * + * {
+	margin-top: 6px;
+}
+
+.snn-name-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	min-width: 0;
+}
+
+/* Conditions and Interactions: icon buttons at the top right, a dot when the block uses them */
+.snn-head-icons {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 2px;
+}
+
+.snn-head-btn {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	color: #3c434a;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.snn-head-btn:hover {
+	background: #f0f0f1;
+	border-color: #8c8f94;
+}
+
+.snn-head-btn.is-on {
+	color: #fff;
+	background: #2271b1;
+	border-color: #2271b1;
+}
+
+.snn-head-btn:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.snn-head-dot {
+	position: absolute;
+	top: -3px;
+	right: -3px;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #2271b1;
+	box-shadow: 0 0 0 1.5px #fff;
+}
+
+.snn-head-btn.is-on .snn-head-dot {
+	background: #fff;
+	box-shadow: 0 0 0 1.5px #2271b1;
+}
+
+/* Line icons for the header, the ID bar and the sub-panels */
+.snn-glyph {
+	display: block;
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.4;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* ID bar: the CSS ID, the classes button, then the copy and paste icons */
+.snn-idbar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snn-hash {
+	flex: 0 0 auto;
 	font-family: Consolas, Menlo, monospace;
+	font-size: 12px;
+	color: #646970;
+}
+
+.snn-id {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-family: Consolas, Menlo, monospace;
+}
+
+.snn-chip-btn {
+	flex: 0 0 auto;
+	height: 26px;
+	margin: 0;
+	padding: 0 8px;
+	font: inherit;
+	font-size: 11px;
+	color: #3c434a;
+	white-space: nowrap;
+	background: #f6f7f7;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-chip-btn:hover {
+	background: #f0f0f1;
+}
+
+.snn-chip-btn.is-on {
+	color: #fff;
+	background: #2271b1;
+	border-color: #2271b1;
+}
+
+.snn-chip-btn:focus-visible,
+.snn-idbtn:focus-visible,
+.snn-x:focus-visible,
+.snn-link:focus-visible,
+.snn-sub-back:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.snn-idbtn {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	color: #1e1e1e;
+	background: #f6f7f7;
+	border: 1px solid #8c8f94;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-idbtn:hover:not(:disabled) {
+	background: #f0f0f1;
+}
+
+.snn-idbtn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.snn-idbtn.is-on {
+	color: #fff;
+	background: #2271b1;
+	border-color: #2271b1;
+}
+
+.snn-warn {
+	font-size: 11px;
+	color: #b32d2e;
+}
+
+/* Custom classes: chips and a field to add more */
+.snn-classes {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.snn-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.snn-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	height: 22px;
+	padding: 0 2px 0 7px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 11px;
+	color: #1e1e1e;
+	background: #f0f0f1;
+	border-radius: 2px;
+}
+
+.snn-x {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	padding: 0;
+	color: #50575e;
+	background: none;
+	border: 0;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-x:hover {
+	color: #b32d2e;
+	background: #fcf0f1;
+}
+
+.snn-x .snn-glyph {
+	width: 12px;
+	height: 12px;
+}
+
+/* Sub-panels (Conditions, Interactions): they take the place of the tabs, with a back button */
+.snn-sub-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 16px 0 10px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.snn-sub-back {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin: 0;
+	padding: 0;
+	color: #1e1e1e;
+	background: none;
+	border: 0;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-sub-back:hover {
+	background: #f0f0f1;
+}
+
+.snn-sub-title {
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.snn-sub-body {
+	padding: 8px 0 10px;
+}
+
+.snn-link {
+	align-self: flex-start;
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 11px;
+	color: #2271b1;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.snn-link:hover {
+	color: #135e96;
+	text-decoration: underline;
+}
+
+.snn-join {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #646970;
+	text-align: center;
+}
+
+/* Conditions: sets (Or) of rows (And) */
+.snn-conds,
+.snn-acts {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 0 16px;
+}
+
+.snn-conds .snn-hint,
+.snn-acts .snn-hint {
+	padding: 0;
+}
+
+.snn-set {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 6px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+}
+
+.snn-cond {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 6px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+}
+
+.snn-cond-line {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snn-cond-line > .snn-select {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+}
+
+.snn-cond-line .snn-field {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.snn-cond-compare {
+	flex: 0 0 40%;
+	min-width: 0;
+}
+
+.snn-cond-value {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.snn-cond-value > .snn-input {
+	width: 100%;
+}
+
+.snn-conds-end {
+	padding-top: 2px;
+}
+
+/* Interactions: one card each, with label-left rows */
+.snn-card {
+	display: flex;
+	flex-direction: column;
+	padding: 4px 6px 6px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+}
+
+.snn-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 24px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #3c434a;
+}
+
+.snn-card > .snn-row {
+	grid-template-columns: 60px minmax(0, 1fr);
+	padding: 1px 0;
+}
+
+.snn-idwrap {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	width: 100%;
+}
+
+.snn-idwrap .snn-input {
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .snn-views {
