@@ -543,7 +543,117 @@
 		set( { responsive } );
 	}
 
+	/**
+	 * Select Animation: the GSAP presets and modifiers (animation.php), in groups, with a search. Several can be
+	 * chosen (the block plays them together), or one (an interaction's action). The choices show as chips.
+	 */
+	function AnimationPicker( { value, onChange, multiple } ) {
+		const [ open, setOpen ] = useState( false );
+		const [ query, setQuery ] = useState( '' );
+		const groups = data.animations || [];
+		const labelOf = {};
+		groups.forEach( ( g ) => g.items.forEach( ( i ) => {
+			labelOf[ i.value ] = i.label;
+		} ) );
+		const chosen = Array.isArray( value ) ? value : value ? [ value ] : [];
+		const q = query.trim().toLowerCase();
+		const shown = groups
+			.map( ( g ) => ( {
+				label: g.label,
+				items: g.items.filter( ( i ) => ! q || i.label.toLowerCase().indexOf( q ) !== -1 || i.value.toLowerCase().indexOf( q ) !== -1 ),
+			} ) )
+			.filter( ( g ) => g.items.length );
+		const pick = ( v ) => {
+			if ( ! multiple ) {
+				onChange( v );
+				setOpen( false );
+				return;
+			}
+			onChange( chosen.indexOf( v ) === -1 ? chosen.concat( [ v ] ) : chosen.filter( ( x ) => x !== v ) );
+		};
+		const button = chosen.length
+			? multiple
+				? chosen.length + ' ' + __( 'chosen', 'snn' )
+				: labelOf[ chosen[ 0 ] ] || chosen[ 0 ]
+			: __( 'None', 'snn' );
+		return h(
+			'div',
+			{ className: 'snn-anim' },
+			h(
+				'button',
+				{
+					type: 'button',
+					className: 'snn-anim-button',
+					'aria-expanded': open ? 'true' : 'false',
+					onClick: () => setOpen( ! open ),
+				},
+				button
+			),
+			multiple && chosen.length
+				? h(
+						'div',
+						{ className: 'snn-chips' },
+						chosen.map( ( v ) =>
+							h(
+								'span',
+								{ key: v, className: 'snn-chip', title: v },
+								labelOf[ v ] || v,
+								h(
+									'button',
+									{
+										type: 'button',
+										className: 'snn-chip-x',
+										'aria-label': __( 'Remove', 'snn' ),
+										onClick: () => pick( v ),
+									},
+									'×'
+								)
+							)
+						)
+				  )
+				: null,
+			open
+				? h(
+						'div',
+						{ className: 'snn-pop snn-anim-pop', role: 'dialog', 'aria-label': __( 'Animations', 'snn' ) },
+						h( 'input', {
+							type: 'search',
+							className: 'snn-input',
+							placeholder: __( 'Search animations', 'snn' ),
+							value: query,
+							onChange: ( e ) => setQuery( e.target.value ),
+						} ),
+						h(
+							'div',
+							{ className: 'snn-pop-list' },
+							shown.map( ( g ) =>
+								h(
+									Fragment,
+									{ key: g.label },
+									h( 'div', { className: 'snn-pop-group' }, g.label ),
+									g.items.map( ( i ) =>
+										h(
+											'button',
+											{
+												key: i.value,
+												type: 'button',
+												title: i.value,
+												className: 'snn-pop-item' + ( chosen.indexOf( i.value ) !== -1 ? ' is-on' : '' ),
+												onClick: () => pick( i.value ),
+											},
+											h( 'span', { className: 'snn-pop-label' }, i.label )
+										)
+									)
+								)
+							)
+						)
+				  )
+				: null
+		);
+	}
+
 	window.snnControls = {
+		AnimationPicker,
 		Bolt,
 		Dot,
 		Switch,

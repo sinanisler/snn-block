@@ -54,6 +54,12 @@
 					t.classList.add( n );
 				} );
 				break;
+			case 'animate':
+				// The entrance preset: the GSAP runtime plays it once, when the element is in view (scroll:false).
+				if ( spec.value && window.createDataAnimate ) {
+					window.createDataAnimate( t, spec.value + ',scroll:false' );
+				}
+				break;
 			case 'removeClass':
 				list.forEach( function ( n ) {
 					t.classList.remove( n );

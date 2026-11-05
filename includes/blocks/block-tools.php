@@ -22,7 +22,7 @@ class SNN_Block_Tools {
 	const MAX_INTERACTIONS = 20;
 
 	const TRIGGERS      = array( 'click', 'mouseenter', 'mouseleave', 'enterView', 'pageLoad' );
-	const ACTIONS       = array( 'show', 'hide', 'toggleClass', 'addClass', 'removeClass', 'scrollTo' );
+	const ACTIONS       = array( 'show', 'hide', 'toggleClass', 'addClass', 'removeClass', 'scrollTo', 'animate' );
 	const CLASS_ACTIONS = array( 'toggleClass', 'addClass', 'removeClass' );
 
 	const STATUSES = array( 'publish', 'draft', 'pending', 'private' );
@@ -109,6 +109,7 @@ class SNN_Block_Tools {
 			'addClass'    => __( 'Add class', 'snn' ),
 			'removeClass' => __( 'Remove class', 'snn' ),
 			'scrollTo'    => __( 'Scroll to element', 'snn' ),
+			'animate'     => __( 'Animate (entrance preset)', 'snn' ),
 		);
 	}
 
@@ -288,6 +289,15 @@ class SNN_Block_Tools {
 				if ( '' === $names ) {
 					continue;
 				}
+			}
+
+			// The entrance animation: one preset from the Select Animation list (animation.php), and nothing else.
+			if ( 'animate' === $action ) {
+				$preset = SNN_Animation::clean_tokens( array( isset( $item['value'] ) && is_string( $item['value'] ) ? $item['value'] : '' ) );
+				if ( array() === $preset ) {
+					continue;
+				}
+				$names = $preset[0];
 			}
 
 			$out[] = array(

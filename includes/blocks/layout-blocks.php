@@ -245,6 +245,13 @@ class SNN_Layout_Blocks {
 		if ( '' !== $interactions ) {
 			$extra['data-snn-interactions'] = $interactions;
 			SNN_Block_Tools::enqueue_front();
+			// An entrance animation runs the GSAP runtime, so the runtime loads with it.
+			foreach ( $a['interactions'] as $item ) {
+				if ( isset( $item['action'] ) && 'animate' === $item['action'] ) {
+					SNN_Animation::enqueue_front();
+					break;
+				}
+			}
 		}
 		$attrs = get_block_wrapper_attributes( $extra );
 		// The style is written here, not through the wrapper: WordPress passes inline styles through its

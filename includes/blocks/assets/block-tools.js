@@ -14,7 +14,7 @@
 ( function ( wp, C ) {
 	const { createElement: h, Fragment, useState } = wp.element;
 	const { __ } = wp.i18n;
-	const { Row, Select, TextField } = C;
+	const { Row, Select, TextField, AnimationPicker } = C;
 	const data = window.snnBlockToolsData || {};
 	const CATALOG = data.conditions || [];
 	const GROUPS = data.groups || {};
@@ -355,7 +355,7 @@
 						h( RemoveButton, { label: __( 'Remove interaction', 'snn' ), onClick: () => removeAt( i ) } )
 					),
 					h( Row, { label: __( 'When', 'snn' ) }, h( Select, { value: it.trigger, options: triggers, label: __( 'Trigger', 'snn' ), onChange: ( v ) => setAt( i, { trigger: v } ) } ) ),
-					h( Row, { label: __( 'Do', 'snn' ) }, h( Select, { value: it.action, options: actions, label: __( 'Action', 'snn' ), onChange: ( v ) => setAt( i, { action: v } ) } ) ),
+					h( Row, { label: __( 'Do', 'snn' ) }, h( Select, { value: it.action, options: actions, label: __( 'Action', 'snn' ), onChange: ( v ) => setAt( i, v === 'animate' ? { action: v, trigger: 'enterView' } : { action: v } ) } ) ),
 					h(
 						Row,
 						{ label: __( 'On', 'snn' ) },
@@ -388,6 +388,17 @@
 									} )
 								)
 						  )
+						: null,
+					it.action === 'animate'
+						? h(
+							Row,
+							{ label: __( 'Animation', 'snn' ) },
+							h( AnimationPicker, {
+								value: it.value,
+								multiple: false,
+								onChange: ( v ) => setAt( i, { value: v } ),
+							} )
+						)
 						: null,
 					isClass
 						? h(
