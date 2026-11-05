@@ -3,6 +3,7 @@
  *
  *   HeadIcons           the Conditions and Interactions buttons, top right of the panel
  *   ClassesEditor       the custom classes, as chips, added with Enter
+ *   AttributesEditor    the custom attributes: name and value rows, names checked the way the server checks them
  *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
  *   InteractionsEditor  when a trigger happens, do an action on this element or on the one with an ID
@@ -152,6 +153,64 @@
 					}
 				},
 			} )
+		);
+	}
+
+	/* ------------------------------------------------------------------
+	 * Custom attributes
+	 * ---------------------------------------------------------------- */
+
+	/** The rule the PHP side applies (SNN_Layout_Blocks::clean_attributes): a plain name, or data- or aria-. */
+	const ATTR_NAME = /^(data-|aria-)?[a-z][a-z0-9_-]{0,58}$/;
+
+	function attrNameAllowed( n ) {
+		return ATTR_NAME.test( n ) && n.indexOf( 'on' ) !== 0 && [ 'class', 'id', 'style' ].indexOf( n ) === -1;
+	}
+
+	/** Name and value rows. A name that the server would drop is marked, and is not written. */
+	function AttributesEditor( { value, onChange } ) {
+		const rows = Array.isArray( value ) ? value : [];
+		const setAt = ( i, patch ) => onChange( rows.map( ( r, j ) => ( j === i ? { ...r, ...patch } : r ) ) );
+		const removeAt = ( i ) => onChange( rows.filter( ( r, j ) => j !== i ) );
+		const add = () => onChange( rows.concat( [ { name: '', value: '' } ] ) );
+		return h(
+			'div',
+			{ className: 'snn-bt-attrs' },
+			rows.map( ( r, i ) => {
+				const name = String( r.name || '' );
+				const bad = name !== '' && ! attrNameAllowed( name );
+				return h(
+					'div',
+					{ key: i, className: 'snn-bt-attr' + ( bad ? ' is-bad' : '' ) },
+					h(
+						'div',
+						{ className: 'snn-bt-attr-top' },
+						h( 'input', {
+							type: 'text',
+							className: 'snn-input',
+							value: name,
+							placeholder: __( 'Name', 'snn' ),
+							spellCheck: false,
+							'aria-label': __( 'Attribute name', 'snn' ),
+							title: bad ? __( 'Use data-, aria- or a plain name. Names that start with on, and class, id and style, are not allowed.', 'snn' ) : '',
+							onChange: ( e ) => setAt( i, { name: e.target.value.toLowerCase().replace( /[^a-z0-9_-]/g, '' ) } ),
+						} ),
+						h( RemoveButton, { label: __( 'Remove attribute', 'snn' ), onClick: () => removeAt( i ) } )
+					),
+					h( 'input', {
+						type: 'text',
+						className: 'snn-input',
+						value: r.value || '',
+						placeholder: __( 'Value', 'snn' ),
+						spellCheck: false,
+						'aria-label': __( 'Attribute value', 'snn' ),
+						onChange: ( e ) => setAt( i, { value: e.target.value } ),
+					} )
+				);
+			} ),
+			rows.length < 20
+				? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add }, __( 'Add attribute', 'snn' ) )
+				: null
 		);
 	}
 
@@ -424,6 +483,7 @@
 	window.snnBlockTools = {
 		HeadIcons,
 		ClassesEditor,
+		AttributesEditor,
 		ConditionsEditor,
 		InteractionsEditor,
 		sanitizeId,

@@ -148,6 +148,8 @@ class SNN_Layout_Blocks {
 			'conditions'      => array( 'type' => 'array', 'default' => array() ),
 			'interactions'    => array( 'type' => 'array', 'default' => array() ),
 			'animation'       => array( 'type' => 'array', 'default' => array() ),
+			'customCss'       => array( 'type' => 'string', 'default' => '' ),
+			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
 		) + SNN_Style_Props::attributes();
 	}
 
@@ -197,6 +199,56 @@ class SNN_Layout_Blocks {
 		return 'wp-block-' . str_replace( '/', '-', $name );
 	}
 
+	/**
+	 * Custom CSS: text of up to 4000 characters. Markup that would end the style element, and imports, are removed.
+	 * The rules use %root% for the block.
+	 */
+	public static function clean_css( $value ) {
+		$value = is_string( $value ) ? substr( $value, 0, 4000 ) : '';
+		$value = preg_replace( '/<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/i', '', $value );
+		return trim( (string) $value );
+	}
+
+	/**
+	 * The custom CSS a block writes: only when the author of the post may write unfiltered HTML (an administrator,
+	 * by default), so a contributor's block writes no CSS. The rules go through %root% (see element()).
+	 */
+	public static function custom_css_text( $css ) {
+		$css = is_string( $css ) ? self::clean_css( $css ) : '';
+		if ( '' === $css ) {
+			return '';
+		}
+		$post = get_post();
+		if ( ! $post || ! user_can( (int) $post->post_author, 'unfiltered_html' ) ) {
+			return '';
+		}
+		return $css;
+	}
+
+	/**
+	 * Custom attributes: up to 20 rows of name and value. A name is a plain name, or data- or aria-; an event
+	 * handler (on...), class, id and style are left out, so the attributes cannot change the block's own look
+	 * or run script.
+	 */
+	public static function clean_attributes( $value ) {
+		$out = array();
+		$rows = is_array( $value ) ? array_slice( array_values( $value ), 0, 20 ) : array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) || ! isset( $row['name'] ) || ! is_string( $row['name'] ) ) {
+				continue;
+			}
+			$name = strtolower( trim( $row['name'] ) );
+			if ( ! preg_match( '/^(data-|aria-)?[a-z][a-z0-9_-]{0,58}$/', $name ) || 0 === strpos( $name, 'on' ) || in_array( $name, array( 'class', 'id', 'style' ), true ) ) {
+				continue;
+			}
+			$out[] = array(
+				'name'  => $name,
+				'value' => isset( $row['value'] ) && is_scalar( $row['value'] ) ? substr( sanitize_text_field( (string) $row['value'] ), 0, 300 ) : '',
+			);
+		}
+		return $out;
+	}
+
 	/** The inner blocks, rendered with the given context (the loop's post, index and count). */
 	private static function children( $block, array $ctx ) {
 		$html = '';
@@ -234,6 +286,18 @@ class SNN_Layout_Blocks {
 		if ( '' !== $id ) {
 			$extra['id'] = $id;
 		}
+		// Custom CSS: %root% is the block. The block gets a class of its own, so the rule reaches only this block.
+		$custom_css = self::custom_css_text( $a['customCss'] );
+		if ( '' !== $custom_css ) {
+			$custom_class = 'snn-c-' . substr( md5( $custom_css ), 0, 10 );
+			$extra['class'] .= ' ' . $custom_class;
+			$prefix         .= '<style>' . str_replace( '%root%', '.' . $custom_class, $custom_css ) . '</style>';
+		}
+		// Custom attributes: name and value rows, written on the element (get_block_wrapper_attributes escapes them).
+		foreach ( $a['customAttributes'] as $row ) {
+			$extra[ $row['name'] ] = $row['value'];
+		}
+
 		// Select Animation: the presets and modifiers the block plays (assets/js/gsap-data-animate.js reads them).
 		$animation = SNN_Animation::data_animate( $a['animation'] );
 		if ( '' !== $animation ) {
@@ -648,7 +712,9 @@ class SNN_Layout_Blocks {
 		foreach ( SNN_Style_Props::keys() as $key ) {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
-		$out['animation'] = SNN_Animation::clean_tokens( $out['animation'] );
+		$out['animation']        = SNN_Animation::clean_tokens( $out['animation'] );
+		$out['customCss']        = self::clean_css( $out['customCss'] );
+		$out['customAttributes'] = self::clean_attributes( $out['customAttributes'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
 		$out['overflow']     = self::pick( $out['overflow'], self::OVERFLOW, '' );
 		$out['responsive']   = self::clean_responsive( $out['responsive'] );
@@ -740,6 +806,7 @@ class SNN_Layout_Blocks {
 				'postTypes' => SNN_Query_Loop::post_type_options(),
 					'taxonomies' => SNN_Query_Loop::taxonomy_options(),
 					'animations' => SNN_Animation::options(),
+					'canCss'     => current_user_can( 'unfiltered_html' ),
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,
 			)

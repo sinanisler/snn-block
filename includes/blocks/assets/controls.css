@@ -403,6 +403,56 @@
 	outline-offset: 1px;
 }
 
+/* Custom attributes: a name and a value on each row, then the remove button */
+.snn-bt-attrs {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.snn-bt-attr {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.snn-bt-attr-top {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 22px;
+	align-items: center;
+	gap: 4px;
+}
+
+.snn-bt-attr.is-bad .snn-bt-attr-top .snn-input {
+	border-color: #d63638;
+}
+
+/* Custom CSS: a textarea and its hint, in one column */
+.snn-css-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snn-css {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 96px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 12px;
+	line-height: 1.4;
+	resize: vertical;
+}
+
+.snn-css-hint {
+	display: block;
+	margin-top: 4px;
+	font-size: 11px;
+	line-height: 1.4;
+	color: #646970;
+}
+
 /* Custom classes: chips and a field to add more */
 .snn-bt-classes {
 	display: flex;

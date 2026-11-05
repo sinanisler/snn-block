@@ -13,7 +13,8 @@
  *                   justify self, column and row span. Only the settings its parent needs show.
  *   Header          the Conditions and Interactions buttons at the top right, and the view. Conditions and
  *                   Interactions open as sub-panels in place of the tabs (block-tools.js).
- *   Advanced        the custom classes, as chips, then Custom CSS (planned).
+ *   Advanced        the custom classes, as chips, the custom attributes (name and value rows), then Custom CSS
+ *                   (the textarea only for an administrator).
  *
  * Every block gets its CSS ID by default: a new one when it is created, and a new one when a copy would
  * share an ID with another block (see the Edit function). The ID is not shown in the panel.
@@ -31,7 +32,7 @@
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, ViewRow, AnimationPicker, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
-	const { HeadIcons, ClassesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
+	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -1445,15 +1446,38 @@
 					h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } )
 				),
 				h(
-					Row,
-					{ label: __( 'Custom CSS', 'snn' ) },
-					h(
-						'div',
-						{ className: 'snn-planned-row' },
-						h( 'button', { type: 'button', className: 'snn-input', disabled: true }, __( 'Edit CSS (admins)', 'snn' ) ),
-						h( 'span', { className: 'snn-planned' }, __( 'planned', 'snn' ) )
-					)
-				)
+						Row,
+						{ label: __( 'Attributes', 'snn' ), changed: ( a.customAttributes || [] ).length > 0 },
+						h( AttributesEditor, {
+							value: Array.isArray( a.customAttributes ) ? a.customAttributes : [],
+							onChange: ( v ) => set( { customAttributes: v } ),
+						} )
+					),
+					// Custom CSS is written only for an administrator (the server checks the post's author too).
+					data.canCss
+						? h(
+								Row,
+								{ label: __( 'Custom CSS', 'snn' ), changed: !! a.customCss },
+								h(
+									'div',
+									{ className: 'snn-css-field' },
+									h( 'textarea', {
+										className: 'snn-input snn-css',
+										rows: 6,
+										spellCheck: false,
+										value: a.customCss || '',
+										placeholder: '%root% { color: red; }',
+										'aria-label': __( 'Custom CSS', 'snn' ),
+										onChange: ( e ) => set( { customCss: e.target.value } ),
+									} ),
+									h( 'span', { className: 'snn-css-hint' }, __( 'Use %root% for this block. Scripts and imports are removed.', 'snn' ) )
+								)
+						  )
+						: h(
+								Row,
+								{ label: __( 'Custom CSS', 'snn' ) },
+								h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
+						  )
 			)
 		);
 
@@ -1582,6 +1606,8 @@
 			conditions: { type: 'array', default: [] },
 			interactions: { type: 'array', default: [] },
 			animation: { type: 'array', default: [] },
+			customCss: { type: 'string', default: '' },
+			customAttributes: { type: 'array', default: [] },
 			query: { type: 'object', default: QUERY_DEFAULTS },
 		};
 	}
