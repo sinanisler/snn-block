@@ -18,8 +18,10 @@
 	box-sizing: border-box;
 }
 
+/* Fixed size: every tab has the same height, so the modal does not jump when the tab changes. */
 .snn-gs-modal {
-	width: min(880px, 100%);
+	width: min(1040px, calc(100vw - 32px));
+	height: min(820px, calc(100vh - 40px));
 	max-height: calc(100vh - 32px);
 	display: flex;
 	flex-direction: column;
@@ -60,13 +62,13 @@
 
 .snn-gs-close {
 	flex: 0 0 auto;
-	width: 36px;
-	height: 36px;
+	width: 48px;
+	height: 48px;
 	border: 0;
-	border-radius: 6px;
+	border-radius: 8px;
 	background: transparent;
 	color: #1e1e1e;
-	font-size: 24px;
+	font-size: 34px;
 	line-height: 1;
 	cursor: pointer;
 }
@@ -103,7 +105,7 @@
 
 .snn-gs-body {
 	flex: 1 1 auto;
-	min-height: 240px;
+	min-height: 0;
 	overflow-y: auto;
 	padding: 18px 24px;
 }
@@ -301,6 +303,39 @@
 	align-items: center;
 	gap: 4px;
 	cursor: pointer;
+}
+
+/* Switches: a checkbox with its label, one per row. */
+.snn-gs-field-switch {
+	grid-column: 1 / -1;
+}
+
+.snn-gs-field .snn-gs-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 0;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.snn-gs-switch input {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	accent-color: #2271b1;
+	cursor: pointer;
+}
+
+/* A card inside a section, or a card inside a card: lighter, indented. */
+.snn-gs-group > .snn-gs-card,
+.snn-gs-card .snn-gs-card {
+	margin: 0 0 10px;
+}
+
+.snn-gs-card .snn-gs-card {
+	margin: 0 14px 10px;
+	box-shadow: none;
 }
 
 .snn-gs-button {

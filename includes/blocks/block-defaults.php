@@ -6,8 +6,9 @@
  * defaults use. Each value is written into theme.json, under styles.blocks.{name} for a block,
  * so every block of that type gets it. A block's own settings still win, as usual.
  *
- * Our own blocks (snn/*) are listed as planned: they are not built yet. Their defaults apply as
- * soon as a block with that name is registered. Other code can add entries with the filter
+ * Our own blocks (snn/*) are listed as they are built. Section and Container are built (see
+ * layout-blocks.php); Div has no defaults. Text, image and video are planned: their defaults
+ * apply as soon as the block is registered. Other code can add entries with the filter
  * snn/block_defaults.
  */
 
@@ -30,7 +31,7 @@ class SNN_Block_Defaults {
 			'color_text'       => array( 'label' => __( 'Text colour', 'snn' ), 'type' => 'color', 'path' => 'color.text' ),
 			'color_background' => array( 'label' => __( 'Background colour', 'snn' ), 'type' => 'color', 'path' => 'color.background' ),
 			'font'             => array( 'label' => __( 'Font', 'snn' ), 'type' => 'font', 'path' => 'typography.fontFamily' ),
-			'base_size'        => array( 'label' => __( 'Base size', 'snn' ), 'type' => 'length', 'path' => 'typography.fontSize' ),
+			'base_size'        => array( 'label' => __( 'Base size (body and html)', 'snn' ), 'type' => 'length', 'path' => 'typography.fontSize' ),
 			'size'             => array( 'label' => __( 'Size', 'snn' ), 'type' => 'size', 'path' => 'typography.fontSize' ),
 			'weight'           => array( 'label' => __( 'Weight', 'snn' ), 'type' => 'weight', 'path' => 'typography.fontWeight' ),
 			'line_height'      => array( 'label' => __( 'Line height', 'snn' ), 'type' => 'line', 'path' => 'typography.lineHeight' ),
@@ -48,7 +49,7 @@ class SNN_Block_Defaults {
 	 */
 	public static function entries() {
 		$entries = array(
-			'site'           => array( 'label' => __( 'Whole site', 'snn' ), 'target' => 'styles', 'open' => true, 'fields' => array( 'color_text', 'color_background', 'font', 'base_size', 'line_height' ) ),
+			'site'           => array( 'label' => __( 'Global Site Styles', 'snn' ), 'target' => 'styles', 'open' => true, 'fields' => array( 'color_text', 'color_background', 'font', 'base_size', 'line_height' ) ),
 			'link'           => array( 'label' => __( 'Links', 'snn' ), 'target' => 'elements.link', 'fields' => array( 'color_text' ) ),
 			'heading'        => array( 'label' => __( 'Headings, all levels', 'snn' ), 'target' => 'elements.heading', 'fields' => array( 'color_text', 'font', 'weight', 'line_height' ) ),
 			'core/paragraph' => array( 'label' => __( 'Paragraph', 'snn' ), 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
@@ -57,8 +58,8 @@ class SNN_Block_Defaults {
 			'core/button'    => array( 'label' => __( 'Button', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'font', 'size', 'weight', 'radius', 'padding' ) ),
 			'core/image'     => array( 'label' => __( 'Image', 'snn' ), 'fields' => array( 'radius', 'shadow' ) ),
 			'core/group'     => array( 'label' => __( 'Group', 'snn' ), 'fields' => array( 'color_background', 'padding', 'block_gap', 'radius', 'shadow' ) ),
-			'snn/section'    => array( 'label' => __( 'Section (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'color_background', 'color_text', 'padding' ) ),
-			'snn/container'  => array( 'label' => __( 'Container (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'max_width', 'block_gap', 'padding' ) ),
+			'snn/section'    => array( 'label' => __( 'Section (our block)', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'padding' ) ),
+			'snn/container'  => array( 'label' => __( 'Container (our block)', 'snn' ), 'fields' => array( 'max_width', 'block_gap', 'padding' ) ),
 			'snn/text'       => array( 'label' => __( 'Text (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
 			'snn/image'      => array( 'label' => __( 'Image (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius', 'shadow' ) ),
 			'snn/video'      => array( 'label' => __( 'Video (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius' ) ),
@@ -74,7 +75,7 @@ class SNN_Block_Defaults {
 	/** The starting values: black text on white, black links, white text on black buttons. */
 	public static function defaults() {
 		$start = array(
-			'site'        => array( 'color_text' => 'black', 'color_background' => 'white', 'font' => 'system', 'base_size' => '1rem', 'line_height' => '1.6' ),
+			'site'        => array( 'color_text' => 'black', 'color_background' => 'white', 'font' => 'system', 'base_size' => '15px', 'line_height' => '1.6' ),
 			'link'        => array( 'color_text' => 'black' ),
 			'heading'     => array( 'font' => 'system', 'weight' => '700', 'line_height' => '1.2' ),
 			'core/button' => array( 'color_background' => 'black', 'color_text' => 'white', 'weight' => '600', 'radius' => 'medium' ),
@@ -133,9 +134,10 @@ class SNN_Block_Defaults {
 			case 'weight':
 				return in_array( $value, $refs['weights'], true ) ? $value : '';
 			case 'line':
+				$value = str_replace( ',', '.', $value ); // A comma is a decimal separator in some locales.
 				return is_numeric( $value ) ? SNN_Global_Styles::number( $value, 0.8, 3 ) : '';
 			case 'length':
-				return SNN_Global_Styles::length( $value, '' );
+				return SNN_Global_Styles::length( $value, $default );
 		}
 		return '';
 	}

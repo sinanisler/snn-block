@@ -46,6 +46,7 @@ class SNN_Global_Styles {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_editor' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin' ) );
 		add_action( 'admin_bar_menu', array( __CLASS__, 'admin_bar_item' ), 90 );
+		add_action( 'wp_head', array( __CLASS__, 'front_root_size' ), 5 );
 	}
 
 	public static function can_edit() {
@@ -81,11 +82,6 @@ class SNN_Global_Styles {
 					'h6' => '1rem',
 				),
 			),
-			'layout'     => array(
-				'content'   => '680px',
-				'wide'      => '1200px',
-				'block_gap' => '1.5rem',
-			),
 			'shape'      => array(
 				'radius'  => array(
 					'small'  => '4px',
@@ -100,6 +96,7 @@ class SNN_Global_Styles {
 				),
 			),
 			'blocks'     => SNN_Block_Defaults::defaults(),
+			'editor'     => SNN_Block_Editor_Settings::defaults(),
 		);
 	}
 
@@ -111,7 +108,10 @@ class SNN_Global_Styles {
 	/** The stored values, sanitised. Fonts come from the stored list. */
 	public static function get_values() {
 		$stored = get_option( self::OPTION, array() );
-		return self::sanitize( is_array( $stored ) ? $stored : array(), true );
+		$values = self::sanitize( is_array( $stored ) ? $stored : array(), true );
+		// The editor switches live in the block editor option, shared with the settings page.
+		$values['editor'] = SNN_Block_Editor_Settings::values();
+		return $values;
 	}
 
 	/**
@@ -165,13 +165,6 @@ class SNN_Global_Styles {
 			'headings' => self::lengths( $t['headings'] ?? null, $d['typography']['headings'] ),
 		);
 
-		// Layout.
-		$l      = is_array( $input['layout'] ?? null ) ? $input['layout'] : array();
-		$layout = array(
-			'content'   => self::length( $l['content'] ?? null, $d['layout']['content'] ),
-			'wide'      => self::length( $l['wide'] ?? null, $d['layout']['wide'] ),
-			'block_gap' => self::length( $l['block_gap'] ?? null, $d['layout']['block_gap'] ),
-		);
 
 		// Shape: radius and shadow presets.
 		$s       = is_array( $input['shape'] ?? null ) ? $input['shape'] : array();
@@ -199,7 +192,6 @@ class SNN_Global_Styles {
 			'colors'     => $colors,
 			'fonts'      => $fonts,
 			'typography' => $typography,
-			'layout'     => $layout,
 			'shape'      => $shape,
 			'blocks'     => $blocks,
 		);
@@ -308,9 +300,28 @@ class SNN_Global_Styles {
 
 	/** Save the values sent by the modal. Returns the saved values. */
 	public static function save( $input ) {
+		$input = is_array( $input ) ? $input : array();
 		$clean = self::sanitize( $input );
 		self::write( $clean );
+		if ( is_array( $input['editor'] ?? null ) ) {
+			SNN_Block_Editor_Settings::save( $input['editor'] );
+		}
+		$clean['editor'] = SNN_Block_Editor_Settings::values();
 		return $clean;
+	}
+
+	/** The root font size: the base size of the site, set on the html element too (rem units follow it). */
+	public static function root_size() {
+		$values = self::get_values();
+		return (string) ( $values['blocks']['site']['base_size'] ?? '' );
+	}
+
+	/** The front end: html takes the base size, so rem-based sizes match the body. */
+	public static function front_root_size() {
+		$size = self::root_size();
+		if ( '' !== $size ) {
+			echo '<style id="snn-root-size">html{font-size:' . esc_attr( $size ) . '}</style>' . "\n";
+		}
 	}
 
 	/** Delete font files that are under the font directory. */
@@ -503,12 +514,26 @@ class SNN_Global_Styles {
 			'settings' => array(
 				'color'      => array( 'palette' => $palette ),
 				'typography' => array( 'fontFamilies' => $families, 'fontSizes' => $sizes ),
-				'layout'     => array( 'contentSize' => $v['layout']['content'], 'wideSize' => $v['layout']['wide'] ),
 				'shadow'     => array( 'presets' => $shadows ),
+				'spacing'    => array( 'spacingSizes' => self::spacing_sizes() ),
 			),
 			'styles'   => $styles,
 		);
 		return self::prune( $data );
+	}
+
+	/**
+	 * The spacing scale: theme presets (--wp--preset--spacing--xs and so on). The Gap field of our
+	 * blocks offers them as variables. Fixed for now; editing it comes with the spacing tokens.
+	 */
+	public static function spacing_sizes() {
+		return array(
+			array( 'slug' => 'xs', 'name' => __( 'XS', 'snn' ), 'size' => '0.5rem' ),
+			array( 'slug' => 's', 'name' => __( 'S', 'snn' ), 'size' => '1rem' ),
+			array( 'slug' => 'm', 'name' => __( 'M', 'snn' ), 'size' => '1.5rem' ),
+			array( 'slug' => 'l', 'name' => __( 'L', 'snn' ), 'size' => '2.5rem' ),
+			array( 'slug' => 'xl', 'name' => __( 'XL', 'snn' ), 'size' => '4rem' ),
+		);
 	}
 
 	/** The theme.json value for one block field. Colours, fonts, sizes and shadows are presets. */
@@ -653,7 +678,7 @@ class SNN_Global_Styles {
 			return array( 'path' => $path, 'label' => $label, 'type' => 'length' );
 		};
 
-		$tabs = array(
+		return array(
 			array(
 				'id'      => 'colors',
 				'label'   => __( 'Colours', 'snn' ),
@@ -691,25 +716,6 @@ class SNN_Global_Styles {
 				),
 			),
 			array(
-				'id'     => 'layout',
-				'label'  => __( 'Layout', 'snn' ),
-				'groups' => array(
-					array(
-						'title'  => __( 'Widths', 'snn' ),
-						'fields' => array(
-							$length( 'layout.content', __( 'Content width', 'snn' ) ),
-							$length( 'layout.wide', __( 'Wide width', 'snn' ) ),
-						),
-					),
-					array(
-						'title'  => __( 'Spacing', 'snn' ),
-						'fields' => array(
-							$length( 'layout.block_gap', __( 'Gap between blocks', 'snn' ) ),
-						),
-					),
-				),
-			),
-			array(
 				'id'     => 'shape',
 				'label'  => __( 'Shape', 'snn' ),
 				'groups' => array(
@@ -732,57 +738,123 @@ class SNN_Global_Styles {
 					),
 				),
 			),
+			array(
+				'id'     => 'blocks',
+				'label'  => __( 'Global Styles and Block Styles', 'snn' ),
+				'groups' => self::blocks_groups( $weights ),
+			),
 		);
+	}
 
-		// Blocks: one collapsible card per entry of the registry, with the fields it uses.
-		$groups = array();
-		$fields = SNN_Block_Defaults::fields();
+	/**
+	 * The groups of the Global Styles and Block Styles tab, in order: the editor switches, the
+	 * global site styles, our own block styles, and the core block styles (collapsed, at the bottom).
+	 */
+	private static function blocks_groups( array $weights ) {
+		$global = array();
+		$ours   = array();
+		$core   = array();
+		$site   = null;
 		foreach ( SNN_Block_Defaults::entries() as $key => $entry ) {
-			$items = array();
-			foreach ( $entry['fields'] as $name ) {
-				$item = array( 'path' => 'blocks.' . $key . '.' . $name, 'label' => $fields[ $name ]['label'], 'optional' => true );
-				switch ( $fields[ $name ]['type'] ) {
-					case 'color':
-						$item += array( 'type' => 'select', 'options_from' => 'palette' );
-						break;
-					case 'font':
-						$item += array( 'type' => 'select', 'options_from' => 'fonts' );
-						break;
-					case 'size':
-						$item += array( 'type' => 'select', 'options_from' => 'sizes' );
-						break;
-					case 'weight':
-						$item += array( 'type' => 'select', 'options' => $weights );
-						break;
-					case 'radius':
-						$item += array( 'type' => 'select', 'options_from' => 'radius' );
-						break;
-					case 'shadow':
-						$item += array( 'type' => 'select', 'options_from' => 'shadows' );
-						break;
-					case 'line':
-						$item += array( 'type' => 'number', 'step' => 0.05, 'min' => 0.8, 'max' => 3 );
-						break;
-					default:
-						$item += array( 'type' => 'length' );
-				}
-				$items[] = $item;
+			$card = self::entry_card( $key, $entry, $weights );
+			if ( 0 === strpos( $key, 'core/' ) ) {
+				$core[] = $card;
+			} elseif ( 0 === strpos( $key, 'snn/' ) ) {
+				$ours[] = $card;
+			} elseif ( 'site' === $key ) {
+				$site = $card;
+			} else {
+				$global[] = $card;
 			}
-			$groups[] = array(
-				'title'       => $entry['label'],
-				'collapsible' => true,
-				'open'        => $entry['open'],
-				'note'        => $entry['planned'] ? __( 'Not built yet. These defaults apply once the block exists.', 'snn' ) : '',
-				'fields'      => $items,
-			);
 		}
-		$tabs[] = array(
-			'id'     => 'blocks',
-			'label'  => __( 'Blocks', 'snn' ),
-			'groups' => $groups,
-		);
 
-		return $tabs;
+		return array(
+			array(
+				'title'  => __( 'Editor', 'snn' ),
+				'fields' => array(
+					array(
+						'path'  => 'editor.disable_core_blocks',
+						'label' => __( 'Disable core blocks', 'snn' ),
+						'type'  => 'switch',
+						'hint'  => __( 'Core blocks are not offered in the inserter. Content that already uses them still shows and edits.', 'snn' ),
+					),
+					array(
+						'path'  => 'editor.enable_top_toolbar',
+						'label' => __( 'Top toolbar: all blocks and document tools in one place', 'snn' ),
+						'type'  => 'switch',
+						'hint'  => __( 'The top toolbar is on in every block editor.', 'snn' ),
+					),
+					array(
+						'path'  => 'editor.disable_fullscreen',
+						'label' => __( 'Disable full screen mode', 'snn' ),
+						'type'  => 'switch',
+						'hint'  => __( 'Full screen mode is off in every block editor, so the admin menu stays visible.', 'snn' ),
+					),
+				),
+			),
+			array(
+				'title'  => $site['title'],
+				'fields' => $site['fields'],
+				'groups' => $global,
+			),
+			array(
+				'title'  => __( 'Block Styles', 'snn' ),
+				'groups' => $ours,
+			),
+			array(
+				'title'       => __( 'Core Block Styles', 'snn' ),
+				'collapsible' => true,
+				'open'        => false,
+				'note'        => __( 'WordPress core blocks, collapsed. Most sites do not need them. The Disable core blocks switch above hides them from the inserter.', 'snn' ),
+				'groups'      => $core,
+			),
+		);
+	}
+
+	/** One block or element of the registry, as a card: its title, its note and its fields. */
+	private static function entry_card( $key, array $entry, array $weights ) {
+		$fields = SNN_Block_Defaults::fields();
+		$items  = array();
+		foreach ( $entry['fields'] as $name ) {
+			$item = array(
+				'path'     => 'blocks.' . $key . '.' . $name,
+				'label'    => $fields[ $name ]['label'],
+				'optional' => true,
+			);
+			switch ( $fields[ $name ]['type'] ) {
+				case 'color':
+					$item += array( 'type' => 'select', 'options_from' => 'palette' );
+					break;
+				case 'font':
+					$item += array( 'type' => 'select', 'options_from' => 'fonts' );
+					break;
+				case 'size':
+					$item += array( 'type' => 'select', 'options_from' => 'sizes' );
+					break;
+				case 'weight':
+					$item += array( 'type' => 'select', 'options' => $weights );
+					break;
+				case 'radius':
+					$item += array( 'type' => 'select', 'options_from' => 'radius' );
+					break;
+				case 'shadow':
+					$item += array( 'type' => 'select', 'options_from' => 'shadows' );
+					break;
+				case 'line':
+					$item += array( 'type' => 'number', 'step' => 0.05, 'min' => 0.8, 'max' => 3 );
+					break;
+				default:
+					$item += array( 'type' => 'length' );
+			}
+			$items[] = $item;
+		}
+		return array(
+			'title'       => $entry['label'],
+			'collapsible' => true,
+			'open'        => $entry['open'],
+			'note'        => $entry['planned'] ? __( 'Not built yet. These defaults apply once the block exists.', 'snn' ) : '',
+			'fields'      => $items,
+		);
 	}
 
 	/* ------------------------------------------------------------------
@@ -824,6 +896,7 @@ class SNN_Global_Styles {
 				'schema'    => self::schema(),
 				'maxColors' => self::MAX_COLORS,
 				'maxFonts'  => self::MAX_FONTS,
+				'rootSize'  => self::root_size(),
 				'subsets'   => self::SUBSETS,
 				'inEditor'  => (bool) $in_editor,
 				'i18n'      => array(

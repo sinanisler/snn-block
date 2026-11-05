@@ -133,7 +133,7 @@
 					if ( field.type === 'length' && ! LENGTH_RE.test( value ) ) {
 						errors.push( field.label + ': ' + t.lengthError );
 					} else if ( field.type === 'number' ) {
-						var n = parseFloat( value );
+						var n = parseFloat( value.replace( ',', '.' ) );
 						if ( isNaN( n ) || n < field.min || n > field.max ) {
 							errors.push( field.label + ': ' + t.lineError );
 						}
@@ -180,14 +180,29 @@
 	}
 
 	function fieldNode( field ) {
-		var draft = state.draft;
 		var id = 'snn-gs-' + field.path.replace( /[^A-Za-z0-9_-]+/g, '-' );
-		var value = getPath( draft, field.path );
+		var value = getPath( state.draft, field.path );
 		var current = value === null || value === undefined ? '' : String( value );
 		var input;
+		// Read state.draft when a change happens, not when the field was drawn: a save replaces the draft.
 		var update = function ( next ) {
-			setPath( draft, field.path, next );
+			setPath( state.draft, field.path, next );
 		};
+
+		if ( field.type === 'switch' ) {
+			var box = el( 'input', {
+				id: id,
+				type: 'checkbox',
+				checked: value === true ? true : null,
+				on: { change: function ( event ) {
+					update( event.target.checked );
+				} },
+			} );
+			return el( 'div', { class: 'snn-gs-field snn-gs-field-switch' }, [
+				el( 'label', { class: 'snn-gs-switch', for: id }, [ box, el( 'span', { text: field.label } ) ] ),
+				field.hint ? el( 'p', { class: 'snn-gs-hint', text: field.hint } ) : null,
+			] );
+		}
 
 		if ( field.type === 'select' ) {
 			input = el( 'select', {
@@ -203,16 +218,15 @@
 				} );
 			} ) );
 		} else if ( field.type === 'number' ) {
+			// A text field, not type=number: some locales show and type a comma, so a comma is read as a dot.
 			input = el( 'input', {
 				id: id,
-				type: 'number',
-				step: field.step || 0.05,
-				min: field.min,
-				max: field.max,
+				type: 'text',
+				inputmode: 'decimal',
 				value: current,
 				placeholder: field.optional ? t.inherit : '',
 				on: { input: function ( event ) {
-					update( event.target.value );
+					update( event.target.value.replace( ',', '.' ) );
 				} },
 			} );
 		} else {
@@ -396,23 +410,32 @@
 		} );
 	}
 
-	/** A schema group: a font library, a collapsible card (blocks), or a plain group. */
+	/**
+	 * A schema group: the font library, a collapsible card, or a plain section. A group holds its
+	 * own fields and/or nested groups (the blocks tab nests cards in sections).
+	 */
 	function groupNode( group ) {
 		if ( group.fonts ) {
 			return fontLibraryGroup( group );
 		}
-		var grid = el( 'div', { class: 'snn-gs-grid' }, group.fields.map( fieldNode ) );
+		var children = [];
+		if ( group.fields && group.fields.length ) {
+			children.push( el( 'div', { class: 'snn-gs-grid' }, group.fields.map( fieldNode ) ) );
+		}
+		( group.groups || [] ).forEach( function ( child ) {
+			children.push( groupNode( child ) );
+		} );
+		var note = group.note ? el( 'p', { class: 'snn-gs-hint snn-gs-note', text: group.note } ) : null;
 		if ( group.collapsible ) {
 			return el( 'details', { class: 'snn-gs-card', open: group.open ? true : null }, [
 				el( 'summary', { class: 'snn-gs-card-title', text: group.title } ),
-				group.note ? el( 'p', { class: 'snn-gs-hint snn-gs-note', text: group.note } ) : null,
-				grid,
-			] );
+				note,
+			].concat( children ) );
 		}
 		return el( 'section', { class: 'snn-gs-group' }, [
 			el( 'h3', { class: 'snn-gs-group-title', text: group.title } ),
-			grid,
-		] );
+			note,
+		].concat( children ) );
 	}
 
 	function renderPanel( tabId ) {
@@ -563,6 +586,7 @@
 		api( { method: 'POST', data: { values: state.draft } } ).then( function ( response ) {
 			state.draft = clone( response.values );
 			state.saved = clone( response.values );
+			showTab( state.tab ); // Redraw, so the fields and the colour list work on the new draft.
 			if ( inEditor() ) {
 				setStatus( t.savedEditor, 'ok', true );
 			} else {
@@ -699,6 +723,46 @@
 	 * ---------------------------------------------------------------- */
 
 	/*
+	 * The block editor's canvas is an iframe with its own html element, so the root font size
+	 * (the base size, which rem units follow) is set there too. Core's own styles do not reach html.
+	 */
+	function watchCanvas() {
+		if ( ! inEditor() || ! cfg.rootSize ) {
+			return;
+		}
+		var watched = null;
+		function apply( frame ) {
+			try {
+				var doc = frame.contentDocument;
+				if ( ! doc || ! doc.head || doc.getElementById( 'snn-root-size' ) ) {
+					return;
+				}
+				var style = doc.createElement( 'style' );
+				style.id = 'snn-root-size';
+				style.textContent = 'html{font-size:' + cfg.rootSize + '}';
+				doc.head.appendChild( style );
+			} catch ( error ) {
+				// The canvas is not reachable yet. The load listener tries again.
+			}
+		}
+		function check() {
+			var frame = document.querySelector( 'iframe[name="editor-canvas"]' );
+			if ( ! frame ) {
+				return;
+			}
+			if ( frame !== watched ) {
+				watched = frame;
+				frame.addEventListener( 'load', function () {
+					apply( frame );
+				} );
+			}
+			apply( frame );
+		}
+		check();
+		new MutationObserver( check ).observe( document.body, { childList: true, subtree: true } );
+	}
+
+	/*
 	 * The editors' pinned items area (where Settings sits) is a SlotFill slot named
 	 * PinnedItems/<scope>. The editor bundle does not export its PinnedItems fill, so we fill
 	 * the same slot directly with wp.components.Fill, as that component does.
@@ -750,6 +814,7 @@
 	}
 
 	registerToolbarButton();
+	watchCanvas();
 
 	document.addEventListener( 'click', function ( event ) {
 		var link = event.target && event.target.closest ? event.target.closest( '#wp-admin-bar-snn-global-styles a' ) : null;
