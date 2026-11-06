@@ -31,7 +31,7 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, ViewRow, AnimationPicker, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, ViewRow, AnimationPicker, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
@@ -1230,22 +1230,27 @@
 	 * The field shows the device's own value, or the value it inherits.
 	 */
 	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder } ) {
-		const own = ownValue( a, device, k );
+		const own = setHere( a, device, k );
 		const inherited = inheritedValue( a, device, k );
 		const value = own !== undefined ? own : inherited.value;
 		const change = ( v ) => setValue( a, set, device, k, v );
-		const control =
-			kind === 'select'
-				? h( Select, { label, value: value || options[ 0 ].value, options, onChange: change } )
-				: h( TextField, {
-						label,
-						value: value === undefined || value === null ? '' : String( value ),
-						placeholder,
-						unit,
-						variables: VARIABLE_GROUPS,
-						kind: kind === 'size' ? 'size' : kind === 'color' ? 'color' : undefined,
-						onChange: change,
-				  } );
+		let control;
+		if ( kind === 'select' ) {
+			control = h( Select, { label, value: value || options[ 0 ].value, options, onChange: change } );
+		} else if ( kind === 'icons' ) {
+			control = h( Segmented, { label, value: value || '', options, onChange: change } );
+		} else {
+			control = h( TextField, {
+				label,
+				value: value === undefined || value === null ? '' : String( value ),
+				placeholder,
+				unit,
+				variables: VARIABLE_GROUPS,
+				kind: kind === 'size' ? 'size' : kind === 'color' ? 'color' : undefined,
+				swatch: kind === 'color',
+				onChange: change,
+			} );
+		}
 		return h(
 			ViewRow,
 			{
@@ -1261,19 +1266,171 @@
 		);
 	}
 
-	/** The rows of each Style group, in order. Each row is one property of the table (style-props.php) or a view value. */
-	const STYLE_GROUPS = {
-		spacing: [ 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'gap' ],
-		sizing: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ],
-		positioning: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ],
-		misc: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ],
-		typography: [ 'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textAlign', 'textTransform', 'textDecoration', 'textWrap', 'whiteSpace', 'textShadow' ],
-		background: [ 'backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat' ],
-		gradient: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ],
-		border: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius', 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ],
-		transform: [ 'transformOrigin', 'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY' ],
-		css: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia', 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ],
+	/**
+	 * The Style tab, laid out as Bricks does it: a rail of group icons, one group at a time, and the group's
+	 * sections one under another. A row is a property of the table (style-props.php) or a view value. A box is
+	 * the four sides of margin or padding, shown as a 2 by 2 grid (BoxModel below).
+	 */
+	const BOX_MARGIN = { box: 'margin', label: __( 'Margin', 'snn' ), keys: [ 'marginTop', 'marginRight', 'marginBottom', 'marginLeft' ] };
+	const BOX_PADDING = { box: 'padding', label: __( 'Padding', 'snn' ), keys: [ 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft' ] };
+	const SIDE_LABEL = [ __( 'Top', 'snn' ), __( 'Right', 'snn' ), __( 'Bottom', 'snn' ), __( 'Left', 'snn' ) ];
+
+	const STYLE_PAGES = [
+		{
+			id: 'layout',
+			label: __( 'Layout', 'snn' ),
+			glyph: 'layout',
+			sections: [
+				{ title: __( 'Spacing', 'snn' ), rows: [ BOX_MARGIN, BOX_PADDING, 'gap' ] },
+				{ title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
+				{ title: __( 'Positioning', 'snn' ), rows: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ] },
+				{ title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
+			],
+		},
+		{
+			id: 'typography',
+			label: __( 'Typography', 'snn' ),
+			glyph: 'typography',
+			sections: [
+				{ title: __( 'Text', 'snn' ), rows: [ 'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle' ] },
+				{ title: __( 'Alignment', 'snn' ), rows: [ 'textAlign', 'textTransform' ] },
+				{ title: __( 'Spacing', 'snn' ), rows: [ 'lineHeight', 'letterSpacing' ] },
+				{ title: __( 'More', 'snn' ), rows: [ 'textDecoration', 'textWrap', 'whiteSpace', 'textShadow' ] },
+			],
+		},
+		{
+			id: 'background',
+			label: __( 'Background', 'snn' ),
+			glyph: 'background',
+			sections: [
+				{ title: __( 'Colour', 'snn' ), rows: [ 'backgroundColor' ] },
+				{ title: __( 'Image', 'snn' ), rows: [ 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat' ] },
+			],
+		},
+		{
+			id: 'gradient',
+			label: __( 'Gradient', 'snn' ),
+			glyph: 'gradient',
+			sections: [
+				{ title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ] },
+			],
+		},
+		{
+			id: 'border',
+			label: __( 'Border', 'snn' ),
+			glyph: 'border',
+			sections: [
+				{ title: __( 'Border', 'snn' ), rows: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius' ] },
+				{ title: __( 'Box shadow', 'snn' ), rows: [ 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ] },
+			],
+		},
+		{
+			id: 'transform',
+			label: __( 'Transform', 'snn' ),
+			glyph: 'transform',
+			sections: [
+				{ title: __( 'Transform', 'snn' ), rows: [ 'transformOrigin', 'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY' ] },
+			],
+		},
+		{
+			id: 'filters',
+			label: __( 'Filters', 'snn' ),
+			glyph: 'filters',
+			sections: [
+				{ title: __( 'Filter', 'snn' ), rows: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia' ] },
+				{ title: __( 'Transition', 'snn' ), rows: [ 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ] },
+			],
+		},
+	];
+
+	/** The paths of the icons: the rail's group icons, the text align and transform rows, and the link toggle. */
+	const GLYPHS = {
+		layout: [ 'M2.5 2.5h11v11h-11z', 'M2.5 6.5h11', 'M6.5 6.5v7' ],
+		typography: [ 'M3 13.5 7 2.5l4 11', 'M4.7 9.5h4.6' ],
+		background: [ 'M2.5 2.5h11v11h-11z', 'M3.5 12 6.3 8.6l2.2 2.3 1.5-1.5 2.5 2.6' ],
+		gradient: [ { d: 'M8 2.5a5.5 5.5 0 0 1 0 11z', fill: true }, 'M8 2.5a5.5 5.5 0 0 0 0 11 5.5 5.5 0 0 0 0-11z' ],
+		border: [ { d: 'M2.5 2.5h11v11h-11z', dash: true } ],
+		transform: [ 'M2.5 8h11', 'M5.5 5.5 3 8l2.5 2.5', 'M10.5 5.5 13 8l-2.5 2.5' ],
+		filters: [ 'M2.5 3h11l-4.3 5.5v4l-2.4-1.5v-2.5z' ],
+		link: [ 'M6.5 9.5a2.5 2.5 0 0 0 3.5 0l2-2a2.5 2.5 0 0 0-3.5-3.5l-.7.7', 'M9.5 6.5a2.5 2.5 0 0 0-3.5 0l-2 2a2.5 2.5 0 0 0 3.5 3.5l.7-.7' ],
+		alignLeft: [ 'M2 3.5h11', 'M2 6.5h7', 'M2 9.5h9', 'M2 12.5h6' ],
+		alignCenter: [ 'M2.5 3.5h11', 'M4.5 6.5h7', 'M3 9.5h10', 'M5 12.5h6' ],
+		alignRight: [ 'M2 3.5h11', 'M7 6.5h6', 'M5 9.5h8', 'M8 12.5h5' ],
+		alignJustify: [ 'M2 3.5h12', 'M2 6.5h12', 'M2 9.5h12', 'M2 12.5h12' ],
+		none: [ 'M3.5 8h9' ],
 	};
+
+	/** An icon from GLYPHS, in a 16 by 16 box. A path is a d string, or { d, fill } (a filled half) or { d, dash }. */
+	function Glyph( { name } ) {
+		return h(
+			'svg',
+			{ className: 'snn-glyph', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' },
+			( GLYPHS[ name ] || [] ).map( ( p, i ) => {
+				if ( typeof p === 'string' ) {
+					return h( 'path', { key: i, d: p } );
+				}
+				return h( 'path', {
+					key: i,
+					d: p.d,
+					fill: p.fill ? 'currentColor' : 'none',
+					fillOpacity: p.fill ? 0.35 : undefined,
+					strokeDasharray: p.dash ? '2 1.6' : undefined,
+				} );
+			} )
+		);
+	}
+
+	/** The choices of the icon rows in the Typography group. */
+	const TEXT_ALIGN_OPTIONS = [
+		{ value: 'left', label: __( 'Left', 'snn' ), glyph: h( Glyph, { name: 'alignLeft' } ) },
+		{ value: 'center', label: __( 'Centre', 'snn' ), glyph: h( Glyph, { name: 'alignCenter' } ) },
+		{ value: 'right', label: __( 'Right', 'snn' ), glyph: h( Glyph, { name: 'alignRight' } ) },
+		{ value: 'justify', label: __( 'Justify', 'snn' ), glyph: h( Glyph, { name: 'alignJustify' } ) },
+	];
+	const TEXT_TRANSFORM_OPTIONS = [
+		{ value: 'none', label: __( 'None', 'snn' ), glyph: h( Glyph, { name: 'none' } ) },
+		{ value: 'capitalize', label: __( 'Capitalise', 'snn' ), glyph: h( 'span', { className: 'snn-seg-text' }, 'Aa' ) },
+		{ value: 'uppercase', label: __( 'Uppercase', 'snn' ), glyph: h( 'span', { className: 'snn-seg-text' }, 'AA' ) },
+		{ value: 'lowercase', label: __( 'Lowercase', 'snn' ), glyph: h( 'span', { className: 'snn-seg-text' }, 'aa' ) },
+	];
+
+	const VIEW_KEY = { Tablet: 'tablet', Mobile: 'mobile' };
+
+	/** The value a view sets for itself. On Desktop that is the base value. Undefined when it sets none. */
+	function setHere( a, device, k ) {
+		if ( device === 'Desktop' ) {
+			return a[ k ] !== undefined && a[ k ] !== '' ? a[ k ] : undefined;
+		}
+		return ownValue( a, device, k );
+	}
+
+	/** Sets several values for the view at once (the four sides of a box, when linked). An empty value clears it. */
+	function setMany( a, set, device, pairs ) {
+		if ( device === 'Desktop' ) {
+			const patch = {};
+			pairs.forEach( ( p ) => {
+				patch[ p[ 0 ] ] = p[ 1 ];
+			} );
+			set( patch );
+			return;
+		}
+		const view = VIEW_KEY[ device ];
+		const responsive = { ...( a.responsive || {} ) };
+		const own = { ...( responsive[ view ] || {} ) };
+		pairs.forEach( ( p ) => {
+			if ( p[ 1 ] === '' || p[ 1 ] === undefined ) {
+				delete own[ p[ 0 ] ];
+			} else {
+				own[ p[ 0 ] ] = p[ 1 ];
+			}
+		} );
+		if ( Object.keys( own ).length ) {
+			responsive[ view ] = own;
+		} else {
+			delete responsive[ view ];
+		}
+		set( { responsive } );
+	}
 
 	/** The label of each Style row. */
 	const STYLE_LABEL = {
@@ -1283,7 +1440,7 @@
 		position: __( 'Position', 'snn' ), top: __( 'Top', 'snn' ), right: __( 'Right', 'snn' ), bottom: __( 'Bottom', 'snn' ), left: __( 'Left', 'snn' ), zIndex: __( 'Z-index', 'snn' ), scrollSnapAlign: __( 'Scroll snap', 'snn' ),
 		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
 		color: __( 'Colour', 'snn' ), fontFamily: __( 'Font family', 'snn' ), fontSize: __( 'Font size', 'snn' ), fontWeight: __( 'Font weight', 'snn' ), fontStyle: __( 'Font style', 'snn' ), lineHeight: __( 'Line height', 'snn' ), letterSpacing: __( 'Letter spacing', 'snn' ), textAlign: __( 'Text align', 'snn' ), textTransform: __( 'Text transform', 'snn' ), textDecoration: __( 'Decoration', 'snn' ), textWrap: __( 'Text wrap', 'snn' ), whiteSpace: __( 'White space', 'snn' ), textShadow: __( 'Text shadow', 'snn' ),
-		backgroundColor: __( 'Background colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
+		backgroundColor: __( 'Colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
 		gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ), gradientColor1: __( 'Colour 1', 'snn' ), gradientStop1: __( 'Stop 1', 'snn' ), gradientColor2: __( 'Colour 2', 'snn' ), gradientStop2: __( 'Stop 2', 'snn' ),
 		borderWidth: __( 'Border width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
 		boxShadowX: __( 'Shadow x', 'snn' ), boxShadowY: __( 'Shadow y', 'snn' ), boxShadowBlur: __( 'Shadow blur', 'snn' ), boxShadowSpread: __( 'Shadow spread', 'snn' ), boxShadowColor: __( 'Shadow colour', 'snn' ),
@@ -1307,9 +1464,17 @@
 		if ( k === 'overflow' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'select', options: OVERFLOW_OPTIONS } );
 		}
+		if ( k === 'textAlign' ) {
+			return h( ViewValue, { a, set, device, k, label, kind: 'icons', options: TEXT_ALIGN_OPTIONS } );
+		}
+		if ( k === 'textTransform' ) {
+			return h( ViewValue, { a, set, device, k, label, kind: 'icons', options: TEXT_TRANSFORM_OPTIONS } );
+		}
 		const spec = ( window.snnStyleTable || [] ).find( ( row ) => row[ 0 ] === k );
 		const type = STYLE_COLOUR.indexOf( k ) !== -1 ? 'color' : spec ? spec[ 2 ] : STYLE_EXTRA[ k ] || 'text';
-		if ( type === 'keyword' ) {
+		// A keyword, or a size that also takes keywords (background size: cover, contain, auto), is a choice.
+		// Every row has an options list (empty for the sizes), so the test is for a list with items.
+		if ( type === 'keyword' || ( spec && Array.isArray( spec[ 3 ] ) && spec[ 3 ].length > 0 ) ) {
 			const options = ( spec ? spec[ 3 ] : [] ).map( ( o ) => ( { value: o, label: o.charAt( 0 ).toUpperCase() + o.slice( 1 ) } ) );
 			return h( ViewValue, { a, set, device, k, label, kind: 'select', options } );
 		}
@@ -1322,10 +1487,87 @@
 		return h( ViewValue, { a, set, device, k, label, unit: STYLE_UNIT[ k ] } );
 	}
 
-	/** The note of a card: how many of its rows are set. */
-	function countSet( a, keys ) {
-		const n = keys.filter( ( k ) => a[ k ] !== undefined && a[ k ] !== '' ).length;
+	/** The property names a Style group shows, boxes included. */
+	function pageKeys( page ) {
+		return page.sections.reduce( ( all, s ) => all.concat( s.rows.reduce( ( ks, r ) => ks.concat( typeof r === 'string' ? [ r ] : r.keys ), [] ) ), [] );
+	}
+
+	/** The note of a Style group: how many of its properties the current view sets. */
+	function countView( a, device, keys ) {
+		const n = keys.filter( ( k ) => {
+			const v = setHere( a, device, k );
+			return v !== undefined && v !== '';
+		} ).length;
 		return n ? n + ' ' + __( 'set', 'snn' ) : __( 'None', 'snn' );
+	}
+
+	/**
+	 * Margin or padding: the four sides as a 2 by 2 grid. Linked, one edit sets all four. Each side shows the value
+	 * the view sets; the value it inherits is its placeholder. A dot marks a side the view sets.
+	 */
+	function BoxModel( { a, set, device, box } ) {
+		const [ linked, setLinked ] = useState( false );
+		const keys = box.keys;
+		const anyOwn = keys.some( ( k ) => setHere( a, device, k ) !== undefined );
+		const change = ( k, v ) => ( linked ? setMany( a, set, device, keys.map( ( key ) => [ key, v ] ) ) : setValue( a, set, device, k, v ) );
+		return h(
+			'div',
+			{ className: 'snn-box' },
+			h(
+				'div',
+				{ className: 'snn-box-head' },
+				h( 'span', { className: 'snn-box-title' }, box.label, anyOwn ? h( Dot ) : null ),
+				h(
+					'span',
+					{ className: 'snn-box-tools' },
+					h(
+						'button',
+						{
+							type: 'button',
+							className: 'snn-box-link' + ( linked ? ' is-on' : '' ),
+							'aria-pressed': linked ? 'true' : 'false',
+							title: __( 'Link the four sides', 'snn' ),
+							'aria-label': __( 'Link the four sides', 'snn' ),
+							onClick: () => setLinked( ! linked ),
+						},
+						h( Glyph, { name: 'link' } )
+					),
+					anyOwn && device !== 'Desktop'
+						? h(
+								'button',
+								{
+									type: 'button',
+									className: 'snn-reset',
+									onClick: () => setMany( a, set, device, keys.map( ( key ) => [ key, '' ] ) ),
+								},
+								__( 'Reset', 'snn' )
+						  )
+						: null
+				)
+			),
+			h(
+				'div',
+				{ className: 'snn-box-grid' },
+				keys.map( ( k, i ) => {
+					const own = setHere( a, device, k );
+					const inherited = inheritedValue( a, device, k );
+					return h(
+						'div',
+						{ key: k, className: 'snn-box-cell' },
+						h( 'span', { className: 'snn-box-side' }, SIDE_LABEL[ i ], own !== undefined ? h( Dot ) : null ),
+						h( TextField, {
+							label: box.label + ' ' + SIDE_LABEL[ i ],
+							value: own !== undefined ? String( own ) : '',
+							placeholder: inherited.value !== undefined && inherited.value !== '' ? String( inherited.value ) : '0',
+							unit: ' px',
+							variables: VARIABLE_GROUPS,
+							kind: 'size',
+							onChange: ( v ) => change( k, v ),
+						} )
+					);
+				} )
+			)
+		);
 	}
 
 	/**
@@ -1338,6 +1580,8 @@
 		// null, 'conditions' or 'interactions': a sub-panel that takes the whole view (see the end of this function).
 		const [ sub, setSub ] = useState( null );
 		const [ openQuery, setOpenQuery ] = useState( false );
+		// The Style group on show (one at a time, chosen on the rail).
+		const [ stylePage, setStylePage ] = useState( 'layout' );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
@@ -1360,6 +1604,7 @@
 			h(
 				'div',
 				{ className: 'snn-bt-name-row' },
+				h( 'div', { className: 'snn-name' }, title ),
 				h( HeadIcons, {
 					conditions: conditions.length,
 					interactions: interactions.length,
@@ -1481,28 +1726,33 @@
 			)
 		);
 
-		// Style: the layout groups (spacing, sizing, positioning, misc), then the cards: typography, background,
-		// gradient, border and box shadow, transform, and the CSS filters and transitions. Each value is per view.
-		const styleRows = ( keys ) => keys.map( ( k ) => h( StyleRow, { key: k, a, set, device, k } ) );
-		const styleCard = ( title, keys ) =>
-			h(
-				Disclosure,
-				{ card: true, title, note: countSet( a, keys ) },
-				styleRows( keys )
-			);
+		// Style: one group at a time, chosen on the rail of icons (as Bricks does). The group's sections follow, one
+		// under another. Every value is per view: a view shows the value it sets, or the one it inherits.
+		const page = STYLE_PAGES.find( ( p ) => p.id === stylePage ) || STYLE_PAGES[ 0 ];
+		const rowFor = ( row ) =>
+			typeof row === 'string'
+				? h( StyleRow, { key: row, a, set, device, k: row } )
+				: h( BoxModel, { key: row.box, a, set, device, box: row } );
 		const stylePane = h(
 			'div',
-			{ className: 'snn-pane' },
-			h( Group, { title: __( 'Spacing', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.spacing ) ),
-			h( Group, { title: __( 'Sizing', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.sizing ) ),
-			h( Group, { title: __( 'Positioning', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.positioning ) ),
-			h( Group, { title: __( 'Misc', 'snn' ), note: __( 'responsive', 'snn' ) }, styleRows( STYLE_GROUPS.misc ) ),
-			styleCard( __( 'Typography', 'snn' ), STYLE_GROUPS.typography ),
-			styleCard( __( 'Background', 'snn' ), STYLE_GROUPS.background ),
-			styleCard( __( 'Gradient / Overlay', 'snn' ), STYLE_GROUPS.gradient ),
-			styleCard( __( 'Border / Box shadow', 'snn' ), STYLE_GROUPS.border ),
-			styleCard( __( 'Transform', 'snn' ), STYLE_GROUPS.transform ),
-			styleCard( __( 'CSS', 'snn' ), STYLE_GROUPS.css )
+			{ className: 'snn-pane snn-style' },
+			h(
+				'div',
+				{ className: 'snn-rail' },
+				h( Segmented, {
+					label: __( 'Style groups', 'snn' ),
+					value: page.id,
+					options: STYLE_PAGES.map( ( p ) => ( { value: p.id, label: p.label, glyph: h( Glyph, { name: p.glyph } ) } ) ),
+					onChange: setStylePage,
+				} )
+			),
+			h(
+				'div',
+				{ className: 'snn-page-head' },
+				h( 'span', { className: 'snn-page-title' }, page.label ),
+				h( 'span', { className: 'snn-group-note' }, countView( a, device, pageKeys( page ) ) )
+			),
+			page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title }, s.rows.map( rowFor ) ) )
 		);
 
 		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.

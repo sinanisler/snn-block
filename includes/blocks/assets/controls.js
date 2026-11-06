@@ -312,12 +312,55 @@
 		);
 	}
 
+	/** The colour a value stands for: a colour as typed, or the colour of a variable from the list. Empty when none. */
+	function colourOf( value, variables ) {
+		const v = String( value || '' ).trim();
+		if ( v.indexOf( 'var(' ) !== 0 ) {
+			return v;
+		}
+		let found = '';
+		( variables || [] ).forEach( ( g ) =>
+			g.items.forEach( ( it ) => {
+				if ( it.value === v && it.color ) {
+					found = it.color;
+				}
+			} )
+		);
+		return found;
+	}
+
+	/**
+	 * The swatch at the start of a colour field. It shows the colour; a click opens the browser's own colour
+	 * picker (decision D17). The picker only handles #rrggbb, so other values open at black until one is chosen.
+	 */
+	function ColourSwatch( { value, variables, label, onChange } ) {
+		const colour = colourOf( value, variables );
+		let hex = '#000000';
+		if ( /^#[0-9a-f]{6}$/i.test( colour ) ) {
+			hex = colour;
+		} else if ( /^#[0-9a-f]{3}$/i.test( colour ) ) {
+			hex = '#' + colour.slice( 1 ).split( '' ).map( ( c ) => c + c ).join( '' );
+		}
+		return h(
+			'label',
+			{ className: 'snn-swatch-btn', title: __( 'Colour', 'snn' ) },
+			h( 'span', { className: 'snn-swatch', style: { background: colour || 'transparent' }, 'aria-hidden': 'true' } ),
+			h( 'input', {
+				type: 'color',
+				className: 'snn-swatch-input',
+				value: hex,
+				'aria-label': label,
+				onChange: ( e ) => onChange( e.target.value ),
+			} )
+		);
+	}
+
 	/**
 	 * A text or number field. variables: the variable groups it may use (optional). The
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
-	 * what it resolves to under the field.
+	 * what it resolves to under the field. swatch: a colour field, with its colour at the start.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -338,6 +381,7 @@
 			h(
 				'div',
 				{ className: 'snn-input-wrap' },
+				swatch ? h( ColourSwatch, { value: current, variables, label, onChange } ) : null,
 				h( 'input', {
 					ref: input,
 					type: 'text',
@@ -469,7 +513,7 @@
 				'div',
 				{ className: 'snn-row-control snn-view-control' },
 				children,
-				own && onReset ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset }, __( 'Reset', 'snn' ) ) : null
+				own && onReset && device !== 'Desktop' ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset }, __( 'Reset', 'snn' ) ) : null
 			)
 		);
 	}
