@@ -1231,7 +1231,8 @@
 	line-height: 1;
 }
 
-/* Margin and padding: the four sides as a 2 by 2 grid, each with its own dot and inherited placeholder */
+/* Margin and padding: a box. Top and bottom sit centred; left and right sit at the edges, with a frame between them
+ * that stands for the element. Each side keeps its own tools, a dot when the view sets it, and its inherited placeholder. */
 .snn-box {
 	padding-bottom: 4px;
 }
@@ -1291,24 +1292,58 @@
 
 .snn-box-grid {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 4px 8px;
+	grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+	grid-template-areas:
+		"top top top"
+		"left inner right"
+		"bottom bottom bottom";
+	align-items: center;
+	gap: 4px 6px;
 	padding: 0 var(--snn-inset);
 }
 
+/* The frame between the sides: it stands for the element. It stretches to the height of the side fields. */
+.snn-box-inner {
+	grid-area: inner;
+	align-self: stretch;
+	min-height: 26px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+}
+
 .snn-box-cell {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
+	position: relative;
 	min-width: 0;
 }
 
-.snn-box-side {
+.snn-box-top {
+	grid-area: top;
+	justify-self: center;
+	width: 66%;
+}
+
+.snn-box-right {
+	grid-area: right;
+}
+
+.snn-box-bottom {
+	grid-area: bottom;
+	justify-self: center;
+	width: 66%;
+}
+
+.snn-box-left {
+	grid-area: left;
+}
+
+/* The dot marks a side the view sets: at the field's left edge, in the inset */
+.snn-box-mark {
+	position: absolute;
+	top: 50%;
+	left: -8px;
 	display: flex;
-	align-items: center;
-	gap: 4px;
-	font-size: 10px;
-	color: #646970;
+	transform: translateY(-50%);
 }
 
 /* A colour field's swatch: the colour fills the box; a click opens the browser's colour picker */

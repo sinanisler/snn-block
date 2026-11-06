@@ -1274,6 +1274,8 @@
 	const BOX_MARGIN = { box: 'margin', label: __( 'Margin', 'snn' ), keys: [ 'marginTop', 'marginRight', 'marginBottom', 'marginLeft' ] };
 	const BOX_PADDING = { box: 'padding', label: __( 'Padding', 'snn' ), keys: [ 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft' ] };
 	const SIDE_LABEL = [ __( 'Top', 'snn' ), __( 'Right', 'snn' ), __( 'Bottom', 'snn' ), __( 'Left', 'snn' ) ];
+	// Where each side sits in the box (layout-blocks.js BoxModel, controls.css .snn-box-grid): the same order as SIDE_LABEL.
+	const BOX_AREA = [ 'top', 'right', 'bottom', 'left' ];
 
 	const STYLE_PAGES = [
 		{
@@ -1548,13 +1550,14 @@
 			h(
 				'div',
 				{ className: 'snn-box-grid' },
+				h( 'div', { className: 'snn-box-inner', 'aria-hidden': 'true' } ),
 				keys.map( ( k, i ) => {
 					const own = setHere( a, device, k );
 					const inherited = inheritedValue( a, device, k );
 					return h(
 						'div',
-						{ key: k, className: 'snn-box-cell' },
-						h( 'span', { className: 'snn-box-side' }, SIDE_LABEL[ i ], own !== undefined ? h( Dot ) : null ),
+						{ key: k, className: 'snn-box-cell snn-box-' + BOX_AREA[ i ] },
+						own !== undefined ? h( 'span', { className: 'snn-box-mark', 'aria-hidden': 'true' }, h( Dot ) ) : null,
 						h( TextField, {
 							label: box.label + ' ' + SIDE_LABEL[ i ],
 							value: own !== undefined ? String( own ) : '',
