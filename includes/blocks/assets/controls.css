@@ -125,22 +125,22 @@
 .snn-input-wrap .snn-input {
 	flex: 1 1 auto;
 	min-width: 0;
-	padding-right: 26px;
+	padding-right: 22px;
 }
 
 .snn-input-wrap.has-vars .snn-input {
-	padding-right: 48px;
+	padding-right: 40px;
 }
 
 .snn-input-wrap.has-unit .snn-input {
-	padding-right: 50px;
+	padding-right: 42px;
 }
 
 .snn-input-wrap.has-vars.has-unit .snn-input {
-	padding-right: 72px;
+	padding-right: 60px;
 }
 
-/* Lightning (dynamic data) and V (variables) buttons: small, inside the right end of the field */
+/* Lightning (dynamic data) and V (variables) buttons: narrow, no border, inside the right end of the field */
 .snn-tool {
 	position: absolute;
 	top: 50%;
@@ -149,13 +149,13 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 20px;
+	width: 16px;
 	height: 20px;
 	margin: 0;
 	padding: 0;
 	color: #1e1e1e;
 	background: #f6f7f7;
-	border: 1px solid #e5e5e5;
+	border: 0;
 	border-radius: 2px;
 	cursor: pointer;
 }
@@ -178,7 +178,7 @@
 
 /* V sits left of the lightning, with a 2 px gap */
 .snn-tool-vars {
-	right: 24px;
+	right: 20px;
 }
 
 .snn-tool-text {
@@ -189,6 +189,8 @@
 
 .snn-tool-dyn .snn-bolt {
 	display: block;
+	width: 11px;
+	height: 11px;
 }
 
 .snn-preview {
@@ -1017,10 +1019,8 @@
 .snn-unit {
 	position: absolute;
 	top: 50%;
-	right: 24px;
+	right: 20px;
 	transform: translateY(-50%);
-	width: 22px;
-	text-align: right;
 	font-size: 11px;
 	line-height: 1;
 	color: #646970;
@@ -1028,7 +1028,7 @@
 }
 
 .snn-input-wrap.has-vars .snn-unit {
-	right: 46px;
+	right: 38px;
 }
 
 /* Popovers: dynamic data list and variables */
