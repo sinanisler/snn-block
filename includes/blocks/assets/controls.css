@@ -501,6 +501,13 @@
 	color: #646970;
 }
 
+/* The block sidebar always keeps room for its scrollbar, so the panel does not move sideways when its content grows
+   past the sidebar's height (a scrollbar appears) or shrinks back. Chrome and Edge 94+, Firefox 97+, Safari 18.2+.
+   When nothing scrolls, the strip stays empty on the right. */
+.interface-complementary-area.editor-sidebar {
+	scrollbar-gutter: stable;
+}
+
 /* The CSS group of the Style tab: a code editor (wp.codeEditor, as in the code snippets) and its selector list */
 .snn-css-pane {
 	padding: 10px 12px 14px;
