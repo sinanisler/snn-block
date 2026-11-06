@@ -60,30 +60,50 @@
 	background: #2271b1;
 }
 
-/* Inputs and selects */
-.snn-select,
-.snn-input {
+/* Inputs and selects. Core's admin styles (forms.css and wp-core-ui) would give every field in the editor a 40 px
+ * minimum height, 12 px side padding, a 14 px font, a white arrow and a blue focus ring. Core's rules score (0,1,1)
+ * to (0,2,1), so each rule here starts with .snn-panel (0,2,0), and the focus rules add :focus (0,3,0). Every
+ * property a field uses is set here, so none of them depends on core. */
+.snn-panel .snn-select,
+.snn-panel .snn-input {
 	box-sizing: border-box;
+	-webkit-appearance: none;
+	appearance: none;
 	width: 100%;
+	max-width: none;
 	height: 26px;
+	min-height: 26px;
 	margin: 0;
 	padding: 0 6px;
+	font-family: inherit;
 	font-size: 12px;
+	font-weight: 400;
 	line-height: 1.2;
 	color: #1e1e1e;
 	background: #fff;
 	border: 1px solid #8c8f94;
 	border-radius: 2px;
+	box-shadow: none;
 }
 
-.snn-select:focus,
-.snn-input:focus {
+/* The select's arrow is ours (a small chevron), not core's */
+.snn-panel .snn-select {
+	padding-right: 22px;
+	background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231e1e1e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 6px center / 10px 6px;
+	cursor: pointer;
+}
+
+.snn-panel .snn-select:focus,
+.snn-panel .snn-input:focus {
+	border-color: #8c8f94;
 	outline: 2px solid #2271b1;
 	outline-offset: -1px;
+	box-shadow: none;
 }
 
-.snn-input::placeholder {
+.snn-panel .snn-input::placeholder {
 	color: #8c8f94;
+	opacity: 1;
 }
 
 .snn-field {
@@ -435,10 +455,12 @@
 	min-width: 0;
 }
 
-.snn-css {
+.snn-panel .snn-css {
 	box-sizing: border-box;
 	width: 100%;
+	height: auto;
 	min-height: 96px;
+	padding: 5px 6px;
 	font-family: Consolas, Menlo, monospace;
 	font-size: 12px;
 	line-height: 1.4;
@@ -985,7 +1007,7 @@
 	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
-.snn-pop-search {
+.snn-panel .snn-pop-search {
 	flex: 0 0 auto;
 	width: calc(100% - 12px);
 	margin: 6px;
