@@ -12,7 +12,7 @@
  * Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp ) {
-	const { createElement: h, Fragment, useState, useEffect, useRef } = wp.element;
+	const { createElement: h, createPortal, Fragment, useState, useEffect, useLayoutEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
 
 	const data = window.snnControlsData || {};
@@ -152,14 +152,15 @@
 		);
 	}
 
-	/** Closes a popover on an outside click or Escape. */
-	function usePopoverClose( open, ref, close ) {
+	/** Closes a popover on an outside click or Escape. refs: the field and the popover, which sits in the body. */
+	function usePopoverClose( open, refs, close ) {
 		useEffect( () => {
 			if ( ! open ) {
 				return undefined;
 			}
 			const onDown = ( e ) => {
-				if ( ref.current && ! ref.current.contains( e.target ) ) {
+				const inside = refs.some( ( r ) => r.current && r.current.contains( e.target ) );
+				if ( ! inside ) {
 					close();
 				}
 			};
@@ -173,6 +174,70 @@
 			return () => {
 				document.removeEventListener( 'mousedown', onDown );
 				document.removeEventListener( 'keydown', onKey );
+			};
+		}, [ open ] );
+	}
+
+	const POP_GAP = 4; // the space between a field and its popover
+	const POP_EDGE = 8; // the least space kept between a popover and the window's edge
+	const POP_MAX = 320; // the tallest a popover grows; its list scrolls beyond that
+
+	/**
+	 * Places a popover (a fixed box, see controls.css) under its field, with its right edge on the field's right edge.
+	 * When there is no room below, it opens above the field. It moves in from the window's edges when it would
+	 * stick out, so it always fits the window and the sidebar's overflow cannot cut it off.
+	 */
+	function placePop( anchor, pop ) {
+		const a = anchor.getBoundingClientRect();
+		const vw = document.documentElement.clientWidth;
+		const vh = window.innerHeight;
+		const width = pop.offsetWidth;
+		const left = Math.max( POP_EDGE, Math.min( a.right - width, vw - width - POP_EDGE ) );
+		// The top limit is under the WordPress admin bar and the editor's header, which paint over a popover.
+		const topLimit = popTopLimit() + POP_EDGE;
+		const below = vh - POP_EDGE - ( a.bottom + POP_GAP );
+		const above = a.top - POP_GAP - topLimit;
+		pop.style.left = left + 'px';
+		pop.style.right = 'auto';
+		if ( below >= 160 || below >= above ) {
+			pop.style.top = a.bottom + POP_GAP + 'px';
+			pop.style.bottom = 'auto';
+			pop.style.maxHeight = Math.max( 80, Math.min( POP_MAX, below ) ) + 'px';
+		} else {
+			pop.style.top = 'auto';
+			pop.style.bottom = vh - a.top + POP_GAP + 'px';
+			pop.style.maxHeight = Math.max( 80, Math.min( POP_MAX, above ) ) + 'px';
+		}
+	}
+
+	/** The bottom of the WordPress admin bar (0 when it is not shown): a popover stays below it. */
+	function popTopLimit() {
+		const bar = document.getElementById( 'wpadminbar' );
+		return bar ? bar.getBoundingClientRect().bottom : 0;
+	}
+
+	/** A popover is drawn in the body, not inside the panel: the sidebar's header and the editor's header cannot cover it. */
+	function inBody( node ) {
+		return createPortal( node, document.body );
+	}
+
+	/** Places the open popover when it opens, and again on every scroll or resize, so it stays with its field. */
+	function usePopPlacement( open, anchor, pop ) {
+		useLayoutEffect( () => {
+			if ( ! open ) {
+				return undefined;
+			}
+			const place = () => {
+				if ( anchor.current && pop.current ) {
+					placePop( anchor.current, pop.current );
+				}
+			};
+			place();
+			window.addEventListener( 'resize', place );
+			document.addEventListener( 'scroll', place, true );
+			return () => {
+				window.removeEventListener( 'resize', place );
+				document.removeEventListener( 'scroll', place, true );
 			};
 		}, [ open ] );
 	}
@@ -212,7 +277,7 @@
 	}
 
 	/** The list of dynamic data tags. Click one to insert it at the cursor. */
-	function TagPicker( { onPick, onClose } ) {
+	function TagPicker( { onPick, onClose, popRef } ) {
 		const [ query, setQuery ] = useState( '' );
 		const needle = query.trim().toLowerCase();
 		const tags = dynamic.tags.filter(
@@ -220,7 +285,7 @@
 		);
 		return h(
 			'div',
-			{ className: 'snn-pop snn-tag-pop', role: 'dialog', 'aria-label': __( 'Dynamic data', 'snn' ) },
+			{ className: 'snn-pop snn-panel snn-tag-pop', ref: popRef, role: 'dialog', 'aria-label': __( 'Dynamic data', 'snn' ) },
 			h( 'input', {
 				type: 'search',
 				className: 'snn-input snn-pop-search',
@@ -270,7 +335,7 @@
 	 * ('color' or 'size') come first. The other kind sits in a closed section at the bottom, so an
 	 * exact name can still be found and clicked.
 	 */
-	function VariablePicker( { groups, kind, onPick } ) {
+	function VariablePicker( { groups, kind, onPick, popRef } ) {
 		// A colour field sees colour variables only. A size field lists sizes first and the colours closed at the bottom.
 		// Every other field (numbers, text, and so on) sees all the variables in one list.
 		const own = kind === 'color' || kind === 'size' ? groups.filter( ( g ) => g.kind === kind ) : groups;
@@ -294,7 +359,7 @@
 			);
 		return h(
 			'div',
-			{ className: 'snn-pop snn-var-pop', role: 'dialog', 'aria-label': __( 'Variables', 'snn' ) },
+			{ className: 'snn-pop snn-panel snn-var-pop', ref: popRef, role: 'dialog', 'aria-label': __( 'Variables', 'snn' ) },
 			h(
 				'div',
 				{ className: 'snn-pop-list' },
@@ -364,9 +429,11 @@
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
+		const pop = useRef( null );
 		const current = value || '';
 		const preview = usePreview( current );
-		usePopoverClose( picker !== null, wrap, () => setPicker( null ) );
+		usePopoverClose( picker !== null, [ wrap, pop ], () => setPicker( null ) );
+		usePopPlacement( picker !== null, wrap, pop );
 
 		const insert = ( text ) => {
 			const el = input.current;
@@ -422,16 +489,19 @@
 				)
 			),
 			preview ? h( 'div', { className: 'snn-preview', title: preview }, '→ ' + preview ) : null,
-			picker === 'tags' ? h( TagPicker, { onPick: insert, onClose: () => setPicker( null ) } ) : null,
+			picker === 'tags' ? inBody( h( TagPicker, { onPick: insert, onClose: () => setPicker( null ), popRef: pop } ) ) : null,
 			picker === 'vars'
-				? h( VariablePicker, {
-						groups: variables || [],
-						kind,
-						onPick: ( v ) => {
-							onChange( v );
-							setPicker( null );
-						},
-				  } )
+				? inBody(
+						h( VariablePicker, {
+							groups: variables || [],
+							popRef: pop,
+							kind,
+							onPick: ( v ) => {
+								onChange( v );
+								setPicker( null );
+							},
+						} )
+				  )
 				: null
 		);
 	}
@@ -593,6 +663,9 @@
 	 */
 	function AnimationPicker( { value, onChange, multiple } ) {
 		const [ open, setOpen ] = useState( false );
+		const wrap = useRef( null );
+		const pop = useRef( null );
+		usePopPlacement( open, wrap, pop );
 		const [ query, setQuery ] = useState( '' );
 		const groups = data.animations || [];
 		const labelOf = {};
@@ -622,7 +695,7 @@
 			: __( 'None', 'snn' );
 		return h(
 			'div',
-			{ className: 'snn-anim' },
+			{ className: 'snn-anim', ref: wrap },
 			h(
 				'button',
 				{
@@ -657,9 +730,10 @@
 				  )
 				: null,
 			open
-				? h(
+				? inBody(
+					h(
 						'div',
-						{ className: 'snn-pop snn-anim-pop', role: 'dialog', 'aria-label': __( 'Animations', 'snn' ) },
+						{ className: 'snn-pop snn-panel snn-anim-pop', ref: pop, role: 'dialog', 'aria-label': __( 'Animations', 'snn' ) },
 						h( 'input', {
 							type: 'search',
 							className: 'snn-input',
@@ -691,7 +765,7 @@
 								)
 							)
 						)
-				  )
+				  ) )
 				: null
 		);
 	}
