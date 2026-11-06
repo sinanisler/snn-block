@@ -5,7 +5,10 @@
  *   Conditions    the block shows only when its conditions hold. Sets are alternatives (any set may hold);
  *                 the conditions inside a set must all hold. Checked here, when the page is rendered.
  *   Interactions  when a trigger happens (a click, hover, the viewport, the page loading), an action runs on
- *                 the block or on the element with a CSS ID. The front end script is assets/interactions.js.
+ *                 the block or on the element with a CSS ID. Start animation plays one of the normal animations
+ *                 (fade in, slide, zoom and so on), as Bricks does. The front end script is assets/interactions.js.
+ *
+ * The GSAP animations are a separate panel (the Animations icon, see animation.php), on when the GSAP setting is on.
  *
  * The editor side is assets/block-tools.js (the panel's parts) and the panel itself is assets/layout-blocks.js.
  * The catalogs below are the single list both sides use: the editor reads them through editor_data().
@@ -21,8 +24,12 @@ class SNN_Block_Tools {
 	const MAX_CONDITIONS   = 10;
 	const MAX_INTERACTIONS = 20;
 
+	/** Start animation: the default duration, and the longest duration or delay, in milliseconds. */
+	const ANIMATION_MS     = 1000;
+	const ANIMATION_MAX_MS = 10000;
+
 	const TRIGGERS      = array( 'click', 'mouseenter', 'mouseleave', 'enterView', 'pageLoad' );
-	const ACTIONS       = array( 'show', 'hide', 'toggleClass', 'addClass', 'removeClass', 'scrollTo', 'animate' );
+	const ACTIONS       = array( 'show', 'hide', 'toggleClass', 'addClass', 'removeClass', 'scrollTo', 'startAnimation' );
 	const CLASS_ACTIONS = array( 'toggleClass', 'addClass', 'removeClass' );
 
 	const STATUSES = array( 'publish', 'draft', 'pending', 'private' );
@@ -103,13 +110,57 @@ class SNN_Block_Tools {
 
 	public static function action_labels() {
 		return array(
-			'show'        => __( 'Show element', 'snn' ),
-			'hide'        => __( 'Hide element', 'snn' ),
-			'toggleClass' => __( 'Toggle class', 'snn' ),
-			'addClass'    => __( 'Add class', 'snn' ),
-			'removeClass' => __( 'Remove class', 'snn' ),
-			'scrollTo'    => __( 'Scroll to element', 'snn' ),
-			'animate'     => __( 'Animate (entrance preset)', 'snn' ),
+			'show'           => __( 'Show element', 'snn' ),
+			'hide'           => __( 'Hide element', 'snn' ),
+			'toggleClass'    => __( 'Toggle class', 'snn' ),
+			'addClass'       => __( 'Add class', 'snn' ),
+			'removeClass'    => __( 'Remove class', 'snn' ),
+			'scrollTo'       => __( 'Scroll to element', 'snn' ),
+			'startAnimation' => __( 'Start animation', 'snn' ),
+		);
+	}
+
+	/**
+	 * The normal animations Start animation can play, as Bricks names them (value => label). Each value has its
+	 * keyframes in assets/interactions.js; a value with no keyframes there does nothing. The values with "In" in
+	 * the name start hidden on load, as Bricks does, and show when they run.
+	 */
+	public static function animation_types() {
+		return array(
+			'fadeIn'         => __( 'Fade In', 'snn' ),
+			'fadeInUp'       => __( 'Fade In Up', 'snn' ),
+			'fadeInDown'     => __( 'Fade In Down', 'snn' ),
+			'fadeInLeft'     => __( 'Fade In Left', 'snn' ),
+			'fadeInRight'    => __( 'Fade In Right', 'snn' ),
+			'fadeOut'        => __( 'Fade Out', 'snn' ),
+			'fadeOutUp'      => __( 'Fade Out Up', 'snn' ),
+			'fadeOutDown'    => __( 'Fade Out Down', 'snn' ),
+			'fadeOutLeft'    => __( 'Fade Out Left', 'snn' ),
+			'fadeOutRight'   => __( 'Fade Out Right', 'snn' ),
+			'slideInUp'      => __( 'Slide In Up', 'snn' ),
+			'slideInDown'    => __( 'Slide In Down', 'snn' ),
+			'slideInLeft'    => __( 'Slide In Left', 'snn' ),
+			'slideInRight'   => __( 'Slide In Right', 'snn' ),
+			'slideOutUp'     => __( 'Slide Out Up', 'snn' ),
+			'slideOutDown'   => __( 'Slide Out Down', 'snn' ),
+			'slideOutLeft'   => __( 'Slide Out Left', 'snn' ),
+			'slideOutRight'  => __( 'Slide Out Right', 'snn' ),
+			'zoomIn'         => __( 'Zoom In', 'snn' ),
+			'zoomOut'        => __( 'Zoom Out', 'snn' ),
+			'rotateIn'       => __( 'Rotate In', 'snn' ),
+			'rotateOut'      => __( 'Rotate Out', 'snn' ),
+			'flipInX'        => __( 'Flip In X', 'snn' ),
+			'flipInY'        => __( 'Flip In Y', 'snn' ),
+			'flipOutX'       => __( 'Flip Out X', 'snn' ),
+			'flipOutY'       => __( 'Flip Out Y', 'snn' ),
+			'bounce'         => __( 'Bounce', 'snn' ),
+			'pulse'          => __( 'Pulse', 'snn' ),
+			'flash'          => __( 'Flash', 'snn' ),
+			'shakeX'         => __( 'Shake X', 'snn' ),
+			'shakeY'         => __( 'Shake Y', 'snn' ),
+			'swing'          => __( 'Swing', 'snn' ),
+			'wobble'         => __( 'Wobble', 'snn' ),
+			'heartBeat'      => __( 'Heart Beat', 'snn' ),
 		);
 	}
 
@@ -178,11 +229,15 @@ class SNN_Block_Tools {
 			);
 		}
 		return array(
-			'groups'       => self::groups(),
-			'conditions'   => $conditions,
-			'triggers'     => self::pairs( self::trigger_labels() ),
-			'actions'      => self::pairs( self::action_labels() ),
-			'classActions' => self::CLASS_ACTIONS,
+			'groups'         => self::groups(),
+			'conditions'     => $conditions,
+			'triggers'       => self::pairs( self::trigger_labels() ),
+			'actions'        => self::pairs( self::action_labels() ),
+			'classActions'   => self::CLASS_ACTIONS,
+			'animationTypes' => self::pairs( self::animation_types() ),
+			'animationMs'    => array( 'default' => self::ANIMATION_MS, 'max' => self::ANIMATION_MAX_MS ),
+			// The GSAP Animations icon shows only while the GSAP setting is on.
+			'gsap'           => SNN_Animation::enabled(),
 		);
 	}
 
@@ -291,23 +346,36 @@ class SNN_Block_Tools {
 				}
 			}
 
-			// The entrance animation: one preset from the Select Animation list (animation.php), and nothing else.
-			if ( 'animate' === $action ) {
-				$preset = SNN_Animation::clean_tokens( array( isset( $item['value'] ) && is_string( $item['value'] ) ? $item['value'] : '' ) );
-				if ( array() === $preset ) {
+			// Start animation: one of the normal animations (animation_types), with its duration and delay.
+			if ( 'startAnimation' === $action ) {
+				$type = isset( $item['value'] ) && is_string( $item['value'] ) ? $item['value'] : '';
+				if ( ! array_key_exists( $type, self::animation_types() ) ) {
 					continue;
 				}
-				$names = $preset[0];
+				$names = $type;
 			}
 
-			$out[] = array(
+			$row = array(
 				'trigger' => $trigger,
 				'action'  => $action,
 				'target'  => '' === $target ? 'self' : $target,
 				'value'   => $names,
 			);
+			if ( 'startAnimation' === $action ) {
+				$row['duration'] = self::milliseconds( $item['duration'] ?? null, self::ANIMATION_MS );
+				$row['delay']    = self::milliseconds( $item['delay'] ?? null, 0 );
+			}
+			$out[] = $row;
 		}
 		return $out;
+	}
+
+	/** A time in milliseconds, from 0 to the longest allowed. Anything that is not a number gives the default. */
+	private static function milliseconds( $raw, $default ) {
+		if ( ! is_numeric( $raw ) ) {
+			return $default;
+		}
+		return min( self::ANIMATION_MAX_MS, max( 0, (int) round( (float) $raw ) ) );
 	}
 
 	/** Class names separated by spaces, each cleaned as a CSS class. */

@@ -11,8 +11,10 @@
  *                   offset, child of, sticky, include and exclude, authors, main query.
  *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
  *                   justify self, column and row span. Only the settings its parent needs show.
- *   Header          the Conditions and Interactions buttons at the top right, and the view. Conditions and
- *                   Interactions open as sub-panels in place of the tabs (block-tools.js).
+ *   Header          the Conditions, Interactions and (GSAP setting on) GSAP animations buttons at the top right,
+ *                   and the view. Each opens as a sub-panel in place of the tabs (block-tools.js).
+ *   Default tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
+ *                   are the GSAP animations button.
  *   Advanced        the custom classes, as chips, the custom attributes (name and value rows), then Custom CSS
  *                   (the textarea only for an administrator).
  *
@@ -31,8 +33,8 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, ViewRow, AnimationPicker, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
-	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
+	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -1580,7 +1582,7 @@
 	function Panel( { a, set, tag, parent, title, device, base } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
-		// null, 'conditions' or 'interactions': a sub-panel that takes the whole view (see the end of this function).
+		// null, 'conditions', 'interactions' or 'animations': a sub-panel that takes the whole view (see the end of this function).
 		const [ sub, setSub ] = useState( null );
 		const [ openQuery, setOpenQuery ] = useState( false );
 		// The Style group on show (one at a time, chosen on the rail).
@@ -1588,6 +1590,12 @@
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
+		const animation = Array.isArray( a.animation ) ? a.animation : [];
+		const SUB_TITLES = {
+			conditions: __( 'Conditions', 'snn' ),
+			interactions: __( 'Interactions', 'snn' ),
+			animations: __( 'GSAP animations', 'snn' ),
+		};
 		const tabButton = ( id, label ) =>
 			h(
 				'button',
@@ -1611,6 +1619,7 @@
 				h( HeadIcons, {
 					conditions: conditions.length,
 					interactions: interactions.length,
+					animations: animation.length,
 					open: sub,
 					onOpen: setSub,
 				} )
@@ -1640,19 +1649,6 @@
 				Group,
 				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
 				h( LayoutFields, { a, set, tag, base } )
-			),
-			h(
-				Group,
-				{ title: __( 'Animation', 'snn' ), note: __( 'all viewports', 'snn' ) },
-				h(
-					Row,
-					{ label: __( 'Animation', 'snn' ), changed: ( a.animation || [] ).length > 0 },
-					h( AnimationPicker, {
-						value: Array.isArray( a.animation ) ? a.animation : [],
-						multiple: true,
-						onChange: ( v ) => set( { animation: v } ),
-					} )
-				)
 			),
 			h(
 				Group,
@@ -1770,8 +1766,8 @@
 					h(
 						'div',
 						{ className: 'snn-bt-name-row' },
-						h( 'div', { className: 'snn-name' }, sub === 'conditions' ? __( 'Conditions', 'snn' ) : __( 'Interactions', 'snn' ) ),
-						h( HeadIcons, { conditions: conditions.length, interactions: interactions.length, open: sub, onOpen: setSub } )
+						h( 'div', { className: 'snn-name' }, SUB_TITLES[ sub ] ),
+						h( HeadIcons, { conditions: conditions.length, interactions: interactions.length, animations: animation.length, open: sub, onOpen: setSub } )
 					)
 				),
 				h(
@@ -1779,7 +1775,9 @@
 					{ className: 'snn-bt-sub-body' },
 					sub === 'conditions'
 						? h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
-						: h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
+						: sub === 'animations'
+							? h( AnimationsEditor, { value: animation, onChange: ( v ) => set( { animation: v } ) } )
+							: h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
 				)
 			);
 		}

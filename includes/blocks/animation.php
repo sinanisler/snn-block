@@ -8,8 +8,9 @@
  * gen-animation-presets.js). A value that is not in the list is dropped, so a block can only play what the
  * list has.
  *
- * The runtime is loaded only on a page that has an animated block. In the editor the canvas does not play
- * the animations; the panel shows their names.
+ * The animations are on only when the GSAP setting is on (Interactions and Animations settings, features/
+ * interactions.php). That setting loads the GSAP runtime on every front-end page, so the blocks do not load it
+ * again. In the editor the canvas does not play the animations; the panel shows their names.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,9 +21,6 @@ class SNN_Animation {
 
 	/** The most animations one block may carry. */
 	const MAX = 20;
-
-	/** The GSAP version the bundled files are (assets/js/gsap.min.js, ScrollTrigger.min.js). */
-	const GSAP_VERSION = '3.12.5';
 
 	/** The list, once read: array of [ group, value, label ]. */
 	private static $rows = null;
@@ -72,16 +70,16 @@ class SNN_Animation {
 		return implode( ',', self::clean_tokens( $tokens ) );
 	}
 
-	/** Loads the GSAP runtime on the front end, once per page. Called when a block with an animation is rendered. */
-	public static function enqueue_front() {
-		static $done = false;
-		if ( $done ) {
-			return;
+	/**
+	 * True when the GSAP setting is on. The panel shows the Animations icon only then, and a block writes its
+	 * data-animate only then. Without the features file (its feature is off), it is always false.
+	 */
+	public static function enabled() {
+		if ( ! function_exists( 'snn_get_interactions_settings' ) ) {
+			return false;
 		}
-		$done = true;
-		wp_enqueue_script( 'snn-gsap', SNN_URL . 'assets/js/gsap.min.js', array(), self::GSAP_VERSION, true );
-		wp_enqueue_script( 'snn-gsap-scrolltrigger', SNN_URL . 'assets/js/ScrollTrigger.min.js', array( 'snn-gsap' ), self::GSAP_VERSION, true );
-		wp_enqueue_script( 'snn-gsap-data-animate', SNN_URL . 'assets/js/gsap-data-animate.js', array( 'snn-gsap', 'snn-gsap-scrolltrigger' ), self::GSAP_VERSION, true );
+		$settings = snn_get_interactions_settings();
+		return is_array( $settings ) && ! empty( $settings['enqueue_gsap'] );
 	}
 
 	/** The rows of the generated list, read once. */

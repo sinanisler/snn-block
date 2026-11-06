@@ -1,12 +1,15 @@
 /**
  * SNN block tools for the block editor: the parts of the panel header and of its sub-panels.
  *
- *   HeadIcons           the Conditions and Interactions buttons, top right of the panel
+ *   HeadIcons           the Conditions and Interactions buttons, and the GSAP animations button when the GSAP
+ *                       setting is on: top right of the panel, in that order
  *   ClassesEditor       the custom classes, as chips, added with Enter
  *   AttributesEditor    the custom attributes: name and value rows, names checked the way the server checks them
  *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
  *   InteractionsEditor  when a trigger happens, do an action on this element or on the one with an ID
+ *                       (Start animation plays a normal animation: fade in, slide, zoom...)
+ *   AnimationsEditor    the GSAP animations of the block: one picker, several can be stacked
  *
  * Loaded before layout-blocks.js (see includes/blocks/layout-blocks.php), which uses these parts in its panel.
  * The catalogs (conditions, triggers, actions) come from block-tools.php through snnBlockToolsData.
@@ -52,6 +55,11 @@
 				h( 'path', { key: 'c', d: 'M2.5 11.1 8 13.8l5.5-2.7' } ),
 			],
 			interactions: [ h( 'path', { key: 'a', d: 'M4.5 2.5v9.9l2.5-2.3 1.8 3.7 1.7-.8-1.8-3.6h3.4z' } ) ],
+			// Two sparkles: the GSAP animations
+			animations: [
+				h( 'path', { key: 'a', d: 'M6 2.5Q6.6 5.6 9.5 6.25Q6.6 6.9 6 10Q5.4 6.9 2.5 6.25Q5.4 5.6 6 2.5Z' } ),
+				h( 'path', { key: 'b', d: 'M12 9.2Q12.2 10.8 13.8 11Q12.2 11.2 12 12.8Q11.8 11.2 10.2 11Q11.8 10.8 12 9.2Z' } ),
+			],
 			back: [ h( 'path', { key: 'a', d: 'M10 3.5 5.5 8l4.5 4.5' } ) ],
 			close: [ h( 'path', { key: 'a', d: 'M4 4l8 8M12 4l-8 8' } ) ],
 		};
@@ -66,11 +74,15 @@
 	 * Header
 	 * ---------------------------------------------------------------- */
 
-	/** The Conditions and Interactions buttons. open: the sub-panel shown (or null). A dot marks a block that uses them. */
-	function HeadIcons( { conditions, interactions, open, onOpen } ) {
+	/**
+	 * The Conditions and Interactions buttons, and the GSAP animations button when the GSAP setting is on.
+	 * open: the sub-panel shown (or null). A dot marks a block that uses them.
+	 */
+	function HeadIcons( { conditions, interactions, animations, open, onOpen } ) {
 		const items = [
 			{ key: 'conditions', label: __( 'Conditions', 'snn' ), used: conditions > 0, name: 'conditions' },
 			{ key: 'interactions', label: __( 'Interactions', 'snn' ), used: interactions > 0, name: 'interactions' },
+			...( data.gsap ? [ { key: 'animations', label: __( 'GSAP animations', 'snn' ), used: animations > 0, name: 'animations' } ] : [] ),
 		];
 		return h(
 			'div',
@@ -391,8 +403,23 @@
 		const list = Array.isArray( items ) ? items : [];
 		const triggers = data.triggers || [];
 		const actions = data.actions || [];
+		const animationTypes = data.animationTypes || [];
+		const msDefault = ( data.animationMs && data.animationMs.default ) || 1000;
 		const setAt = ( i, change ) => onChange( list.map( ( it, j ) => ( j === i ? { ...it, ...change } : it ) ) );
 		const removeAt = ( i ) => onChange( list.filter( ( _, j ) => j !== i ) );
+		// Changing the action: a class action keeps the class names, anything else starts empty. Start animation
+		// also sets the trigger to the viewport and the default times.
+		const changeAction = ( i, v ) => {
+			const prev = list[ i ] || {};
+			const keep = CLASS_ACTIONS.indexOf( v ) !== -1 && CLASS_ACTIONS.indexOf( prev.action ) !== -1;
+			const change = { action: v, value: keep ? prev.value : '' };
+			if ( v === 'startAnimation' ) {
+				change.trigger = 'enterView';
+				change.duration = prev.duration !== undefined ? prev.duration : msDefault;
+				change.delay = prev.delay !== undefined ? prev.delay : 0;
+			}
+			setAt( i, change );
+		};
 		const add = () => onChange( [ ...list, { trigger: 'click', action: 'hide', target: 'self', value: '' } ] );
 
 		return h(
@@ -414,7 +441,7 @@
 						h( RemoveButton, { label: __( 'Remove interaction', 'snn' ), onClick: () => removeAt( i ) } )
 					),
 					h( Row, { label: __( 'When', 'snn' ) }, h( Select, { value: it.trigger, options: triggers, label: __( 'Trigger', 'snn' ), onChange: ( v ) => setAt( i, { trigger: v } ) } ) ),
-					h( Row, { label: __( 'Do', 'snn' ) }, h( Select, { value: it.action, options: actions, label: __( 'Action', 'snn' ), onChange: ( v ) => setAt( i, v === 'animate' ? { action: v, trigger: 'enterView' } : { action: v } ) } ) ),
+					h( Row, { label: __( 'Do', 'snn' ) }, h( Select, { value: it.action, options: actions, label: __( 'Action', 'snn' ), onChange: ( v ) => changeAction( i, v ) } ) ),
 					h(
 						Row,
 						{ label: __( 'On', 'snn' ) },
@@ -448,15 +475,40 @@
 								)
 						  )
 						: null,
-					it.action === 'animate'
+					it.action === 'startAnimation'
 						? h(
-							Row,
-							{ label: __( 'Animation', 'snn' ) },
-							h( AnimationPicker, {
-								value: it.value,
-								multiple: false,
-								onChange: ( v ) => setAt( i, { value: v } ),
-							} )
+							Fragment,
+							{ key: 'anim' },
+							h(
+								Row,
+								{ label: __( 'Animation', 'snn' ) },
+								h( Select, {
+									value: it.value || '',
+									options: [ { value: '', label: __( 'Choose', 'snn' ) } ].concat( animationTypes ),
+									label: __( 'Animation', 'snn' ),
+									onChange: ( v ) => setAt( i, { value: v } ),
+								} )
+							),
+							h(
+								Row,
+								{ label: __( 'Duration', 'snn' ) },
+								h( MsField, {
+									value: it.duration,
+									placeholder: String( msDefault ),
+									label: __( 'Duration', 'snn' ),
+									onChange: ( v ) => setAt( i, { duration: v } ),
+								} )
+							),
+							h(
+								Row,
+								{ label: __( 'Delay', 'snn' ) },
+								h( MsField, {
+									value: it.delay,
+									placeholder: '0',
+									label: __( 'Delay', 'snn' ),
+									onChange: ( v ) => setAt( i, { delay: v } ),
+								} )
+							)
 						)
 						: null,
 					isClass
@@ -480,7 +532,46 @@
 		);
 	}
 
+	/** A time in milliseconds: a number field with the unit after it. Empty means the default (the placeholder). */
+	function MsField( { value, placeholder, label, onChange } ) {
+		return h(
+			'div',
+			{ className: 'snn-bt-idwrap' },
+			h( 'input', {
+				type: 'number',
+				className: 'snn-input',
+				min: 0,
+				max: data.animationMs && data.animationMs.max ? data.animationMs.max : 10000,
+				step: 50,
+				value: value === undefined || value === null ? '' : value,
+				placeholder,
+				'aria-label': label,
+				onChange: ( e ) => onChange( e.target.value ),
+			} ),
+			h( 'span', { className: 'snn-bt-unit' }, 'ms' )
+		);
+	}
+
+	/**
+	 * The GSAP animations of the block (the Animations icon). One picker: the animations stack, each plays in
+	 * its turn with its modifiers (the data-animate values, see animation-presets.php).
+	 */
+	function AnimationsEditor( { value, onChange } ) {
+		const list = Array.isArray( value ) ? value : [];
+		return h(
+			'div',
+			{ className: 'snn-bt-anim' },
+			h(
+				Row,
+				{ label: __( 'Animation', 'snn' ), changed: list.length > 0 },
+				h( AnimationPicker, { value: list, multiple: true, onChange } )
+			),
+			h( 'p', { className: 'snn-hint' }, __( 'GSAP animations play on the front end. Add more than one to stack them.', 'snn' ) )
+		);
+	}
+
 	window.snnBlockTools = {
+		AnimationsEditor,
 		HeadIcons,
 		ClassesEditor,
 		AttributesEditor,

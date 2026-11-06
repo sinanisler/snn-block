@@ -698,6 +698,13 @@
 	min-width: 0;
 }
 
+/* The unit after a time field (ms) */
+.snn-bt-unit {
+	flex: 0 0 auto;
+	font-size: 11px;
+	color: #646970;
+}
+
 .snn-views {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));

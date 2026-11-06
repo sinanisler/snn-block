@@ -298,24 +298,18 @@ class SNN_Layout_Blocks {
 			$extra[ $row['name'] ] = $row['value'];
 		}
 
-		// Select Animation: the presets and modifiers the block plays (assets/js/gsap-data-animate.js reads them).
-		$animation = SNN_Animation::data_animate( $a['animation'] );
+		// GSAP animations (the Animations icon): the presets and modifiers the block plays. Written only while the
+		// GSAP setting is on; the runtime is loaded site-wide by that setting (assets/js/gsap-data-animate.js).
+		$animation = SNN_Animation::enabled() ? SNN_Animation::data_animate( $a['animation'] ) : '';
 		if ( '' !== $animation ) {
 			$extra['data-animate'] = $animation;
-			SNN_Animation::enqueue_front();
 		}
 		// The interactions travel on the element as JSON; the front end script (assets/interactions.js) runs them.
+		// Start animation runs the Web Animations API in assets/interactions.js, so it needs no GSAP.
 		$interactions = SNN_Block_Tools::interactions_attribute( $a['interactions'] );
 		if ( '' !== $interactions ) {
 			$extra['data-snn-interactions'] = $interactions;
 			SNN_Block_Tools::enqueue_front();
-			// An entrance animation runs the GSAP runtime, so the runtime loads with it.
-			foreach ( $a['interactions'] as $item ) {
-				if ( isset( $item['action'] ) && 'animate' === $item['action'] ) {
-					SNN_Animation::enqueue_front();
-					break;
-				}
-			}
 		}
 		$attrs = get_block_wrapper_attributes( $extra );
 		// The style is written here, not through the wrapper: WordPress passes inline styles through its
