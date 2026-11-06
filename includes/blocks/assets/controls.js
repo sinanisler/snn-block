@@ -562,22 +562,17 @@
 	}
 
 	/**
-	 * A value that can differ per view. The line under the label says where the value comes from: "from Desktop
-	 * (96 px)", or "set for Tablet" when this view sets its own, with a Reset that takes the value back.
+	 * A value that can differ per view. No hint under the label: an inherited value shows as the field's placeholder,
+	 * and a value the view sets shows a dot on the label. Its Reset (not on Desktop) takes the view's own value back.
 	 */
-	function ViewRow( { label, device, own, from, value, unit, onReset, children } ) {
-		let hint = '';
-		if ( device !== 'Desktop' ) {
-			hint = own ? __( 'set for', 'snn' ) + ' ' + device : __( 'from', 'snn' ) + ' ' + from + ( value === '' ? '' : ' (' + value + ( unit || '' ) + ')' );
-		}
+	function ViewRow( { label, device, own, onReset, children } ) {
 		return h(
 			'div',
 			{ className: 'snn-row snn-view-row' + ( own ? ' is-own' : '' ) },
 			h(
 				'span',
-				{ className: 'snn-row-label snn-view-label' },
-				h( 'span', { className: 'snn-row-title' }, label, own ? h( Dot ) : null ),
-				hint ? h( 'span', { className: 'snn-view-hint' }, hint ) : null
+				{ className: 'snn-row-label' },
+				h( 'span', { className: 'snn-row-title' }, label, own ? h( Dot ) : null )
 			),
 			h(
 				'div',

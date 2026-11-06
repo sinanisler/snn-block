@@ -961,31 +961,12 @@
 	color: #50575e;
 }
 
-/* A value a view can set: the label with its hint under it, the field, and a Reset when the view sets its own */
-.snn-view-row .snn-row-label {
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 1px;
-}
-
+/* A value a view can set: the label, the field, and a Reset when the view sets its own. No hint line under the label. */
 .snn-row-title {
 	display: flex;
 	align-items: center;
 	gap: 5px;
 	color: #3c434a;
-}
-
-.snn-view-hint {
-	max-width: 100%;
-	font-size: 10px;
-	color: #8c8f94;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.snn-view-row.is-own .snn-view-hint {
-	color: #2271b1;
 }
 
 .snn-view-control {

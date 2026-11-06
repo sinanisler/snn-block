@@ -1228,7 +1228,7 @@
 	];
 
 	/**
-	 * One value a view can set: its field, in a row with the hint and the Reset (see ViewRow in controls.js).
+	 * One value a view can set: its field, in a row with the Reset (see ViewRow in controls.js).
 	 * The field shows the device's own value, or the value it inherits.
 	 */
 	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder } ) {
@@ -1259,9 +1259,6 @@
 				label,
 				device,
 				own: own !== undefined,
-				from: inherited.from,
-				value: inherited.value === undefined ? '' : inherited.value,
-				unit,
 				onReset: () => clearValue( a, set, device, k ),
 			},
 			control
