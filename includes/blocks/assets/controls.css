@@ -112,7 +112,10 @@
 	min-width: 0;
 }
 
+/* A text or number field: the input takes the whole width. The unit, V (variables) and the lightning (dynamic data)
+ * sit on top of its right end, so they take no width of their own. The input's right padding keeps its text clear of them. */
 .snn-input-wrap {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 2px;
@@ -122,16 +125,32 @@
 .snn-input-wrap .snn-input {
 	flex: 1 1 auto;
 	min-width: 0;
+	padding-right: 26px;
 }
 
-/* Lightning (dynamic data) and V (variables) buttons, beside a field */
+.snn-input-wrap.has-vars .snn-input {
+	padding-right: 48px;
+}
+
+.snn-input-wrap.has-unit .snn-input {
+	padding-right: 50px;
+}
+
+.snn-input-wrap.has-vars.has-unit .snn-input {
+	padding-right: 72px;
+}
+
+/* Lightning (dynamic data) and V (variables) buttons: small, inside the right end of the field */
 .snn-tool {
-	flex: 0 0 auto;
+	position: absolute;
+	top: 50%;
+	right: 2px;
+	transform: translateY(-50%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	height: 26px;
+	width: 20px;
+	height: 20px;
 	margin: 0;
 	padding: 0;
 	color: #1e1e1e;
@@ -155,6 +174,11 @@
 .snn-tool:focus-visible {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
+}
+
+/* V sits left of the lightning, with a 2 px gap */
+.snn-tool-vars {
+	right: 24px;
 }
 
 .snn-tool-text {
@@ -989,12 +1013,22 @@
 	outline-offset: 1px;
 }
 
-/* The unit after a size field (px, %) */
+/* The unit of a size field (px, %): inside the right end, just left of the V and lightning buttons */
 .snn-unit {
-	flex: 0 0 auto;
-	padding-right: 4px;
+	position: absolute;
+	top: 50%;
+	right: 24px;
+	transform: translateY(-50%);
+	width: 22px;
+	text-align: right;
 	font-size: 11px;
+	line-height: 1;
 	color: #646970;
+	white-space: nowrap;
+}
+
+.snn-input-wrap.has-vars .snn-unit {
+	right: 46px;
 }
 
 /* Popovers: dynamic data list and variables */

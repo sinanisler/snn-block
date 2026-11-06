@@ -380,7 +380,7 @@
 			{ className: 'snn-field', ref: wrap },
 			h(
 				'div',
-				{ className: 'snn-input-wrap' },
+				{ className: 'snn-input-wrap' + ( variables ? ' has-vars' : '' ) + ( unit ? ' has-unit' : '' ) },
 				swatch ? h( ColourSwatch, { value: current, variables, label, onChange } ) : null,
 				h( 'input', {
 					ref: input,
@@ -399,7 +399,7 @@
 							'button',
 							{
 								type: 'button',
-								className: 'snn-tool',
+								className: 'snn-tool snn-tool-vars',
 								title: __( 'Variables', 'snn' ),
 								'aria-label': __( 'Variables', 'snn' ),
 								'aria-expanded': picker === 'vars' ? 'true' : 'false',
