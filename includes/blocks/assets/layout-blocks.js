@@ -15,8 +15,9 @@
  *                   and the view. Each opens as a sub-panel in place of the tabs (block-tools.js).
  *   Content tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
  *                   are the GSAP animations button.
- *   Advanced        the custom classes, as chips, the custom attributes (name and value rows), then Custom CSS
- *                   (the textarea only for an administrator).
+ *   Advanced        the custom classes, as chips, then the custom attributes (name and value rows).
+ *   CSS (Style tab) the last icon of the rail: the block's own CSS in a code editor (the textarea only for
+ *                   an administrator). Core's Additional CSS is off (block-defaults.php).
  *
  * Every block gets its CSS ID by default: a new one when it is created, and a new one when a copy would
  * share an ID with another block (see the Edit function). The ID is not shown in the panel.
@@ -29,7 +30,7 @@
 	const { registerBlockType } = wp.blocks;
 	const { InnerBlocks, InspectorControls, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
-	const { createElement: h, Fragment, useState, useEffect } = wp.element;
+	const { createElement: h, Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
@@ -1276,6 +1277,156 @@
 	// Where each side sits in the box (layout-blocks.js BoxModel, controls.css .snn-box-grid): the same order as SIDE_LABEL.
 	const BOX_AREA = [ 'top', 'right', 'bottom', 'left' ];
 
+	/** The selectors the CSS group's selector list writes: a rule with the selector goes in at the caret. */
+	const CSS_SELECTORS = [
+		{ value: '%root%', label: __( 'This block (%root%)', 'snn' ) },
+		{ value: '%root%:hover', label: __( 'Hover', 'snn' ) },
+		{ value: '%root%:focus-visible', label: __( 'Keyboard focus', 'snn' ) },
+		{ value: '%root%::before', label: __( 'Before (::before)', 'snn' ) },
+		{ value: '%root%::after', label: __( 'After (::after)', 'snn' ) },
+		{ value: '%root% > *', label: __( 'Direct children', 'snn' ) },
+	];
+	/** What an empty CSS editor starts with: the block's own selector, with the caret inside the rule. */
+	const CSS_STARTER = '%root% {\n\t\n}';
+
+	/**
+	 * The block's CSS in the code editor the code snippets use (wp.codeEditor, CodeMirror). An empty editor starts
+	 * with %root% { }. Typing r and pressing Tab writes %root%. The selector list writes a rule at the caret.
+	 * Each change is saved as the block's customCss. Without the code editor (syntax highlighting off in the user's
+	 * profile) it is a plain textarea.
+	 */
+	function CssEditor( { value, onChange, editor, label } ) {
+		const area = useRef( null );
+		const cm = useRef( null );
+		const latest = useRef( onChange );
+		const quiet = useRef( false );
+		latest.current = onChange;
+		const useCode = !! ( editor && window.wp && wp.codeEditor );
+
+		useEffect( () => {
+			const node = area.current;
+			if ( ! useCode || ! node ) {
+				return undefined;
+			}
+			node.value = value || '';
+			const ed = wp.codeEditor.initialize( node, editor ).codemirror;
+			cm.current = ed;
+			if ( ! ed.getValue() ) {
+				// The selector is there to write in. Nothing is saved until the author types.
+				quiet.current = true;
+				ed.setValue( CSS_STARTER );
+				quiet.current = false;
+				ed.setCursor( { line: 1, ch: 1 } );
+			}
+			ed.on( 'change', () => {
+				if ( ! quiet.current ) {
+					latest.current( ed.getValue() );
+				}
+			} );
+			// Tab after a lone r (at the start of a word) writes the block's selector. Any other Tab indents.
+			ed.setOption(
+				'extraKeys',
+				Object.assign( {}, ed.getOption( 'extraKeys' ) || {}, {
+					Tab: ( c ) => {
+						const at = c.getCursor();
+						if ( /(^|[\s{};,>+~(])r$/.test( c.getLine( at.line ).slice( 0, at.ch ) ) ) {
+							c.replaceRange( '%root%', { line: at.line, ch: at.ch - 1 }, at );
+						} else {
+							c.execCommand( 'defaultTab' );
+						}
+					},
+				} )
+			);
+			return () => {
+				cm.current = null;
+				ed.toTextArea();
+			};
+		}, [] );
+
+		// A value set from outside (another block selected, a copy, an undo) reaches the open editor too. An empty value
+		// shows the selector again, as on opening. Clearing the text by hand is not changed here: it is already empty.
+		useEffect( () => {
+			const ed = cm.current;
+			if ( ! ed || ( value || '' ) === ed.getValue() ) {
+				return;
+			}
+			quiet.current = true;
+			ed.setValue( value || CSS_STARTER );
+			quiet.current = false;
+			if ( ! value ) {
+				ed.setCursor( { line: 1, ch: 1 } );
+			}
+		}, [ value ] );
+
+		// Writes a rule at the caret: the selector, a brace pair and an empty middle line with the caret on it.
+		// A rule starts on its own line: text before the caret on the same line gets a line break first.
+		const insert = ( rule ) => {
+			const ed = cm.current;
+			if ( ed ) {
+				const at = ed.getCursor();
+				const lead = ed.getLine( at.line ).slice( 0, at.ch ).trim() ? '\n' : '';
+				ed.replaceRange( lead + rule, at );
+				ed.setCursor( { line: at.line + ( lead ? 1 : 0 ) + 1, ch: 1 } );
+				ed.focus();
+				return;
+			}
+			const node = area.current;
+			if ( node ) {
+				const start = node.selectionStart || 0;
+				const end = node.selectionEnd || start;
+				const before = node.value.slice( 0, start );
+				const lead = before.split( '\n' ).pop().trim() ? '\n' : '';
+				latest.current( before + lead + rule + node.value.slice( end ) );
+			}
+		};
+
+		const field = useCode
+			? h( 'textarea', { ref: area, className: 'snn-input snn-css', rows: 12, spellCheck: false, defaultValue: value || '', 'aria-label': label } )
+			: h( 'textarea', {
+					ref: area,
+					className: 'snn-input snn-css',
+					rows: 12,
+					spellCheck: false,
+					value: value || '',
+					placeholder: CSS_STARTER,
+					'aria-label': label,
+					onChange: ( e ) => latest.current( e.target.value ),
+			  } );
+
+		return h(
+			'div',
+			{ className: 'snn-css-editor' },
+			h(
+				'select',
+				{
+					className: 'snn-select snn-css-selector',
+					value: '',
+					'aria-label': __( 'Insert a selector', 'snn' ),
+					onChange: ( e ) => {
+						if ( e.target.value ) {
+							insert( e.target.value + ' {\n\t\n}' );
+						}
+					},
+				},
+				h( 'option', { value: '' }, __( 'Insert a selector', 'snn' ) ),
+				CSS_SELECTORS.map( ( o ) => h( 'option', { key: o.value, value: o.value }, o.label ) )
+			),
+			field,
+			h( 'span', { className: 'snn-css-hint' }, __( 'Use %root% for this block. Type r and press Tab to insert it. Scripts and imports are removed.', 'snn' ) )
+		);
+	}
+
+	/** The CSS group's page: the code editor for an administrator, a note for everyone else. */
+	function CssPane( { a, set, canCss, editor } ) {
+		return h(
+			'div',
+			{ className: 'snn-css-pane' },
+			canCss
+				? h( CssEditor, { value: a.customCss || '', onChange: ( v ) => set( { customCss: v } ), editor, label: __( 'Custom CSS', 'snn' ) } )
+				: h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
+		);
+	}
+
 	const STYLE_PAGES = [
 		{
 			id: 'layout',
@@ -1341,6 +1492,13 @@
 				{ title: __( 'Filter', 'snn' ), rows: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia' ] },
 				{ title: __( 'Transition', 'snn' ), rows: [ 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ] },
 			],
+		},
+		{
+			id: 'css',
+			label: __( 'CSS', 'snn' ),
+			text: 'CSS',
+			kind: 'css',
+			sections: [],
 		},
 	];
 
@@ -1693,32 +1851,7 @@
 							value: Array.isArray( a.customAttributes ) ? a.customAttributes : [],
 							onChange: ( v ) => set( { customAttributes: v } ),
 						} )
-					),
-					// Custom CSS is written only for an administrator (the server checks the post's author too).
-					data.canCss
-						? h(
-								Row,
-								{ label: __( 'Custom CSS', 'snn' ), changed: !! a.customCss },
-								h(
-									'div',
-									{ className: 'snn-css-field' },
-									h( 'textarea', {
-										className: 'snn-input snn-css',
-										rows: 6,
-										spellCheck: false,
-										value: a.customCss || '',
-										placeholder: '%root% { color: red; }',
-										'aria-label': __( 'Custom CSS', 'snn' ),
-										onChange: ( e ) => set( { customCss: e.target.value } ),
-									} ),
-									h( 'span', { className: 'snn-css-hint' }, __( 'Use %root% for this block. Scripts and imports are removed.', 'snn' ) )
-								)
-						  )
-						: h(
-								Row,
-								{ label: __( 'Custom CSS', 'snn' ) },
-								h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
-						  )
+					)
 			)
 		);
 
@@ -1738,7 +1871,11 @@
 				h( Segmented, {
 					label: __( 'Style groups', 'snn' ),
 					value: page.id,
-					options: STYLE_PAGES.map( ( p ) => ( { value: p.id, label: p.label, glyph: h( Glyph, { name: p.glyph } ) } ) ),
+					options: STYLE_PAGES.map( ( p ) => ( {
+							value: p.id,
+							label: p.label,
+							glyph: p.text ? h( 'span', { className: 'snn-glyph-text', 'aria-hidden': 'true' }, p.text ) : h( Glyph, { name: p.glyph } ),
+						} ) ),
 					onChange: setStylePage,
 				} )
 			),
@@ -1746,9 +1883,11 @@
 				'div',
 				{ className: 'snn-page-head' },
 				h( 'span', { className: 'snn-page-title' }, page.label ),
-				h( 'span', { className: 'snn-group-note' }, countView( a, device, pageKeys( page ) ) )
+				h( 'span', { className: 'snn-group-note' }, page.kind === 'css' ? ( a.customCss ? __( 'Set', 'snn' ) : __( 'None', 'snn' ) ) : countView( a, device, pageKeys( page ) ) )
 			),
-			page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title }, s.rows.map( rowFor ) ) )
+			page.kind === 'css'
+				? h( CssPane, { a, set, canCss: data.canCss, editor: data.cssEditor } )
+				: page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title }, s.rows.map( rowFor ) ) )
 		);
 
 		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.

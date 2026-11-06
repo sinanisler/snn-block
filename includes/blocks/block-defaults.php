@@ -142,3 +142,23 @@ class SNN_Block_Defaults {
 		return '';
 	}
 }
+
+/**
+ * Core's Additional CSS is off for every block. It is the customCSS block support (WordPress 7.0 and later), a
+ * textarea in the Advanced panel. Our own Custom CSS is the CSS group of the Style tab (layout-blocks.js, and the
+ * customCss attribute in layout-blocks.php). With the support off, core hides the panel and stops printing the CSS
+ * that a block already holds in its style.css attribute.
+ */
+add_filter( 'register_block_type_args', 'snn_block_customcss_off' );
+
+/**
+ * @param array $args The block type's arguments, with the block.json settings merged in.
+ * @return array
+ */
+function snn_block_customcss_off( $args ) {
+	if ( ! isset( $args['supports'] ) || ! is_array( $args['supports'] ) ) {
+		$args['supports'] = array();
+	}
+	$args['supports']['customCSS'] = false;
+	return $args;
+}

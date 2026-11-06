@@ -501,6 +501,46 @@
 	color: #646970;
 }
 
+/* The CSS group of the Style tab: a code editor (wp.codeEditor, as in the code snippets) and its selector list */
+.snn-css-pane {
+	padding: 10px 12px 14px;
+}
+
+.snn-css-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.snn-css-selector {
+	width: 100%;
+}
+
+.snn-css-editor .CodeMirror {
+	height: auto;
+	min-height: 240px;
+	border: 1px solid #e5e5e5;
+	border-radius: 2px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.snn-css-editor .CodeMirror-scroll {
+	min-height: 240px;
+}
+
+/* The CSS icon of the rail: the word itself, in the icons' box */
+.snn-glyph-text {
+	display: inline-block;
+	width: 14px;
+	font: 700 9px/14px system-ui, -apple-system, "Segoe UI", sans-serif;
+	text-align: center;
+	letter-spacing: 0;
+	color: currentColor;
+}
+
 /* Custom classes: chips and a field to add more */
 .snn-bt-classes {
 	display: flex;

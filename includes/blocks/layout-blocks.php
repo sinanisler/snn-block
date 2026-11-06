@@ -790,6 +790,9 @@ class SNN_Layout_Blocks {
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data' ), self::version( $js ), true );
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
+		// The CSS group of the Style tab is a code editor, as in the code snippets (administrators only). False when the
+		// user has syntax highlighting off: the group then shows a plain textarea.
+		$css_editor = current_user_can( 'unfiltered_html' ) ? wp_enqueue_code_editor( array( 'type' => 'text/css' ) ) : false;
 		wp_localize_script( 'snn-block-tools', 'snnBlockToolsData', SNN_Block_Tools::editor_data() );
 		wp_localize_script(
 			'snn-controls',
@@ -801,13 +804,18 @@ class SNN_Layout_Blocks {
 					'taxonomies' => SNN_Query_Loop::taxonomy_options(),
 					'animations' => SNN_Animation::options(),
 					'canCss'     => current_user_can( 'unfiltered_html' ),
+					'cssEditor'  => $css_editor,
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,
 			)
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' ), self::version( $blocks ), true );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' );
+		if ( $css_editor ) {
+			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
+		}
+		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, $blocks_deps, self::version( $blocks ), true );
 	}
 
 	private static function version( $file ) {
