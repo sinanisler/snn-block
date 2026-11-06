@@ -14,7 +14,7 @@ Written for: the project owner, to decide how far our Style tab should follow Br
 ## 1. Summary
 
 - **Nine groups on Section, eight on Heading.** Bricks lists its groups as cards: Layout, Typography, Background, Border / Box Shadow, Gradient / Overlay, Shape dividers, Transform, CSS and Attributes. Shape dividers is missing on Heading. A vertical icon rail on the far left of the panel holds the same groups, plus Content. [00](bricks-style-detail-2026-11-06/00-section-rail.png), [13](bricks-style-detail-2026-11-06/13-heading-rail.png)
-- **Ours has seven groups** as a row of icons at the top of the tab: Layout, Typography, Background, Gradient, Border, Transform and Filters. CSS, Shape dividers and Attributes are not Style groups for us. Classes, attributes and custom CSS live in Default > Advanced.
+- **Ours has seven groups** as a row of icons at the top of the tab: Layout, Typography, Background, Gradient, Border, Transform and Filters. CSS, Shape dividers and Attributes are not Style groups for us. Classes, attributes and custom CSS live in Content > Advanced.
 - **Five controls open an editor** from a pencil button on their row: Border, Box shadow, Text shadow, Transform and CSS Filters. Each editor opens in place, under its row.
 - **Three repeaters** add rows: gradient colour stops, shape dividers (30 shapes) and attributes (name and value).
 - **Placeholders are computed from the element.** Bricks shows the element's own value as the grey placeholder, on every breakpoint. Perspective origin shows `530px 45px` on Desktop and `495px 45px` on Tablet, which is half the element's width on each view (consistent with the default `50% 50%`). Ours shows only the value inherited from another view.
@@ -126,8 +126,8 @@ Source note: Bricks' parallax does not run in the builder (its own note on the p
 
 | Bricks control | Detail in Bricks | Ours |
 |---|---|---|
-| Custom CSS | Code editor with V; tooltips Fullscreen and Collapse. | Default > Advanced, admin only. Location differs. |
-| CSS classes | Text field, dynamic data. | Default > Advanced (chips). Location differs. |
+| Custom CSS | Code editor with V; tooltips Fullscreen and Collapse. | Content > Advanced, admin only. Location differs. |
+| CSS classes | Text field, dynamic data. | Content > Advanced (chips). Location differs. |
 | CSS ID | Text field, dynamic data. | None typed. Every block gets an automatic ID (no typed CSS ID field; see the 5 Nov ID decision in the project memory). |
 | CSS Filters (editor) | Eight sliders, each with a number box: Blur (px), Brightness (%), Contrast (%), Hue rotate (deg), Invert (%), Opacity (%), Saturate (%), Sepia (%). Units confirmed in the source (`includes/assets.php`, 3769 to 3785). | Blur, Brightness, Contrast, Grayscale, Hue rotate, Invert, Saturate, Sepia. **Bricks has no Grayscale and has Opacity.** |
 | Transition | One text field with V, placeholder `all`. Writes the CSS transition shorthand (`base.php` 1637 to 1655). | Four fields: property, duration, timing function, delay. Differs. |
@@ -135,7 +135,7 @@ Source note: Bricks' parallax does not run in the builder (its own note on the p
 ### 3.9 Attributes [10](bricks-style-detail-2026-11-06/10-attributes.png)
 
 - "Add Attributes" adds a row with Name and Value text fields, both with dynamic data, and Duplicate and Delete.
-- Ours: Default > Advanced, name and value rows (the same content, different place).
+- Ours: Content > Advanced, name and value rows (the same content, different place).
 
 ## 4. Link toggles, tested
 

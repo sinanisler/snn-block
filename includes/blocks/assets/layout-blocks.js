@@ -13,7 +13,7 @@
  *                   justify self, column and row span. Only the settings its parent needs show.
  *   Header          the Conditions, Interactions and (GSAP setting on) GSAP animations buttons at the top right,
  *                   and the view. Each opens as a sub-panel in place of the tabs (block-tools.js).
- *   Default tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
+ *   Content tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
  *                   are the GSAP animations button.
  *   Advanced        the custom classes, as chips, the custom attributes (name and value rows), then Custom CSS
  *                   (the textarea only for an administrator).
@@ -1786,7 +1786,7 @@
 			'div',
 			{ className: 'snn-panel' },
 			header,
-			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Default', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Content', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
 			tab === 'default' ? defaultPane : stylePane
 		);
 	}
