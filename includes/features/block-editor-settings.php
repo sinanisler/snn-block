@@ -59,13 +59,12 @@ function snn_block_editor_settings_page_callback() {
                         <label for="snn_disable_fullscreen"><?php _e( 'Disable Fullscreen Mode', 'snn' ); ?></label>
                     </th>
                     <td>
-                        <input type="hidden" name="snn_block_editor_settings[disable_fullscreen]" value="0" />
                         <input
                             type="checkbox"
                             id="snn_disable_fullscreen"
                             name="snn_block_editor_settings[disable_fullscreen]"
                             value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'disable_fullscreen' ) ); ?>
+                            <?php checked( ! empty( $options['disable_fullscreen'] ) ); ?>
                         />
                     </td>
                 </tr>
@@ -102,35 +101,19 @@ function snn_block_editor_settings_page_callback() {
                         <label for="snn_enable_top_toolbar"><?php _e( 'Enable Top Toolbar', 'snn' ); ?></label>
                     </th>
                     <td>
-                        <input type="hidden" name="snn_block_editor_settings[enable_top_toolbar]" value="0" />
                         <input
                             type="checkbox"
                             id="snn_enable_top_toolbar"
                             name="snn_block_editor_settings[enable_top_toolbar]"
                             value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'enable_top_toolbar' ) ); ?>
-                        />
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="snn_disable_core_blocks"><?php _e( 'Disable Core Blocks', 'snn' ); ?></label>
-                    </th>
-                    <td>
-                        <input type="hidden" name="snn_block_editor_settings[disable_core_blocks]" value="0" />
-                        <input
-                            type="checkbox"
-                            id="snn_disable_core_blocks"
-                            name="snn_block_editor_settings[disable_core_blocks]"
-                            value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'disable_core_blocks' ) ); ?>
+                            <?php checked( ! empty( $options['enable_top_toolbar'] ) ); ?>
                         />
                     </td>
                 </tr>
             </table>
             <!-- End Editor Behavior Settings -->
 
-            <h2><?php _e( 'Disable Individual Blocks', 'snn' ); ?></h2>
+            <h2><?php _e( 'Disable Core Blocks', 'snn' ); ?></h2>
             <p><?php _e( 'Select the blocks you want to disable in the Gutenberg editor:', 'snn' ); ?></p>
 
             <button type="button" id="toggle-list"><?php _e( 'Show Blocks', 'snn' ); ?></button>

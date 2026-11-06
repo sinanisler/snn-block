@@ -20,6 +20,15 @@ function snn_custom_css_utils() { ?>
     </style>
 
 
+    <?php if (isset($_GET['bricks'])) { ?>
+        <style>
+        [data-control-key="position_start_horizontal"],
+        [data-control-key="position_start_vertical"] {
+            float:left !important;
+            padding:10px;
+        }
+        </style>
+    <?php }?>
 
 <?php }
 add_action('admin_head', 'snn_custom_css_utils');
@@ -28,6 +37,45 @@ add_action('admin_head', 'snn_custom_css_utils');
 
 
 
+// Add custom CSS to the footer based on query parameter for BRICKS EDITOR
+function snn_custom_css_utils_wp_footer() {
+    if (isset($_GET['bricks'])) { ?>
+    <style>
+        [data-controlkey="gsap_animations"] .repeater-item-inner,
+        [data-controlkey="gsap_animations"] .repeater-item-inner {
+            float: left !important;
+            width: 50%;
+        }
+        [data-controlkey="gsap_animations"] .control-inline{
+            gap:2px !important
+        }
+        [data-controlkey="gsap_animations"] .bricks-sortable-item .control{
+            margin-left:8px !important;
+            margin-right:8px !important;
+        }
+        [data-controlkey="gsap_animations"] .sortable-title{
+            padding-left:8px !important;
+        }
+
+		[data-controlkey="snn_data_animate_enable_desktop"],
+		[data-controlkey="snn_data_animate_enable_tablet"],
+		[data-controlkey="snn_data_animate_enable_mobile"]
+		{
+			width:33%;
+			float:left;
+		}
+
+        [data-control=color] .bricks-control-popup .color-palette{ grid-template-columns: repeat(auto-fit,minmax(36px,36px)) ; }
+        .bricks-control-popup .color-palette-grid{ grid-template-columns: repeat(auto-fit, minmax(36px, calc(10% - 4px))) !important; }
+        [data-control=color] .bricks-control-popup .color-palette-grid li.active div:before {
+            left: 0px !important;    transform: none !important;    width: 100% !important;    right: auto !important;}
+    </style>
+    <?php
+    }
+}
+
+// Hook the function to the WordPress 'wp_footer' action
+add_action('wp_footer', 'snn_custom_css_utils_wp_footer');
 
 
 

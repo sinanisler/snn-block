@@ -9,7 +9,7 @@
  * consistent array. This includes determining the correct API key, model name, and API endpoint based on the
  * user's selected provider (OpenAI, OpenRouter, or Custom). This abstraction prevents the frontend overlay
  * script from needing to contain complex PHP logic for handling different providers. The function in this file
- * is called by the AI front-end scripts to securely pass the necessary credentials and configuration to the client-side
+ * is called by `ai-overlay.php` to securely pass the necessary credentials and configuration to the client-side
  * JavaScript.
  *
  * ---
@@ -23,6 +23,7 @@
  * - Key Functions: snn_get_ai_api_config().
  * - It processes the raw settings and returns a structured array of API credentials for the frontend.
  *
+ * 3. ai-overlay.php: Manages the frontend user interface that appears inside the Bricks builder.
  * - It calls this file's `snn_get_ai_api_config()` function to get the configuration it needs to make
  * the `fetch` request to the correct AI provider.
  */

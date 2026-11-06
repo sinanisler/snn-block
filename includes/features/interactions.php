@@ -577,8 +577,9 @@ function snn_enqueue_lenis_scripts() {
 
         // Build Lenis configuration with optimizations
         $inline_script = "
+        // Check if URL contains ?bricks=run
         const urlParams = new URLSearchParams(window.location.search);
-        {
+        if (!urlParams.has('bricks') || urlParams.get('bricks') !== 'run') {
             // Performance optimization: Use passive event listeners
             const supportsPassive = (() => {
                 let support = false;
@@ -1329,6 +1330,7 @@ function snn_enqueue_page_transitions() {
 
             $inline_js = "
 (function() {
+    if (new URLSearchParams(window.location.search).get('bricks') === 'run') return;
 
     var TOTAL = " . $duration . ";
     var SZ    = " . $sq_size . ";

@@ -25,6 +25,7 @@
  * determines the correct API endpoint, key, and model to be used by the frontend overlay. This abstracts
  * the logic away from the overlay itself.
  *
+ * 3. ai-overlay.php: Manages the frontend user interface that appears inside the Bricks builder.
  * - Key Functions: snn_add_ai_script_to_footer().
  * - It injects the "AI" button into builder controls, displays the AI assistant modal (both single and bulk),
  * and contains the primary client-side JavaScript for interacting with the AI. It makes the final `fetch`

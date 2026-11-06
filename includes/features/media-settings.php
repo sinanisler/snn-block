@@ -319,7 +319,7 @@ function snn_media_fix_extra_filetype($data, $file, $filename, $mimes) {
 add_filter('wp_check_filetype_and_ext', 'snn_media_fix_extra_filetype', 20, 4);
 
 /**
- * Sanitize SVG uploads with the svg-sanitizer library installed.
+ * Sanitize SVG uploads with the svg-sanitizer library that ships with Bricks.
  * If the library is missing, the SVG is rejected instead of stored unsanitized.
  */
 function snn_media_sanitize_svg_upload($file) {
@@ -332,6 +332,12 @@ function snn_media_sanitize_svg_upload($file) {
         return $file;
     }
 
+    if (!class_exists('\enshrined\svgSanitize\Sanitizer') && defined('BRICKS_PATH')) {
+        $autoload = BRICKS_PATH . 'includes/integrations/svg-sanitizer/library/vendor/autoload.php';
+        if (file_exists($autoload)) {
+            require_once $autoload;
+        }
+    }
     if (!class_exists('\enshrined\svgSanitize\Sanitizer')) {
         $file['error'] = __('SVG sanitizer is not available, so the SVG was not uploaded.', 'snn');
         return $file;

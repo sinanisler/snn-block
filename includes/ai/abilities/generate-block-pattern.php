@@ -310,16 +310,6 @@ BEST PRACTICES:
                     'semantic_class'    => $semantic_class,
                 ) );
 
-                // Through MCP there is no editor open: write the pattern into the post and save it.
-                $saved = false;
-                if ( $post_id && snn_mcp_is_request() ) {
-                    $applied = snn_block_pattern_apply( $post_id, $pattern_markup, $action_type );
-                    if ( is_wp_error( $applied ) ) {
-                        return $applied;
-                    }
-                    $saved = true;
-                }
-
                 // Calculate word count for feedback
                 $word_count = str_word_count( wp_strip_all_tags( $pattern_markup ) );
 
@@ -348,8 +338,7 @@ BEST PRACTICES:
                         'blocks_used' => snn_count_blocks_in_pattern( $pattern_markup ),
                         'word_count'  => $word_count,
                     ),
-                    'requires_client_update'    => ! $saved,
-                    'saved'                     => $saved,
+                    'requires_client_update'    => true,
                     'client_command'            => $client_command,
                 );
             },

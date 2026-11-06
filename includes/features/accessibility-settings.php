@@ -358,8 +358,11 @@ function snn_btn_spacing_right_callback() {
     <?php
 }
 
-// Enqueue new snn-accessibility widget JS
+// Enqueue new snn-accessibility widget JS, but skip when Bricks editor is running.
 function snn_enqueue_accessibility_widget_head() {
+    if ( isset( $_GET['bricks'] ) && 'run' === $_GET['bricks'] ) {
+        return;
+    }
     $opt = get_option('snn_accessibility_settings');
     if ( ! empty( $opt['enqueue_accessibility'] ) ) {
         $src  = get_stylesheet_directory_uri() . '/assets/js/snn-accessibility.js';
@@ -370,8 +373,11 @@ function snn_enqueue_accessibility_widget_head() {
 }
 add_action('wp_enqueue_scripts', 'snn_enqueue_accessibility_widget_head');
 
-// Output widget configuration in head
+// Output widget configuration in head, but skip when Bricks editor is running.
 function snn_output_accessibility_widget_config() {
+    if ( isset( $_GET['bricks'] ) && 'run' === $_GET['bricks'] ) {
+        return;
+    }
     $opt = get_option('snn_accessibility_settings');
     if ( empty( $opt['enqueue_accessibility'] ) ) {
         return;
