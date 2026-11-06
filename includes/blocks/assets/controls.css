@@ -81,7 +81,7 @@
 	line-height: 1.2;
 	color: #1e1e1e;
 	background: #fff;
-	border: 1px solid #8c8f94;
+	border: 1px solid #e5e5e5;
 	border-radius: 2px;
 	box-shadow: none;
 }
@@ -95,7 +95,7 @@
 
 .snn-panel .snn-select:focus,
 .snn-panel .snn-input:focus {
-	border-color: #8c8f94;
+	border-color: #e5e5e5;
 	outline: 2px solid #2271b1;
 	outline-offset: -1px;
 	box-shadow: none;
@@ -136,7 +136,7 @@
 	padding: 0;
 	color: #1e1e1e;
 	background: #f6f7f7;
-	border: 1px solid #8c8f94;
+	border: 1px solid #e5e5e5;
 	border-radius: 2px;
 	cursor: pointer;
 }
@@ -1139,7 +1139,7 @@
 	text-align: left;
 	color: #1e1e1e;
 	background: #fff;
-	border: 1px solid #8c8f94;
+	border: 1px solid #e5e5e5;
 	border-radius: 2px;
 	cursor: pointer;
 	overflow: hidden;
@@ -1355,7 +1355,7 @@
 	margin: 0;
 	overflow: hidden;
 	background: #fff;
-	border: 1px solid #8c8f94;
+	border: 1px solid #e5e5e5;
 	border-radius: 2px;
 	cursor: pointer;
 }
