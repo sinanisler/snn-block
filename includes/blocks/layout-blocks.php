@@ -7,6 +7,9 @@
  *
  * The editor side is assets/layout-blocks.js. Keep the attribute names and the style rules in step
  * with it. The front end is rendered here, so a saved page never depends on the editor.
+ *
+ * Text (snn/text) is the same element with its text in place of inner blocks: a rich text in the editor, and the
+ * text as the element's content on the front end (see inner()).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,10 +23,14 @@ class SNN_Layout_Blocks {
 		'snn/section'   => 'section',
 		'snn/container' => 'div',
 		'snn/div'       => 'div',
+		'snn/text'      => 'p',
 	);
 
 	/** The tags the HTML tag field offers. */
 	const TAGS = array( 'section', 'div', 'header', 'footer', 'main', 'article', 'aside', 'nav' );
+
+	/** The tags a Text block offers: paragraphs and headings, a div and a span. */
+	const TEXT_TAGS = array( 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span' );
 
 	/** The context keys a query loop passes down: the post, its index and the total found. */
 	const CONTEXT_POST  = 'snn/postId';
@@ -41,6 +48,7 @@ class SNN_Layout_Blocks {
 		'snn/section'   => array( 'display' => 'flex', 'flexDirection' => 'column' ),
 		'snn/container' => array( 'display' => 'flex', 'flexDirection' => 'column' ),
 		'snn/div'       => array( 'display' => 'block', 'flexDirection' => 'row' ),
+		'snn/text'      => array( 'display' => 'block', 'flexDirection' => 'row' ),
 	);
 	const FLEX_DIRECTION = array( 'row', 'row-reverse', 'column', 'column-reverse' );
 	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
@@ -150,7 +158,7 @@ class SNN_Layout_Blocks {
 			'animation'       => array( 'type' => 'array', 'default' => array() ),
 			'customCss'       => array( 'type' => 'string', 'default' => '' ),
 			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
-		) + SNN_Style_Props::attributes();
+		) + SNN_Style_Props::attributes() + ( 'snn/text' === $name ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() );
 	}
 
 	/* ------------------------------------------------------------------
@@ -166,7 +174,7 @@ class SNN_Layout_Blocks {
 			if ( ! SNN_Block_Tools::passes( $a['conditions'], self::dynamic_context( $ctx ) ) ) {
 				return '';
 			}
-			return self::element( $a, $block->name, $ctx, self::children( $block, $ctx ) );
+			return self::element( $a, $block->name, $ctx, self::inner( $block, $a, $ctx ) );
 		}
 
 		// The query loop: the element, with its children, once for each post.
@@ -187,7 +195,7 @@ class SNN_Layout_Blocks {
 					if ( ! SNN_Block_Tools::passes( $a['conditions'], self::dynamic_context( $loop_ctx ) ) ) {
 						return '';
 					}
-					return self::element( $a, $block->name, $loop_ctx, self::children( $block, $loop_ctx ) );
+					return self::element( $a, $block->name, $loop_ctx, self::inner( $block, $a, $loop_ctx ) );
 				}
 			);
 		}
@@ -256,6 +264,17 @@ class SNN_Layout_Blocks {
 			$html .= ( new WP_Block( $inner->parsed_block, $ctx ) )->render();
 		}
 		return $html;
+	}
+
+	/**
+	 * What goes inside the element: the inner blocks of a layout block, or the text of a Text block. The text is the
+	 * rich text the editor saved, with only the formats wp_kses_post allows (bold, italic, links and so on).
+	 */
+	private static function inner( $block, array $a, array $ctx ) {
+		if ( 'snn/text' === $block->name ) {
+			return wp_kses_post( $a['content'] );
+		}
+		return self::children( $block, $ctx );
 	}
 
 	/** The element itself: tag, ID, classes and the inline layout style. */
@@ -688,7 +707,8 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = $attributes[ $key ] ?? $spec['default'];
 		}
 
-		$out['tagName']        = in_array( $out['tagName'], self::TAGS, true ) ? $out['tagName'] : $default;
+		$tags                  = 'snn/text' === $block ? self::TEXT_TAGS : self::TAGS;
+		$out['tagName']        = in_array( $out['tagName'], $tags, true ) ? $out['tagName'] : $default;
 		$out['display']        = self::pick( $out['display'], self::DISPLAYS, self::LAYOUT[ $block ]['display'] );
 		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, self::LAYOUT[ $block ]['flexDirection'] );
 		$out['flexWrap']       = self::pick( $out['flexWrap'], self::FLEX_WRAP, 'nowrap' );
@@ -714,6 +734,9 @@ class SNN_Layout_Blocks {
 		$out['responsive']   = self::clean_responsive( $out['responsive'] );
 		$out['conditions']   = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions'] = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
+		if ( 'snn/text' === $block ) {
+			$out['content'] = is_string( $out['content'] ) ? $out['content'] : '';
+		}
 		return $out;
 	}
 
@@ -807,6 +830,7 @@ class SNN_Layout_Blocks {
 					'cssEditor'  => $css_editor,
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,
+				'textTags'  => self::TEXT_TAGS,
 			)
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );

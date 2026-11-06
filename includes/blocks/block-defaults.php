@@ -7,7 +7,7 @@
  * so every block of that type gets it. A block's own settings still win, as usual.
  *
  * Our own blocks (snn/*) are listed as they are built. Section and Container are built (see
- * layout-blocks.php); Div has no defaults. Text, image and video are planned: their defaults
+ * layout-blocks.php); Div has no defaults. Image and video are planned: their defaults
  * apply as soon as the block is registered. Other code can add entries with the filter
  * snn/block_defaults.
  */
@@ -60,7 +60,7 @@ class SNN_Block_Defaults {
 			'core/group'     => array( 'label' => __( 'Group', 'snn' ), 'fields' => array( 'color_background', 'padding', 'block_gap', 'radius', 'shadow' ) ),
 			'snn/section'    => array( 'label' => __( 'Section (our block)', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'padding' ) ),
 			'snn/container'  => array( 'label' => __( 'Container (our block)', 'snn' ), 'fields' => array( 'max_width', 'block_gap', 'padding' ) ),
-			'snn/text'       => array( 'label' => __( 'Text (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
+			'snn/text'       => array( 'label' => __( 'Text (our block)', 'snn' ), 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
 			'snn/image'      => array( 'label' => __( 'Image (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius', 'shadow' ) ),
 			'snn/video'      => array( 'label' => __( 'Video (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius' ) ),
 		);

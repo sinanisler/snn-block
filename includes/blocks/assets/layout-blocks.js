@@ -1,5 +1,6 @@
 /**
- * SNN layout blocks for the block editor: Section, Container and Div.
+ * SNN layout blocks for the block editor: Section, Container, Div and Text. Text has the same panel, without the
+ * query loop; its text is a rich text in the element, and the element takes the style (see registerLayout).
  *
  * The settings sit in the block's inspector, in compact rows (see controls.js):
  *   Layout          display (a dropdown: flex, block, grid), then its settings:
@@ -28,7 +29,7 @@
  */
 ( function ( wp, C, I ) {
 	const { registerBlockType } = wp.blocks;
-	const { InnerBlocks, InspectorControls, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
+	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { createElement: h, Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
@@ -88,6 +89,7 @@
 		'snn/section': { display: 'flex', flexDirection: 'column' },
 		'snn/container': { display: 'flex', flexDirection: 'column' },
 		'snn/div': { display: 'block', flexDirection: 'row' },
+	'snn/text': { display: 'block', flexDirection: 'row' },
 	};
 
 	/** The layout defaults of one block: the shared defaults, with the block's own display and direction. */
@@ -125,6 +127,7 @@
 	};
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
+	const TEXT_TAG_OPTIONS = ( data.textTags || [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span' ] ).map( ( t ) => ( { value: t, label: t } ) );
 	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
 	const ORDER_BY_OPTIONS = data.orderBy || [ { value: 'date', label: __( 'Date', 'snn' ) } ];
 	const ORDER_OPTIONS = [
@@ -1745,7 +1748,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device, base } ) {
+	function Panel( { a, set, tag, parent, title, device, base, text } ) {
 		const q = a.query;
 		const [ tab, setTab ] = useState( 'default' );
 		// null, 'conditions', 'interactions' or 'animations': a sub-panel that takes the whole view (see the end of this function).
@@ -1806,7 +1809,7 @@
 					h( Select, {
 						label: __( 'HTML tag', 'snn' ),
 						value: a.tagName,
-						options: TAG_OPTIONS,
+						options: text ? TEXT_TAG_OPTIONS : TAG_OPTIONS,
 						onChange: ( v ) => set( { tagName: v } ),
 					} )
 				)
@@ -1816,32 +1819,35 @@
 				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
 				h( LayoutFields, { a, set, tag, base } )
 			),
-			h(
-				Group,
-				{ title: __( 'Query loop', 'snn' ) },
-				h( SwitchRow, {
-					label: __( 'Query loop', 'snn' ),
-					checked: q.enabled,
-					onChange: ( v ) => {
-						setQ( { enabled: v } );
-						if ( v ) {
-							setOpenQuery( true );
-						}
-					},
-				} ),
-				h(
-					Accordion,
-					{
-						title: __( 'Query', 'snn' ),
-						open: openQuery,
-						onToggle: setOpenQuery,
-						disabled: ! q.enabled,
-						changed: changedQuery( q ),
-						hint: __( 'Turn on Query loop first.', 'snn' ),
-					},
-					h( QueryFields, { q, setQ } )
-				)
-			),
+			// A Text block has no query loop: its panel leaves the group out.
+			text
+				? null
+				: h(
+					Group,
+					{ title: __( 'Query loop', 'snn' ) },
+					h( SwitchRow, {
+						label: __( 'Query loop', 'snn' ),
+						checked: q.enabled,
+						onChange: ( v ) => {
+							setQ( { enabled: v } );
+							if ( v ) {
+								setOpenQuery( true );
+							}
+						},
+					} ),
+					h(
+						Accordion,
+						{
+							title: __( 'Query', 'snn' ),
+							open: openQuery,
+							onToggle: setOpenQuery,
+							disabled: ! q.enabled,
+							changed: changedQuery( q ),
+							hint: __( 'Turn on Query loop first.', 'snn' ),
+						},
+						h( QueryFields, { q, setQ } )
+					)
+				),
 			h(
 				Disclosure,
 				{ title: __( 'Item', 'snn' ), note: __( 'all viewports', 'snn' ) },
@@ -2011,7 +2017,7 @@
 		};
 	}
 
-	/** One block type. def: the block name, title, default tag. */
+	/** One block type. def: the block name, title, default tag, and text (true for a Text block: a rich text, no inner blocks). */
 	function registerLayout( def ) {
 		registerBlockType( def.name, {
 			apiVersion: 3,
@@ -2035,7 +2041,7 @@
 				shadow: false,
 				position: false,
 			},
-			attributes: withBlockLayout( layoutAttributes( def ), def.name ),
+			attributes: withBlockLayout( def.text ? { ...layoutAttributes( def ), content: { type: 'string', default: '' } } : layoutAttributes( def ), def.name ),
 			edit: function Edit( { attributes: saved, setAttributes, clientId } ) {
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
@@ -2092,6 +2098,29 @@
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
 				const innerProps = useInnerBlocksProps( { style: parts.layout }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
+				// A Text block: its text is a rich text, drawn in the element that takes the layout style (the item
+				// settings stay on the wrapper). The query badge shows as it does for a layout block.
+				if ( def.text ) {
+					return h(
+						Fragment,
+						null,
+						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), text: true } ) ),
+						h(
+							'div',
+							blockProps,
+							a.query.enabled
+								? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
+								: null,
+							h( RichText, {
+								tagName: a.tagName,
+								value: a.content,
+								onChange: ( v ) => set( { content: v } ),
+								placeholder: __( 'Type text', 'snn' ),
+								style: parts.layout,
+							} )
+						)
+					);
+				}
 				return h(
 					Fragment,
 					null,
@@ -2108,9 +2137,12 @@
 			},
 			// The saved markup keeps the inner blocks (a save of null would drop them). The front end
 			// is rendered by PHP from those inner blocks (includes/blocks/layout-blocks.php).
-			save: function Save() {
-				return h( InnerBlocks.Content, null );
-			},
+			// A Text block has no inner blocks: it saves nothing, its text is an attribute, and PHP renders it.
+			save: def.text
+				? () => null
+				: function Save() {
+					return h( InnerBlocks.Content, null );
+				},
 		} );
 	}
 
@@ -2131,5 +2163,12 @@
 		title: __( 'Div', 'snn' ),
 		tag: 'div',
 		icon: 'editor-code',
+	} );
+	registerLayout( {
+		name: 'snn/text',
+		title: __( 'Text', 'snn' ),
+		tag: 'p',
+		icon: 'editor-paragraph',
+		text: true,
 	} );
 } )( window.wp, window.snnControls, window.snnLayoutIcons );
