@@ -1211,9 +1211,16 @@
 	width: 236px;
 }
 
-/* The Style tab, as Bricks lays it out: a rail of group icons, the group's name, then its sections one under another */
+/* The Style tab, as Bricks lays it out: a rail of group icons, the group's name, then its sections one under another.
+ * The rail sticks under the sidebar's own sticky header (Page | Block, 47 px tall in WordPress 7.1), so the group
+ * icons stay in view while the contents scroll. */
 .snn-rail {
-	padding: 8px var(--snn-inset) 0;
+	position: sticky;
+	top: 47px;
+	z-index: 2;
+	padding: 8px var(--snn-inset) 6px;
+	background: #fff;
+	border-bottom: 1px solid #e5e5e5;
 }
 
 .snn-rail .snn-seg {
