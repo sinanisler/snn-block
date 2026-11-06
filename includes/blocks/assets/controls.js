@@ -129,7 +129,10 @@
 		);
 	}
 
-	/** A row of icon buttons, one per option. options: { value, label, glyph (an icon element) }. */
+	/**
+	 * A row of icon buttons, one per option. options: { value, label, glyph (an icon element), changed (a small dot on
+	 * the button's top right, when the option holds a change) }.
+	 */
 	function Segmented( { value, options, onChange, label } ) {
 		return h(
 			'div',
@@ -146,7 +149,8 @@
 						title: o.label,
 						onClick: () => onChange( o.value ),
 					},
-					o.glyph || null
+					o.glyph || null,
+					o.changed ? h( 'span', { className: 'snn-dot snn-seg-dot', 'aria-hidden': 'true' } ) : null
 				)
 			)
 		);

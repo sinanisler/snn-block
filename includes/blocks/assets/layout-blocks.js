@@ -1651,6 +1651,17 @@
 		return page.sections.reduce( ( all, s ) => all.concat( s.rows.reduce( ( ks, r ) => ks.concat( typeof r === 'string' ? [ r ] : r.keys ), [] ) ), [] );
 	}
 
+	/** The views a value can be set on: the rail's dot counts all of them, not only the view on show. */
+	const ALL_VIEWS = [ 'Desktop', 'Tablet', 'Mobile' ];
+
+	/** True when a Style group holds a value on any view, so its rail icon shows a dot. The CSS group counts its text. */
+	function groupChanged( a, page ) {
+		if ( page.kind === 'css' ) {
+			return !! a.customCss;
+		}
+		return pageKeys( page ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
+	}
+
 	/** The note of a Style group: how many of its properties the current view sets. */
 	function countView( a, device, keys ) {
 		const n = keys.filter( ( k ) => {
@@ -1875,6 +1886,7 @@
 							value: p.id,
 							label: p.label,
 							glyph: p.text ? h( 'span', { className: 'snn-glyph-text', 'aria-hidden': 'true' }, p.text ) : h( Glyph, { name: p.glyph } ),
+							changed: groupChanged( a, p ),
 						} ) ),
 					onChange: setStylePage,
 				} )

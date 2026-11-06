@@ -1276,6 +1276,14 @@
 
 .snn-rail .snn-seg-btn {
 	height: 24px;
+	position: relative;
+}
+
+/* The dot on a group icon: the group holds a value on some view (Desktop, Tablet or Mobile). Top right, small. */
+.snn-rail .snn-seg-dot {
+	position: absolute;
+	top: 2px;
+	right: 2px;
 }
 
 .snn-page-head {
