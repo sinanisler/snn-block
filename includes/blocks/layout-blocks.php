@@ -380,8 +380,11 @@ class SNN_Layout_Blocks {
 	/**
 	 * The inline layout style. Block display needs none, so it adds nothing and the theme's own
 	 * rules apply. Flex and grid add their display and their own settings. Gap, column gap and row
-	 * gap apply to flex and grid. The item settings (align self, grow, span and so on) act on the
-	 * block inside a flex or grid parent, so they are written whatever the block's own display is.
+	 * gap apply to flex and grid. Each setting is written only for the display that uses it, as the
+	 * panel shows it: the flex settings for flex, the grid settings for grid, and none of the other
+	 * display's (its values stay stored, but are not rendered). The item settings act on the block inside
+	 * its parent: align self for flex and grid, grow, shrink and basis for flex, justify self, the lines
+	 * and the area for grid, and order for every display.
 	 */
 	public static function style( array $a, array $dyn = array(), $view = false ) {
 		$css     = array();
@@ -470,12 +473,12 @@ class SNN_Layout_Blocks {
 			}
 		}
 
-		// Item settings: how this block sits inside its flex or grid parent.
-		$self = self::grid_word( self::pick( $a['alignSelf'], self::ALIGN_SELF, '' ) );
+		// Item settings: how this block sits inside its parent, each one for the display that uses it.
+		$self = ( $flex || $grid ) ? self::grid_word( self::pick( $a['alignSelf'], self::ALIGN_SELF, '' ) ) : '';
 		if ( '' !== $self ) {
 			$css[] = 'align-self:' . $self;
 		}
-		$jself = self::grid_word( self::pick( $a['justifySelf'], self::JUSTIFY_SELF, '' ) );
+		$jself = $grid ? self::grid_word( self::pick( $a['justifySelf'], self::JUSTIFY_SELF, '' ) ) : '';
 		if ( '' !== $jself ) {
 			$css[] = 'justify-self:' . $jself;
 		}
@@ -483,28 +486,28 @@ class SNN_Layout_Blocks {
 		if ( '' !== $order ) {
 			$css[] = 'order:' . $order;
 		}
-		$grow = self::number( SNN_Dynamic_Data::render( $a['flexGrow'], $dyn, 'plain' ) );
+		$grow = $flex ? self::number( SNN_Dynamic_Data::render( $a['flexGrow'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $grow ) {
 			$css[] = 'flex-grow:' . $grow;
 		}
-		$shrink = self::number( SNN_Dynamic_Data::render( $a['flexShrink'], $dyn, 'plain' ) );
+		$shrink = $flex ? self::number( SNN_Dynamic_Data::render( $a['flexShrink'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $shrink ) {
 			$css[] = 'flex-shrink:' . $shrink;
 		}
-		$basis = self::length_or_auto( SNN_Dynamic_Data::render( $a['flexBasis'], $dyn, 'plain' ) );
+		$basis = $flex ? self::length_or_auto( SNN_Dynamic_Data::render( $a['flexBasis'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $basis ) {
 			$css[] = 'flex-basis:' . $basis;
 		}
 		// A named area first, so that a column or row set on the same block wins over it.
-		$area = self::ident( SNN_Dynamic_Data::render( $a['gridArea'], $dyn, 'plain' ) );
+		$area = $grid ? self::ident( SNN_Dynamic_Data::render( $a['gridArea'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $area ) {
 			$css[] = 'grid-area:' . $area;
 		}
-		$column = self::placement( SNN_Dynamic_Data::render( $a['columnStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['columnSpan'], $dyn, 'plain' ) );
+		$column = $grid ? self::placement( SNN_Dynamic_Data::render( $a['columnStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['columnSpan'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $column ) {
 			$css[] = 'grid-column:' . $column;
 		}
-		$row = self::placement( SNN_Dynamic_Data::render( $a['rowStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['rowSpan'], $dyn, 'plain' ) );
+		$row = $grid ? self::placement( SNN_Dynamic_Data::render( $a['rowStart'], $dyn, 'plain' ), SNN_Dynamic_Data::render( $a['rowSpan'], $dyn, 'plain' ) ) : '';
 		if ( '' !== $row ) {
 			$css[] = 'grid-row:' . $row;
 		}

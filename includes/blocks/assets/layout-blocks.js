@@ -3,12 +3,13 @@
  * query loop; its text is a rich text in the element, and the element takes the style (see registerLayout).
  *
  * The settings sit in the block's inspector, in compact rows (see controls.js):
- *   Layout          display (a dropdown: flex, block, grid), then its settings:
- *                   direction (column, row and a reverse toggle, as icons), wrap, justify, align and gaps;
- *                   grid columns, rows, flow, justify items and align content. The settings are icons where a
- *                   choice has a picture (layout-icons.js), and the pictures follow the direction. The item
- *                   settings come last (how the block sits in its flex or grid parent: order, grow, shrink,
- *                   basis, justify self, column and row start and span, grid area). They always show.
+ *   Layout          display (a dropdown: flex, block, grid), then the rows of that display only, as Bricks shows them:
+ *                   flex: direction (column, row and a reverse toggle, as icons), wrap, justify, align, align self,
+ *                   gaps, and the item settings flex grow, shrink and basis. Grid: columns, rows, flow, justify items,
+ *                   align content, align self, gaps, and the item settings justify self, column and row start and span,
+ *                   grid area. Block: none. Order is for every display. The settings are icons where a choice has a
+ *                   picture (layout-icons.js), and the pictures follow the direction. Values of the other display stay
+ *                   stored, but the front end does not render them.
  *   Query loop      a switch. Turned on, the Query section below it can open.
  *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
  *                   offset, child of, sticky, include and exclude, authors, main query.
@@ -411,36 +412,37 @@
 			}
 		}
 
-		// Item settings act on the block inside its parent, so they are written whatever the display.
-		if ( a.alignSelf ) {
+		// Item settings, each for the display that uses it (the same rules as the front end): align self for flex and grid,
+		// justify self for grid, grow, shrink and basis for flex, the lines and the area for grid, and order for every display.
+		if ( ( flex || grid ) && a.alignSelf ) {
 			css.alignSelf = gridWord( a.alignSelf );
 		}
-		if ( a.justifySelf ) {
+		if ( grid && a.justifySelf ) {
 			css.justifySelf = gridWord( a.justifySelf );
 		}
 		const order = str( a.order ).trim();
 		if ( INT_OK.test( order ) ) {
 			css.order = order;
 		}
-		if ( NUMBER_OK.test( str( a.flexGrow ) ) ) {
+		if ( flex && NUMBER_OK.test( str( a.flexGrow ) ) ) {
 			css.flexGrow = a.flexGrow;
 		}
-		if ( NUMBER_OK.test( str( a.flexShrink ) ) ) {
+		if ( flex && NUMBER_OK.test( str( a.flexShrink ) ) ) {
 			css.flexShrink = a.flexShrink;
 		}
-		const basis = lengthCss( a.flexBasis );
+		const basis = flex ? lengthCss( a.flexBasis ) : '';
 		if ( basis ) {
 			css.flexBasis = basis;
 		}
-		const area = str( a.gridArea ).trim();
+		const area = grid ? str( a.gridArea ).trim() : '';
 		if ( IDENT_OK.test( area ) ) {
 			css.gridArea = area;
 		}
-		const column = placementCss( a.columnStart, a.columnSpan );
+		const column = grid ? placementCss( a.columnStart, a.columnSpan ) : '';
 		if ( column ) {
 			css.gridColumn = column;
 		}
-		const row = placementCss( a.rowStart, a.rowSpan );
+		const row = grid ? placementCss( a.rowStart, a.rowSpan ) : '';
 		if ( row ) {
 			css.gridRow = row;
 		}
@@ -797,7 +799,7 @@
 	}
 
 	/**
-	 * The flex and grid settings, in the order they are used, then the item settings. Every setting is per view
+	 * The flex or grid settings of the block's own display (none for block), in the order they are used, then the item settings for that display. Every setting is per view
 	 * (ViewValue): Desktop holds the base, and Tablet and Mobile set their own. The rows follow the display the panel's
 	 * view shows (effectiveValues), so a Tablet that is block shows no flex rows. Align self sits under Align: it acts on
 	 * the parent's cross axis, so its pictures turn with the parent's direction.
@@ -860,11 +862,13 @@
 			);
 		}
 
-		// The parent's cross axis: the pictures turn when the parent is a flex column. Always shown, as the item settings are.
-		const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
-		rows.push(
-			v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
-		);
+		// Align self is for a flex or grid box. Its pictures turn when the parent is a flex column (the parent's cross axis).
+		if ( box ) {
+			const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
+			rows.push(
+				v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
+			);
+		}
 
 		if ( flex && wrapped ) {
 			rows.push(
@@ -886,20 +890,26 @@
 			);
 		}
 
-		// The item settings: how the block sits in its flex or grid parent. Always shown, whatever the block's own display
-		// and its parent: the panel does not decide for the person which of them a block needs.
-		rows.push(
-			v( 'order', 'order', { label: __( 'Order', 'snn' ), placeholder: '0', inputMode: 'numeric' } ),
-			v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
-			v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
-			v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } ),
-			v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
-			v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
-			v( 'column-span', 'columnSpan', { label: __( 'Column span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
-			v( 'row-start', 'rowStart', { label: __( 'Row start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
-			v( 'row-span', 'rowSpan', { label: __( 'Row span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
-			v( 'area', 'gridArea', { label: __( 'Grid area', 'snn' ), placeholder: __( 'name', 'snn' ), variables: null } )
-		);
+		// The item settings follow the display, as the flex and grid settings do: grow, shrink and basis for flex, and the
+		// place in the grid for grid. Order is for every display (the front end renders the same rules).
+		if ( flex ) {
+			rows.push(
+				v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
+				v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
+				v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } )
+			);
+		}
+		if ( grid ) {
+			rows.push(
+				v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
+				v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+				v( 'column-span', 'columnSpan', { label: __( 'Column span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+				v( 'row-start', 'rowStart', { label: __( 'Row start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+				v( 'row-span', 'rowSpan', { label: __( 'Row span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+				v( 'area', 'gridArea', { label: __( 'Grid area', 'snn' ), placeholder: __( 'name', 'snn' ), variables: null } )
+			);
+		}
+		rows.push( v( 'order', 'order', { label: __( 'Order', 'snn' ), placeholder: '0', inputMode: 'numeric' } ) );
 
 		return h( Fragment, null, rows );
 	}
