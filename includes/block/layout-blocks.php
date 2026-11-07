@@ -924,6 +924,9 @@ class SNN_Layout_Blocks {
 		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, $blocks_deps, self::version( $blocks ), true );
 		// The block definitions (blocks/<name>/block.php), read by the editor script before it registers the blocks.
 		wp_add_inline_script( 'snn-layout-blocks', 'window.snnLayoutBlockDefs = ' . wp_json_encode( array_values( self::definitions() ), JSON_HEX_TAG ) . ';', 'before' );
+		// Copy and paste of styles, conditions, interactions and animations in the block menu (assets/block-clipboard.js).
+		$clipboard = 'includes/block/assets/block-clipboard.js';
+		wp_enqueue_script( 'snn-block-clipboard', SNN_URL . $clipboard, array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-element', 'wp-i18n', 'wp-plugins' ), self::version( $clipboard ), true );
 	}
 
 	private static function version( $file ) {
