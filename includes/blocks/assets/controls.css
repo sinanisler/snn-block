@@ -1134,6 +1134,12 @@
 	color: #646970;
 }
 
+/* A colour variable's swatch in the CSS editor's autocomplete: the list item is not a flex row, so the swatch is a block */
+.CodeMirror-hints .snn-swatch {
+	display: inline-block;
+	vertical-align: middle;
+}
+
 /* A colour variable's swatch in the picker */
 .snn-swatch {
 	flex: 0 0 auto;

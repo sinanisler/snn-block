@@ -1292,6 +1292,106 @@
 	/** What an empty CSS editor starts with: the block's own selector, with the caret inside the rule. */
 	const CSS_STARTER = '%root% {\n\t\n}';
 
+		/** The custom CSS as the front end prints it (clean_css in layout-blocks.php): no style or script tags, comments or imports, 4000 characters at most. */
+		function cleanCss( value ) {
+			return String( value || '' )
+				.slice( 0, 4000 )
+				.replace( /<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/gi, '' )
+				.trim();
+		}
+
+		/** A class for one CSS text in the editor. The editor scopes the rules with it, as the front end scopes them with snn-c-<md5>. */
+		function cssScope( css ) {
+			let hash = 2166136261;
+			for ( let i = 0; i < css.length; i++ ) {
+				hash = Math.imul( hash ^ css.charCodeAt( i ), 16777619 );
+			}
+			return 'snn-c-' + ( hash >>> 0 ).toString( 16 );
+		}
+
+		/**
+		 * Where the caret is in a CSS value: inside a rule, after the colon of the current declaration. Also the word
+		 * before the caret (var( and the dashes count as part of it) and the place where that word starts.
+		 */
+		function cssValueAt( cm ) {
+			const cur = cm.getCursor();
+			const before = cm.getRange( { line: 0, ch: 0 }, cur );
+			const open = before.lastIndexOf( '{' );
+			const declaration = before.slice( Math.max( open, before.lastIndexOf( ';' ) ) + 1 );
+			const line = cm.getLine( cur.line ).slice( 0, cur.ch );
+			const word = /(?:var\(\s*)?[\w-]*$/.exec( line )[ 0 ];
+			return {
+				cur,
+				word,
+				line,
+				from: { line: cur.line, ch: cur.ch - word.length },
+				prop: ( /([a-z-]+)\s*:[^:]*$/i.exec( declaration ) || [ '', '' ] )[ 1 ].toLowerCase(),
+				inValue: open > before.lastIndexOf( '}' ) && declaration.indexOf( ':' ) !== -1,
+			};
+		}
+
+		/**
+		 * Which kind of variable is listed first for a property (the V picker's rule): sizes for a size property, colours
+		 * for everything else. Returns 0 for the kind that comes first and 1 for the other.
+		 */
+		function kindRank( kind, prop ) {
+			const sizeProp = /^(margin|padding|gap|row-gap|column-gap|inset|top|right|bottom|left|width|height|min-width|min-height|max-width|max-height|font-size|line-height|letter-spacing|border-width|border-radius|flex-basis|text-indent|outline-offset)/;
+			const sizeFirst = sizeProp.test( prop ) && ! /color|fill|stroke|shadow/.test( prop );
+			return ( kind === 'size' ) === sizeFirst ? 0 : 1;
+		}
+
+		/** One variable as a completion: its name (--black), a swatch for a colour, and the var() text it writes. */
+		function variableCompletion( it ) {
+			const name = '--' + it.label;
+			return {
+				text: it.value,
+				displayText: name,
+				render: function ( elt ) {
+					if ( it.color ) {
+						const swatch = document.createElement( 'span' );
+						swatch.className = 'snn-swatch';
+						swatch.style.background = it.color;
+						elt.appendChild( swatch );
+					}
+					elt.appendChild( document.createTextNode( name ) );
+				},
+			};
+		}
+
+		/**
+		 * The autocomplete of the CSS editor. In a value (color: , padding: ) it offers the variables first: the same
+		 * colours and sizes the V button lists, filtered by what is typed. Then the CodeMirror keyword list, as before.
+		 * Anywhere else it is the keyword list alone.
+		 */
+		function cssHint( cm, options ) {
+			const at = cssValueAt( cm );
+			// A lone r at the start of a word is the %root% shortcut (Tab): no list opens for it, so Tab can write %root%.
+			if ( /(^|[\s{};,>+~(])r$/.test( at.line ) ) {
+				return undefined;
+			}
+			const helper = cm.getHelper( at.cur, 'hint' );
+			const keywords = typeof helper === 'function' ? helper( cm, options ) : null;
+			if ( ! at.inValue ) {
+				return keywords;
+			}
+			const typed = at.word.replace( /^var\(\s*/, '' ).replace( /^-+/, '' ).toLowerCase();
+			const list = [];
+			VARIABLE_GROUPS.slice().sort( ( a, b ) => kindRank( a.kind, at.prop ) - kindRank( b.kind, at.prop ) ).forEach( ( g ) =>
+				g.items.forEach( ( it ) => {
+					if ( it.label.toLowerCase().indexOf( typed ) !== -1 ) {
+						list.push( variableCompletion( it ) );
+					}
+				} )
+			);
+			// After var( only variables fit, so the keywords are left out there.
+			if ( keywords && keywords.list && ! /^var\(/.test( at.word ) ) {
+				keywords.list.forEach( ( word ) => list.push( word ) );
+			}
+			// The caret is inside an auto-closed var( ): the closing bracket after the caret is replaced with the variable.
+			const closes = /^var\(/.test( at.word ) && cm.getRange( at.cur, { line: at.cur.line, ch: at.cur.ch + 1 } ) === ')';
+			return { list, from: at.from, to: closes ? { line: at.cur.line, ch: at.cur.ch + 1 } : at.cur };
+		}
+
 	/**
 	 * The block's CSS in the code editor the code snippets use (wp.codeEditor, CodeMirror). An empty editor starts
 	 * with %root% { }. Typing r and pressing Tab writes %root%. The selector list writes a rule at the caret.
@@ -1313,6 +1413,14 @@
 			}
 			node.value = value || '';
 			const ed = wp.codeEditor.initialize( node, editor ).codemirror;
+			// The autocomplete: cssHint (variables in a value, then the keywords). Typing - or ( in a value opens it as well.
+			ed.setOption( 'hintOptions', Object.assign( {}, ed.getOption( 'hintOptions' ) || {}, { hint: cssHint, completeSingle: false } ) );
+			ed.on( 'inputRead', ( c, change ) => {
+				const typed = change.text.join( '' );
+				if ( change.origin === '+input' && ( typed === '-' || typed === '(' ) && cssValueAt( c ).inValue ) {
+					c.showHint( { completeSingle: false } );
+				}
+			} );
 			cm.current = ed;
 			if ( ! ed.getValue() ) {
 				// The selector is there to write in. Nothing is saved until the author types.
@@ -1331,6 +1439,10 @@
 				'extraKeys',
 				Object.assign( {}, ed.getOption( 'extraKeys' ) || {}, {
 					Tab: ( c ) => {
+						// A completion left open by the r (no list shows for it) would reopen on the new text: close it first.
+						if ( c.state.completionActive ) {
+							c.state.completionActive.close();
+						}
 						const at = c.getCursor();
 						if ( /(^|[\s{};,>+~(])r$/.test( c.getLine( at.line ).slice( 0, at.ch ) ) ) {
 							c.replaceRange( '%root%', { line: at.line, ch: at.ch - 1 }, at );
@@ -2087,9 +2199,14 @@
 				}, [] );
 				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
 				const parts = splitStyle( styleFor( effectiveValues( a, device ) ) );
+				// The custom CSS as the front end prints it, scoped to this block: the class goes on the wrapper, the
+				// rules in a style element inside it. Only for an administrator (the editor shows the CSS for canCss).
+				const cssText = data.canCss ? cleanCss( a.customCss ) : '';
+				const cssScoped = cssText ? cssScope( cssText ) : '';
+				const cssRules = cssScoped ? h( 'style', null, cssText.split( '%root%' ).join( '.' + cssScoped ) ) : null;
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
-					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses ].filter( Boolean ).join( ' ' ),
+					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses, cssScoped ].filter( Boolean ).join( ' ' ),
 					style: parts.item,
 					'data-animate': Array.isArray( a.animation ) && a.animation.length ? a.animation.join( ',' ) : undefined,
 				} );
@@ -2111,6 +2228,7 @@
 							a.query.enabled
 								? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 								: null,
+							cssRules,
 							h( RichText, {
 								tagName: a.tagName,
 								value: a.content,
@@ -2131,6 +2249,7 @@
 						a.query.enabled
 							? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 							: null,
+						cssRules,
 						h( 'div', innerProps )
 					)
 				);
