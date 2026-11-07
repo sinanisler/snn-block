@@ -8,6 +8,7 @@
  *   controls/            Shared controls for every block panel: controls.js and .css, tooltips, block tools
  *   assets/              Scripts, stylesheets and icons: the global styles modal, the layout blocks editor script, layout icons, interactions
  *   editor-settings.php  Editor switches shared with the Block Editor Settings page (core blocks, top toolbar)
+ *   editor-list-view.php The width of the List View panel in the block editor
  *   block-defaults.php   The blocks and their default styles (the Global Styles and Block Styles tab)
  *   global-styles.php    Global styles: palette, fonts, sizes, block defaults; theme.json; REST
  *   page-styles.php      Page styles: one page's background, text colour, font, size, line height and body classes
@@ -25,6 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/utilities/fonts.php';
 require_once __DIR__ . '/editor-settings.php';
+require_once __DIR__ . '/editor-list-view.php';
 require_once __DIR__ . '/block-defaults.php';
 require_once __DIR__ . '/global-styles.php';
 require_once __DIR__ . '/page-styles.php';
