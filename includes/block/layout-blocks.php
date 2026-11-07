@@ -212,6 +212,9 @@ class SNN_Layout_Blocks {
 			'conditions'      => array( 'type' => 'array', 'default' => array() ),
 			'interactions'    => array( 'type' => 'array', 'default' => array() ),
 			'animation'       => array( 'type' => 'array', 'default' => array() ),
+			// The GSAP timeline of the pane: tweens (start, duration, stagger, ease, from and to) and the Scroll Trigger.
+			'gsapTweens'      => array( 'type' => 'array', 'default' => array() ),
+			'gsapScroll'      => array( 'type' => 'object', 'default' => array() ),
 			'customCss'       => array( 'type' => 'string', 'default' => '' ),
 			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
 		) + SNN_Style_Props::attributes() + ( self::is_text( $name ) ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() );
@@ -384,7 +387,7 @@ class SNN_Layout_Blocks {
 
 		// GSAP animations (the Animations icon): the presets and modifiers the block plays. Written only while the
 		// GSAP setting is on; the runtime is loaded site-wide by that setting (assets/js/gsap-data-animate.js).
-		$animation = SNN_Animation::enabled() ? SNN_Animation::data_animate( $a['animation'] ) : '';
+		$animation = SNN_Animation::enabled() ? SNN_Animation::block_data_animate( $a ) : '';
 		if ( '' !== $animation ) {
 			$extra['data-animate'] = $animation;
 		}
@@ -787,6 +790,8 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 		}
 		$out['animation']        = SNN_Animation::clean_tokens( $out['animation'] );
+		$out['gsapTweens']       = SNN_Animation::clean_tweens( $out['gsapTweens'] );
+		$out['gsapScroll']       = SNN_Animation::clean_scroll( $out['gsapScroll'] );
 		$out['customCss']        = self::clean_css( $out['customCss'] );
 		$out['customAttributes'] = self::clean_attributes( $out['customAttributes'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
@@ -869,13 +874,19 @@ class SNN_Layout_Blocks {
 		$tools  = 'includes/block/controls/block-tools.js';
 		$style  = 'includes/block/utilities/style-props.js';
 		$tips   = 'includes/block/controls/tooltips.js';
+		$pane   = 'includes/block/controls/animation-pane.js';
+		$pane_css = 'includes/block/controls/animation-pane.css';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
+		wp_enqueue_style( 'snn-animation-pane', SNN_URL . $pane_css, array( 'snn-controls' ), self::version( $pane_css ) );
 		// The tooltips (tooltips.js) load first: the controls draw their tip attributes from them.
 		wp_enqueue_script( 'snn-tooltips', SNN_URL . $tips, array( 'wp-i18n' ), self::version( $tips ), true );
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'snn-tooltips' ), self::version( $js ), true );
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
+		// The GSAP pane: its timeline, presets and Scroll Trigger, with a preview on the canvas.
+		wp_enqueue_script( 'snn-animation-pane', SNN_URL . $pane, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $pane ), true );
+		wp_localize_script( 'snn-animation-pane', 'snnAnimationData', SNN_Animation::editor_data() );
 		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
 		// highlighting off: the group then shows a plain textarea.
 		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
@@ -897,7 +908,7 @@ class SNN_Layout_Blocks {
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props' );
 		if ( $css_editor ) {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}

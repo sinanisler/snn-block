@@ -1,0 +1,241 @@
+/* The GSAP pane (animation-pane.js): the transport, the timeline with its ruler and bars, the tween and property
+   fields, and the Scroll Trigger. The controls around it (rows, switches, accordions, inputs) come from controls.css. */
+
+.snn-anp {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+/* Transport: rewind, play and the time */
+.snn-anp-transport {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.snn-anp-round {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	color: #1e1e1e;
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.snn-anp-round.is-primary {
+	color: #fff;
+	background: #3858e9;
+	border-color: #3858e9;
+}
+
+.snn-anp-round:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.snn-anp-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.snn-anp-time {
+	margin-left: auto;
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 11px;
+	color: #757575;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* Timeline: ruler on top, one lane with the bars, the playhead over both */
+.snn-anp-tl {
+	position: relative;
+	margin: 0 0 6px;
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 3px;
+	user-select: none;
+	overflow: hidden;
+}
+
+.snn-anp-ruler {
+	position: relative;
+	height: 20px;
+	margin-left: 56px;
+	border-bottom: 1px solid #e0e0e0;
+	cursor: ew-resize;
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 9px;
+	color: #757575;
+}
+
+.snn-anp-tick {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	border-left: 1px solid #e0e0e0;
+}
+
+.snn-anp-tick-label {
+	position: absolute;
+	top: 4px;
+	font-weight: 400;
+	transform: translateX(3px);
+}
+
+.snn-anp-lanes {
+	display: flex;
+}
+
+.snn-anp-name {
+	flex: none;
+	width: 56px;
+	padding: 0 6px;
+	font-size: 11px;
+	line-height: 26px;
+	color: #1e1e1e;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-right: 1px solid #e0e0e0;
+}
+
+.snn-anp-lane {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+	height: 26px;
+}
+
+.snn-anp-bar {
+	position: absolute;
+	top: 4px;
+	box-sizing: border-box;
+	height: 18px;
+	padding: 0 4px;
+	overflow: hidden;
+	white-space: nowrap;
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 9px;
+	line-height: 16px;
+	color: #1e1e1e;
+	background: #d6defc;
+	border: 1px solid #3858e9;
+	border-radius: 3px;
+	cursor: grab;
+}
+
+.snn-anp-bar.is-on {
+	color: #fff;
+	background: #3858e9;
+}
+
+.snn-anp-bar-text {
+	pointer-events: none;
+}
+
+.snn-anp-rz {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 6px;
+	cursor: ew-resize;
+}
+
+.snn-anp-ph {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 2px;
+	z-index: 2;
+	background: #e65054;
+	pointer-events: none;
+}
+
+.snn-anp-ph::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: -4px;
+	border: 5px solid transparent;
+	border-top-color: #e65054;
+}
+
+.snn-anp-hint {
+	margin: 4px 0 6px;
+	font-size: 11px;
+	line-height: 1.5;
+	color: #757575;
+}
+
+/* Tween fields */
+.snn-anp-curve {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 36px;
+	border: 1px solid #e0e0e0;
+	border-radius: 3px;
+}
+
+.snn-anp-danger {
+	color: #e65054;
+}
+
+/* Properties: prop, from, to */
+.snn-anp-grid {
+	display: grid;
+	grid-template-columns: 62px 1fr 1fr;
+	gap: 4px 6px;
+	align-items: center;
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 11px;
+}
+
+.snn-anp-h {
+	font-size: 10px;
+	text-transform: uppercase;
+	color: #757575;
+}
+
+.snn-anp-prop {
+	color: #1e1e1e;
+}
+
+.snn-anp-num {
+	box-sizing: border-box;
+	width: 100%;
+	height: 24px;
+	padding: 0 6px;
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 11px;
+}
+
+/* Scroll Trigger: start and end side by side; the fields off while the trigger is off */
+.snn-anp-two {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+	margin: 4px 0;
+}
+
+.snn-anp-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+
+.snn-anp-off {
+	opacity: 0.45;
+	pointer-events: none;
+}

@@ -697,14 +697,15 @@
 	 * Select Animation: the GSAP presets and modifiers (animation.php), in groups, with a search. Several can be
 	 * chosen (the block plays them together), or one (an interaction's action). The choices show as chips.
 	 */
-	function AnimationPicker( { value, onChange, multiple, tip } ) {
+	function AnimationPicker( { value, onChange, multiple, tip, groups: groupsOf } ) {
 		const [ open, setOpen ] = useState( false );
 		const wrap = useRef( null );
 		const pop = useRef( null );
 		usePopPlacement( open, wrap, pop );
 		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ) );
 		const [ query, setQuery ] = useState( '' );
-		const groups = data.animations || [];
+		// The groups to offer: all of them, unless the caller passes its own (the GSAP pane leaves out Scroll).
+		const groups = groupsOf || data.animations || [];
 		const labelOf = {};
 		groups.forEach( ( g ) => g.items.forEach( ( i ) => {
 			labelOf[ i.value ] = i.label;

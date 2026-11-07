@@ -9,7 +9,7 @@
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
  *   InteractionsEditor  when a trigger happens, do an action on this element or on the one with an ID
  *                       (Start animation plays a normal animation: fade in, slide, zoom...)
- *   AnimationsEditor    the GSAP animations of the block: one picker, several can be stacked
+ *   (the GSAP animations pane is controls/animation-pane.js, not here)
  *
  * Loaded before layout-blocks.js (see includes/block/layout-blocks.php), which uses these parts in its panel.
  * The catalogs (conditions, triggers, actions) come from block-tools.php through snnBlockToolsData.
@@ -18,7 +18,7 @@
 ( function ( wp, C ) {
 	const { createElement: h, Fragment, useState, useRef } = wp.element;
 	const { __ } = wp.i18n;
-	const { Row, Select, TextField, AnimationPicker, tipAttr } = C;
+	const { Row, Select, TextField, tipAttr } = C;
 	const data = window.snnBlockToolsData || {};
 	const CATALOG = data.conditions || [];
 	const GROUPS = data.groups || {};
@@ -576,26 +576,7 @@
 		);
 	}
 
-	/**
-	 * The GSAP animations of the block (the Animations icon). One picker: the animations stack, each plays in
-	 * its turn with its modifiers (the data-animate values, see animation-presets.php).
-	 */
-	function AnimationsEditor( { value, onChange } ) {
-		const list = Array.isArray( value ) ? value : [];
-		return h(
-			'div',
-			{ className: 'snn-bt-anim' },
-			h(
-				Row,
-				{ label: __( 'Animation', 'snn' ), changed: list.length > 0, tip: 'gsapAnimation' },
-				h( AnimationPicker, { value: list, multiple: true, tip: 'gsapAnimation', onChange } )
-			),
-			h( 'p', { className: 'snn-hint' }, __( 'Animations play on the front end. Add more than one to stack them.', 'snn' ) )
-		);
-	}
-
 	window.snnBlockTools = {
-		AnimationsEditor,
 		HeadIcons,
 		ClassesEditor,
 		AttributesEditor,

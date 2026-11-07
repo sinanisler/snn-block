@@ -10,7 +10,12 @@
  *
  * The animations are on only when the GSAP setting is on (Interactions and Animations settings, features/
  * interactions.php). That setting loads the GSAP runtime on every front-end page, so the blocks do not load it
- * again. In the editor the canvas does not play the animations; the panel shows their names.
+ * again. In the editor the panel's pane (controls/animation-pane.js) plays the block's animations on the canvas as a
+ * preview; the canvas itself does not play them.
+ *
+ * A block keeps its animations in two ways. The pane writes tweens (gsapTweens, with gsapScroll for the Scroll
+ * Trigger): a timeline with a start, duration, stagger, ease and from and to values per tween. The older list
+ * (animation, presets only) still renders when a block has no tweens.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,6 +26,22 @@ class SNN_Animation {
 
 	/** The most animations one block may carry. */
 	const MAX = 20;
+
+	/**
+	 * The easings the pane offers. A comma would split the option list, so the two-number forms (elastic.out(1,0.4))
+	 * are not here.
+	 */
+	const EASES = array( 'none', 'power1.out', 'power2.out', 'power3.out', 'power4.out', 'power2.inOut', 'back.out(1.7)', 'elastic.out', 'bounce.out', 'expo.out', 'circ.inOut', 'sine.inOut' );
+
+	/** The properties of a tween: the CSS name the runtime reads, the unit written after the number, and the range. */
+	const PROPS = array(
+		'x'        => array( 'css' => 'x', 'unit' => 'px', 'min' => -2000, 'max' => 2000 ),
+		'y'        => array( 'css' => 'y', 'unit' => 'px', 'min' => -2000, 'max' => 2000 ),
+		'opacity'  => array( 'css' => 'opacity', 'unit' => '', 'min' => 0, 'max' => 1 ),
+		'scale'    => array( 'css' => 'scale', 'unit' => '', 'min' => 0, 'max' => 10 ),
+		'rotation' => array( 'css' => 'rotate', 'unit' => 'deg', 'min' => -3600, 'max' => 3600 ),
+		'blur'     => array( 'css' => 'filter', 'unit' => 'px', 'min' => 0, 'max' => 100 ),
+	);
 
 	/** The list, once read: array of [ group, value, label ]. */
 	private static $rows = null;
@@ -68,6 +89,183 @@ class SNN_Animation {
 	/** The data-animate value for a block: its tokens, separated by commas, as the runtime reads them. */
 	public static function data_animate( array $tokens ) {
 		return implode( ',', self::clean_tokens( $tokens ) );
+	}
+
+	/**
+	 * The tweens of the pane, kept in the order given. Each one: presets (values of the list, as in clean_tokens), start,
+	 * duration and stagger in seconds, an ease, and the from and to values of PROPS. A tween with nothing to play is dropped.
+	 */
+	public static function clean_tweens( $value ) {
+		$out = array();
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		foreach ( $value as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$tween = array(
+				'presets'  => self::clean_tokens( $row['presets'] ?? array() ),
+				'start'    => self::number( $row['start'] ?? 0, 0, 60, 0 ),
+				'duration' => self::number( $row['duration'] ?? 1, 0.05, 30, 1 ),
+				'stagger'  => self::number( $row['stagger'] ?? 0, 0, 5, 0 ),
+				'ease'     => in_array( $row['ease'] ?? '', self::EASES, true ) ? $row['ease'] : 'power2.out',
+				'from'     => self::clean_values( $row['from'] ?? array() ),
+				'to'       => self::clean_values( $row['to'] ?? array() ),
+			);
+			if ( array() === $tween['presets'] && array() === $tween['from'] && array() === $tween['to'] ) {
+				continue;
+			}
+			$out[] = $tween;
+			if ( count( $out ) >= self::MAX ) {
+				break;
+			}
+		}
+		return $out;
+	}
+
+	/** The Scroll Trigger of a block: on, start and end (as the runtime reads them), scrub, play once, markers and loop. */
+	public static function clean_scroll( $value ) {
+		$v = is_array( $value ) ? $value : array();
+		return array(
+			'on'      => self::flag( $v, 'on', true ),
+			'start'   => self::text( $v, 'start', 'top 80%' ),
+			'end'     => self::text( $v, 'end', 'bottom 20%' ),
+			'scrub'   => self::flag( $v, 'scrub', false ),
+			'once'    => self::flag( $v, 'once', true ),
+			'markers' => self::flag( $v, 'markers', false ),
+			'loop'    => self::flag( $v, 'loop', false ),
+		);
+	}
+
+	/**
+	 * The data-animate value of a block with tweens: one segment per tween, in the order of their start, joined by ';'.
+	 * The runtime plays the segments on one timeline. The Scroll Trigger goes on the first segment, which the runtime
+	 * reads. The preview on the canvas (preview = true) plays without the trigger, the loop or the markers.
+	 */
+	public static function tweens_data_animate( $tweens, $scroll, $preview = false ) {
+		$tweens = self::clean_tweens( $tweens );
+		if ( array() === $tweens ) {
+			return '';
+		}
+		$scroll = self::clean_scroll( $scroll );
+		$order  = array_keys( $tweens );
+		usort(
+			$order,
+			function ( $a, $b ) use ( $tweens ) {
+				$by_start = $tweens[ $a ]['start'] <=> $tweens[ $b ]['start'];
+				return 0 !== $by_start ? $by_start : ( $a <=> $b );
+			}
+		);
+		$segments = array();
+		foreach ( $order as $n => $i ) {
+			$t     = $tweens[ $i ];
+			$parts = 0 === $n ? self::scroll_options( $scroll, $preview ) : array();
+			if ( array() !== $t['presets'] ) {
+				$parts[] = implode( ', ', $t['presets'] );
+			}
+			$parts[] = 't_start:' . self::num( $t['start'] );
+			$parts[] = 'duration:' . self::num( $t['duration'] );
+			$parts[] = 'ease:' . $t['ease'];
+			if ( $t['stagger'] > 0 ) {
+				$parts[] = 'stagger:' . self::num( $t['stagger'] );
+			}
+			foreach ( array( 'from' => 'style_start', 'to' => 'style_end' ) as $side => $prefix ) {
+				foreach ( self::PROPS as $key => $spec ) {
+					if ( isset( $t[ $side ][ $key ] ) ) {
+						$parts[] = $prefix . '-' . $spec['css'] . ':' . self::value( $key, $t[ $side ][ $key ] );
+					}
+				}
+			}
+			$segments[] = implode( ', ', $parts );
+		}
+		return implode( ';', $segments );
+	}
+
+	/** The data-animate value of a block: its tweens when it has any, otherwise the older list of presets. */
+	public static function block_data_animate( array $attributes ) {
+		$tweens = isset( $attributes['gsapTweens'] ) ? self::tweens_data_animate( $attributes['gsapTweens'], $attributes['gsapScroll'] ?? array() ) : '';
+		if ( '' !== $tweens ) {
+			return $tweens;
+		}
+		return self::data_animate( $attributes['animation'] ?? array() );
+	}
+
+	/** What the pane needs from the server: the easings, in the order it lists them, and the property names. */
+	public static function editor_data() {
+		return array(
+			'eases' => self::EASES,
+			'props' => array_keys( self::PROPS ),
+		);
+	}
+
+	/** The options that come first in a segment: the Scroll Trigger, or 'scroll:false' (play when in view) and its loop. */
+	private static function scroll_options( array $scroll, $preview ) {
+		if ( $preview || ! $scroll['on'] ) {
+			$out = array( 'scroll:false' );
+			if ( $scroll['loop'] && ! $preview ) {
+				$out[] = 'loop:true';
+			}
+			return $out;
+		}
+		// Scrub and once are written both ways: the runtime scrubs a trigger that has no scrub option.
+		$out = array(
+			'start:' . $scroll['start'],
+			'end:' . $scroll['end'],
+			$scroll['scrub'] ? 'scrub:true' : 'scrub:false',
+			$scroll['once'] ? 'once:true' : 'once:false',
+		);
+		if ( $scroll['markers'] ) {
+			$out[] = 'markers:true';
+		}
+		return $out;
+	}
+
+	/** A number between min and max, rounded to three places. Anything that is not a number gives the default. */
+	private static function number( $value, $min, $max, $default ) {
+		if ( ! is_numeric( $value ) ) {
+			return $default;
+		}
+		return min( $max, max( $min, round( (float) $value, 3 ) ) );
+	}
+
+	/** The from or to values of a tween: only the PROPS keys, numbers within their range. */
+	private static function clean_values( $value ) {
+		$out = array();
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		foreach ( self::PROPS as $key => $spec ) {
+			if ( isset( $value[ $key ] ) && is_numeric( $value[ $key ] ) ) {
+				$out[ $key ] = self::number( $value[ $key ], $spec['min'], $spec['max'], 0 );
+			}
+		}
+		return $out;
+	}
+
+	/** A number as the option text: no trailing zeros, no minus zero. */
+	private static function num( $n ) {
+		$s = rtrim( rtrim( number_format( (float) $n, 3, '.', '' ), '0' ), '.' );
+		return ( '' === $s || '-0' === $s ) ? '0' : $s;
+	}
+
+	/** The value of one property as the option text: 40px, 0.6, -180deg, blur(12px). */
+	private static function value( $key, $n ) {
+		if ( 'blur' === $key ) {
+			return 'blur(' . self::num( $n ) . 'px)';
+		}
+		return self::num( $n ) . self::PROPS[ $key ]['unit'];
+	}
+
+	/** A flag: a true, 1, '1' or 'true' is on. Missing gives the default. */
+	private static function flag( array $v, $key, $default ) {
+		return isset( $v[ $key ] ) ? in_array( $v[ $key ], array( true, 1, '1', 'true' ), true ) : $default;
+	}
+
+	/** Start or end: a short runtime value such as "top 80%" or "top+=100px". Anything else gives the default. */
+	private static function text( array $v, $key, $default ) {
+		$text = isset( $v[ $key ] ) && is_string( $v[ $key ] ) ? trim( $v[ $key ] ) : '';
+		return preg_match( '/^[a-z0-9 %+\-.=]{1,40}$/i', $text ) ? $text : $default;
 	}
 
 	/**

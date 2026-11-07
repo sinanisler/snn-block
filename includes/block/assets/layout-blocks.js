@@ -37,7 +37,8 @@
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr } = C;
-	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
+	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
+	const { AnimationsPane, stateOf, canvasDataAnimate } = window.snnAnimationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
 	const { applyFormat, getActiveFormat, insertObject, removeFormat, toggleFormat } = wp.richText;
@@ -1793,7 +1794,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device, base, text } ) {
+	function Panel( { a, set, tag, parent, title, device, base, text, clientId } ) {
 		const q = a.query;
 		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
 		const [ tab, setTab ] = usePlace( 'tab' );
@@ -1805,7 +1806,7 @@
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
-		const animation = Array.isArray( a.animation ) ? a.animation : [];
+		const gsapCount = stateOf( a ).tweens.length;
 		const SUB_TITLES = {
 			conditions: __( 'Conditions', 'snn' ),
 			interactions: __( 'Interactions', 'snn' ),
@@ -1835,7 +1836,7 @@
 				h( HeadIcons, {
 					conditions: conditions.length,
 					interactions: interactions.length,
-					animations: animation.length,
+					animations: gsapCount,
 					open: sub,
 					onOpen: setSub,
 				} )
@@ -1964,7 +1965,7 @@
 						'div',
 						{ className: 'snn-bt-name-row' },
 						h( 'div', { className: 'snn-name' }, SUB_TITLES[ sub ] ),
-						h( HeadIcons, { conditions: conditions.length, interactions: interactions.length, animations: animation.length, open: sub, onOpen: setSub } )
+						h( HeadIcons, { conditions: conditions.length, interactions: interactions.length, animations: gsapCount, open: sub, onOpen: setSub } )
 					)
 				),
 				h(
@@ -1973,7 +1974,7 @@
 					sub === 'conditions'
 						? h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
 						: sub === 'animations'
-							? h( AnimationsEditor, { value: animation, onChange: ( v ) => set( { animation: v } ) } )
+							? h( AnimationsPane, { attrs: a, clientId, title, onChange: ( v ) => set( { gsapTweens: v.tweens, gsapScroll: v.scroll, animation: [] } ) } )
 							: h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
 				)
 			);
@@ -2054,6 +2055,8 @@
 			conditions: { type: 'array', default: [] },
 			interactions: { type: 'array', default: [] },
 			animation: { type: 'array', default: [] },
+			gsapTweens: { type: 'array', default: [] },
+			gsapScroll: { type: 'object', default: {} },
 			customCss: { type: 'string', default: '' },
 			customAttributes: { type: 'array', default: [] },
 			query: { type: 'object', default: QUERY_DEFAULTS },
@@ -2144,7 +2147,7 @@
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses, cssScoped ].filter( Boolean ).join( ' ' ),
 					style: parts.item,
-					'data-animate': Array.isArray( a.animation ) && a.animation.length ? a.animation.join( ',' ) : undefined,
+					'data-animate': canvasDataAnimate( a ),
 				} );
 				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
 				// puts its own list element between the block wrapper and the children, so a style on the
@@ -2157,7 +2160,7 @@
 					return h(
 						Fragment,
 						null,
-						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), text: true } ) ),
+						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), text: true, clientId } ) ),
 						h(
 							'div',
 							blockProps,
@@ -2182,7 +2185,7 @@
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ) } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), clientId } ) ),
 					h(
 						'div',
 						blockProps,
