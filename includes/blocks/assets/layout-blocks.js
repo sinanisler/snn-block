@@ -2143,6 +2143,9 @@
 				anchor: false,
 				className: false,
 				customClassName: false,
+				// Core's Additional CSS (the Advanced panel textarea). Our Custom CSS is the CSS group of the Style tab.
+				// The server switch (block-defaults.php) does not reach here: the editor takes these supports as they are.
+				customCSS: false,
 				color: false,
 				spacing: false,
 				dimensions: false,
