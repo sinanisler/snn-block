@@ -548,20 +548,79 @@
 	color: currentColor;
 }
 
-/* Custom classes: one text area, names separated by spaces. Its height is set by fitHeight() in block-tools.js. */
-.snn-panel .snn-bt-class-text {
+/* Custom classes as tokens: the field is a box that wraps its tokens and the input at its end, so it grows with them.
+   Each token is a light sky blue chip (5 %), padded 2 px, with 3 px between the chips. */
+.snn-panel .snn-bt-tokens {
 	box-sizing: border-box;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 3px;
 	width: 100%;
-	height: auto;
 	min-height: 26px;
-	margin: 0;
-	padding: 3px 6px;
-	overflow: hidden;
-	overflow-wrap: anywhere;
+	padding: 2px 4px;
+	background: #fff;
+	border: 1px solid #e5e5e5;
+	border-radius: 2px;
+	cursor: text;
+}
+
+.snn-panel .snn-bt-tokens:focus-within {
+	outline: 2px solid #2271b1;
+	outline-offset: -1px;
+}
+
+.snn-bt-token {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	max-width: 100%;
+	box-sizing: border-box;
+	height: 22px;
+	padding: 2px 2px 2px 4px;
 	font-family: Consolas, Menlo, monospace;
 	font-size: 12px;
-	line-height: 1.4;
-	resize: none;
+	line-height: 16px;
+	color: #1e1e1e;
+	background: #edf8fc; /* sky blue #87ceeb at 15 % over white (5 % measured as #f9fdfe, too faint to see) */
+	border-radius: 2px;
+	overflow-wrap: anywhere;
+}
+
+.snn-bt-token .snn-bt-x {
+	width: 16px;
+	height: 16px;
+}
+
+/* The input inside the box: no border, no core focus ring (core's input rules score up to (0,2,1)) */
+.snn-panel input.snn-bt-token-input {
+	flex: 1 1 20px;
+	box-sizing: border-box;
+	min-width: 20px;
+	height: 22px;
+	min-height: 22px;
+	margin: 0;
+	padding: 0 2px;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 12px;
+	line-height: 16px;
+	color: #1e1e1e;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	outline: none;
+}
+
+.snn-panel input.snn-bt-token-input:focus {
+	border: 0;
+	box-shadow: none;
+	outline: none;
+}
+
+.snn-panel input.snn-bt-token-input::placeholder {
+	color: #8c8f94;
+	opacity: 1;
 }
 
 .snn-bt-x {

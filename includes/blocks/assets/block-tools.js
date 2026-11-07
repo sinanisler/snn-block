@@ -3,7 +3,7 @@
  *
  *   HeadIcons           the Conditions and Interactions buttons, and the GSAP animations button when the GSAP
  *                       setting is on: top right of the panel, in that order
- *   ClassesEditor       the custom classes: one text area, names separated by spaces, as in an HTML class attribute
+ *   ClassesEditor       the custom classes as tokens: a space, Enter or leaving the field makes each name a token
  *   AttributesEditor    the custom attributes: name and value rows, names checked the way the server checks them
  *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
@@ -16,7 +16,7 @@
  * Exposes window.snnBlockTools. Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp, C ) {
-	const { createElement: h, Fragment, useState, useRef, useLayoutEffect } = wp.element;
+	const { createElement: h, Fragment, useState, useRef } = wp.element;
 	const { __ } = wp.i18n;
 	const { Row, Select, TextField, AnimationPicker } = C;
 	const data = window.snnBlockToolsData || {};
@@ -36,19 +36,6 @@
 	/** Class names as typed: letters, digits, hyphen and underscore. A space or a line break separates names. */
 	function cleanClassText( v ) {
 		return String( v || '' ).replace( /[^A-Za-z0-9_\-\s]/g, '' ).replace( /\s/g, ' ' );
-	}
-
-	/** On leaving the classes field: the names in order, one space apart, each name once. */
-	function tidyClassText( v ) {
-		const names = [];
-		cleanClassText( v )
-			.split( ' ' )
-			.forEach( ( n ) => {
-				if ( n && names.indexOf( n ) === -1 ) {
-					names.push( n );
-				}
-			} );
-		return names.join( ' ' );
 	}
 
 	/** Class names typed in one field: spaces between names are kept. */
@@ -119,46 +106,79 @@
 		);
 	}
 
-	/** Fit a text area's height to its text. The height is reset first, so the field can also shrink. */
-	function fitHeight( node ) {
-		if ( ! node ) {
-			return;
-		}
-		node.style.height = 'auto';
-		node.style.height = node.scrollHeight + ( node.offsetHeight - node.clientHeight ) + 'px';
-	}
-
-	/** The custom classes: one text area, the names separated by spaces, as in an HTML class attribute. It grows with its text. */
+	/** The custom classes, as tokens. A space, Enter or leaving the field makes the word typed a token. Backspace in an
+	 *  empty field takes the last token back into the field, to edit it. The stored value is still one space-separated string. */
 	function ClassesEditor( { value, onChange } ) {
-		const area = useRef( null );
-		const text = String( value || '' );
-		// Fit on every change of the text, and again whenever the field's size changes (a closed panel has height 0).
-		useLayoutEffect( () => fitHeight( area.current ), [ text ] );
-		useLayoutEffect( () => {
-			const node = area.current;
-			if ( ! node || typeof ResizeObserver === 'undefined' ) {
-				return undefined;
-			}
-			const observer = new ResizeObserver( () => fitHeight( node ) );
-			observer.observe( node );
-			return () => observer.disconnect();
-		}, [] );
-		return h( 'textarea', {
-			ref: area,
-			className: 'snn-input snn-bt-class-text',
-			rows: 1,
-			value: text,
-			placeholder: __( 'Add classes', 'snn' ),
-			spellCheck: false,
-			'aria-label': __( 'Classes', 'snn' ),
-			onChange: ( e ) => onChange( cleanClassText( e.target.value ) ),
-			onBlur: ( e ) => {
-				const next = tidyClassText( e.target.value );
-				if ( next !== text ) {
-					onChange( next );
+		const [ draft, setDraft ] = useState( '' );
+		const field = useRef( null );
+		const names = String( value || '' ).split( /\s+/ ).filter( Boolean );
+		/* Adds the words that are new: a name already there is not added twice. */
+		const addWords = ( words ) => {
+			const next = names.slice();
+			words.forEach( ( w ) => {
+				if ( w && next.indexOf( w ) === -1 ) {
+					next.push( w );
 				}
+			} );
+			if ( next.length !== names.length ) {
+				onChange( next.join( ' ' ) );
+			}
+		};
+		const commitDraft = () => {
+			addWords( cleanClassText( draft ).split( ' ' ) );
+			setDraft( '' );
+		};
+		const remove = ( n ) => onChange( names.filter( ( x ) => x !== n ).join( ' ' ) );
+		return h(
+			'div',
+			{
+				className: 'snn-bt-tokens',
+				onMouseDown: ( e ) => {
+					// A click on the empty part of the field focuses the input, as a text field does.
+					if ( e.target === e.currentTarget && field.current ) {
+						e.preventDefault();
+						field.current.focus();
+					}
+				},
 			},
-		} );
+			names.map( ( n ) =>
+				h(
+					'span',
+					{ key: n, className: 'snn-bt-token' },
+					n,
+					h( RemoveButton, { label: __( 'Remove class', 'snn' ) + ' ' + n, onClick: () => remove( n ) } )
+				)
+			),
+			h( 'input', {
+				ref: field,
+				type: 'text',
+				className: 'snn-bt-token-input',
+				value: draft,
+				placeholder: names.length ? '' : __( 'Add classes', 'snn' ),
+				spellCheck: false,
+				autoComplete: 'off',
+				'aria-label': __( 'Classes', 'snn' ),
+				onChange: ( e ) => {
+					// Every space ends a word: the words before the last space become tokens, the rest stays in the field.
+					const parts = cleanClassText( e.target.value ).split( ' ' );
+					const last = parts.pop();
+					addWords( parts );
+					setDraft( last );
+				},
+				onKeyDown: ( e ) => {
+					if ( e.key === 'Enter' ) {
+						e.preventDefault();
+						commitDraft();
+					} else if ( e.key === 'Backspace' && draft === '' && names.length ) {
+						e.preventDefault();
+						const last = names[ names.length - 1 ];
+						onChange( names.slice( 0, -1 ).join( ' ' ) );
+						setDraft( last );
+					}
+				},
+				onBlur: commitDraft,
+			} )
+		);
 	}
 
 	/* ------------------------------------------------------------------

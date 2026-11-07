@@ -16,7 +16,7 @@
  *                   and the view. Each opens as a sub-panel in place of the tabs (block-tools.js).
  *   Content tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
  *                   are the GSAP animations button.
- *   Advanced        the custom classes (one text area, names separated by spaces), then the custom attributes (name and value rows).
+ *   Advanced        the custom classes (tokens: a space makes each one), then the custom attributes (name and value rows).
  *   CSS (Style tab) the last icon of the rail: the block's own CSS in a code editor (the textarea only for
  *                   an administrator). Core's Additional CSS is off (block-defaults.php).
  *
