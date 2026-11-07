@@ -1062,7 +1062,53 @@
 	display: flex;
 	align-items: center;
 	gap: 5px;
+	min-width: 0;
 	color: #3c434a;
+}
+
+/* The title's text shortens with an ellipsis when the "?" needs its room. */
+.snn-row-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The MDN link of a row: a tiny round "?" after the title. It is hidden (zero width, clear) until the title is hovered,
+ * and it shows when the keyboard reaches it. */
+.snn-row-help {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 0;
+	height: 13px;
+	overflow: hidden;
+	border: 1px solid currentColor;
+	border-radius: 50%;
+	color: #2271b1;
+	font-size: 9px;
+	font-weight: 600;
+	line-height: 1;
+	text-decoration: none;
+	opacity: 0;
+}
+
+.snn-row-title:hover .snn-row-help,
+.snn-row-help:focus-visible {
+	width: 13px;
+	opacity: 1;
+}
+
+.snn-row-help:hover {
+	background: #2271b1;
+	color: #fff;
+}
+
+.snn-row-help:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
 }
 
 .snn-view-control {

@@ -933,7 +933,7 @@
 			rows.push(
 				h(
 					ViewRow,
-					{ key: 'direction', label: __( 'Direction', 'snn' ), tip: 'direction', device, own: directionOwn, onReset: resetDirection },
+					{ key: 'direction', label: __( 'Direction', 'snn' ), tip: 'direction', device, own: directionOwn, onReset: resetDirection, css: 'flex-direction' },
 					h( DirectionRow, {
 						label: __( 'Direction', 'snn' ),
 						flow,
@@ -1093,6 +1093,50 @@
 	}
 
 	/**
+	 * The CSS property each layout setting writes (the flex and grid rules in layout-blocks.php style()). Its row shows a
+	 * "?" to the property's MDN page. The Style rows take theirs from the style table (cssNameOf).
+	 */
+	const LAYOUT_CSS = {
+		display: 'display',
+		flexDirection: 'flex-direction',
+		flexWrap: 'flex-wrap',
+		gridColumns: 'grid-template-columns',
+		gridRows: 'grid-template-rows',
+		gridAreas: 'grid-template-areas',
+		gridAutoColumns: 'grid-auto-columns',
+		gridAutoRows: 'grid-auto-rows',
+		gridAutoFlow: 'grid-auto-flow',
+		gridDense: 'grid-auto-flow',
+		justifyContent: 'justify-content',
+		alignItems: 'align-items',
+		justifyItems: 'justify-items',
+		alignContent: 'align-content',
+		gap: 'gap',
+		columnGap: 'column-gap',
+		rowGap: 'row-gap',
+		alignSelf: 'align-self',
+		justifySelf: 'justify-self',
+		order: 'order',
+		flexGrow: 'flex-grow',
+		flexShrink: 'flex-shrink',
+		flexBasis: 'flex-basis',
+		columnStart: 'grid-column',
+		columnSpan: 'grid-column',
+		rowStart: 'grid-row',
+		rowSpan: 'grid-row',
+		gridArea: 'grid-area',
+	};
+
+	/** The CSS property of a setting: from LAYOUT_CSS, or the style table's property for a Style row. '' when it is not one property. */
+	function cssNameOf( k ) {
+		if ( LAYOUT_CSS[ k ] ) {
+			return LAYOUT_CSS[ k ];
+		}
+		const spec = ( window.snnStyleTable || [] ).find( ( row ) => row[ 0 ] === k );
+		return spec && spec[ 1 ] ? spec[ 1 ] : '';
+	}
+
+	/**
 	 * One value a view can set: its field, in a row with the Reset (see ViewRow in controls.js). The dot on the label
 	 * shows that the view sets its own value. A value the view inherits shows as the field's placeholder; a switch or an
 	 * icon row shows it as its state, as those have no placeholder. dflt is the setting's default (see viewOwn).
@@ -1133,7 +1177,7 @@
 				onChange: change,
 			} );
 		}
-		return h( ViewRow, { label, device, tip: key, own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
+		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
 	}
 
 	/**

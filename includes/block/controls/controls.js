@@ -13,10 +13,13 @@
  */
 ( function ( wp ) {
 	const { createElement: h, createPortal, Fragment, useState, useEffect, useLayoutEffect, useRef } = wp.element;
-	const { __ } = wp.i18n;
+	const { __, sprintf } = wp.i18n;
 
 	const data = window.snnControlsData || {};
 	const dynamic = data.dynamic || { groups: {}, tags: [] };
+
+	/** The MDN page of a CSS property: the "?" after a row's title opens it in a new tab. */
+	const MDN_PROPERTY ='https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/';
 
 	/** The post the editor is on, for the preview. 0 when there is none (the Site Editor). */
 	function currentPostId() {
@@ -584,14 +587,33 @@
 	 * A value that can differ per view. No hint under the label: an inherited value shows as the field's placeholder,
 	 * and a value the view sets shows a dot on the label. Its Reset (not on Desktop) takes the view's own value back.
 	 */
-	function ViewRow( { label, device, own, onReset, tip, children } ) {
+	function ViewRow( { label, device, own, onReset, tip, css, children } ) {
 		return h(
 			'div',
 			{ className: 'snn-row snn-view-row' + ( own ? ' is-own' : '' ) },
 			h(
 				'span',
 				{ className: 'snn-row-label' },
-				h( 'span', Object.assign( { className: 'snn-row-title' }, tipAttr( tip ) ), label, own ? h( Dot ) : null )
+				h(
+						'span',
+						Object.assign( { className: 'snn-row-title' }, tipAttr( tip ) ),
+						h( 'span', { className: 'snn-row-text' }, label ),
+						own ? h( Dot ) : null,
+						// css: the CSS property of the row. Its "?" opens the property's MDN page in a new tab.
+						css
+							? h(
+									'a',
+									{
+										className: 'snn-row-help',
+										href: MDN_PROPERTY + css,
+										target: '_blank',
+										rel: 'noopener noreferrer',
+										'aria-label': sprintf( __( 'Learn more about %s on MDN', 'snn' ), css ),
+									},
+									'?'
+							  )
+							: null
+					)
 			),
 			h(
 				'div',
