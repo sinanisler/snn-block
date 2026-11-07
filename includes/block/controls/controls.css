@@ -1161,10 +1161,47 @@
 	grid-row: 2;
 }
 
+/* The grip (drag to reorder) sits above the remove button, both in the second column. */
+.snn-stop > .snn-stop-grip {
+	grid-column: 2;
+	grid-row: 1;
+	align-self: center;
+}
+
 .snn-stop > .snn-stop-remove {
 	grid-column: 2;
-	grid-row: 1 / span 2;
+	grid-row: 2;
 	align-self: center;
+}
+
+.snn-stop-grip {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	color: #1e1e1e;
+	background: #f6f7f7;
+	border-radius: 2px;
+	cursor: grab;
+}
+
+.snn-stop-grip:active {
+	cursor: grabbing;
+}
+
+.snn-stop-grip:hover {
+	background: #f0f0f1;
+}
+
+.snn-stop-grip:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+/* The row a dragged stop would drop on: a line above it. */
+.snn-stop.is-over {
+	box-shadow: inset 0 2px 0 #2271b1;
 }
 
 .snn-stop-remove {

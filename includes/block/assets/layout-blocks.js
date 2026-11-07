@@ -1217,12 +1217,33 @@
 	 * The colour stops of a gradient: a repeater, one or more stops (a gradient needs two colours, so two at least). Each
 	 * stop is a colour with an optional position; Add appends a stop, the cross removes one (not below two).
 	 */
+	/** Six dots: the grip of a colour stop (drag it to reorder the stops). */
+	function GripIcon() {
+		const dots = [ [ 5.5, 4 ], [ 10.5, 4 ], [ 5.5, 8 ], [ 10.5, 8 ], [ 5.5, 12 ], [ 10.5, 12 ] ];
+		return h(
+			'svg',
+			{ className: 'snn-grip-icon', viewBox: '0 0 16 16', width: 12, height: 12, 'aria-hidden': 'true', focusable: 'false' },
+			dots.map( ( d, i ) => h( 'circle', { key: i, cx: d[ 0 ], cy: d[ 1 ], r: 1.2, fill: 'currentColor' } ) )
+		);
+	}
+
 	function GradientStops( { a, set, device } ) {
+		const [ drag, setDrag ] = useState( null ); // { from, over } while a stop is dragged, otherwise null
 		const own = setHere( a, device, 'gradientStops' );
 		const stops = stopsOf( own !== undefined ? own : inheritedValue( a, device, 'gradientStops' ).value, a );
 		// The whole list is written at each change, so a stop added before its colour is typed stays in the list.
 		const write = ( list ) => setValue( a, set, device, 'gradientStops', JSON.stringify( list ) );
 		const replace = ( i, patch ) => write( stops.map( ( s, j ) => ( j === i ? { ...s, ...patch } : s ) ) );
+		// Moves the stop at from to the place of to: a drop, or an arrow key on a grip.
+		const move = ( from, to ) => {
+			if ( from === to || to < 0 || to >= stops.length ) {
+				return;
+			}
+			const list = stops.slice();
+			const [ item ] = list.splice( from, 1 );
+			list.splice( to, 0, item );
+			write( list );
+		};
 		return h(
 			ViewRow,
 			{ label: __( 'Colour stops', 'snn' ), device, tip: 'gradientStops', own: own !== undefined, onReset: () => clearValue( a, set, device, 'gradientStops' ) },
@@ -1232,9 +1253,61 @@
 				stops.map( ( s, i ) =>
 					h(
 						'div',
-						{ key: i, className: 'snn-stop' },
+						{
+							key: i,
+							className: 'snn-stop' + ( drag && drag.over === i && drag.from !== i ? ' is-over' : '' ),
+							onDragOver: ( e ) => {
+								if ( drag ) {
+									e.preventDefault();
+									if ( drag.over !== i ) {
+										setDrag( { ...drag, over: i } );
+									}
+								}
+							},
+							onDrop: ( e ) => {
+								e.preventDefault();
+								if ( drag ) {
+									move( drag.from, i );
+								}
+								setDrag( null );
+							},
+						},
 						h( TextField, { label: __( 'Colour', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.color, kind: 'color', swatch: true, variables: VARIABLE_GROUPS, onChange: ( v ) => replace( i, { color: v } ) } ),
 						h( TextField, { label: __( 'Stop', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.stop, unit: '%', onChange: ( v ) => replace( i, { stop: v } ) } ),
+						h(
+							'span',
+							{
+								className: 'snn-stop-grip',
+								role: 'button',
+								tabIndex: 0,
+								draggable: true,
+								'aria-label': __( 'Move colour stop', 'snn' ) + ' ' + ( i + 1 ),
+								title: __( 'Drag to reorder, or press the up and down arrow keys', 'snn' ),
+								onDragStart: ( e ) => {
+									e.dataTransfer.effectAllowed = 'move';
+									e.dataTransfer.setData( 'text/plain', String( i ) );
+									setDrag( { from: i, over: i } );
+								},
+								onDragEnd: () => setDrag( null ),
+								onKeyDown: ( e ) => {
+									if ( e.key !== 'ArrowUp' && e.key !== 'ArrowDown' ) {
+										return;
+									}
+									e.preventDefault();
+									const to = e.key === 'ArrowUp' ? i - 1 : i + 1;
+									const box = e.currentTarget.closest( '.snn-stops' );
+									move( i, to );
+									// The stop moves, and the focus goes with it to its new place.
+									window.setTimeout( () => {
+										const grip = box ? box.querySelectorAll( '.snn-stop-grip' )[ to ] : null;
+										if ( grip ) {
+											grip.focus();
+										}
+									}, 0 );
+								},
+							},
+							h( GripIcon )
+						),
 						stops.length > 2
 							? h( 'button', { type: 'button', className: 'snn-stop-remove', 'aria-label': __( 'Remove colour stop', 'snn' ), onClick: () => write( stops.filter( ( x, j ) => j !== i ) ) }, '×' )
 							: null
