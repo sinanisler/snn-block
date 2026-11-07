@@ -3,7 +3,7 @@
  * previews: docs/research/controls-screens-2026-11-05/lab/panel-v3.html). Each picture is 14 by 14 with filled
  * boxes and a line for the axis. A flex column turns its pictures a quarter turn (the rotated flag).
  *
- * Exposes window.snnLayoutIcons: main(value, rotated), cross(value, rotated), direction(value), columns(n).
+ * Exposes window.snnLayoutIcons: main(value, rotated), cross(value, rotated), direction(value), reverse(), columns(n).
  * Uses wp.element only.
  */
 ( function ( wp ) {
@@ -29,11 +29,21 @@
 		baseline: { line: 'M1 9h12', boxes: [ [ 3, 5, 3, 4 ], [ 7.5, 3, 3, 6 ] ] },
 	};
 
-	/** The two directions: boxes side by side (row) or one above the other (column). */
+	/** The two directions, as Bricks draws them: bars stacked (column) or bars side by side (row). */
 	const DIRECTION = {
-		row: [ [ 1, 4, 4, 6 ], [ 9, 4, 4, 6 ] ],
-		column: [ [ 4, 1, 6, 4 ], [ 4, 9, 6, 4 ] ],
+		column: [ [ 2, 1.5, 10, 2.6 ], [ 2, 5.7, 10, 2.6 ], [ 2, 9.9, 10, 2.6 ] ],
+		row: [ [ 1.5, 2, 2.6, 10 ], [ 5.7, 2, 2.6, 10 ], [ 9.9, 2, 2.6, 10 ] ],
 	};
+
+	/** Reverse: a clockwise arrow round the centre, an arc with its arrowhead, as Bricks draws it. */
+	function reversePic() {
+		return h(
+			'svg',
+			{ className: 'snn-pic', viewBox: '0 0 14 14', 'aria-hidden': 'true', focusable: 'false' },
+			h( 'path', { d: 'M10.81 5.23A4.2 4.2 0 1 1 8.78 3.19', fill: 'none' } ),
+			h( 'path', { d: 'M10.77 4.12L6.76 4.67L8.62 0.69Z' } )
+		);
+	}
 
 	/** n equal columns across the picture. */
 	function columnBoxes( n ) {
@@ -70,6 +80,7 @@
 		main: ( value, rotated ) => ( MAIN[ value ] ? picture( MAIN[ value ], rotated ) : null ),
 		cross: ( value, rotated ) => ( CROSS[ value ] ? picture( CROSS[ value ], rotated ) : null ),
 		direction: ( value ) => picture( { line: null, boxes: DIRECTION[ value ] || DIRECTION.row }, false ),
+		reverse: () => reversePic(),
 		columns: ( n ) => picture( { line: null, boxes: columnBoxes( n ) }, false ),
 	};
 } )( window.wp );

@@ -4,14 +4,14 @@
  *
  * The settings sit in the block's inspector, in compact rows (see controls.js):
  *   Layout          display (a dropdown: flex, block, grid), then its settings:
- *                   flex direction, wrap, justify, align and gaps; grid columns, rows, flow,
- *                   justify items and align content. The settings are icons where a choice has a
- *                   picture (layout-icons.js), and the pictures follow the direction.
+ *                   direction (column, row and a reverse toggle, as icons), wrap, justify, align and gaps;
+ *                   grid columns, rows, flow, justify items and align content. The settings are icons where a
+ *                   choice has a picture (layout-icons.js), and the pictures follow the direction. The item
+ *                   settings come last (how the block sits in its flex or grid parent: order, grow, shrink,
+ *                   basis, justify self, column and row start and span, grid area). They always show.
  *   Query loop      a switch. Turned on, the Query section below it can open.
  *   Query           an accordion, disabled while the switch is off. Post type, order, per page,
  *                   offset, child of, sticky, include and exclude, authors, main query.
- *   Item            how the block sits in its flex or grid parent: align self, grow, shrink, basis,
- *                   justify self, column and row span. Only the settings its parent needs show.
  *   Header          the Conditions, Interactions and (GSAP setting on) GSAP animations buttons at the top right,
  *                   and the view. Each opens as a sub-panel in place of the tabs (block-tools.js).
  *   Content tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
@@ -34,7 +34,7 @@
 	const { createElement: h, Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
-	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
+	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
 
@@ -769,10 +769,38 @@
 	 * ---------------------------------------------------------------- */
 
 	/**
-	 * The flex and grid settings, in the order they are used. Every setting is per view (ViewValue): Desktop holds the
-	 * base, and Tablet and Mobile set their own. The rows follow the display the panel's view shows (effectiveValues), so
-	 * a Tablet that is block shows no flex rows. Align self sits under Align: it acts on the parent's cross axis, so its
-	 * pictures turn with the parent's direction.
+	 * A row of three icons, as Bricks shows the direction: column, row, and reverse. Column and row choose the flow;
+	 * reverse is a toggle that flips it, so it keeps its state when the flow changes.
+	 */
+	function DirectionRow( { label, flow, reverse, onFlow, onReverse } ) {
+		const button = ( key, on, glyph, text, press ) =>
+			h(
+				'button',
+				{
+					key,
+					type: 'button',
+					className: 'snn-seg-btn' + ( on ? ' is-on' : '' ),
+					'aria-pressed': on ? 'true' : 'false',
+					'aria-label': text,
+					title: text,
+					onClick: press,
+				},
+				glyph
+			);
+		return h(
+			'div',
+			{ className: 'snn-seg', role: 'group', 'aria-label': label },
+			button( 'column', flow === 'column', directionPic( 'column' ), __( 'Column', 'snn' ), () => onFlow( 'column' ) ),
+			button( 'row', flow === 'row', directionPic( 'row' ), __( 'Row', 'snn' ), () => onFlow( 'row' ) ),
+			button( 'reverse', reverse, reversePic(), __( 'Reverse', 'snn' ), () => onReverse( ! reverse ) )
+		);
+	}
+
+	/**
+	 * The flex and grid settings, in the order they are used, then the item settings. Every setting is per view
+	 * (ViewValue): Desktop holds the base, and Tablet and Mobile set their own. The rows follow the display the panel's
+	 * view shows (effectiveValues), so a Tablet that is block shows no flex rows. Align self sits under Align: it acts on
+	 * the parent's cross axis, so its pictures turn with the parent's direction.
 	 */
 	function LayoutFields( { a, set, base, device, parent } ) {
 		const shown = effectiveValues( a, device );
@@ -782,7 +810,6 @@
 		const box = flex || grid;
 		const wrapped = shown.flexWrap !== 'nowrap';
 		const parentFlex = parent.display === 'flex' || parent.display === 'inline-flex';
-		const parentBox = parentFlex || parent.display === 'grid' || parent.display === 'inline-grid';
 		const reverse = /reverse$/.test( flexDirection );
 		const flow = flexDirection.replace( /-reverse$/, '' );
 		const directionOwn = viewOwn( a, device, 'flexDirection', base.flexDirection ) !== undefined;
@@ -800,20 +827,12 @@
 				h(
 					ViewRow,
 					{ key: 'direction', label: __( 'Direction', 'snn' ), device, own: directionOwn, onReset: resetDirection },
-					h( Segmented, {
+					h( DirectionRow, {
 						label: __( 'Direction', 'snn' ),
-						value: flow,
-						options: options( FLOW_PAIRS, ( x ) => directionPic( x ) ),
-						onChange: ( x ) => setDirection( reverse ? x + '-reverse' : x ),
-					} )
-				),
-				h(
-					ViewRow,
-					{ key: 'reverse', label: __( 'Reverse', 'snn' ), device, own: directionOwn, onReset: resetDirection },
-					h( Switch, {
-						label: __( 'Reverse', 'snn' ),
-						checked: reverse,
-						onChange: ( on ) => setDirection( flow + ( on ? '-reverse' : '' ) ),
+						flow,
+						reverse,
+						onFlow: ( x ) => setDirection( reverse ? x + '-reverse' : x ),
+						onReverse: ( on ) => setDirection( flow + ( on ? '-reverse' : '' ) ),
 					} )
 				),
 				v( 'wrap', 'flexWrap', { label: __( 'Wrap', 'snn' ), kind: 'select', options: WRAP_OPTIONS, dflt: 'nowrap' } )
@@ -841,13 +860,11 @@
 			);
 		}
 
-		if ( parentBox ) {
-			// The parent's cross axis: the pictures turn when the parent is a flex column.
-			const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
-			rows.push(
-				v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
-			);
-		}
+		// The parent's cross axis: the pictures turn when the parent is a flex column. Always shown, as the item settings are.
+		const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
+		rows.push(
+			v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
+		);
 
 		if ( flex && wrapped ) {
 			rows.push(
@@ -869,41 +886,20 @@
 			);
 		}
 
-		return h( Fragment, null, rows );
-	}
-
-	/**
-	 * The item settings: how the block sits in its flex or grid parent, per view as the layout settings are. The parent
-	 * the view shows decides the rows: a grid parent places the block (justify self, lines, spans, area); a flex parent
-	 * sizes it (grow, shrink, basis). Order is for both. Align self is under Align in the layout.
-	 */
-	function ItemFields( { a, set, parent, device } ) {
-		const flex = parent.display === 'flex' || parent.display === 'inline-flex';
-		const grid = parent.display === 'grid' || parent.display === 'inline-grid';
-		if ( ! flex && ! grid ) {
-			return h( 'div', { className: 'snn-hint' }, __( 'Put this block inside a flex or grid block to set its place in it.', 'snn' ) );
-		}
-		const v = ( key, k, props ) => h( ViewValue, Object.assign( { key, a, set, device, k }, props ) );
-		const rows = [ v( 'order', 'order', { label: __( 'Order', 'snn' ), placeholder: '0', inputMode: 'numeric' } ) ];
-
-		if ( grid ) {
-			rows.push(
-				v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
-				v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
-				v( 'column-span', 'columnSpan', { label: __( 'Column span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
-				v( 'row-start', 'rowStart', { label: __( 'Row start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
-				v( 'row-span', 'rowSpan', { label: __( 'Row span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
-				v( 'area', 'gridArea', { label: __( 'Grid area', 'snn' ), placeholder: __( 'name', 'snn' ), variables: null } )
-			);
-		}
-
-		if ( flex ) {
-			rows.push(
-				v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
-				v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
-				v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } )
-			);
-		}
+		// The item settings: how the block sits in its flex or grid parent. Always shown, whatever the block's own display
+		// and its parent: the panel does not decide for the person which of them a block needs.
+		rows.push(
+			v( 'order', 'order', { label: __( 'Order', 'snn' ), placeholder: '0', inputMode: 'numeric' } ),
+			v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
+			v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
+			v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } ),
+			v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
+			v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+			v( 'column-span', 'columnSpan', { label: __( 'Column span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+			v( 'row-start', 'rowStart', { label: __( 'Row start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+			v( 'row-span', 'rowSpan', { label: __( 'Row span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+			v( 'area', 'gridArea', { label: __( 'Grid area', 'snn' ), placeholder: __( 'name', 'snn' ), variables: null } )
+		);
 
 		return h( Fragment, null, rows );
 	}
@@ -1705,11 +1701,6 @@
 				),
 			h(
 				Disclosure,
-				{ title: __( 'Item', 'snn' ) },
-				h( ItemFields, { a, set, parent, device } )
-			),
-			h(
-				Disclosure,
 				{ title: __( 'Advanced', 'snn' ) },
 				h(
 					Row,
@@ -1903,7 +1894,7 @@
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
 				const a = { ...saved, query: { ...QUERY_DEFAULTS, ...( saved.query || {} ) } };
-				// The parent decides which item settings show: its display and its direction.
+				// The parent's display and direction: Align self's pictures turn with them.
 				const parentId = useSelect( ( select ) => select( 'core/block-editor' ).getBlockRootClientId( clientId ), [ clientId ] );
 				const parentAttrs = useSelect(
 					( select ) => ( parentId ? select( 'core/block-editor' ).getBlockAttributes( parentId ) : null ),
@@ -1938,7 +1929,7 @@
 						return 'Desktop';
 					}
 				}, [] );
-				// The parent as this view shows it: its display and direction for the device (Align self and the item rows follow them).
+				// The parent as this view shows it: its display and direction for the device (Align self's pictures follow them).
 				const parentShown = effectiveValues( parentAttrs || {}, device );
 				const parent = {
 					display: parentShown.display || '',

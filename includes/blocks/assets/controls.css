@@ -965,7 +965,7 @@
 	stroke-linecap: round;
 }
 
-/* A short note inside a section (the item settings, when the parent is not flex or grid) */
+/* A short note inside a section */
 .snn-hint {
 	padding: 2px var(--snn-inset) 6px;
 	font-size: 11px;
