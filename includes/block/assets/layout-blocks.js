@@ -272,6 +272,21 @@
 		} ) );
 	}
 
+	/**
+	 * A column count is written as a track template: repeat(4, minmax(0, 1fr)) is four equal columns that do not grow
+	 * past their content. The same form as columns() in layout-blocks.php.
+	 */
+	function columnTemplate( n ) {
+		return 'repeat(' + n + ', minmax(0, 1fr))';
+	}
+
+	/** The column count a stored value stands for: 4, or the template repeat(4, minmax(0, 1fr)). Any other value is ''. */
+	function columnCount( v ) {
+		const t = v === undefined || v === null ? '' : String( v ).trim();
+		const m = /^repeat\((1[0-2]|[1-9]), minmax\(0, 1fr\)\)$/.exec( t ) || /^(1[0-2]|[1-9])$/.exec( t );
+		return m ? m[ 1 ] : '';
+	}
+
 	/* ------------------------------------------------------------------
 	 * The inline style, as the front end writes it (includes/block/layout-blocks.php)
 	 * ---------------------------------------------------------------- */
@@ -857,7 +872,7 @@
 
 		if ( grid ) {
 			rows.push(
-				v( 'columns', 'gridColumns', { label: __( 'Columns', 'snn' ), kind: 'icons', options: columnOptions() } ),
+				v( 'columns', 'gridColumns', { label: __( 'Columns', 'snn' ), kind: 'icons', options: columnOptions(), pick: columnCount, store: columnTemplate } ),
 				v( 'template', 'gridColumns', { label: __( 'Template', 'snn' ), tip: 'gridTemplate', placeholder: __( '1fr 2fr', 'snn' ) } ),
 				v( 'rows', 'gridRows', { label: __( 'Rows', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
 				v( 'auto-columns', 'gridAutoColumns', { label: __( 'Auto columns', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
@@ -1006,7 +1021,7 @@
 	 * shows that the view sets its own value. A value the view inherits shows as the field's placeholder; a switch or an
 	 * icon row shows it as its state, as those have no placeholder. dflt is the setting's default (see viewOwn).
 	 */
-	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode, tip } ) {
+	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode, tip, pick, store } ) {
 			// The tooltip key: the setting's own key, unless the row names another (the template is a grid column setting).
 			const key = tip || k;
 		const own = viewOwn( a, device, k, dflt );
@@ -1018,7 +1033,9 @@
 		if ( kind === 'select' ) {
 			control = h( Select, { label, tip: key, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: change } );
 		} else if ( kind === 'icons' ) {
-			control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( value ), options, onChange: change } );
+			// pick shows the stored value as one of the options (the column icons show the count of a template).
+			// store writes the chosen option as the stored value (a count becomes its template).
+			control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( pick ? pick( value ) : value ), options, onChange: store ? ( x ) => change( store( x ) ) : change } );
 		} else if ( kind === 'switch' ) {
 			// A view's own off is '0' (an empty value would mean inherit). Desktop keeps the boolean.
 			control = h( Switch, { tip: key,
