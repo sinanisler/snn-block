@@ -312,7 +312,7 @@ function presetPatch( t, presets ) {
 		const tweens = st.tweens;
 		const scroll = st.scroll;
 		const [ selected, setSelected ] = useState( 0 );
-		const [ open, setOpen ] = useState( { timeline: true, tween: true, props: true, scroll: true } );
+		const [ open, setOpen ] = useState( { timeline: true, props: true, scroll: true } );
 		const [ playing, setPlaying ] = useState( false );
 		const [ drag, setDrag ] = useState( null );
 		const [ width, setWidth ] = useState( 240 );
@@ -603,6 +603,7 @@ function presetPatch( t, presets ) {
 		const timelineBody = h(
 			Fragment,
 			null,
+			transport,
 			h(
 				'div',
 				{ className: 'snn-anp-tl', ref: tlRef },
@@ -748,17 +749,16 @@ function presetPatch( t, presets ) {
 			h( 'p', { className: 'snn-anp-hint' }, scroll.on ? __( 'Plays as the block scrolls into view, between the start and the end.', 'snn' ) : __( 'Plays once the block is in view. Loop repeats it.', 'snn' ) )
 		);
 
+		// Order: the Animation fields first, always open (no header, no accordion), then Properties, then the Timeline
+		// (its transport is at the top of it), then the Scroll Trigger.
 		return h(
 			'div',
 			{ className: 'snn-anp' },
-			transport,
-			h( Accordion, { title: __( 'Timeline', 'snn' ), open: open.timeline, changed: hasTweens, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { ...open, timeline: v } ) }, timelineBody ),
-			tween
-				? h( Accordion, { title: __( 'Animation', 'snn' ), open: open.tween, onToggle: ( v ) => setOpen( { ...open, tween: v } ) }, tweenBody )
-				: null,
+			tween ? h( 'div', { className: 'snn-acc' }, h( 'div', { className: 'snn-acc-body' }, tweenBody ) ) : null,
 			tween
 				? h( Accordion, { title: __( 'Properties', 'snn' ), open: open.props, changed: tween.from && Object.keys( tween.from ).length > 0, onToggle: ( v ) => setOpen( { ...open, props: v } ) }, propsBody )
 				: null,
+			h( Accordion, { title: __( 'Timeline', 'snn' ), open: open.timeline, changed: hasTweens, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { ...open, timeline: v } ) }, timelineBody ),
 			h( Accordion, { title: __( 'Scroll Trigger', 'snn' ), open: open.scroll, changed: scrollChanged, tip: 'scroll.on', onToggle: ( v ) => setOpen( { ...open, scroll: v } ) }, scrollBody )
 		);
 	}
