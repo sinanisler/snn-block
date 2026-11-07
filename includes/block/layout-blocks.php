@@ -889,7 +889,7 @@ class SNN_Layout_Blocks {
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-data', 'wp-i18n', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-style-props' );
 		if ( $css_editor ) {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}

@@ -38,6 +38,43 @@
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
+	const { BlockFormatControls } = wp.blockEditor;
+	const { ToolbarButton, ToolbarGroup } = wp.components;
+	const { getActiveFormat, toggleFormat } = wp.richText;
+
+	// The Text block's toolbar. Core's bar keeps Bold, Italic and Link, and puts the other formats in its More
+	// dropdown. These five simple formats are buttons in the bar too, and they are left out of core's list
+	// (textAllowedFormats). Highlight, Inline image, Language and Math open their own pickers, so they stay in the dropdown.
+	const barIcon = ( d ) => h( 'svg', { width: 24, height: 24, viewBox: '0 0 24 24', 'aria-hidden': true, focusable: 'false', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6 }, h( 'path', { d } ) );
+	const TEXT_BAR_FORMATS = [
+		{ name: 'core/code', label: __( 'Inline code', 'snn' ), icon: barIcon( 'M8.5 7.5 3.5 12l5 4.5M15.5 7.5l5 4.5-5 4.5' ) },
+		{ name: 'core/keyboard', label: __( 'Keyboard input', 'snn' ), icon: barIcon( 'M3 6.5h18v11H3zM7 14h10' ) },
+		{ name: 'core/strikethrough', label: __( 'Strikethrough', 'snn' ), glyph: h( 's', null, 'S' ) },
+		{ name: 'core/subscript', label: __( 'Subscript', 'snn' ), glyph: h( Fragment, null, 'X', h( 'sub', null, '2' ) ) },
+		{ name: 'core/superscript', label: __( 'Superscript', 'snn' ), glyph: h( Fragment, null, 'X', h( 'sup', null, '2' ) ) },
+	];
+	// Every registered format except the five above, so core still draws its dropdown and keeps the shortcuts.
+	function textAllowedFormats() {
+		return wp.data.select( wp.richText.store ).getFormatTypes().map( ( f ) => f.name ).filter( ( n ) => ! TEXT_BAR_FORMATS.some( ( f ) => f.name === n ) );
+	}
+	// Core runs a format's markdown input rule only for the formats in that list, so inline code would lose `text`.
+	// This runs the code rule itself when one character is typed (the rule only looks at the character before the caret).
+	function TextInputRules( { value, onChange } ) {
+		const last = useRef( value.text );
+		useEffect( () => {
+			const before = last.current;
+			last.current = value.text;
+			if ( value.text.length !== before.length + 1 ) {
+				return;
+			}
+			const code = wp.data.select( wp.richText.store ).getFormatType( 'core/code' );
+			const next = code && code.__unstableInputRule ? code.__unstableInputRule( value ) : value;
+			if ( next !== value ) {
+				onChange( next );
+			}
+		}, [ value ] );
+		return null;
+	}
 
 	const QUERY_DEFAULTS = {
 		enabled: false,
@@ -2019,6 +2056,19 @@
 								onChange: ( v ) => set( { content: v } ),
 								placeholder: __( 'Type text', 'snn' ),
 								style: parts.layout,
+								allowedFormats: textAllowedFormats(),
+								// The render prop gives the rich text value while the block is selected: the five formats are
+								// drawn in the block toolbar, after core's Bold, Italic and Link.
+								children: ( { value, onChange } ) => h( Fragment, null,
+									h( BlockFormatControls, null, h( ToolbarGroup, null, TEXT_BAR_FORMATS.map( ( f ) => h( ToolbarButton, {
+										key: f.name,
+										label: f.label,
+										icon: f.icon,
+										isPressed: !! getActiveFormat( value, f.name ),
+										onClick: () => onChange( toggleFormat( value, { type: f.name } ) ),
+									}, f.glyph ) ) ) ),
+									h( TextInputRules, { value, onChange } )
+								),
 							} )
 						)
 					);
