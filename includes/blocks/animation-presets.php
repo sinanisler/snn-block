@@ -10,7 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 return array(
-	array( 'Other', 'label', 'Select Animation' ),
 	array( 'Fading', 'style_start-opacity:0, style_end-opacity:1', 'Fade In' ),
 	array( 'Fading', 'style_start-opacity:1, style_end-opacity:0', 'Fade Out' ),
 	array( 'Fading', 'style_start-opacity:0, style_end-opacity:1, style_start-transform:translateY(-1000px), style_end-transform:translateY(0px)', 'Fade In Down' ),
