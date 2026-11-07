@@ -111,7 +111,7 @@
 		'style.border': [ 'Border', 'Border, corner radius and box shadow.' ],
 		'style.transform': [ 'Transform', 'Moves, turns, scales and slants the block.' ],
 		'style.filters': [ 'Filters', 'Colour filters and the transition between states.' ],
-		'style.css': [ 'CSS', 'Your own CSS for this block. Admins only.' ],
+		'style.css': [ 'CSS', 'Your own CSS for this block.' ],
 		'sec.spacing': [ 'Spacing', 'Margin, padding and gap.' ],
 		'sec.sizing': [ 'Sizing', 'Width, height and their limits.' ],
 		'sec.positioning': [ 'Positioning', 'Where the block sits, and its offsets.' ],

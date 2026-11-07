@@ -291,19 +291,11 @@ class SNN_Layout_Blocks {
 	}
 
 	/**
-	 * The custom CSS a block writes: only when the author of the post may write unfiltered HTML (an administrator,
-	 * by default), so a contributor's block writes no CSS. The rules go through %root% (see element()).
+	 * The custom CSS a block writes, cleaned by clean_css(). Anyone who can edit the block may write it, so there is no
+	 * role check here. The rules go through %root% (see element()).
 	 */
 	public static function custom_css_text( $css ) {
-		$css = is_string( $css ) ? self::clean_css( $css ) : '';
-		if ( '' === $css ) {
-			return '';
-		}
-		$post = get_post();
-		if ( ! $post || ! user_can( (int) $post->post_author, 'unfiltered_html' ) ) {
-			return '';
-		}
-		return $css;
+		return is_string( $css ) ? self::clean_css( $css ) : '';
 	}
 
 	/**
@@ -884,9 +876,9 @@ class SNN_Layout_Blocks {
 		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'snn-tooltips' ), self::version( $js ), true );
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
-		// The CSS group of the Style tab is a code editor, as in the code snippets (administrators only). False when the
-		// user has syntax highlighting off: the group then shows a plain textarea.
-		$css_editor = current_user_can( 'unfiltered_html' ) ? wp_enqueue_code_editor( array( 'type' => 'text/css' ) ) : false;
+		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
+		// highlighting off: the group then shows a plain textarea.
+		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
 		wp_localize_script( 'snn-block-tools', 'snnBlockToolsData', SNN_Block_Tools::editor_data() );
 		wp_localize_script(
 			'snn-controls',
@@ -897,7 +889,6 @@ class SNN_Layout_Blocks {
 				'postTypes' => SNN_Query_Loop::post_type_options(),
 					'taxonomies' => SNN_Query_Loop::taxonomy_options(),
 					'animations' => SNN_Animation::options(),
-					'canCss'     => current_user_can( 'unfiltered_html' ),
 					'cssEditor'  => $css_editor,
 				'orderBy'   => SNN_Query_Loop::order_by_options(),
 				'tags'      => self::TAGS,

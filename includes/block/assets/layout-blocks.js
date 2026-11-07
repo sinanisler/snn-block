@@ -18,8 +18,8 @@
  *   Content tab     no animation fields: normal animations are Start animation in Interactions, GSAP ones
  *                   are the GSAP animations button.
  *   Advanced        the custom classes (tokens: a space makes each one), then the custom attributes (name and value rows).
- *   CSS (Style tab) the last icon of the rail: the block's own CSS in a code editor (the textarea only for
- *                   an administrator). Core's Additional CSS is off (block-defaults.php).
+ *   CSS (Style tab) the last icon of the rail: the block's own CSS in a code editor, for anyone who can edit
+ *                   the block. Core's Additional CSS is off (block-defaults.php).
  *
  * Every block gets its CSS ID by default: a new one when it is created, and a new one when a copy would
  * share an ID with another block (see the Edit function). The ID is not shown in the panel.
@@ -1455,14 +1455,12 @@
 		);
 	}
 
-	/** The CSS group's page: the code editor for an administrator, a note for everyone else. */
-	function CssPane( { a, set, canCss, editor } ) {
+	/** The CSS group's page: the code editor. */
+	function CssPane( { a, set, editor } ) {
 		return h(
 			'div',
 			{ className: 'snn-css-pane' },
-			canCss
-				? h( CssEditor, { value: a.customCss || '', onChange: ( v ) => set( { customCss: v } ), editor, label: __( 'Custom CSS', 'snn' ) } )
-				: h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
+			h( CssEditor, { value: a.customCss || '', onChange: ( v ) => set( { customCss: v } ), editor, label: __( 'Custom CSS', 'snn' ) } )
 		);
 	}
 
@@ -1929,7 +1927,7 @@
 				h( 'span', Object.assign( { className: 'snn-page-title' }, tipAttr( 'style.' + page.id ) ), page.label )
 			),
 			page.kind === 'css'
-				? h( CssPane, { a, set, canCss: data.canCss, editor: data.cssEditor } )
+				? h( CssPane, { a, set, editor: data.cssEditor } )
 				: page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title, tip: s.tip }, s.rows.map( rowFor ) ) )
 		);
 
@@ -2118,8 +2116,8 @@
 				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
 				const parts = splitStyle( styleFor( effectiveValues( a, device ) ) );
 				// The custom CSS as the front end prints it, scoped to this block: the class goes on the wrapper, the
-				// rules in a style element inside it. Only for an administrator (the editor shows the CSS for canCss).
-				const cssText = data.canCss ? cleanCss( a.customCss ) : '';
+				// rules in a style element inside it.
+				const cssText = cleanCss( a.customCss );
 				const cssScoped = cssText ? cssScope( cssText ) : '';
 				const cssRules = cssScoped ? h( 'style', null, scopeCss( cssText, '.' + cssScoped ) ) : null;
 				const blockProps = useBlockProps( {
