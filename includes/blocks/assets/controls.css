@@ -548,30 +548,20 @@
 	color: currentColor;
 }
 
-/* Custom classes: chips and a field to add more */
-.snn-bt-classes {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.snn-bt-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-}
-
-.snn-bt-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 2px;
-	height: 22px;
-	padding: 0 2px 0 7px;
+/* Custom classes: one text area, names separated by spaces. Its height is set by fitHeight() in block-tools.js. */
+.snn-panel .snn-bt-class-text {
+	box-sizing: border-box;
+	width: 100%;
+	height: auto;
+	min-height: 26px;
+	margin: 0;
+	padding: 3px 6px;
+	overflow: hidden;
+	overflow-wrap: anywhere;
 	font-family: Consolas, Menlo, monospace;
-	font-size: 11px;
-	color: #1e1e1e;
-	background: #f0f0f1;
-	border-radius: 2px;
+	font-size: 12px;
+	line-height: 1.4;
+	resize: none;
 }
 
 .snn-bt-x {

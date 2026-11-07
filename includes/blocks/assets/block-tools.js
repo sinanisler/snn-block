@@ -3,7 +3,7 @@
  *
  *   HeadIcons           the Conditions and Interactions buttons, and the GSAP animations button when the GSAP
  *                       setting is on: top right of the panel, in that order
- *   ClassesEditor       the custom classes, as chips, added with Enter
+ *   ClassesEditor       the custom classes: one text area, names separated by spaces, as in an HTML class attribute
  *   AttributesEditor    the custom attributes: name and value rows, names checked the way the server checks them
  *   (the sub-panels open in place of the tabs: layout-blocks.js shows only the open panel)
  *   ConditionsEditor    sets of conditions: the sets are alternatives (Or), the rows in a set all hold (And)
@@ -16,7 +16,7 @@
  * Exposes window.snnBlockTools. Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp, C ) {
-	const { createElement: h, Fragment, useState } = wp.element;
+	const { createElement: h, Fragment, useState, useRef, useLayoutEffect } = wp.element;
 	const { __ } = wp.i18n;
 	const { Row, Select, TextField, AnimationPicker } = C;
 	const data = window.snnBlockToolsData || {};
@@ -33,9 +33,22 @@
 		return String( v || '' ).replace( /[^A-Za-z0-9_-]/g, '' );
 	}
 
-	/** One CSS class name, cleaned the same way. */
-	function sanitizeClass( v ) {
-		return String( v || '' ).replace( /[^A-Za-z0-9_-]/g, '' );
+	/** Class names as typed: letters, digits, hyphen and underscore. A space or a line break separates names. */
+	function cleanClassText( v ) {
+		return String( v || '' ).replace( /[^A-Za-z0-9_\-\s]/g, '' ).replace( /\s/g, ' ' );
+	}
+
+	/** On leaving the classes field: the names in order, one space apart, each name once. */
+	function tidyClassText( v ) {
+		const names = [];
+		cleanClassText( v )
+			.split( ' ' )
+			.forEach( ( n ) => {
+				if ( n && names.indexOf( n ) === -1 ) {
+					names.push( n );
+				}
+			} );
+		return names.join( ' ' );
 	}
 
 	/** Class names typed in one field: spaces between names are kept. */
@@ -106,66 +119,46 @@
 		);
 	}
 
-	/** The custom classes, as chips. Enter or a comma adds the name typed; a chip's × removes it. */
+	/** Fit a text area's height to its text. The height is reset first, so the field can also shrink. */
+	function fitHeight( node ) {
+		if ( ! node ) {
+			return;
+		}
+		node.style.height = 'auto';
+		node.style.height = node.scrollHeight + ( node.offsetHeight - node.clientHeight ) + 'px';
+	}
+
+	/** The custom classes: one text area, the names separated by spaces, as in an HTML class attribute. It grows with its text. */
 	function ClassesEditor( { value, onChange } ) {
-		const [ draft, setDraft ] = useState( '' );
-		const list = String( value || '' ).split( /\s+/ ).filter( Boolean );
-		const add = ( raw ) => {
-			const names = String( raw )
-				.split( /[\s,]+/ )
-				.map( sanitizeClass )
-				.filter( Boolean );
-			setDraft( '' );
-			if ( ! names.length ) {
-				return;
+		const area = useRef( null );
+		const text = String( value || '' );
+		// Fit on every change of the text, and again whenever the field's size changes (a closed panel has height 0).
+		useLayoutEffect( () => fitHeight( area.current ), [ text ] );
+		useLayoutEffect( () => {
+			const node = area.current;
+			if ( ! node || typeof ResizeObserver === 'undefined' ) {
+				return undefined;
 			}
-			const next = list.slice();
-			names.forEach( ( n ) => {
-				if ( next.indexOf( n ) === -1 ) {
-					next.push( n );
+			const observer = new ResizeObserver( () => fitHeight( node ) );
+			observer.observe( node );
+			return () => observer.disconnect();
+		}, [] );
+		return h( 'textarea', {
+			ref: area,
+			className: 'snn-input snn-bt-class-text',
+			rows: 1,
+			value: text,
+			placeholder: __( 'Add classes', 'snn' ),
+			spellCheck: false,
+			'aria-label': __( 'Classes', 'snn' ),
+			onChange: ( e ) => onChange( cleanClassText( e.target.value ) ),
+			onBlur: ( e ) => {
+				const next = tidyClassText( e.target.value );
+				if ( next !== text ) {
+					onChange( next );
 				}
-			} );
-			onChange( next.join( ' ' ) );
-		};
-		const remove = ( n ) => onChange( list.filter( ( x ) => x !== n ).join( ' ' ) );
-		return h(
-			'div',
-			{ className: 'snn-bt-classes' },
-			list.length
-				? h(
-						'div',
-						{ className: 'snn-bt-chips' },
-						list.map( ( n ) =>
-							h(
-								'span',
-								{ key: n, className: 'snn-bt-chip' },
-								n,
-								h( RemoveButton, { label: __( 'Remove class', 'snn' ) + ' ' + n, onClick: () => remove( n ) } )
-							)
-						)
-				  )
-				: null,
-			h( 'input', {
-				type: 'text',
-				className: 'snn-input',
-				value: draft,
-				placeholder: __( 'Add a class', 'snn' ),
-				spellCheck: false,
-				'aria-label': __( 'Add a class', 'snn' ),
-				onChange: ( e ) => setDraft( e.target.value ),
-				onKeyDown: ( e ) => {
-					if ( e.key === 'Enter' || e.key === ',' ) {
-						e.preventDefault();
-						add( draft );
-					}
-				},
-				onBlur: () => {
-					if ( draft.trim() ) {
-						add( draft );
-					}
-				},
-			} )
-		);
+			},
+		} );
 	}
 
 	/* ------------------------------------------------------------------
