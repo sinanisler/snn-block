@@ -26,7 +26,7 @@
  *
  * Every text-like field has the dynamic data button and every size field can take a variable.
  * The editor shows each block once. On the front end a query loop repeats the block for every
- * post (rendered in includes/blocks/layout-blocks.php, whose style rules this file mirrors).
+ * post (rendered in includes/block/layout-blocks.php, whose style rules this file mirrors).
  */
 ( function ( wp, C, I ) {
 	const { registerBlockType } = wp.blocks;
@@ -275,7 +275,7 @@
 	}
 
 	/* ------------------------------------------------------------------
-	 * The inline style, as the front end writes it (includes/blocks/layout-blocks.php)
+	 * The inline style, as the front end writes it (includes/block/layout-blocks.php)
 	 * ---------------------------------------------------------------- */
 
 	const str = ( v ) => ( v === undefined || v === null ? '' : String( v ) );
@@ -2025,7 +2025,7 @@
 				);
 			},
 			// The saved markup keeps the inner blocks (a save of null would drop them). The front end
-			// is rendered by PHP from those inner blocks (includes/blocks/layout-blocks.php).
+			// is rendered by PHP from those inner blocks (includes/block/layout-blocks.php).
 			// A Text block has no inner blocks: it saves nothing, its text is an attribute, and PHP renders it.
 			save: def.text
 				? () => null

@@ -1,5 +1,5 @@
 /**
- * The editor's copy of SNN_Style_Props (includes/blocks/style-props.php): the same checks and the same
+ * The editor's copy of SNN_Style_Props (includes/block/utilities/style-props.php): the same checks and the same
  * declarations, so the canvas shows what the front end writes. The table itself comes from PHP
  * (window.snnStyleTable, one row per property: attribute, css property or null, type, options).
  * Keep check() and declarations() in step with the PHP.

@@ -846,13 +846,13 @@ class SNN_Layout_Blocks {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return;
 		}
-		$css    = 'includes/blocks/assets/controls.css';
-		$js     = 'includes/blocks/assets/controls.js';
-		$icons  = 'includes/blocks/assets/layout-icons.js';
-		$blocks = 'includes/blocks/assets/layout-blocks.js';
-		$tools  = 'includes/blocks/assets/block-tools.js';
-		$style  = 'includes/blocks/assets/style-props.js';
-		$tips   = 'includes/blocks/assets/tooltips.js';
+		$css    = 'includes/block/controls/controls.css';
+		$js     = 'includes/block/controls/controls.js';
+		$icons  = 'includes/block/assets/layout-icons.js';
+		$blocks = 'includes/block/assets/layout-blocks.js';
+		$tools  = 'includes/block/controls/block-tools.js';
+		$style  = 'includes/block/utilities/style-props.js';
+		$tips   = 'includes/block/controls/tooltips.js';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
 		// The tooltips (tooltips.js) load first: the controls draw their tip attributes from them.

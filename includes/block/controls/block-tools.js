@@ -11,7 +11,7 @@
  *                       (Start animation plays a normal animation: fade in, slide, zoom...)
  *   AnimationsEditor    the GSAP animations of the block: one picker, several can be stacked
  *
- * Loaded before layout-blocks.js (see includes/blocks/layout-blocks.php), which uses these parts in its panel.
+ * Loaded before layout-blocks.js (see includes/block/layout-blocks.php), which uses these parts in its panel.
  * The catalogs (conditions, triggers, actions) come from block-tools.php through snnBlockToolsData.
  * Exposes window.snnBlockTools. Uses wp.element only, so it runs on the editor's own React.
  */

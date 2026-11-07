@@ -499,7 +499,7 @@ class SNN_Block_Tools {
 			return;
 		}
 		self::$front_ready = true;
-		$js                = 'includes/blocks/assets/interactions.js';
+		$js                = 'includes/block/assets/interactions.js';
 		wp_enqueue_script( 'snn-interactions', SNN_URL . $js, array(), self::version( $js ), true );
 	}
 

@@ -8,7 +8,7 @@
  *   TextField           a text or number field with the dynamic data button (lightning) and,
  *                       when given, the variables button; a live preview of the tags
  *
- * Loaded in the block editor (see includes/blocks/layout-blocks.php). Exposes window.snnControls.
+ * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes window.snnControls.
  * Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp ) {

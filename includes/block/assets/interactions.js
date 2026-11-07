@@ -2,7 +2,7 @@
  * SNN interactions: the front end script for the interactions set on the SNN layout blocks.
  *
  * Each block that has interactions carries them in data-snn-interactions (written by
- * includes/blocks/block-tools.php). A trigger (a click, the mouse entering or leaving, the element
+ * includes/block/block-tools.php). A trigger (a click, the mouse entering or leaving, the element
  * entering the viewport once, or the page loading) runs an action on the block itself or on the element
  * with the CSS ID given: show, hide, toggle, add or remove classes, scroll to it, or start an animation.
  *

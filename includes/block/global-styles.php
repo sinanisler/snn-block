@@ -1,7 +1,7 @@
 <?php
 /**
  * Global styles: the site's colours, fonts, sizes, widths and the default styles of the blocks.
- * Part of includes/blocks (see blocks.php).
+ * Part of includes/block (see blocks.php).
  *
  * How it works
  * - One option, snn_global_styles, holds the values. Every save is sanitised.
@@ -940,8 +940,8 @@ class SNN_Global_Styles {
 	}
 
 	private static function enqueue_assets( array $deps, $in_editor ) {
-		$css = 'includes/blocks/assets/global-styles.css';
-		$js  = 'includes/blocks/assets/global-styles.js';
+		$css = 'includes/block/assets/global-styles.css';
+		$js  = 'includes/block/assets/global-styles.js';
 		$ver_css = file_exists( SNN_PATH . $css ) ? filemtime( SNN_PATH . $css ) : '1';
 		$ver_js  = file_exists( SNN_PATH . $js ) ? filemtime( SNN_PATH . $js ) : '1';
 

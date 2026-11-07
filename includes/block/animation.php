@@ -85,7 +85,7 @@ class SNN_Animation {
 	/** The rows of the generated list, read once. */
 	private static function rows() {
 		if ( null === self::$rows ) {
-			$rows       = include __DIR__ . '/animation-presets.php';
+			$rows       = include __DIR__ . '/utilities/animation-presets.php';
 			self::$rows = is_array( $rows ) ? $rows : array();
 		}
 		return self::$rows;

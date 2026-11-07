@@ -4,7 +4,7 @@
  * site, in WordPress's font directory (wp_get_font_dir()). A stored font works offline: the
  * page loads it from this site, not from Google.
  *
- * These helpers are used by the global styles (includes/blocks/global-styles.php) and by the
+ * These helpers are used by the global styles (includes/block/global-styles.php) and by the
  * MCP font ability (includes/ai/fonts/font-library.php). They were moved here from the AI font
  * library, so they load whether or not the AI features are on.
  */

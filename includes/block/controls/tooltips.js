@@ -8,7 +8,7 @@
  * The bubble is drawn in the body, so the panel's scroll and overflow never cut it off. It sits above its control
  * and turns below it when there is no room above; it stays inside the window and below the admin bar.
  *
- * Loaded in the block editor (see includes/blocks/layout-blocks.php). Exposes window.snnTips.
+ * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes window.snnTips.
  * Uses wp.i18n only.
  */
 ( function ( wp ) {

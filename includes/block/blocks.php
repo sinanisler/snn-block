@@ -1,9 +1,12 @@
 <?php
 /**
- * Blocks: everything that makes, styles or configures the blocks of this theme. New block work
- * goes in this folder (custom blocks, block controls, global styles, block defaults, fonts).
+ * Block: everything that makes, styles or configures the blocks of this theme. New block work
+ * goes in this folder or in one of its subfolders (custom blocks, block controls, global styles,
+ * block defaults, fonts).
  *
- *   fonts.php            Google Fonts download and the font files (WordPress's font directory)
+ *   utilities/           PHP helpers and libraries: fonts, style property checks, animation presets
+ *   controls/            Shared controls for every block panel: controls.js and .css, tooltips, block tools
+ *   assets/              Scripts, stylesheets and icons: the global styles modal, the layout blocks editor script, layout icons, interactions
  *   editor-settings.php  Editor switches shared with the Block Editor Settings page (core blocks, top toolbar)
  *   block-defaults.php   The blocks and their default styles (the Global Styles and Block Styles tab)
  *   global-styles.php    Global styles: palette, fonts, sizes, block defaults; theme.json; REST
@@ -12,7 +15,6 @@
  *   query-loop.php       The query of a loop: its settings and the WP_Query arguments
  *   block-tools.php    Conditions (show when) and interactions (when X happens, do Y) of our blocks: the catalogs, checks and front end data
  *   layout-blocks.php    Our blocks: Section, Container, Div and Text (rendering, attributes, editor assets)
- *   assets/              The modal's script and stylesheet, the editor button, the block controls, the block tools and the interactions script
  *
  * Loaded from functions.php. Always on.
  */
@@ -21,14 +23,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once __DIR__ . '/fonts.php';
+require_once __DIR__ . '/utilities/fonts.php';
 require_once __DIR__ . '/editor-settings.php';
 require_once __DIR__ . '/block-defaults.php';
 require_once __DIR__ . '/global-styles.php';
 require_once __DIR__ . '/page-styles.php';
 require_once __DIR__ . '/dynamic-data.php';
 require_once __DIR__ . '/query-loop.php';
-require_once __DIR__ . '/style-props.php';
+require_once __DIR__ . '/utilities/style-props.php';
 require_once __DIR__ . '/animation.php';
 require_once __DIR__ . '/block-tools.php';
 require_once __DIR__ . '/layout-blocks.php';

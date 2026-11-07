@@ -1,5 +1,5 @@
 /**
- * Global styles: the modal and the toolbar button. See includes/blocks/global-styles.php.
+ * Global styles: the modal and the toolbar button. See includes/block/global-styles.php.
  *
  * The modal is plain DOM (no React), so it works the same in wp-admin and in the block editor
  * and the Site Editor. The button sits in the editors' pinned items area at the top right, next
