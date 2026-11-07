@@ -1191,6 +1191,64 @@
 	 * under the choice. A length the view already holds opens Custom by itself. Choosing Custom clears a keyword, so the
 	 * canvas and the front end show the same thing (the browser's default until a length is typed).
 	 */
+	/**
+	 * The stops a view shows: its saved list (JSON), or, with nothing saved, the two colour fields from before the
+	 * repeater, or two empty stops. The list is written whole, so a stop is never saved without its colour.
+	 */
+	function stopsOf( raw, a ) {
+		try {
+			const list = JSON.parse( raw || 'null' );
+			if ( Array.isArray( list ) && list.length ) {
+				return list.map( ( s ) => {
+					const item = s && typeof s === 'object' ? s : {};
+					return { color: str( item.color ), stop: str( item.stop ) };
+				} );
+			}
+		} catch ( e ) {
+			// Not a list: the stops from before the repeater show instead.
+		}
+		if ( a.gradientColor1 || a.gradientColor2 ) {
+			return [ { color: str( a.gradientColor1 ), stop: str( a.gradientStop1 ) }, { color: str( a.gradientColor2 ), stop: str( a.gradientStop2 ) } ];
+		}
+		return [ { color: '', stop: '' }, { color: '', stop: '' } ];
+	}
+
+	/**
+	 * The colour stops of a gradient: a repeater, one or more stops (a gradient needs two colours, so two at least). Each
+	 * stop is a colour with an optional position; Add appends a stop, the cross removes one (not below two).
+	 */
+	function GradientStops( { a, set, device } ) {
+		const own = setHere( a, device, 'gradientStops' );
+		const stops = stopsOf( own !== undefined ? own : inheritedValue( a, device, 'gradientStops' ).value, a );
+		// The whole list is written at each change, so a stop added before its colour is typed stays in the list.
+		const write = ( list ) => setValue( a, set, device, 'gradientStops', JSON.stringify( list ) );
+		const replace = ( i, patch ) => write( stops.map( ( s, j ) => ( j === i ? { ...s, ...patch } : s ) ) );
+		return h(
+			ViewRow,
+			{ label: __( 'Colour stops', 'snn' ), device, tip: 'gradientStops', own: own !== undefined, onReset: () => clearValue( a, set, device, 'gradientStops' ) },
+			h(
+				'div',
+				{ className: 'snn-stops' },
+				stops.map( ( s, i ) =>
+					h(
+						'div',
+						{ key: i, className: 'snn-stop' },
+						h( TextField, { label: __( 'Colour', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.color, kind: 'color', swatch: true, variables: VARIABLE_GROUPS, onChange: ( v ) => replace( i, { color: v } ) } ),
+						h( TextField, { label: __( 'Stop', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.stop, unit: '%', onChange: ( v ) => replace( i, { stop: v } ) } ),
+						stops.length > 2
+							? h( 'button', { type: 'button', className: 'snn-stop-remove', 'aria-label': __( 'Remove colour stop', 'snn' ), onClick: () => write( stops.filter( ( x, j ) => j !== i ) ) }, '×' )
+							: null
+					)
+				),
+				h(
+					'button',
+					{ type: 'button', className: 'snn-stop-add', onClick: () => write( stops.concat( [ { color: stops[ stops.length - 1 ].color, stop: '' } ] ) ) },
+					__( 'Add colour stop', 'snn' )
+				)
+			)
+		);
+	}
+
 	function KeywordLength( { value, options, fallback, unit, label, tip, onKeyword, onLength } ) {
 		const [ custom, setCustom ] = useState( false );
 		const current = value === undefined || value === null ? '' : String( value );
@@ -1550,8 +1608,10 @@
 			id: 'gradient',
 			label: __( 'Gradient', 'snn' ),
 			glyph: 'gradient',
+			// The two colour fields from before the repeater: no row now, but a saved value still counts for the rail dot.
+			also: [ 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ],
 			sections: [
-				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ] },
+				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientStops' ] },
 			],
 		},
 		{
@@ -1709,6 +1769,9 @@
 	/** The rows the table's types decide: a select for keywords, a colour field, a size field, or a plain field. */
 	function StyleRow( { a, set, device, k } ) {
 		const label = STYLE_LABEL[ k ] || k;
+		if ( k === 'gradientStops' ) {
+			return h( GradientStops, { a, set, device } );
+		}
 		if ( k === 'overflow' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'select', options: OVERFLOW_OPTIONS } );
 		}
@@ -1757,7 +1820,7 @@
 		if ( page.kind === 'css' ) {
 			return !! a.customCss;
 		}
-		return pageKeys( page ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
+		return pageKeys( page ).concat( page.also || [] ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
 	}
 
 	/**

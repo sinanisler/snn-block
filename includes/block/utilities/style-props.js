@@ -8,6 +8,7 @@
 	'use strict';
 
 	const SIZE_WORDS = [ 'auto', 'max-content', 'min-content', 'fit-content' ];
+	const MAX_STOPS = 12; // The most colour stops a gradient takes (MAX_STOPS in style-props.php).
 	const VAR_OK = /^var\(--[a-z][a-z0-9-]*\)$/;
 	const COLOR_OK = /^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(rgba?|hsla?)\([0-9a-z.,%\s\/+-]{1,60}\)|var\(--[a-z][a-z0-9-]*\)|transparent)$/i;
 
@@ -180,21 +181,52 @@
 		return parts.length ? [ 'filter', parts.join( ' ' ) ] : null;
 	}
 
-	/** background-image: a gradient from two colour stops. Needs both colours; the stops default to 0% and 100%. */
+	/**
+	 * background-image: a gradient. Its colour stops are the repeater's list (gradientStops) when it has two or more valid
+	 * stops; otherwise the two colour fields from before the repeater, which need both colours (stops default to 0% and 100%).
+	 */
 	function gradient( a ) {
-		const c1 = check( 'color', a.gradientColor1 );
-		const c2 = check( 'color', a.gradientColor2 );
-		if ( ! c1 || ! c2 ) {
-			return null;
+		let stops = gradientStops( a );
+		if ( ! stops.length ) {
+			const c1 = check( 'color', a.gradientColor1 );
+			const c2 = check( 'color', a.gradientColor2 );
+			if ( ! c1 || ! c2 ) {
+				return null;
+			}
+			const s1 = check( 'percent', a.gradientStop1 );
+			const s2 = check( 'percent', a.gradientStop2 );
+			stops = [ c1 + ' ' + ( s1 || '0' ) + '%', c2 + ' ' + ( s2 || '100' ) + '%' ];
 		}
-		const s1 = check( 'percent', a.gradientStop1 );
-		const s2 = check( 'percent', a.gradientStop2 );
-		const stops = c1 + ' ' + ( s1 || '0' ) + '%, ' + c2 + ' ' + ( s2 || '100' ) + '%';
+		const list = stops.join( ', ' );
 		if ( a.gradientType === 'radial' ) {
-			return [ 'background-image', 'radial-gradient(' + stops + ')' ];
+			return [ 'background-image', 'radial-gradient(' + list + ')' ];
 		}
 		const angle = plainNumber( a.gradientAngle );
-		return [ 'background-image', 'linear-gradient(' + ( angle || '180' ) + 'deg, ' + stops + ')' ];
+		return [ 'background-image', 'linear-gradient(' + ( angle || '180' ) + 'deg, ' + list + ')' ];
+	}
+
+	/**
+	 * The repeater's stops (JSON), each a colour with an optional position. An invalid stop is dropped; fewer than two
+	 * valid stops give none. The same rule as gradient_stops() in style-props.php (a JSON object counts by its values).
+	 */
+	function gradientStops( a ) {
+		let list;
+		try {
+			list = JSON.parse( str( a.gradientStops ) || 'null' );
+		} catch ( e ) {
+			return [];
+		}
+		const items = Array.isArray( list ) ? list : list && typeof list === 'object' ? Object.values( list ) : [];
+		const out = [];
+		items.slice( 0, MAX_STOPS ).forEach( ( item ) => {
+			const colour = item && typeof item === 'object' ? check( 'color', item.color ) : '';
+			if ( ! colour ) {
+				return;
+			}
+			const stop = check( 'percent', item.stop );
+			out.push( stop ? colour + ' ' + stop + '%' : colour );
+		} );
+		return out.length >= 2 ? out : [];
 	}
 
 	/**

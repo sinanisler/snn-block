@@ -23,6 +23,9 @@ class SNN_Style_Props {
 	/** Keywords a width or height takes besides a length. */
 	const SIZE_WORDS = array( 'auto', 'max-content', 'min-content', 'fit-content' );
 
+	/** The most colour stops a gradient takes (the repeater's list). */
+	const MAX_STOPS = 12;
+
 	/** attribute => [ css property or null, type, options ]. The order is the order of the declarations. */
 	const TABLE = array(
 		// Spacing
@@ -82,8 +85,10 @@ class SNN_Style_Props {
 		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'auto', 'cover', 'contain' ) ),
 		'backgroundPosition' => array( 'background-position', 'text' ),
 		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ) ),
-		// Gradient (composed into background-image): the type, the angle, two colour stops with their positions
+		// Gradient (composed into background-image): the type, the angle, the colour stops (a JSON list, the repeater), and
+		// the two colour stops from before the repeater (kept, so saved blocks render the same)
 		'gradientType'      => array( null, 'keyword', array( 'linear', 'radial' ) ),
+		'gradientStops'     => array( null, 'stops' ),
 		'gradientAngle'     => array( null, 'number' ),
 		'gradientColor1'    => array( null, 'color' ),
 		'gradientStop1'     => array( null, 'percent' ),
@@ -126,7 +131,7 @@ class SNN_Style_Props {
 
 	/** The attributes with no css of their own: composed in declarations(). */
 	const COMPOSED = array(
-		'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2',
+		'gradientType', 'gradientAngle', 'gradientStops', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2',
 		'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor',
 		'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY',
 		'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia',
@@ -359,21 +364,52 @@ class SNN_Style_Props {
 		return $parts ? 'filter:' . implode( ' ', $parts ) : '';
 	}
 
-	/** background-image: a gradient from two colour stops. Needs both colours; the stops default to 0% and 100%. */
+	/**
+	 * background-image: a gradient. Its colour stops are the repeater's list (gradientStops) when it has two or more valid
+	 * stops; otherwise the two colour fields from before the repeater, which need both colours (stops default to 0% and 100%).
+	 */
 	private static function gradient( array $a ) {
-		$c1 = self::check( 'color', $a['gradientColor1'] ?? '' );
-		$c2 = self::check( 'color', $a['gradientColor2'] ?? '' );
-		if ( '' === $c1 || '' === $c2 ) {
-			return '';
+		$stops = self::gradient_stops( $a );
+		if ( ! $stops ) {
+			$c1 = self::check( 'color', $a['gradientColor1'] ?? '' );
+			$c2 = self::check( 'color', $a['gradientColor2'] ?? '' );
+			if ( '' === $c1 || '' === $c2 ) {
+				return '';
+			}
+			$s1    = self::check( 'percent', $a['gradientStop1'] ?? '' );
+			$s2    = self::check( 'percent', $a['gradientStop2'] ?? '' );
+			$stops = array(
+				$c1 . ' ' . ( '' === $s1 ? '0' : $s1 ) . '%',
+				$c2 . ' ' . ( '' === $s2 ? '100' : $s2 ) . '%',
+			);
 		}
-		$s1    = self::check( 'percent', $a['gradientStop1'] ?? '' );
-		$s2    = self::check( 'percent', $a['gradientStop2'] ?? '' );
-		$stops = $c1 . ' ' . ( '' === $s1 ? '0' : $s1 ) . '%, ' . $c2 . ' ' . ( '' === $s2 ? '100' : $s2 ) . '%';
+		$list = implode( ', ', $stops );
 		if ( 'radial' === ( $a['gradientType'] ?? '' ) ) {
-			return 'background-image:radial-gradient(' . $stops . ')';
+			return 'background-image:radial-gradient(' . $list . ')';
 		}
 		$angle = self::plain_number( $a['gradientAngle'] ?? '' );
-		return 'background-image:linear-gradient(' . ( '' === $angle ? '180' : $angle ) . 'deg, ' . $stops . ')';
+		return 'background-image:linear-gradient(' . ( '' === $angle ? '180' : $angle ) . 'deg, ' . $list . ')';
+	}
+
+	/**
+	 * The repeater's stops, each a colour with an optional position ("colour" or "colour n%"). An invalid stop is dropped;
+	 * fewer than two valid stops give none (a gradient needs two colours).
+	 */
+	private static function gradient_stops( array $a ) {
+		$list = json_decode( (string) ( $a['gradientStops'] ?? '' ), true );
+		if ( ! is_array( $list ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( array_slice( $list, 0, self::MAX_STOPS ) as $item ) {
+			$colour = is_array( $item ) ? self::check( 'color', $item['color'] ?? '' ) : '';
+			if ( '' === $colour ) {
+				continue;
+			}
+			$stop  = self::check( 'percent', $item['stop'] ?? '' );
+			$out[] = '' === $stop ? $colour : $colour . ' ' . $stop . '%';
+		}
+		return count( $out ) >= 2 ? $out : array();
 	}
 
 	/** A plain number (no variable, no unit): for the parts that take a unit the composition adds itself. */
