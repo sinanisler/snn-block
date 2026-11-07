@@ -1,13 +1,13 @@
 <?php
 /**
- * Global styles: the site's colours, fonts, sizes, widths, shapes and the default styles of
- * the blocks. Part of includes/blocks (see blocks.php).
+ * Global styles: the site's colours, fonts, sizes, widths and the default styles of the blocks.
+ * Part of includes/blocks (see blocks.php).
  *
  * How it works
  * - One option, snn_global_styles, holds the values. Every save is sanitised.
  * - The values go into the theme layer of theme.json (filter wp_theme_json_data_theme). Core
  *   then emits them everywhere it reads theme.json: the front end, the block editor (
- *   font families, widths, shadows) and the Site Editor.
+ *   font families, widths) and the Site Editor.
  *   Fonts keep their WordPress names (--wp--preset--font-family--{slug}). Colours and sizes are plain variables (--black, --size-20).
  * - Fonts: Google Fonts are downloaded to this site (fonts.php) and listed in the option. Each
  *   font is a theme.json font family with its @font-face files, so every block's font menu can
@@ -91,19 +91,6 @@ class SNN_Global_Styles {
 					'h6' => '1rem',
 				),
 			),
-			'shape'      => array(
-				'radius'  => array(
-					'small'  => '4px',
-					'medium' => '8px',
-					'large'  => '16px',
-					'pill'   => '999px',
-				),
-				'shadows' => array(
-					'small'  => '0 1px 2px rgba(0, 0, 0, 0.08)',
-					'medium' => '0 4px 12px rgba(0, 0, 0, 0.1)',
-					'large'  => '0 12px 32px rgba(0, 0, 0, 0.14)',
-				),
-			),
 			// Fluid sizes: a clamp between two viewport widths, keyed by path (see fluid_css()).
 			'fluid'      => array(),
 			'blocks'     => SNN_Block_Defaults::defaults(),
@@ -170,17 +157,6 @@ class SNN_Global_Styles {
 		);
 
 
-		// Shape: radius and shadow presets.
-		$s       = is_array( $input['shape'] ?? null ) ? $input['shape'] : array();
-		$shape   = array(
-			'radius'  => self::lengths( $s['radius'] ?? null, $d['shape']['radius'] ),
-			'shadows' => array(),
-		);
-		$shadows = is_array( $s['shadows'] ?? null ) ? $s['shadows'] : array();
-		foreach ( $d['shape']['shadows'] as $key => $default ) {
-			$shape['shadows'][ $key ] = self::shadow( $shadows[ $key ] ?? null, $default );
-		}
-
 		// Fluid sizes: a clamp between two viewport widths, for a size variable or a heading. The value
 		// is written from these settings below, so the two cannot disagree (a stored clamp is read back
 		// through them, since a clamp is not a plain length).
@@ -215,8 +191,6 @@ class SNN_Global_Styles {
 			'colors'  => array_column( $colors, 'slug' ),
 			'fonts'   => array_merge( array( 'system' ), array_column( $fonts, 'slug' ) ),
 			'sizes'   => array_keys( $sizes ),
-			'radius'  => array_keys( $shape['radius'] ),
-			'shadows' => array_keys( $shape['shadows'] ),
 			'weights' => self::weights(),
 		);
 		$blocks = SNN_Block_Defaults::sanitize( $input['blocks'] ?? array(), $refs );
@@ -226,7 +200,6 @@ class SNN_Global_Styles {
 			'fonts'      => $fonts,
 			'sizes'      => $sizes,
 			'typography' => $typography,
-			'shape'      => $shape,
 			'fluid'      => array(),
 			'blocks'     => $blocks,
 		);
@@ -271,11 +244,6 @@ class SNN_Global_Styles {
 		$x = is_numeric( $value ) ? (float) $value : $min;
 		$x = min( max( $x, $min ), $max );
 		return rtrim( rtrim( sprintf( '%.2f', $x ), '0' ), '.' );
-	}
-
-	private static function shadow( $value, $default ) {
-		$value = trim( preg_replace( '/\s+/', ' ', (string) $value ) );
-		return ( '' !== $value && strlen( $value ) <= 160 && preg_match( '/^[A-Za-z0-9 ,.()%#+\-]+$/', $value ) ) ? $value : $default;
 	}
 
 	/* ------------------------------------------------------------------
@@ -522,11 +490,6 @@ class SNN_Global_Styles {
 			);
 		}
 
-		$shadows = array();
-		foreach ( $v['shape']['shadows'] as $slug => $shadow ) {
-			$shadows[] = array( 'slug' => $slug, 'name' => ucfirst( $slug ), 'shadow' => $shadow );
-		}
-
 		// Heading sizes (h1 to h6) are element styles. The block defaults add to the same tree.
 		$styles = array( 'elements' => array() );
 		foreach ( $v['typography']['headings'] as $tag => $size ) {
@@ -553,7 +516,6 @@ class SNN_Global_Styles {
 			'version'  => 3,
 			'settings' => array(
 				'typography' => array( 'fontFamilies' => $families ),
-				'shadow'     => array( 'presets' => $shadows ),
 			),
 			'styles'   => $styles,
 		);
@@ -639,7 +601,7 @@ class SNN_Global_Styles {
 		return self::number( $x, -100000, 100000 ) . $unit;
 	}
 
-	/** The theme.json value for one block field. Colours, fonts, sizes and shadows are presets. */
+	/** The theme.json value for one block field. Colours and sizes are variables; fonts are presets. */
 	private static function style_value( array $field, $value, array $v ) {
 		switch ( $field['type'] ) {
 			case 'color':
@@ -648,10 +610,6 @@ class SNN_Global_Styles {
 				return 'var:preset|font-family|' . $value;
 			case 'size':
 				return 'var(--' . $value . ')';
-			case 'shadow':
-				return 'var:preset|shadow|' . $value;
-			case 'radius':
-				return $v['shape']['radius'][ $value ] ?? null;
 		}
 		if ( ! empty( $field['all_sides'] ) ) {
 			return array( 'top' => $value, 'right' => $value, 'bottom' => $value, 'left' => $value );
@@ -777,16 +735,16 @@ class SNN_Global_Styles {
 			return array( 'value' => $w, 'label' => $w );
 		}, self::weights() );
 
-		$length = function ( $path, $label ) {
-			return array( 'path' => $path, 'label' => $label, 'type' => 'length' );
-		};
-
 		// A size: a length, or a fluid clamp (the Fluid switch under it).
 		$size = function ( $path, $label ) {
 			return array( 'path' => $path, 'label' => $label, 'type' => 'size' );
 		};
 
+		$cards = self::cards( $weights );
+
 		return array(
+			self::global_tab( $cards ),
+			self::blocks_tab( $cards ),
 			array(
 				'id'      => 'colors',
 				'label'   => __( 'Colours', 'snn' ),
@@ -823,109 +781,104 @@ class SNN_Global_Styles {
 					),
 				),
 			),
-			array(
-				'id'     => 'shape',
-				'label'  => __( 'Shape', 'snn' ),
-				'groups' => array(
-					array(
-						'title'  => __( 'Radius', 'snn' ),
-						'fields' => array(
-							$length( 'shape.radius.small', __( 'Small', 'snn' ) ),
-							$length( 'shape.radius.medium', __( 'Medium', 'snn' ) ),
-							$length( 'shape.radius.large', __( 'Large', 'snn' ) ),
-							$length( 'shape.radius.pill', __( 'Pill', 'snn' ) ),
+		);
+	}
+
+	/**
+	 * The block cards, split by kind: the site card (the global site styles), the global cards (links,
+	 * headings), our own blocks and the core blocks.
+	 */
+	private static function cards( array $weights ) {
+		$cards = array(
+			'site'   => null,
+			'global' => array(),
+			'ours'   => array(),
+			'core'   => array(),
+		);
+		foreach ( SNN_Block_Defaults::entries() as $key => $entry ) {
+			$card = self::entry_card( $key, $entry, $weights );
+			if ( 0 === strpos( $key, 'core/' ) ) {
+				$cards['core'][] = $card;
+			} elseif ( 0 === strpos( $key, 'snn/' ) ) {
+				$cards['ours'][] = $card;
+			} elseif ( 'site' === $key ) {
+				$cards['site'] = $card;
+			} else {
+				$cards['global'][] = $card;
+			}
+		}
+		return $cards;
+	}
+
+	/** The Global styles tab: the editor switches, then the global site styles with links and headings inside. */
+	private static function global_tab( array $cards ) {
+		return array(
+			'id'     => 'global',
+			'label'  => __( 'Global styles', 'snn' ),
+			'groups' => array(
+				array(
+					'title'  => __( 'Editor', 'snn' ),
+					'fields' => array(
+						array(
+							'path'  => 'editor.disable_core_blocks',
+							'label' => __( 'Disable core blocks', 'snn' ),
+							'type'  => 'switch',
+							'hint'  => __( 'Core blocks are not offered in the inserter. Content that already uses them still shows and edits.', 'snn' ),
 						),
-					),
-					array(
-						'title'  => __( 'Shadows', 'snn' ),
-						'fields' => array(
-							array( 'path' => 'shape.shadows.small', 'label' => __( 'Small', 'snn' ), 'type' => 'shadow' ),
-							array( 'path' => 'shape.shadows.medium', 'label' => __( 'Medium', 'snn' ), 'type' => 'shadow' ),
-							array( 'path' => 'shape.shadows.large', 'label' => __( 'Large', 'snn' ), 'type' => 'shadow' ),
+						array(
+							'path'  => 'editor.enable_top_toolbar',
+							'label' => __( 'Top toolbar: all blocks and document tools in one place', 'snn' ),
+							'type'  => 'switch',
+							'hint'  => __( 'The top toolbar is on in every block editor.', 'snn' ),
+						),
+						array(
+							'path'  => 'editor.disable_fullscreen',
+							'label' => __( 'Disable full screen mode', 'snn' ),
+							'type'  => 'switch',
+							'hint'  => __( 'Full screen mode is off in every block editor, so the admin menu stays visible.', 'snn' ),
 						),
 					),
 				),
+				array(
+					'title'  => $cards['site']['title'],
+					'fields' => $cards['site']['fields'],
+					'groups' => $cards['global'],
+				),
 			),
-			array(
-				'id'     => 'blocks',
-				'label'  => __( 'Global Styles and Block Styles', 'snn' ),
-				'groups' => self::blocks_groups( $weights ),
+		);
+	}
+
+	/** The Block styles tab: our blocks, then the core block styles (collapsed, at the bottom). */
+	private static function blocks_tab( array $cards ) {
+		return array(
+			'id'     => 'blocks',
+			'label'  => __( 'Block styles', 'snn' ),
+			'groups' => array(
+				array(
+					'title'  => __( 'Our blocks', 'snn' ),
+					'groups' => $cards['ours'],
+				),
+				array(
+					'title'       => __( 'Core Block Styles', 'snn' ),
+					'collapsible' => true,
+					'open'        => false,
+					'note'        => __( 'WordPress core blocks, collapsed. Most sites do not need them. The Disable core blocks switch on the Global styles tab hides them from the inserter.', 'snn' ),
+					'groups'      => $cards['core'],
+				),
 			),
 		);
 	}
 
 	/**
-	 * The groups of the Global Styles and Block Styles tab, in order: the editor switches, the
-	 * global site styles, our own block styles, and the core block styles (collapsed, at the bottom).
+	 * The schema items of some fields. $base is the path they sit under: blocks.{name} for a block.
+	 * Every field is optional: an empty value means "inherit".
 	 */
-	private static function blocks_groups( array $weights ) {
-		$global = array();
-		$ours   = array();
-		$core   = array();
-		$site   = null;
-		foreach ( SNN_Block_Defaults::entries() as $key => $entry ) {
-			$card = self::entry_card( $key, $entry, $weights );
-			if ( 0 === strpos( $key, 'core/' ) ) {
-				$core[] = $card;
-			} elseif ( 0 === strpos( $key, 'snn/' ) ) {
-				$ours[] = $card;
-			} elseif ( 'site' === $key ) {
-				$site = $card;
-			} else {
-				$global[] = $card;
-			}
-		}
-
-		return array(
-			array(
-				'title'  => __( 'Editor', 'snn' ),
-				'fields' => array(
-					array(
-						'path'  => 'editor.disable_core_blocks',
-						'label' => __( 'Disable core blocks', 'snn' ),
-						'type'  => 'switch',
-						'hint'  => __( 'Core blocks are not offered in the inserter. Content that already uses them still shows and edits.', 'snn' ),
-					),
-					array(
-						'path'  => 'editor.enable_top_toolbar',
-						'label' => __( 'Top toolbar: all blocks and document tools in one place', 'snn' ),
-						'type'  => 'switch',
-						'hint'  => __( 'The top toolbar is on in every block editor.', 'snn' ),
-					),
-					array(
-						'path'  => 'editor.disable_fullscreen',
-						'label' => __( 'Disable full screen mode', 'snn' ),
-						'type'  => 'switch',
-						'hint'  => __( 'Full screen mode is off in every block editor, so the admin menu stays visible.', 'snn' ),
-					),
-				),
-			),
-			array(
-				'title'  => $site['title'],
-				'fields' => $site['fields'],
-				'groups' => $global,
-			),
-			array(
-				'title'  => __( 'Block Styles', 'snn' ),
-				'groups' => $ours,
-			),
-			array(
-				'title'       => __( 'Core Block Styles', 'snn' ),
-				'collapsible' => true,
-				'open'        => false,
-				'note'        => __( 'WordPress core blocks, collapsed. Most sites do not need them. The Disable core blocks switch above hides them from the inserter.', 'snn' ),
-				'groups'      => $core,
-			),
-		);
-	}
-
-	/** One block or element of the registry, as a card: its title, its note and its fields. */
-	private static function entry_card( $key, array $entry, array $weights ) {
+	public static function field_items( $base, array $names, array $weights ) {
 		$fields = SNN_Block_Defaults::fields();
 		$items  = array();
-		foreach ( $entry['fields'] as $name ) {
+		foreach ( $names as $name ) {
 			$item = array(
-				'path'     => 'blocks.' . $key . '.' . $name,
+				'path'     => $base . '.' . $name,
 				'label'    => $fields[ $name ]['label'],
 				'optional' => true,
 			);
@@ -942,12 +895,6 @@ class SNN_Global_Styles {
 				case 'weight':
 					$item += array( 'type' => 'select', 'options' => $weights );
 					break;
-				case 'radius':
-					$item += array( 'type' => 'select', 'options_from' => 'radius' );
-					break;
-				case 'shadow':
-					$item += array( 'type' => 'select', 'options_from' => 'shadows' );
-					break;
 				case 'line':
 					$item += array( 'type' => 'number', 'step' => 0.05, 'min' => 0.8, 'max' => 3 );
 					break;
@@ -956,12 +903,17 @@ class SNN_Global_Styles {
 			}
 			$items[] = $item;
 		}
+		return $items;
+	}
+
+	/** One block or element of the registry, as a card: its title, its note and its fields. */
+	private static function entry_card( $key, array $entry, array $weights ) {
 		return array(
 			'title'       => $entry['label'],
 			'collapsible' => true,
 			'open'        => $entry['open'],
 			'note'        => $entry['planned'] ? __( 'Not built yet. These defaults apply once the block exists.', 'snn' ) : '',
-			'fields'      => $items,
+			'fields'      => self::field_items( 'blocks.' . $key, $entry['fields'], $weights ),
 		);
 	}
 
@@ -1011,7 +963,7 @@ class SNN_Global_Styles {
 				'i18n'      => array(
 					'button'           => __( 'Global styles', 'snn' ),
 					'title'            => __( 'Global styles', 'snn' ),
-					'intro'            => __( 'Colours, fonts, widths, shapes and the default styles of the blocks, for the whole site. Saved values apply on the front end and in the block editor.', 'snn' ),
+					'intro'            => __( 'Global styles apply to the whole site, and block styles to every block of a kind. Saved values apply on the front end and in the block editor.', 'snn' ),
 					'close'            => __( 'Close', 'snn' ),
 					'save'             => __( 'Save', 'snn' ),
 					'saving'           => __( 'Saving…', 'snn' ),
@@ -1046,7 +998,6 @@ class SNN_Global_Styles {
 					'nameNeeded'       => __( 'Every colour needs a name.', 'snn' ),
 					'lengthError'      => __( 'Use a number with a unit, for example 1rem, 16px or 0.', 'snn' ),
 					'lineError'        => __( 'Line height must be between 0.8 and 3.', 'snn' ),
-					'shadowError'      => __( 'A shadow can use letters, digits, spaces, commas, dots, brackets, percent signs, hashes and hyphens.', 'snn' ),
 					'fontsHint'        => __( 'Google Fonts with open licences can be downloaded here. The files are saved on this site, so the page never asks Google for them. Every font then appears in the font menu of every block.', 'snn' ),
 					'noFonts'          => __( 'No Google Fonts installed yet.', 'snn' ),
 					'fontFamily'       => __( 'Family name', 'snn' ),

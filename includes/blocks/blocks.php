@@ -6,7 +6,7 @@
  *   fonts.php            Google Fonts download and the font files (WordPress's font directory)
  *   editor-settings.php  Editor switches shared with the Block Editor Settings page (core blocks, top toolbar)
  *   block-defaults.php   The blocks and their default styles (the Global Styles and Block Styles tab)
- *   global-styles.php    Global styles: palette, fonts, sizes, shapes, block defaults; theme.json; REST
+ *   global-styles.php    Global styles: palette, fonts, sizes, block defaults; theme.json; REST
  *   dynamic-data.php     Dynamic tags ({post_title} and so on): the tags, the parser, the preview route
  *   query-loop.php       The query of a loop: its settings and the WP_Query arguments
  *   block-tools.php    Conditions (show when) and interactions (when X happens, do Y) of our blocks: the catalogs, checks and front end data

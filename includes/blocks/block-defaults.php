@@ -6,9 +6,8 @@
  * defaults use. Each value is written into theme.json, under styles.blocks.{name} for a block,
  * so every block of that type gets it. A block's own settings still win, as usual.
  *
- * Our own blocks (snn/*) are listed as they are built. Section and Container are built (see
- * layout-blocks.php); Div has no defaults. Image and video are planned: their defaults
- * apply as soon as the block is registered. Other code can add entries with the filter
+ * Our own blocks (snn/*) are listed as they are built. Section, Container and Text are built (see
+ * layout-blocks.php); Div has no defaults. Other code can add entries with the filter
  * snn/block_defaults.
  */
 
@@ -22,9 +21,9 @@ class SNN_Block_Defaults {
 	const SYSTEM_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 	/**
-	 * The fields. type: colour, font, size (a preset), weight, line (line height), radius, shadow,
-	 * length (any CSS length). path: where the value goes in theme.json styles. all_sides: the
-	 * value is the same padding on all four sides.
+	 * The fields. type: colour, font, size (a preset), weight, line (line height), length (any CSS
+	 * length). path: where the value goes in theme.json styles. all_sides: the value is the same
+	 * padding on all four sides.
 	 */
 	public static function fields() {
 		return array(
@@ -35,8 +34,6 @@ class SNN_Block_Defaults {
 			'size'             => array( 'label' => __( 'Size', 'snn' ), 'type' => 'size', 'path' => 'typography.fontSize' ),
 			'weight'           => array( 'label' => __( 'Weight', 'snn' ), 'type' => 'weight', 'path' => 'typography.fontWeight' ),
 			'line_height'      => array( 'label' => __( 'Line height', 'snn' ), 'type' => 'line', 'path' => 'typography.lineHeight' ),
-			'radius'           => array( 'label' => __( 'Corner radius', 'snn' ), 'type' => 'radius', 'path' => 'border.radius' ),
-			'shadow'           => array( 'label' => __( 'Shadow', 'snn' ), 'type' => 'shadow', 'path' => 'shadow' ),
 			'padding'          => array( 'label' => __( 'Padding', 'snn' ), 'type' => 'length', 'path' => 'spacing.padding', 'all_sides' => true ),
 			'block_gap'        => array( 'label' => __( 'Gap between items', 'snn' ), 'type' => 'length', 'path' => 'spacing.blockGap' ),
 			'max_width'        => array( 'label' => __( 'Maximum width', 'snn' ), 'type' => 'length', 'path' => 'dimensions.maxWidth' ),
@@ -54,15 +51,12 @@ class SNN_Block_Defaults {
 			'heading'        => array( 'label' => __( 'Headings, all levels', 'snn' ), 'target' => 'elements.heading', 'fields' => array( 'color_text', 'font', 'weight', 'line_height' ) ),
 			'core/paragraph' => array( 'label' => __( 'Paragraph', 'snn' ), 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
 			'core/list'      => array( 'label' => __( 'List', 'snn' ), 'fields' => array( 'color_text', 'font', 'size', 'line_height' ) ),
-			'core/quote'     => array( 'label' => __( 'Quote', 'snn' ), 'fields' => array( 'color_text', 'color_background', 'font', 'size', 'radius', 'padding' ) ),
-			'core/button'    => array( 'label' => __( 'Button', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'font', 'size', 'weight', 'radius', 'padding' ) ),
-			'core/image'     => array( 'label' => __( 'Image', 'snn' ), 'fields' => array( 'radius', 'shadow' ) ),
-			'core/group'     => array( 'label' => __( 'Group', 'snn' ), 'fields' => array( 'color_background', 'padding', 'block_gap', 'radius', 'shadow' ) ),
+			'core/quote'     => array( 'label' => __( 'Quote', 'snn' ), 'fields' => array( 'color_text', 'color_background', 'font', 'size', 'padding' ) ),
+			'core/button'    => array( 'label' => __( 'Button', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'font', 'size', 'weight', 'padding' ) ),
+			'core/group'     => array( 'label' => __( 'Group', 'snn' ), 'fields' => array( 'color_background', 'padding', 'block_gap' ) ),
 			'snn/section'    => array( 'label' => __( 'Section (our block)', 'snn' ), 'fields' => array( 'color_background', 'color_text', 'padding' ) ),
 			'snn/container'  => array( 'label' => __( 'Container (our block)', 'snn' ), 'fields' => array( 'max_width', 'block_gap', 'padding' ) ),
 			'snn/text'       => array( 'label' => __( 'Text (our block)', 'snn' ), 'fields' => array( 'color_text', 'font', 'size', 'weight', 'line_height' ) ),
-			'snn/image'      => array( 'label' => __( 'Image (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius', 'shadow' ) ),
-			'snn/video'      => array( 'label' => __( 'Video (our block)', 'snn' ), 'planned' => true, 'fields' => array( 'radius' ) ),
 		);
 		foreach ( $entries as $key => $entry ) {
 			$entries[ $key ]['target'] = $entry['target'] ?? 'blocks.' . $key;
@@ -78,8 +72,7 @@ class SNN_Block_Defaults {
 			'site'        => array( 'color_text' => 'black', 'color_background' => 'white', 'font' => 'system', 'base_size' => '15px', 'line_height' => '1.6' ),
 			'link'        => array( 'color_text' => 'black' ),
 			'heading'     => array( 'font' => 'system', 'weight' => '700', 'line_height' => '1.2' ),
-			'core/button' => array( 'color_background' => 'black', 'color_text' => 'white', 'weight' => '600', 'radius' => 'medium' ),
-			'core/image'  => array( 'radius' => 'small' ),
+			'core/button' => array( 'color_background' => 'black', 'color_text' => 'white', 'weight' => '600' ),
 		);
 		$out = array();
 		foreach ( self::entries() as $key => $entry ) {
@@ -92,8 +85,8 @@ class SNN_Block_Defaults {
 	}
 
 	/**
-	 * Sanitise the block defaults. $refs holds the valid choices: colors, fonts, sizes, radius,
-	 * shadows (slugs or keys) and weights. An empty value means "inherit", and is always kept.
+	 * Sanitise the block defaults. $refs holds the valid choices: colors, fonts, sizes and weights.
+	 * An empty value means "inherit", and is always kept.
 	 * An unknown choice falls back to the field's default when that is valid, or to inherit.
 	 */
 	public static function sanitize( $input, array $refs ) {
@@ -118,11 +111,9 @@ class SNN_Block_Defaults {
 			return '';
 		}
 		$lists = array(
-			'color'  => $refs['colors'],
-			'font'   => $refs['fonts'],
-			'size'   => $refs['sizes'],
-			'radius' => $refs['radius'],
-			'shadow' => $refs['shadows'],
+			'color' => $refs['colors'],
+			'font'  => $refs['fonts'],
+			'size'  => $refs['sizes'],
 		);
 		if ( isset( $lists[ $type ] ) ) {
 			if ( in_array( $value, $lists[ $type ], true ) ) {

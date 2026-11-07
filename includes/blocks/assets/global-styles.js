@@ -28,7 +28,6 @@
 	var overlay = null;
 
 	var LENGTH_RE = /^(0|\d+(\.\d+)?(px|rem|em|%|vw|vh|ch|vmin|vmax))$/;
-	var SHADOW_RE = /^[A-Za-z0-9 ,.()%#+\-]+$/;
 
 	/* ------------------------------------------------------------------
 	 * Helpers
@@ -140,8 +139,6 @@
 						if ( isNaN( n ) || n < field.min || n > field.max ) {
 							errors.push( field.label + ': ' + t.lineError );
 						}
-					} else if ( field.type === 'shadow' && ! SHADOW_RE.test( value ) ) {
-						errors.push( field.label + ': ' + t.shadowError );
 					}
 				} );
 			} );
@@ -409,14 +406,6 @@
 				} ) );
 			case 'sizes':
 				return list.concat( Object.keys( draft.sizes ).map( function ( k ) {
-					return { value: k, label: labelise( k ) };
-				} ) );
-			case 'radius':
-				return list.concat( Object.keys( draft.shape.radius ).map( function ( k ) {
-					return { value: k, label: labelise( k ) };
-				} ) );
-			case 'shadows':
-				return list.concat( Object.keys( draft.shape.shadows ).map( function ( k ) {
 					return { value: k, label: labelise( k ) };
 				} ) );
 		}
