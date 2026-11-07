@@ -414,25 +414,84 @@
 	/**
 	 * The swatch at the start of a colour field. It shows the colour; a click opens the browser's own colour
 	 * picker (decision D17). The picker only handles #rrggbb, so other values open at black until one is chosen.
+	 *
+	 * A move in the picker changes only this swatch's state, so the picker and the swatch follow the pointer at once.
+	 * The block gets the colour at most once per animation frame, and the final colour when the picker closes (its
+	 * change event). The block and the panel do not re-render on every move.
 	 */
 	function ColourSwatch( { value, variables, label, onChange } ) {
-		const colour = colourOf( value, variables );
+		const stored = colourOf( value, variables );
+		// The colour the picker moved to that the block has not shown yet. Null when the block's colour is shown.
+		const [ picked, setPicked ] = useState( null );
+		const shown = picked !== null ? picked : stored;
 		let hex = '#000000';
-		if ( /^#[0-9a-f]{6}$/i.test( colour ) ) {
-			hex = colour;
-		} else if ( /^#[0-9a-f]{3}$/i.test( colour ) ) {
-			hex = '#' + colour.slice( 1 ).split( '' ).map( ( c ) => c + c ).join( '' );
+		if ( /^#[0-9a-f]{6}$/i.test( shown ) ) {
+			hex = shown;
+		} else if ( /^#[0-9a-f]{3}$/i.test( shown ) ) {
+			hex = '#' + shown.slice( 1 ).split( '' ).map( ( c ) => c + c ).join( '' );
 		}
+		const input = useRef( null );
+		const frame = useRef( null ); // the animation frame that will write the colour, if one is waiting
+		const pending = useRef( null ); // the colour to write, if one is waiting
+		const write = useRef( onChange );
+		write.current = onChange;
+
+		// Writes the waiting colour to the block now, and cancels the frame that would have done it.
+		const flush = () => {
+			if ( frame.current !== null ) {
+				cancelAnimationFrame( frame.current );
+				frame.current = null;
+			}
+			if ( pending.current !== null ) {
+				const next = pending.current;
+				pending.current = null;
+				write.current( next );
+			}
+		};
+
+		// A move in the picker: show it now, and write it at the next frame.
+		const move = ( next ) => {
+			setPicked( next );
+			pending.current = next;
+			if ( frame.current === null ) {
+				frame.current = requestAnimationFrame( () => {
+					frame.current = null;
+					flush();
+				} );
+			}
+		};
+
+		// The picker closes: its change event writes the final colour.
+		useEffect( () => {
+			const el = input.current;
+			if ( ! el ) {
+				return undefined;
+			}
+			el.addEventListener( 'change', flush );
+			return () => el.removeEventListener( 'change', flush );
+		}, [] );
+
+		// The block holds the picked colour: show the block's colour again (it is the same colour, so nothing jumps).
+		useEffect( () => {
+			if ( picked !== null && stored.toLowerCase() === picked.toLowerCase() ) {
+				setPicked( null );
+			}
+		}, [ picked, stored ] );
+
+		// Removed or deselected in the middle of a drag: the last colour still reaches the block.
+		useEffect( () => () => flush(), [] );
+
 		return h(
 			'label',
 			{ className: 'snn-swatch-btn', ...tipAttr( 'swatch' ) },
-			h( 'span', { className: 'snn-swatch', style: { background: colour || 'transparent' }, 'aria-hidden': 'true' } ),
+			h( 'span', { className: 'snn-swatch', style: { background: shown || 'transparent' }, 'aria-hidden': 'true' } ),
 			h( 'input', {
+				ref: input,
 				type: 'color',
 				className: 'snn-swatch-input',
 				value: hex,
 				'aria-label': label,
-				onChange: ( e ) => onChange( e.target.value ),
+				onChange: ( e ) => move( e.target.value ),
 			} )
 		);
 	}
