@@ -340,7 +340,8 @@ class SNN_Layout_Blocks {
 	 */
 	private static function inner( $block, array $a, array $ctx ) {
 		if ( self::is_text( $block->name ) ) {
-			return wp_kses_post( $a['content'] );
+			// Tags such as {post_title} in the text are filled in when the page is shown (dynamic-data.php, html mode).
+			return wp_kses_post( SNN_Dynamic_Data::render( $a['content'], self::dynamic_context( $ctx ), 'html' ) );
 		}
 		return self::children( $block, $ctx );
 	}

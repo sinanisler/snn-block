@@ -1004,6 +1004,35 @@
 		);
 	}
 
+	/**
+	 * A button for a rich text's toolbar (the Text block's bar) that opens the dynamic data list or the variable list,
+	 * the same lists the fields use. A pick is handed to onPick as text: a tag such as {post_title}, or a variable such
+	 * as var(--size-20). kind: 'tags' or 'vars'. groups: the variable groups. icon or glyph is the button's face.
+	 */
+	function ToolbarPicker( { kind, label, icon, glyph, groups, ToolbarButton, onPick } ) {
+		const [ open, setOpen ] = useState( false );
+		const wrap = useRef( null );
+		const pop = useRef( null );
+		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ) );
+		usePopPlacement( open, wrap, pop );
+		const pick = ( text ) => {
+			setOpen( false );
+			onPick( text );
+		};
+		return h(
+			'span',
+			{ className: 'snn-toolbar-picker', ref: wrap, style: { display: 'inline-flex' } },
+			h( ToolbarButton, { label, icon, isPressed: open, onClick: () => setOpen( ! open ) }, glyph ),
+			open
+				? inBody(
+						kind === 'tags'
+							? h( TagPicker, { onPick: pick, onClose: () => setOpen( false ), popRef: pop } )
+							: h( VariablePicker, { groups: groups || [], onPick: pick, popRef: pop } )
+				  )
+				: null
+		);
+	}
+
 	window.snnControls = {
 		tipAttr,
 		AnimationPicker,
@@ -1016,6 +1045,7 @@
 		Select,
 		Segmented,
 		TextField,
+		ToolbarPicker,
 		Group,
 		Disclosure,
 		ViewRow,

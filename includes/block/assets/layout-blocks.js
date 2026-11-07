@@ -36,12 +36,12 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = window.snnAnimationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
-	const { applyFormat, getActiveFormat, insertObject, removeFormat, toggleFormat } = wp.richText;
+	const { applyFormat, create, getActiveFormat, insert, insertObject, removeFormat, toggleFormat } = wp.richText;
 
 	// The Text block's toolbar. Core's bar draws Bold, Italic and Link first, then the named slot "unknown", then its
 	// More dropdown. The buttons below are filled into that "unknown" slot, so they sit after Link and before the dropdown.
@@ -49,6 +49,7 @@
 	// Inline code, Keyboard input, Language and Math stay in the dropdown.
 	const fillIcon = ( d ) => h( 'svg', { width: 24, height: 24, viewBox: '0 0 24 24', 'aria-hidden': true, focusable: 'false', fill: 'currentColor' }, h( 'path', { d } ) );
 	const HIGHLIGHT_ICON = fillIcon( 'M12 3.5 6.5 11.2a6 6 0 1 0 11 0z' );
+	const BOLT_ICON = fillIcon( 'M13 2 3 14h7l-1 8 10-12h-7z' ); // the dynamic data mark, as on the fields' lightning button
 	const IMAGE_ICON = fillIcon( 'M4 18.5h16V17H4v1.5zM16 13v1.5h4V13h-4zM5.1 15h7.8c.6 0 1.1-.5 1.1-1.1V6.1c0-.6-.5-1.1-1.1-1.1H5.1C4.5 5 4 5.5 4 6.1v7.8c0 .6.5 1.1 1.1 1.1zm.4-8.5h7V10l-1-1c-.3-.3-.8-.3-1 0l-1.6 1.5-1.2-.7c-.3-.2-.6-.2-.9 0l-1.3 1V6.5zm0 6.1l1.8-1.3 1.3.8c.3.2.7.2.9-.1l1.5-1.4 1.5 1.4v1.5h-7v-.9z' );
 	// Toggle buttons, in the order they appear after Link. Highlight and Inline image are below, they need a picker.
 	const TEXT_BAR_FORMATS = [
@@ -81,6 +82,11 @@
 	function TextBarButtons( { value, onChange, onFocus } ) {
 		const [ highlightOpen, setHighlightOpen ] = useState( false );
 		const highlightRef = useRef( null );
+		// Puts text in at the cursor: the rich text's selection (value.start and value.end). Selected text is replaced.
+		const insertText = ( text ) => {
+			onChange( insert( value, create( { text } ) ) );
+			onFocus();
+		};
 		return h( Fragment, null,
 			TEXT_BAR_FORMATS.map( ( f ) => h( ToolbarButton, {
 				key: f.name,
@@ -114,7 +120,10 @@
 					onFocus();
 				},
 				render: ( { open } ) => h( ToolbarButton, { label: __( 'Inline image', 'snn' ), icon: IMAGE_ICON, onClick: open } ),
-			} ) )
+			} ) ),
+			// The dynamic data list and the variable list. A pick goes in at the cursor. A variable goes in as its var() text.
+			h( ToolbarPicker, { kind: 'tags', label: __( 'Dynamic data', 'snn' ), icon: BOLT_ICON, ToolbarButton, onPick: insertText } ),
+			h( ToolbarPicker, { kind: 'vars', label: __( 'Variables', 'snn' ), glyph: h( 'span', { className: 'snn-tool-text', 'aria-hidden': 'true' }, 'V' ), groups: VARIABLE_GROUPS, ToolbarButton, onPick: insertText } )
 		);
 	}
 	const QUERY_DEFAULTS = {
