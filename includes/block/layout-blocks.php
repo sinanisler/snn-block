@@ -1,9 +1,9 @@
 <?php
 /**
- * Our layout blocks: Section, Container and Div. Each is one element with a tag, a display, the
- * flex settings, a gap, an ID and classes, and an optional query loop. They differ only in their
- * default tag and in the theme defaults the Blocks tab gives them (Section and Container have
- * defaults; Div has none, so it is a plain block element).
+ * Our layout blocks: Section, Container, Div and Text. Each is one element with a tag, a display, the
+ * flex settings, a gap, an ID and classes, and an optional query loop. They share this engine, and each
+ * block's own definition is in its folder: blocks/<name>/block.php (name, title, default tag, icon,
+ * starting layout, and whether it is a Text block). The Blocks tab's theme defaults are in block-defaults.php.
  *
  * The editor side is assets/layout-blocks.js. Keep the attribute names and the style rules in step
  * with it. The front end is rendered here, so a saved page never depends on the editor.
@@ -18,13 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SNN_Layout_Blocks {
 
-	/** Block name => default HTML tag. */
-	const BLOCKS = array(
-		'snn/section'   => 'section',
-		'snn/container' => 'div',
-		'snn/div'       => 'div',
-		'snn/text'      => 'p',
-	);
+	/**
+	 * The blocks, one folder each in blocks/. Each folder's block.php returns the block's definition (see definitions()).
+	 * A new block gets its folder, and its folder name goes in this list.
+	 */
+	const FOLDERS = array( 'section', 'container', 'div', 'text' );
+
+	/** The definitions, once read (see definitions()). */
+	private static $definitions = null;
 
 	/** The tags the HTML tag field offers. */
 	const TAGS = array( 'section', 'div', 'header', 'footer', 'main', 'article', 'aside', 'nav' );
@@ -40,16 +41,6 @@ class SNN_Layout_Blocks {
 	/** The display values: block, the inline ones, flex and grid (and their inline forms), and none (hidden). */
 	const DISPLAYS       = array( 'block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'inline-grid', 'none' );
 
-	/**
-	 * The display and direction each block starts with. Section and Container stack their children (a flex column,
-	 * as Bricks's sections and containers do); Div is a plain block. The editor reads the same table (BLOCK_LAYOUT).
-	 */
-	const LAYOUT = array(
-		'snn/section'   => array( 'display' => 'flex', 'flexDirection' => 'column' ),
-		'snn/container' => array( 'display' => 'flex', 'flexDirection' => 'column' ),
-		'snn/div'       => array( 'display' => 'block', 'flexDirection' => 'row' ),
-		'snn/text'      => array( 'display' => 'block', 'flexDirection' => 'row' ),
-	);
 	const FLEX_DIRECTION = array( 'row', 'row-reverse', 'column', 'column-reverse' );
 	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
 	const JUSTIFY        = array( 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' );
@@ -114,8 +105,36 @@ class SNN_Layout_Blocks {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_editor' ) );
 	}
 
+	/**
+	 * The block definitions, read once from blocks/<folder>/block.php (in the order of FOLDERS). Keyed by block name.
+	 * Each has: name, title, tag (the default HTML tag), icon, layout (display and flexDirection) and text (true for Text).
+	 */
+	public static function definitions() {
+		if ( null === self::$definitions ) {
+			self::$definitions = array();
+			foreach ( self::FOLDERS as $folder ) {
+				$def = include __DIR__ . '/blocks/' . $folder . '/block.php';
+				if ( is_array( $def ) && isset( $def['name'] ) ) {
+					self::$definitions[ $def['name'] ] = $def;
+				}
+			}
+		}
+		return self::$definitions;
+	}
+
+	/** One block's definition. A name that is not a block gets the Div definition, as an unknown block always did. */
+	public static function definition( $name ) {
+		$all = self::definitions();
+		return $all[ $name ] ?? $all['snn/div'];
+	}
+
+	/** True for the Text block: its content is a rich text, not inner blocks. */
+	public static function is_text( $name ) {
+		return ! empty( self::definition( $name )['text'] );
+	}
+
 	public static function register() {
-		foreach ( self::BLOCKS as $name => $tag ) {
+		foreach ( array_keys( self::definitions() ) as $name ) {
 			register_block_type(
 				$name,
 				array(
@@ -146,8 +165,9 @@ class SNN_Layout_Blocks {
 
 	/** The attributes of one block. The editor reads the same names and defaults. */
 	public static function attributes( $name ) {
-		$default_tag = self::BLOCKS[ $name ] ?? 'div';
-		$layout      = self::LAYOUT[ $name ] ?? self::LAYOUT['snn/div'];
+		$def         = self::definition( $name );
+		$default_tag = $def['tag'];
+		$layout      = $def['layout'];
 		return array(
 			'tagName'        => array( 'type' => 'string', 'default' => $default_tag ),
 			'htmlId'         => array( 'type' => 'string', 'default' => '' ),
@@ -194,7 +214,7 @@ class SNN_Layout_Blocks {
 			'animation'       => array( 'type' => 'array', 'default' => array() ),
 			'customCss'       => array( 'type' => 'string', 'default' => '' ),
 			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
-		) + SNN_Style_Props::attributes() + ( 'snn/text' === $name ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() );
+		) + SNN_Style_Props::attributes() + ( self::is_text( $name ) ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() );
 	}
 
 	/* ------------------------------------------------------------------
@@ -307,7 +327,7 @@ class SNN_Layout_Blocks {
 	 * rich text the editor saved, with only the formats wp_kses_post allows (bold, italic, links and so on).
 	 */
 	private static function inner( $block, array $a, array $ctx ) {
-		if ( 'snn/text' === $block->name ) {
+		if ( self::is_text( $block->name ) ) {
 			return wp_kses_post( $a['content'] );
 		}
 		return self::children( $block, $ctx );
@@ -742,8 +762,9 @@ class SNN_Layout_Blocks {
 	/** The attributes, cleaned: right type, allowed values, defaults for anything missing. */
 	public static function clean( $attributes, $name ) {
 		$attributes = is_array( $attributes ) ? $attributes : array();
-		$block    = isset( self::BLOCKS[ $name ] ) ? $name : 'snn/div';
-		$default  = self::BLOCKS[ $block ];
+		$block    = isset( self::definitions()[ $name ] ) ? $name : 'snn/div';
+		$def      = self::definition( $block );
+		$default  = $def['tag'];
 		$defaults = self::attributes( $block );
 
 		$out = array();
@@ -751,10 +772,10 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = $attributes[ $key ] ?? $spec['default'];
 		}
 
-		$tags                  = 'snn/text' === $block ? self::TEXT_TAGS : self::TAGS;
+		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : self::TAGS;
 		$out['tagName']        = in_array( $out['tagName'], $tags, true ) ? $out['tagName'] : $default;
-		$out['display']        = self::pick( $out['display'], self::DISPLAYS, self::LAYOUT[ $block ]['display'] );
-		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, self::LAYOUT[ $block ]['flexDirection'] );
+		$out['display']        = self::pick( $out['display'], self::DISPLAYS, $def['layout']['display'] );
+		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, $def['layout']['flexDirection'] );
 		$out['flexWrap']       = self::pick( $out['flexWrap'], self::FLEX_WRAP, 'nowrap' );
 		$out['justifyContent'] = self::pick( $out['justifyContent'], self::JUSTIFY, '' );
 		$out['alignItems']     = self::pick( $out['alignItems'], self::ALIGN, '' );
@@ -778,7 +799,7 @@ class SNN_Layout_Blocks {
 		$out['responsive']   = self::clean_responsive( $out['responsive'] );
 		$out['conditions']   = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions'] = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
-		if ( 'snn/text' === $block ) {
+		if ( self::is_text( $block ) ) {
 			$out['content'] = is_string( $out['content'] ) ? $out['content'] : '';
 		}
 		return $out;
@@ -887,6 +908,8 @@ class SNN_Layout_Blocks {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}
 		wp_enqueue_script( 'snn-layout-blocks', SNN_URL . $blocks, $blocks_deps, self::version( $blocks ), true );
+		// The block definitions (blocks/<name>/block.php), read by the editor script before it registers the blocks.
+		wp_add_inline_script( 'snn-layout-blocks', 'window.snnLayoutBlockDefs = ' . wp_json_encode( array_values( self::definitions() ), JSON_HEX_TAG ) . ';', 'before' );
 	}
 
 	private static function version( $file ) {

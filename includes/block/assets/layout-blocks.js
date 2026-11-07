@@ -82,16 +82,14 @@
 		gridAreas: '',
 	};
 
+	/** The block definitions from PHP (blocks/<name>/block.php, see layout-blocks.php), set before this script runs. */
+	const defs = window.snnLayoutBlockDefs || [];
+
 	/**
-	 * The display and direction each block starts with (the same table as LAYOUT in layout-blocks.php). Section and
-	 * Container stack their children; Div is a plain block.
+	 * The display and direction each block starts with, from its definition. Section and Container stack their
+	 * children; Div is a plain block.
 	 */
-	const BLOCK_LAYOUT = {
-		'snn/section': { display: 'flex', flexDirection: 'column' },
-		'snn/container': { display: 'flex', flexDirection: 'column' },
-		'snn/div': { display: 'block', flexDirection: 'row' },
-	'snn/text': { display: 'block', flexDirection: 'row' },
-	};
+	const BLOCK_LAYOUT = Object.fromEntries( defs.map( ( def ) => [ def.name, def.layout ] ) );
 
 	/** The layout defaults of one block: the shared defaults, with the block's own display and direction. */
 	function layoutDefaults( name ) {
@@ -2035,29 +2033,6 @@
 		} );
 	}
 
-	registerLayout( {
-		name: 'snn/section',
-		title: __( 'Section', 'snn' ),
-		tag: 'section',
-		icon: 'editor-table',
-	} );
-	registerLayout( {
-		name: 'snn/container',
-		title: __( 'Container', 'snn' ),
-		tag: 'div',
-		icon: 'editor-expand',
-	} );
-	registerLayout( {
-		name: 'snn/div',
-		title: __( 'Div', 'snn' ),
-		tag: 'div',
-		icon: 'editor-code',
-	} );
-	registerLayout( {
-		name: 'snn/text',
-		title: __( 'Text', 'snn' ),
-		tag: 'p',
-		icon: 'editor-paragraph',
-		text: true,
-	} );
+	// One block for each definition (blocks/<name>/block.php, in the order of FOLDERS in layout-blocks.php).
+	defs.forEach( ( def ) => registerLayout( def ) );
 } )( window.wp, window.snnControls, window.snnLayoutIcons );
