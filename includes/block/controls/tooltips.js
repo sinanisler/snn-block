@@ -297,9 +297,16 @@
 		return name ? [ name, el.getAttribute( 'data-snn-tip-text' ) || '' ] : null;
 	}
 
+	/**
+	 * The inputs of a row (its text field, select, switch, icon buttons and colour swatch) show no tip: the row's title
+	 * carries it (Row and ViewRow in controls.js). The V and dynamic data buttons keep theirs.
+	 */
+	const ROW_INPUT = '.snn-row-control .snn-input, .snn-row-control .snn-select, .snn-row-control .snn-seg-btn, .snn-row-control .snn-switch, .snn-row-control .snn-swatch-btn';
+
 	/** The control under a node (or the node itself) that has a tip. */
 	function tipOf( node ) {
-		return node && node.closest ? node.closest( '[data-snn-tip], [data-snn-tip-name]' ) : null;
+		const el = node && node.closest ? node.closest( '[data-snn-tip], [data-snn-tip-name]' ) : null;
+		return el && el.matches( ROW_INPUT ) ? null : el;
 	}
 
 	/**
