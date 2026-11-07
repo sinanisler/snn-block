@@ -677,6 +677,7 @@
 		const wrap = useRef( null );
 		const pop = useRef( null );
 		usePopPlacement( open, wrap, pop );
+		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ) );
 		const [ query, setQuery ] = useState( '' );
 		const groups = data.animations || [];
 		const labelOf = {};
