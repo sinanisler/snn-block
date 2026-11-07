@@ -449,17 +449,53 @@
 	 * The block gets the colour at most once per animation frame, and the final colour when the picker closes (its
 	 * change event). The block and the panel do not re-render on every move.
 	 */
+	/**
+	 * A colour as the native picker takes it (#rrggbb) and its opacity in percent. rgba() and #rrggbbaa carry the alpha;
+	 * a colour with no alpha is opaque (100). Anything else (a variable not resolved, a name) shows black.
+	 */
+	function splitColour( shown ) {
+		const s = String( shown || '' ).trim();
+		const rgba = /^rgba?\(\s*(\d{1,3})\s*[ ,]\s*(\d{1,3})\s*[ ,]\s*(\d{1,3})\s*(?:[ ,/]\s*([\d.]+)(%?)\s*)?\)$/i.exec( s );
+		if ( rgba ) {
+			const hex = '#' + [ rgba[ 1 ], rgba[ 2 ], rgba[ 3 ] ].map( ( n ) => Math.min( 255, Number( n ) ).toString( 16 ).padStart( 2, '0' ) ).join( '' );
+			const alpha = rgba[ 4 ] === undefined ? 1 : rgba[ 5 ] ? Number( rgba[ 4 ] ) / 100 : Number( rgba[ 4 ] );
+			return { hex, alpha: Math.round( Math.min( 1, Math.max( 0, alpha ) ) * 100 ) };
+		}
+		const hex8 = /^#([0-9a-f]{6})([0-9a-f]{2})$/i.exec( s );
+		if ( hex8 ) {
+			return { hex: '#' + hex8[ 1 ].toLowerCase(), alpha: Math.round( ( parseInt( hex8[ 2 ], 16 ) / 255 ) * 100 ) };
+		}
+		let hex = '#000000';
+		if ( /^#[0-9a-f]{6}$/i.test( s ) ) {
+			hex = s;
+		} else if ( /^#[0-9a-f]{3}$/i.test( s ) ) {
+			hex = '#' + s.slice( 1 ).split( '' ).map( ( c ) => c + c ).join( '' );
+		}
+		return { hex, alpha: 100 };
+	}
+
+	/** The colour with its opacity: the hex when opaque (100), rgba() below that. */
+	function composeColour( hex, alpha ) {
+		if ( alpha >= 100 ) {
+			return hex;
+		}
+		const n = [ 1, 3, 5 ].map( ( i ) => parseInt( hex.substr( i, 2 ), 16 ) );
+		return 'rgba(' + n[ 0 ] + ', ' + n[ 1 ] + ', ' + n[ 2 ] + ', ' + Math.max( 0, alpha ) / 100 + ')';
+	}
+
+	/** The swatch's checkerboard, under the colour, so a transparent colour shows as transparent. */
+	const SWATCH_CHECKER = 'conic-gradient(#d8d8d8 25%, #ffffff 0 50%, #d8d8d8 0 75%, #ffffff 0)';
+
 	function ColourSwatch( { value, variables, label, onChange } ) {
 		const stored = colourOf( value, variables );
 		// The colour the picker moved to that the block has not shown yet. Null when the block's colour is shown.
 		const [ picked, setPicked ] = useState( null );
+		const [ open, setOpen ] = useState( false );
 		const shown = picked !== null ? picked : stored;
-		let hex = '#000000';
-		if ( /^#[0-9a-f]{6}$/i.test( shown ) ) {
-			hex = shown;
-		} else if ( /^#[0-9a-f]{3}$/i.test( shown ) ) {
-			hex = '#' + shown.slice( 1 ).split( '' ).map( ( c ) => c + c ).join( '' );
-		}
+		const { hex, alpha } = splitColour( shown );
+		const button = useRef( null );
+		const field = useRef( null ); // the field the popover sits under
+		const pop = useRef( null );
 		const input = useRef( null );
 		const frame = useRef( null ); // the animation frame that will write the colour, if one is waiting
 		const pending = useRef( null ); // the colour to write, if one is waiting
@@ -491,15 +527,22 @@
 			}
 		};
 
-		// The picker closes: its change event writes the final colour.
+		// The popover (the native picker for the hue, and the opacity). It closes on an outside click or Escape, and
+		// closing writes the final colour. The native picker's change event writes it too.
+		const close = () => {
+			setOpen( false );
+			flush();
+		};
+		usePopoverClose( open, [ field, pop ], close );
+		usePopPlacement( open, field, pop );
 		useEffect( () => {
 			const el = input.current;
-			if ( ! el ) {
+			if ( ! open || ! el ) {
 				return undefined;
 			}
 			el.addEventListener( 'change', flush );
 			return () => el.removeEventListener( 'change', flush );
-		}, [] );
+		}, [ open ] );
 
 		// The block holds the picked colour: show the block's colour again (it is the same colour, so nothing jumps).
 		useEffect( () => {
@@ -511,18 +554,65 @@
 		// Removed or deselected in the middle of a drag: the last colour still reaches the block.
 		useEffect( () => () => flush(), [] );
 
+		const face = shown || 'transparent';
 		return h(
-			'label',
-			{ className: 'snn-swatch-btn', ...tipAttr( 'swatch' ) },
-			h( 'span', { className: 'snn-swatch', style: { background: shown || 'transparent' }, 'aria-hidden': 'true' } ),
-			h( 'input', {
-				ref: input,
-				type: 'color',
-				className: 'snn-swatch-input',
-				value: hex,
-				'aria-label': label,
-				onChange: ( e ) => move( e.target.value ),
-			} )
+			Fragment,
+			null,
+			h(
+				'button',
+				{
+					type: 'button',
+					ref: button,
+					className: 'snn-swatch-btn',
+					'aria-haspopup': 'dialog',
+					'aria-expanded': open ? 'true' : 'false',
+					'aria-label': label,
+					...tipAttr( 'swatch' ),
+					onClick: () => {
+						if ( open ) {
+							close();
+							return;
+						}
+						// The popover sits under the whole field, so it lines up with the field's right edge.
+						field.current = button.current ? button.current.closest( '.snn-input-wrap' ) : null;
+						setOpen( true );
+					},
+				},
+				h( 'span', { className: 'snn-swatch', style: { backgroundImage: 'linear-gradient(' + face + ', ' + face + '), ' + SWATCH_CHECKER, backgroundSize: '100% 100%, 8px 8px' }, 'aria-hidden': 'true' } )
+			),
+			open
+				? inBody(
+						h(
+							'div',
+							{ className: 'snn-pop snn-panel snn-swatch-pop', ref: pop, role: 'dialog', 'aria-label': label },
+							h( 'input', {
+								ref: input,
+								type: 'color',
+								className: 'snn-swatch-input',
+								value: hex,
+								'aria-label': label,
+								onChange: ( e ) => move( composeColour( e.target.value, alpha ) ),
+							} ),
+							h(
+								'label',
+								{ className: 'snn-swatch-alpha' },
+								h( 'span', { className: 'snn-swatch-alpha-title' }, __( 'Opacity', 'snn' ) ),
+								h( 'input', {
+									type: 'range',
+									min: 0,
+									max: 100,
+									step: 1,
+									value: alpha,
+									className: 'snn-swatch-range',
+									'aria-label': __( 'Opacity', 'snn' ),
+									onChange: ( e ) => move( composeColour( hex, Number( e.target.value ) ) ),
+								} ),
+								h( 'span', { className: 'snn-swatch-value' }, alpha + '%' )
+							),
+							h( 'div', { className: 'snn-swatch-text' }, composeColour( hex, alpha ) )
+						)
+				  )
+				: null
 		);
 	}
 

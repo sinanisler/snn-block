@@ -1744,6 +1744,58 @@
 	cursor: pointer;
 }
 
+/* The swatch is a button: it opens a popover with the native picker (the hue) and the opacity. */
+.snn-swatch-btn {
+	padding: 0;
+	font: inherit;
+}
+
+.snn-swatch-pop {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 232px;
+	padding: 10px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+}
+
+.snn-swatch-pop .snn-swatch-input {
+	position: static;
+	inset: auto;
+	width: 100%;
+	height: 32px;
+	opacity: 1;
+	cursor: pointer;
+}
+
+.snn-swatch-alpha {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) 44px;
+	gap: 8px;
+	align-items: center;
+	font-size: 12px;
+}
+
+.snn-swatch-range {
+	width: 100%;
+	margin: 0;
+}
+
+.snn-swatch-value {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.snn-swatch-text {
+	font-family: Consolas, Menlo, monospace;
+	font-size: 11px;
+	color: #50575e;
+	word-break: break-all;
+}
+
 .snn-swatch-btn:focus-within {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
