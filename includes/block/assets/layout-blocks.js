@@ -45,19 +45,17 @@
 	// The Text block's toolbar. Core's bar draws Bold, Italic and Link first, then the named slot "unknown", then its
 	// More dropdown. The buttons below are filled into that "unknown" slot, so they sit after Link and before the dropdown.
 	// The formats in TEXT_BAR_NAMES are left out of core's list (textAllowedFormats), so core draws no button for them.
-	// Keyboard input, Language and Math stay in the dropdown.
-	const barIcon = ( d ) => h( 'svg', { width: 24, height: 24, viewBox: '0 0 24 24', 'aria-hidden': true, focusable: 'false', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6 }, h( 'path', { d } ) );
+	// Inline code, Keyboard input, Language and Math stay in the dropdown.
 	const fillIcon = ( d ) => h( 'svg', { width: 24, height: 24, viewBox: '0 0 24 24', 'aria-hidden': true, focusable: 'false', fill: 'currentColor' }, h( 'path', { d } ) );
 	const HIGHLIGHT_ICON = fillIcon( 'M12 3.5 6.5 11.2a6 6 0 1 0 11 0z' );
 	const IMAGE_ICON = fillIcon( 'M4 18.5h16V17H4v1.5zM16 13v1.5h4V13h-4zM5.1 15h7.8c.6 0 1.1-.5 1.1-1.1V6.1c0-.6-.5-1.1-1.1-1.1H5.1C4.5 5 4 5.5 4 6.1v7.8c0 .6.5 1.1 1.1 1.1zm.4-8.5h7V10l-1-1c-.3-.3-.8-.3-1 0l-1.6 1.5-1.2-.7c-.3-.2-.6-.2-.9 0l-1.3 1V6.5zm0 6.1l1.8-1.3 1.3.8c.3.2.7.2.9-.1l1.5-1.4 1.5 1.4v1.5h-7v-.9z' );
 	// Toggle buttons, in the order they appear after Link. Highlight and Inline image are below, they need a picker.
 	const TEXT_BAR_FORMATS = [
-		{ name: 'core/code', label: __( 'Inline code', 'snn' ), icon: barIcon( 'M8.5 7.5 3.5 12l5 4.5M15.5 7.5l5 4.5-5 4.5' ) },
 		{ name: 'core/strikethrough', label: __( 'Strikethrough', 'snn' ), glyph: h( 's', null, 'S' ) },
 		{ name: 'core/subscript', label: __( 'Subscript', 'snn' ), glyph: h( Fragment, null, 'X', h( 'sub', null, '2' ) ) },
 		{ name: 'core/superscript', label: __( 'Superscript', 'snn' ), glyph: h( Fragment, null, 'X', h( 'sup', null, '2' ) ) },
 	];
-	const TEXT_BAR_NAMES = [ 'core/code', 'core/strikethrough', 'core/subscript', 'core/superscript', 'core/text-color', 'core/image' ];
+	const TEXT_BAR_NAMES = [ 'core/strikethrough', 'core/subscript', 'core/superscript', 'core/text-color', 'core/image' ];
 	// Every registered format except TEXT_BAR_NAMES, so core still draws its dropdown and keeps the shortcuts.
 	function textAllowedFormats() {
 		return wp.data.select( wp.richText.store ).getFormatTypes().map( ( f ) => f.name ).filter( ( n ) => ! TEXT_BAR_NAMES.includes( n ) );
@@ -118,25 +116,6 @@
 			} ) )
 		);
 	}
-	// Core runs a format's markdown input rule only for the formats in that list, so inline code would lose `text`.
-	// This runs the code rule itself when one character is typed (the rule only looks at the character before the caret).
-	function TextInputRules( { value, onChange } ) {
-		const last = useRef( value.text );
-		useEffect( () => {
-			const before = last.current;
-			last.current = value.text;
-			if ( value.text.length !== before.length + 1 ) {
-				return;
-			}
-			const code = wp.data.select( wp.richText.store ).getFormatType( 'core/code' );
-			const next = code && code.__unstableInputRule ? code.__unstableInputRule( value ) : value;
-			if ( next !== value ) {
-				onChange( next );
-			}
-		}, [ value ] );
-		return null;
-	}
-
 	const QUERY_DEFAULTS = {
 		enabled: false,
 		postType: 'post',
@@ -2120,10 +2099,7 @@
 								allowedFormats: textAllowedFormats(),
 								// The render prop gives the rich text value while the block is selected. The buttons are filled into
 								// core's "unknown" slot (see TextBarButtons), which sits after Bold, Italic and Link.
-								children: ( { value, onChange, onFocus } ) => h( Fragment, null,
-									h( Fill, { name: 'RichText.ToolbarControls.unknown' }, h( TextBarButtons, { value, onChange, onFocus } ) ),
-									h( TextInputRules, { value, onChange } )
-								),
+								children: ( { value, onChange, onFocus } ) => h( Fill, { name: 'RichText.ToolbarControls.unknown' }, h( TextBarButtons, { value, onChange, onFocus } ) ),
 							} )
 						)
 					);
