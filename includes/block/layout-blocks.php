@@ -360,10 +360,13 @@ class SNN_Layout_Blocks {
 		// style goes into a class rule, followed by the media rules. Without per-view values the style stays inline.
 		$prefix = '';
 		$views  = self::view_rules( $a, $dyn );
-		if ( '' !== $views ) {
-			$class     = 'snn-r-' . substr( md5( $style . $views ), 0, 10 );
+		$before = implode( ';', SNN_Style_Props::overlay( $a ) );
+		if ( '' !== $views || '' !== $before ) {
+			$class     = 'snn-r-' . substr( md5( $style . $views . $before ), 0, 10 );
 			$classes[] = $class;
-			$prefix    = '<style>.' . $class . '{' . $style . '}' . str_replace( '%CLASS%', $class, $views ) . '</style>';
+			// The overlay is the block's ::before (Apply to: Overlay). Its rule sits beside the block's own rule.
+			$overlay   = '' !== $before ? '.' . $class . '::before{' . $before . '}' : '';
+			$prefix    = '<style>.' . $class . '{' . $style . '}' . $overlay . str_replace( '%CLASS%', $class, $views ) . '</style>';
 			$style     = '';
 		}
 
@@ -636,7 +639,9 @@ class SNN_Layout_Blocks {
 				continue;
 			}
 			$merge = array_merge( $merge, $own[ $view ] );
-			$css  .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn, true ) . '}}';
+			// The view's overlay: its own ::before, or none when this view has no overlay (so a base overlay is off here).
+			$before = implode( ';', SNN_Style_Props::overlay( $merge ) );
+			$css   .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn, true ) . '}.%CLASS%::before{' . ( '' !== $before ? $before : 'content:none' ) . '}}';
 		}
 		return $css;
 	}

@@ -1684,7 +1684,7 @@
 			// The two colour fields from before the repeater: no row now, but a saved value still counts for the rail dot.
 			also: [ 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ],
 			sections: [
-				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientStops' ] },
+				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientApply', 'gradientType', 'gradientAngle', 'gradientStops' ] },
 			],
 		},
 		{
@@ -1820,7 +1820,7 @@
 		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
 		color: __( 'Colour', 'snn' ), fontFamily: __( 'Font family', 'snn' ), fontSize: __( 'Font size', 'snn' ), fontWeight: __( 'Font weight', 'snn' ), fontStyle: __( 'Font style', 'snn' ), lineHeight: __( 'Line height', 'snn' ), letterSpacing: __( 'Letter spacing', 'snn' ), textAlign: __( 'Text align', 'snn' ), textTransform: __( 'Text transform', 'snn' ), textDecoration: __( 'Decoration', 'snn' ), textWrap: __( 'Text wrap', 'snn' ), whiteSpace: __( 'White space', 'snn' ), textShadow: __( 'Text shadow', 'snn' ),
 		backgroundColor: __( 'Colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
-		gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ), gradientColor1: __( 'Colour 1', 'snn' ), gradientStop1: __( 'Stop 1', 'snn' ), gradientColor2: __( 'Colour 2', 'snn' ), gradientStop2: __( 'Stop 2', 'snn' ),
+		gradientApply: __( 'Apply to', 'snn' ), gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ), gradientColor1: __( 'Colour 1', 'snn' ), gradientStop1: __( 'Stop 1', 'snn' ), gradientColor2: __( 'Colour 2', 'snn' ), gradientStop2: __( 'Stop 2', 'snn' ),
 		borderWidth: __( 'Border width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
 		boxShadowX: __( 'Shadow x', 'snn' ), boxShadowY: __( 'Shadow y', 'snn' ), boxShadowBlur: __( 'Shadow blur', 'snn' ), boxShadowSpread: __( 'Shadow spread', 'snn' ), boxShadowColor: __( 'Shadow colour', 'snn' ),
 		transformOrigin: __( 'Origin', 'snn' ), translateX: __( 'Move x', 'snn' ), translateY: __( 'Move y', 'snn' ), rotate: __( 'Rotate', 'snn' ), scale: __( 'Scale', 'snn' ), skewX: __( 'Skew x', 'snn' ), skewY: __( 'Skew y', 'snn' ),
@@ -2342,6 +2342,11 @@
 				const cssText = cleanCss( a.customCss );
 				const cssScoped = cssText ? cssScope( cssText ) : '';
 				const cssRules = cssScoped ? h( 'style', null, scopeCss( cssText, '.' + cssScoped ) ) : null;
+				// The overlay (Apply to: Overlay) is the ::before of the element that holds the layout style, the inner list.
+				// Its rule is written here, and the class goes on that element, as the front end puts both on the block.
+				const overlayPairs = window.snnStyleProps.overlay( effectiveValues( a, device ) );
+				const overlayClass = overlayPairs.length ? cssScope( 'overlay' + JSON.stringify( overlayPairs ) ) : '';
+				const overlayRule = overlayClass ? h( 'style', null, '.' + overlayClass + '::before{' + overlayPairs.map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' ) + '}' ) : null;
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses, cssScoped ].filter( Boolean ).join( ' ' ),
@@ -2351,7 +2356,7 @@
 				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
 				// puts its own list element between the block wrapper and the children, so a style on the
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
-				const innerProps = useInnerBlocksProps( { style: parts.layout }, { __unstableDisableLayoutClassNames: true } );
+				const innerProps = useInnerBlocksProps( { style: parts.layout, className: overlayClass || undefined }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
 				// A Text block: its text is a rich text, drawn in the element that takes the layout style (the item
 				// settings stay on the wrapper). The query badge shows as it does for a layout block.
@@ -2367,12 +2372,14 @@
 								? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 								: null,
 							cssRules,
+							overlayRule,
 							h( RichText, {
 								tagName: a.tagName,
 								value: a.content,
 								onChange: ( v ) => set( { content: v } ),
 								placeholder: __( 'Type text', 'snn' ),
 								style: parts.layout,
+								className: overlayClass || undefined,
 								allowedFormats: textAllowedFormats(),
 								// The render prop gives the rich text value while the block is selected. The buttons are filled into
 								// core's "unknown" slot (see TextBarButtons), which sits after Bold, Italic and Link.
@@ -2392,6 +2399,7 @@
 							? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 							: null,
 						cssRules,
+							overlayRule,
 						h( 'div', innerProps )
 					)
 				);

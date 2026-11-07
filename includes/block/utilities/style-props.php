@@ -87,6 +87,7 @@ class SNN_Style_Props {
 		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ) ),
 		// Gradient (composed into background-image): the type, the angle, the colour stops (a JSON list, the repeater), and
 		// the two colour stops from before the repeater (kept, so saved blocks render the same)
+		'gradientApply'     => array( null, 'keyword', array( 'background', 'overlay', 'text' ) ),
 		'gradientType'      => array( null, 'keyword', array( 'linear', 'radial' ) ),
 		'gradientStops'     => array( null, 'stops' ),
 		'gradientAngle'     => array( null, 'number' ),
@@ -131,7 +132,7 @@ class SNN_Style_Props {
 
 	/** The attributes with no css of their own: composed in declarations(). */
 	const COMPOSED = array(
-		'gradientType', 'gradientAngle', 'gradientStops', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2',
+		'gradientApply', 'gradientType', 'gradientAngle', 'gradientStops', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2',
 		'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor',
 		'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY',
 		'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia',
@@ -289,10 +290,27 @@ class SNN_Style_Props {
 				$out[] = $spec[0] . ':' . $value;
 			}
 		}
-		foreach ( array( self::box_shadow( $a ), self::transform( $a ), self::filter( $a ), self::gradient( $a ) ) as $composed ) {
+		foreach ( array( self::box_shadow( $a ), self::transform( $a ), self::filter( $a ) ) as $composed ) {
 			if ( '' !== $composed ) {
 				$out[] = $composed;
 			}
+		}
+		// The gradient: the background (Background, or Text, which clips it to the text) or nothing (Overlay, its own rule
+		// in overlay()). An overlay needs its box positioned and isolated, so its ::before sits above the background and under the content.
+		foreach ( self::gradient( $a ) as $declaration ) {
+			$out[] = $declaration;
+		}
+		if ( array() !== self::overlay( $a ) ) {
+			$positioned = false;
+			foreach ( $out as $declaration ) {
+				if ( 0 === strpos( $declaration, 'position:' ) ) {
+					$positioned = true;
+				}
+			}
+			if ( ! $positioned ) {
+				$out[] = 'position:relative';
+			}
+			$out[] = 'isolation:isolate';
 		}
 		return $out;
 	}
@@ -373,6 +391,34 @@ class SNN_Style_Props {
 	 * stops; otherwise the two colour fields from before the repeater, which need both colours (stops default to 0% and 100%).
 	 */
 	private static function gradient( array $a ) {
+		$value = self::gradient_value( $a );
+		$apply = $a['gradientApply'] ?? '';
+		if ( '' === $value || 'overlay' === $apply ) {
+			return array();
+		}
+		$out = array( 'background-image:' . $value );
+		if ( 'text' === $apply ) {
+			// The gradient is clipped to the text, and the text itself is transparent so the gradient shows through it.
+			array_push( $out, 'background-clip:text', '-webkit-background-clip:text', 'color:transparent' );
+		}
+		return $out;
+	}
+
+	/**
+	 * The overlay: the gradient as the ::before of the block (Apply to: Overlay), drawn above the background and under
+	 * the content. Its declarations, or an empty array when the block has no overlay. The block's rule carries position
+	 * and isolation (declarations()), so the ::before with z-index -1 sits in the block's own stacking context.
+	 */
+	public static function overlay( array $a ) {
+		$value = self::gradient_value( $a );
+		if ( '' === $value || 'overlay' !== ( $a['gradientApply'] ?? '' ) ) {
+			return array();
+		}
+		return array( 'content:""', 'position:absolute', 'inset:0', 'z-index:-1', 'pointer-events:none', 'border-radius:inherit', 'background-image:' . $value );
+	}
+
+	/** The gradient as a CSS image (linear or radial), or '' when it has no two colours. The stops come from the repeater. */
+	private static function gradient_value( array $a ) {
 		$stops = self::gradient_stops( $a );
 		if ( ! $stops ) {
 			$c1 = self::check( 'color', $a['gradientColor1'] ?? '' );
@@ -389,10 +435,10 @@ class SNN_Style_Props {
 		}
 		$list = implode( ', ', $stops );
 		if ( 'radial' === ( $a['gradientType'] ?? '' ) ) {
-			return 'background-image:radial-gradient(' . $list . ')';
+			return 'radial-gradient(' . $list . ')';
 		}
 		$angle = self::plain_number( $a['gradientAngle'] ?? '' );
-		return 'background-image:linear-gradient(' . ( '' === $angle ? '180' : $angle ) . 'deg, ' . $list . ')';
+		return 'linear-gradient(' . ( '' === $angle ? '180' : $angle ) . 'deg, ' . $list . ')';
 	}
 
 	/**

@@ -185,6 +185,7 @@
 		'backgroundColor': [ 'Colour', 'The background colour.' ],
 		'backgroundImage': [ 'Image URL', 'The address of the background image, or pick one from the media library.' ],
 		'mediaLibrary': [ 'Media library', 'Choose an image from the media library.' ],
+		'gradientApply': [ 'Apply to', 'Background draws the gradient behind the content. Overlay draws it above the background and under the content. Text clips it to the text.' ],
 		'backgroundSize': [ 'Size', 'Cover (the default for an image), contain, auto, or Custom for a length of your own.' ],
 		'backgroundPosition': [ 'Position', 'Where the background image sits in the block.' ],
 		'backgroundRepeat': [ 'Repeat', 'Whether the image repeats.' ],

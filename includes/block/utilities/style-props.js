@@ -182,16 +182,17 @@
 	}
 
 	/**
-	 * background-image: a gradient. Its colour stops are the repeater's list (gradientStops) when it has two or more valid
+	 * The gradient as a CSS image. Its colour stops are the repeater's list (gradientStops) when it has two or more valid
 	 * stops; otherwise the two colour fields from before the repeater, which need both colours (stops default to 0% and 100%).
+	 * '' when it has no two colours. The same as gradient_value() in style-props.php.
 	 */
-	function gradient( a ) {
+	function gradientValue( a ) {
 		let stops = gradientStops( a );
 		if ( ! stops.length ) {
 			const c1 = check( 'color', a.gradientColor1 );
 			const c2 = check( 'color', a.gradientColor2 );
 			if ( ! c1 || ! c2 ) {
-				return null;
+				return '';
 			}
 			const s1 = check( 'percent', a.gradientStop1 );
 			const s2 = check( 'percent', a.gradientStop2 );
@@ -199,10 +200,32 @@
 		}
 		const list = stops.join( ', ' );
 		if ( a.gradientType === 'radial' ) {
-			return [ 'background-image', 'radial-gradient(' + list + ')' ];
+			return 'radial-gradient(' + list + ')';
 		}
 		const angle = plainNumber( a.gradientAngle );
-		return [ 'background-image', 'linear-gradient(' + ( angle || '180' ) + 'deg, ' + list + ')' ];
+		return 'linear-gradient(' + ( angle || '180' ) + 'deg, ' + list + ')';
+	}
+
+	/** The background declarations of the gradient: the image, and with Apply to: Text the clip and the transparent text. None for an overlay. */
+	function gradient( a ) {
+		const value = gradientValue( a );
+		if ( ! value || a.gradientApply === 'overlay' ) {
+			return [];
+		}
+		const out = [ [ 'background-image', value ] ];
+		if ( a.gradientApply === 'text' ) {
+			out.push( [ 'background-clip', 'text' ], [ '-webkit-background-clip', 'text' ], [ 'color', 'transparent' ] );
+		}
+		return out;
+	}
+
+	/** The overlay's ::before declarations (Apply to: Overlay), as pairs. Empty when the block has no overlay. */
+	function overlay( a ) {
+		const value = gradientValue( a );
+		if ( ! value || a.gradientApply !== 'overlay' ) {
+			return [];
+		}
+		return [ [ 'content', '""' ], [ 'position', 'absolute' ], [ 'inset', '0' ], [ 'z-index', '-1' ], [ 'pointer-events', 'none' ], [ 'border-radius', 'inherit' ], [ 'background-image', value ] ];
 	}
 
 	/**
@@ -250,11 +273,20 @@
 				out.push( [ css, value ] );
 			}
 		} );
-		[ boxShadow( a ), transform( a ), filter( a ), gradient( a ) ].forEach( ( d ) => {
+		[ boxShadow( a ), transform( a ), filter( a ) ].forEach( ( d ) => {
 			if ( d ) {
 				out.push( d );
 			}
 		} );
+		// The gradient: the background (Background, or Text) or nothing (Overlay, its own rule in overlay()). An overlay needs
+		// its box positioned and isolated, so its ::before sits above the background and under the content.
+		gradient( a ).forEach( ( d ) => out.push( d ) );
+		if ( overlay( a ).length ) {
+			if ( ! out.some( ( d ) => d[ 0 ] === 'position' ) ) {
+				out.push( [ 'position', 'relative' ] );
+			}
+			out.push( [ 'isolation', 'isolate' ] );
+		}
 		return out;
 	}
 
@@ -263,5 +295,5 @@
 		return prop.replace( /-([a-z])/g, ( m, c ) => c.toUpperCase() );
 	}
 
-	root.snnStyleProps = { check, declarations, camel };
+	root.snnStyleProps = { check, declarations, camel, overlay };
 } )( typeof window !== 'undefined' ? window : globalThis );
