@@ -566,16 +566,9 @@ class SNN_Layout_Blocks {
 		return implode( ';', array_merge( $css, SNN_Style_Props::declarations( $a ) ) );
 	}
 
-	/** A length for spacing and width: px, rem, em, %, vw or vh, zero, or a spacing variable. Negative values are dropped. */
+	/** A length for spacing and width, as the Style groups take it (SNN_Style_Props::check). A bare number is px. Negative values are dropped. */
 	public static function size_value( $value ) {
-		$value = trim( (string) $value );
-		if ( preg_match( '/^\d+(\.\d+)?$/', $value ) && '0' !== $value ) {
-			$value .= 'px'; // A bare number is pixels, as the panel's unit says.
-		}
-		if ( preg_match( '/^(var\(--[a-z][a-z0-9-]*\)|\d+(\.\d+)?(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
-			return $value;
-		}
-		return '';
+		return SNN_Style_Props::check( 'size', $value );
 	}
 
 	/** An opacity from 0 to 100 (a percentage), written as 0 to 1. Anything else is dropped. */
@@ -637,18 +630,11 @@ class SNN_Layout_Blocks {
 	}
 
 	/**
-	 * A gap is a length (16px, 1rem, 0) or a spacing variable (var(--wp--preset--spacing--m)).
-	 * Anything else is dropped, so a value cannot write other CSS.
+	 * A gap is a CSS length (16px, 1rem, 0, calc(...)) or a spacing variable (var(--wp--preset--spacing--m)), as the
+	 * Style groups take it (SNN_Style_Props::check). Anything that is not one is dropped, so a value cannot write other CSS.
 	 */
 	public static function gap( $value ) {
-		$value = trim( (string) $value );
-		if ( preg_match( '/^\d+(\.\d+)?$/', $value ) && '0' !== $value ) {
-			$value .= 'px'; // A bare number is pixels, as the panel's unit says.
-		}
-		if ( preg_match( '/^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/', $value ) ) {
-			return $value;
-		}
-		return '';
+		return SNN_Style_Props::check( 'length', $value );
 	}
 
 	/**

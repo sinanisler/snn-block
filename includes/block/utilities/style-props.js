@@ -7,7 +7,6 @@
 ( function ( root ) {
 	'use strict';
 
-	const UNIT = 'px|rem|em|%|vw|vh|vmin|vmax|ch';
 	const SIZE_WORDS = [ 'auto', 'max-content', 'min-content', 'fit-content' ];
 	const VAR_OK = /^var\(--[a-z][a-z0-9-]*\)$/;
 	const COLOR_OK = /^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|(rgba?|hsla?)\([0-9a-z.,%\s\/+-]{1,60}\)|var\(--[a-z][a-z0-9-]*\)|transparent)$/i;
@@ -15,17 +14,47 @@
 	const str = ( v ) => ( v === undefined || v === null ? '' : String( v ) );
 	const isVar = ( v ) => VAR_OK.test( v );
 
-	/** A length with a unit, or 0, or a variable. A plain number gets px. signed: negative values allowed. */
+	/**
+	 * A length as CSS takes it: the same rule as length() in style-props.php. A number (px when it has no unit), 0,
+	 * a variable, or any other CSS value made of value characters. signed: negative values allowed.
+	 */
 	function length( v, signed ) {
 		let t = v;
-		if ( ( signed ? /^-?\d+(\.\d+)?$/ : /^\d+(\.\d+)?$/ ).test( t ) && t !== '0' ) {
+		if ( /^[+-]?(\d+(\.\d+)?|\.\d+)$/.test( t ) && t !== '0' ) {
 			t += 'px';
 		}
-		const unit = new RegExp( '^' + ( signed ? '-?' : '' ) + '\\d+(\\.\\d+)?(' + UNIT + ')$' );
-		if ( t === '0' || isVar( t ) || unit.test( t ) ) {
+		if ( t === '0' ) {
 			return t;
 		}
-		return '';
+		if ( ! signed && t.charAt( 0 ) === '-' ) {
+			return '';
+		}
+		return isCssValue( t ) ? t : '';
+	}
+
+	/** A CSS value: the same rule as is_css_value() in style-props.php. */
+	function isCssValue( v ) {
+		if ( v.length > 200 || ! /^[A-Za-z0-9 .,%()+*\/-]+$/.test( v ) ) {
+			return false;
+		}
+		if ( ! /[0-9(]/.test( v ) || v.indexOf( '/*' ) !== -1 || v.indexOf( '*/' ) !== -1 ) {
+			return false;
+		}
+		if ( /(expression|url)\s*\(/i.test( v ) ) { // Not a length in any browser, and the old CSS ways to run code or fetch a file.
+			return false;
+		}
+		let depth = 0;
+		for ( let i = 0; i < v.length; i++ ) {
+			if ( v.charAt( i ) === '(' ) {
+				depth++;
+			} else if ( v.charAt( i ) === ')' ) {
+				depth--;
+				if ( depth < 0 ) {
+					return false;
+				}
+			}
+		}
+		return depth === 0;
 	}
 
 	/** A value checked for its type (the same names as the PHP). Returns the value to write, or ''. */

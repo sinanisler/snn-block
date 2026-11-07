@@ -197,18 +197,17 @@
 	};
 
 
-	const GAP_OK = /^(var\(--[a-z][a-z0-9-]*\)|-?(\d+|\d*\.\d+)(px|rem|em|%|vw|vh)|0)$/;
 	const TEMPLATE_OK = /^[A-Za-z0-9 .,()%+-]{1,160}$/;
 	const NUMBER_OK = /^(\d+(\.\d+)?|var\(--[a-z][a-z0-9-]*\))$/;
-	/** A length for padding and width (no minus): the same rule as size_value() in layout-blocks.php. */
-	const SIZE_OK = /^(var\(--[a-z][a-z0-9-]*\)|\d+(\.\d+)?(px|rem|em|%|vw|vh)|0)$/;
 	const OVERFLOW_OK = [ 'visible', 'hidden', 'clip' ];
-	/** An opacity from 0 to 100, written as 0 to 1, as the front end writes it. Anything else is empty. */
-	/** A bare number is pixels (the panel shows px next to the field). */
-	function withPx( v ) {
-		const t = str( v ).trim();
-		return /^\d+(\.\d+)?$/.test( t ) && t !== '0' ? t + 'px' : t;
+	/**
+	 * A CSS length for a layout setting, checked as the front end checks it (style-props.js): a bare number is px,
+	 * and a value that is not a length is ''. signed: negative values allowed (gap, flex basis).
+	 */
+	function cssSize( v, signed ) {
+		return window.snnStyleProps.check( signed ? 'length' : 'size', v );
 	}
+	/** An opacity from 0 to 100, written as 0 to 1, as the front end writes it. Anything else is empty. */
 	function opacityCss( v ) {
 		const t = str( v ).trim();
 		if ( /^var\(--[a-z][a-z0-9-]*\)$/.test( t ) ) {
@@ -325,7 +324,7 @@
 		if ( t === 'auto' ) {
 			return 'auto';
 		}
-		return GAP_OK.test( t ) ? t : '';
+		return cssSize( t, true );
 	}
 
 	/** The settings of a block inside its parent (the item settings). They go on the block's wrapper, the grid or flex item. */
@@ -414,14 +413,14 @@
 			if ( a.alignContent && ( grid || a.flexWrap !== 'nowrap' ) ) {
 				css.alignContent = grid ? gridWord( a.alignContent ) : a.alignContent;
 			}
-			if ( GAP_OK.test( withPx( a.gap ) ) ) {
-				css.gap = withPx( a.gap );
+			if ( cssSize( a.gap, true ) ) {
+				css.gap = cssSize( a.gap, true );
 			}
-			if ( GAP_OK.test( withPx( a.columnGap ) ) ) {
-				css.columnGap = withPx( a.columnGap );
+			if ( cssSize( a.columnGap, true ) ) {
+				css.columnGap = cssSize( a.columnGap, true );
 			}
-			if ( GAP_OK.test( withPx( a.rowGap ) ) ) {
-				css.rowGap = withPx( a.rowGap );
+			if ( cssSize( a.rowGap, true ) ) {
+				css.rowGap = cssSize( a.rowGap, true );
 			}
 		}
 
@@ -461,14 +460,14 @@
 		}
 
 		// Spacing, width, opacity and overflow: the same rules as the front end (layout-blocks.php).
-		if ( SIZE_OK.test( withPx( a.paddingTop ) ) ) {
-			css.paddingTop = withPx( a.paddingTop );
+		if ( cssSize( a.paddingTop, false ) ) {
+			css.paddingTop = cssSize( a.paddingTop, false );
 		}
-		if ( SIZE_OK.test( withPx( a.paddingBottom ) ) ) {
-			css.paddingBottom = withPx( a.paddingBottom );
+		if ( cssSize( a.paddingBottom, false ) ) {
+			css.paddingBottom = cssSize( a.paddingBottom, false );
 		}
-		if ( SIZE_OK.test( withPx( a.maxWidth ) ) ) {
-			css.maxWidth = withPx( a.maxWidth );
+		if ( cssSize( a.maxWidth, false ) ) {
+			css.maxWidth = cssSize( a.maxWidth, false );
 			css.marginLeft = 'auto';
 			css.marginRight = 'auto';
 		}

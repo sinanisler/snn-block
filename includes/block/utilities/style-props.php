@@ -20,9 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class SNN_Style_Props {
 
-	/** Units a length may have. */
-	const UNIT = 'px|rem|em|%|vw|vh|vmin|vmax|ch';
-
 	/** Keywords a width or height takes besides a length. */
 	const SIZE_WORDS = array( 'auto', 'max-content', 'min-content', 'fit-content' );
 
@@ -218,16 +215,52 @@ class SNN_Style_Props {
 		return (bool) preg_match( '/^var\(--[a-z][a-z0-9-]*\)$/', $v );
 	}
 
-	/** A length with a unit, or 0, or a variable. A plain number gets px. $signed: negative values allowed. */
+	/**
+	 * A length as CSS takes it: a number (px when it has no unit), 0, a variable, or any other CSS value made of
+	 * value characters (a unit in any case, calc(), clamp(), min(), max(), vw, dvh...). Whether the browser
+	 * takes a value for its property is for the browser to say, so a valid value is not refused here. Refused: a
+	 * value that could leave its declaration, a word with no number, and a minus sign on an unsigned length.
+	 * $signed: negative values allowed.
+	 */
 	private static function length( $v, $signed ) {
-		if ( preg_match( $signed ? '/^-?\d+(\.\d+)?$/' : '/^\d+(\.\d+)?$/', $v ) && '0' !== $v ) {
+		if ( preg_match( '/^[+-]?(\d+(\.\d+)?|\.\d+)$/', $v ) && '0' !== $v ) {
 			$v .= 'px';
 		}
-		$sign = $signed ? '-?' : '';
-		if ( '0' === $v || self::is_var( $v ) || preg_match( '/^' . $sign . '\d+(\.\d+)?(' . self::UNIT . ')$/', $v ) ) {
+		if ( '0' === $v ) {
 			return $v;
 		}
-		return '';
+		if ( ! $signed && '-' === substr( $v, 0, 1 ) ) {
+			return '';
+		}
+		return self::is_css_value( $v ) ? $v : '';
+	}
+
+	/**
+	 * A CSS value: only the characters a value is written with (letters, digits, spaces and . , % ( ) + - * /), a digit
+	 * or a function (so no plain word), no comment, and brackets that close. Nothing here can end a declaration.
+	 */
+	private static function is_css_value( $v ) {
+		if ( strlen( $v ) > 200 || ! preg_match( '/^[A-Za-z0-9 .,%()+*\/-]+$/', $v ) ) {
+			return false;
+		}
+		if ( ! preg_match( '/[0-9(]/', $v ) || false !== strpos( $v, '/*' ) || false !== strpos( $v, '*/' ) ) {
+			return false;
+		}
+		if ( preg_match( '/(expression|url)\s*\(/i', $v ) ) { // Not a length in any browser, and the old CSS ways to run code or fetch a file.
+			return false;
+		}
+		$depth = 0;
+		for ( $i = 0, $n = strlen( $v ); $i < $n; $i++ ) {
+			if ( '(' === $v[ $i ] ) {
+				++$depth;
+			} elseif ( ')' === $v[ $i ] ) {
+				--$depth;
+				if ( $depth < 0 ) {
+					return false;
+				}
+			}
+		}
+		return 0 === $depth;
 	}
 
 	/**

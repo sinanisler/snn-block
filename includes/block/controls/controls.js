@@ -445,6 +445,9 @@
 		const input = useRef( null );
 		const pop = useRef( null );
 		const current = value || '';
+		// The unit tag (px, %, deg) shows while the value is empty or still a plain number. Once a unit or a
+		// function is typed (50%, 10vw, calc(...)), the tag goes, so it never names a unit the value does not use.
+		const showUnit = !! unit && /^[\s+\-.\d]*$/.test( String( current ) );
 		const preview = usePreview( current );
 		usePopoverClose( picker !== null, [ wrap, pop ], () => setPicker( null ) );
 		usePopPlacement( picker !== null, wrap, pop );
@@ -461,7 +464,7 @@
 			{ className: 'snn-field', ref: wrap },
 			h(
 				'div',
-				{ className: 'snn-input-wrap' + ( variables ? ' has-vars' : '' ) + ( unit ? ' has-unit' : '' ) },
+				{ className: 'snn-input-wrap' + ( variables ? ' has-vars' : '' ) + ( showUnit ? ' has-unit' : '' ) },
 				swatch ? h( ColourSwatch, { value: current, variables, label, onChange } ) : null,
 				h( 'input', {
 					ref: input,
@@ -475,7 +478,7 @@
 						...tipAttr( tip ),
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
-				unit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
+				showUnit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
 				variables
 					? h(
 							'button',
