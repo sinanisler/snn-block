@@ -49,7 +49,7 @@
 	function ImageIcon() {
 		return h(
 			'svg',
-			{ className: 'snn-image-icon', viewBox: '0 0 16 16', width: 12, height: 12, 'aria-hidden': 'true', focusable: 'false' },
+			{ className: 'snn-image-icon', viewBox: '0 0 16 16', width: 14, height: 14, 'aria-hidden': 'true', focusable: 'false' },
 			h( 'rect', { x: 2.5, y: 3.5, width: 11, height: 9, rx: 1, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4 } ),
 			h( 'path', { d: 'M3 11.5l3-3.2 2.4 2.4 1.6-1.6 3 2.4', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinejoin: 'round' } ),
 			h( 'circle', { cx: 5.7, cy: 6.2, r: 1, fill: 'currentColor' } )
