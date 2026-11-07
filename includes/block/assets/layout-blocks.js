@@ -1641,7 +1641,7 @@
 		const SUB_TITLES = {
 			conditions: __( 'Conditions', 'snn' ),
 			interactions: __( 'Interactions', 'snn' ),
-			animations: __( 'GSAP animations', 'snn' ),
+			animations: __( 'Animations', 'snn' ),
 		};
 		const tabButton = ( id, label ) =>
 			h(

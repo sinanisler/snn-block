@@ -22,7 +22,7 @@
 		'view.mobile': [ 'Mobile', 'Values for screens up to 478 px.' ],
 		'head.conditions': [ 'Conditions', 'Show this element only when rules hold.' ],
 		'head.interactions': [ 'Interactions', 'Run an action when a trigger happens, such as a click.' ],
-		'head.animations': [ 'GSAP animations', 'Play GSAP animations on the front end.' ],
+		'head.animations': [ 'Animations', 'Play animations on the front end.' ],
 		'tab.content': [ 'Content', 'Tag, layout, query loop and advanced settings.' ],
 		'tab.style': [ 'Style', 'Colours, sizes, text, borders and effects.' ],
 

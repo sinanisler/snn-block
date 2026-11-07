@@ -82,7 +82,7 @@
 		const items = [
 			{ key: 'conditions', label: __( 'Conditions', 'snn' ), used: conditions > 0, name: 'conditions' },
 			{ key: 'interactions', label: __( 'Interactions', 'snn' ), used: interactions > 0, name: 'interactions' },
-			...( data.gsap ? [ { key: 'animations', label: __( 'GSAP animations', 'snn' ), used: animations > 0, name: 'animations' } ] : [] ),
+			...( data.gsap ? [ { key: 'animations', label: __( 'Animations', 'snn' ), used: animations > 0, name: 'animations' } ] : [] ),
 		];
 		return h(
 			'div',
@@ -590,7 +590,7 @@
 				{ label: __( 'Animation', 'snn' ), changed: list.length > 0, tip: 'gsapAnimation' },
 				h( AnimationPicker, { value: list, multiple: true, tip: 'gsapAnimation', onChange } )
 			),
-			h( 'p', { className: 'snn-hint' }, __( 'GSAP animations play on the front end. Add more than one to stack them.', 'snn' ) )
+			h( 'p', { className: 'snn-hint' }, __( 'Animations play on the front end. Add more than one to stack them.', 'snn' ) )
 		);
 	}
 
