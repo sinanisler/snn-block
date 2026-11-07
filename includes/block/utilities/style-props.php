@@ -79,7 +79,7 @@ class SNN_Style_Props {
 		'textShadow'        => array( 'text-shadow', 'text' ),
 		// Background
 		'backgroundImage'   => array( 'background-image', 'url' ),
-		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'cover', 'contain', 'auto' ) ),
+		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'auto', 'cover', 'contain' ) ),
 		'backgroundPosition' => array( 'background-position', 'text' ),
 		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ) ),
 		// Gradient (composed into background-image): the type, the angle, two colour stops with their positions

@@ -181,6 +181,23 @@
 	right: 20px;
 }
 
+/* The media library button sits left of V, on the Image URL field: the input and the unit make room for it. */
+.snn-tool-media {
+	right: 38px;
+}
+
+.snn-input-wrap.has-media .snn-input {
+	padding-right: 60px;
+}
+
+.snn-input-wrap.has-media.has-unit .snn-input {
+	padding-right: 80px;
+}
+
+.snn-input-wrap.has-media.has-vars .snn-unit {
+	right: 58px;
+}
+
 .snn-tool-text {
 	font-size: 11px;
 	font-weight: 600;
@@ -1115,6 +1132,14 @@
 	flex-direction: column;
 	align-items: stretch;
 	gap: 2px;
+}
+
+/* A choice with a length under it (background size: Custom shows a field). */
+.snn-keyword-length {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
 }
 
 .snn-reset {

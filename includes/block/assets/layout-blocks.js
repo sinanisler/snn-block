@@ -1142,17 +1142,21 @@
 	 * shows that the view sets its own value. A value the view inherits shows as the field's placeholder; a switch or an
 	 * icon row shows it as its state, as those have no placeholder. dflt is the setting's default (see viewOwn).
 	 */
-	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode, tip, pick, store } ) {
+	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, clearDefault, media, variables, inputMode, tip, pick, store } ) {
 			// The tooltip key: the setting's own key, unless the row names another (the template is a grid column setting).
 			const key = tip || k;
 		const own = viewOwn( a, device, k, dflt );
 		const value = own !== undefined ? own : inheritedValue( a, device, k ).value;
 		const change = ( v ) => setValue( a, set, device, k, v );
+		// clearDefault (the Style rows): on Desktop, choosing the CSS default stores nothing, so no dot shows and nothing is written.
+		const choose = ( v ) => change( clearDefault && device === 'Desktop' && v === dflt ? '' : v );
 		const groups = variables === undefined ? VARIABLE_GROUPS : variables;
 		const empty = value === undefined || value === null || value === '';
 		let control;
 		if ( kind === 'select' ) {
-			control = h( Select, { label, tip: key, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: change } );
+			control = h( Select, { label, tip: key, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: choose } );
+		} else if ( kind === 'keywordlength' ) {
+			control = h( KeywordLength, { label, tip: key, value, options, fallback: fallback || options[ 0 ].value, unit, onKeyword: choose, onLength: change } );
 		} else if ( kind === 'icons' ) {
 			// pick shows the stored value as one of the options (the column icons show the count of a template).
 			// store writes the chosen option as the stored value (a count becomes its template).
@@ -1174,11 +1178,56 @@
 				variables: groups,
 				kind: kind === 'size' ? 'size' : kind === 'color' ? 'color' : undefined,
 				swatch: kind === 'color',
+				media,
 				inputMode,
 				onChange: change,
 			} );
 		}
 		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
+	}
+
+	/**
+	 * A choice of keywords, or a length of its own (background size). Custom is the last choice: it opens a length field
+	 * under the choice. A length the view already holds opens Custom by itself. Choosing Custom clears a keyword, so the
+	 * canvas and the front end show the same thing (the browser's default until a length is typed).
+	 */
+	function KeywordLength( { value, options, fallback, unit, label, tip, onKeyword, onLength } ) {
+		const [ custom, setCustom ] = useState( false );
+		const current = value === undefined || value === null ? '' : String( value );
+		const isLength = current !== '' && options.every( ( o ) => o.value !== current );
+		const open = custom || isLength;
+		const shown = open ? 'custom' : current || fallback;
+		const choices = options.concat( [ { value: 'custom', label: __( 'Custom', 'snn' ) } ] );
+		return h(
+			'div',
+			{ className: 'snn-keyword-length' },
+			h( Select, {
+				label,
+				tip,
+				value: shown,
+				options: choices,
+				onChange: ( v ) => {
+					if ( v === 'custom' ) {
+						setCustom( true );
+						if ( current !== '' ) {
+							onLength( '' );
+						}
+						return;
+					}
+					setCustom( false );
+					onKeyword( v );
+				},
+			} ),
+			open
+				? h( TextField, {
+						label: label + ' ' + __( 'length', 'snn' ),
+						value: isLength ? current : '',
+						placeholder: '50% auto',
+						unit,
+						onChange: onLength,
+				  } )
+				: null
+		);
 	}
 
 	/**
@@ -1654,6 +1703,8 @@
 	const STYLE_EXTRA = { gap: 'size', paddingTop: 'size', paddingBottom: 'size', maxWidth: 'size', opacity: 'number' };
 	/** The types a size field shows px for. */
 	const STYLE_SIZE = [ 'length', 'margin', 'size', 'sizenone', 'width', 'lengthnormal', 'keywordlength' ];
+	/** The CSS initial value of a choice where the first option is not the initial one (what the browser shows with nothing written). */
+	const STYLE_INITIAL = { backgroundSize: 'auto', backgroundRepeat: 'repeat' };
 
 	/** The rows the table's types decide: a select for keywords, a colour field, a size field, or a plain field. */
 	function StyleRow( { a, set, device, k } ) {
@@ -1673,13 +1724,22 @@
 		// Every row has an options list (empty for the sizes), so the test is for a list with items.
 		if ( type === 'keyword' || ( spec && Array.isArray( spec[ 3 ] ) && spec[ 3 ].length > 0 ) ) {
 			const options = ( spec ? spec[ 3 ] : [] ).map( ( o ) => ( { value: o, label: o.charAt( 0 ).toUpperCase() + o.slice( 1 ) } ) );
-			return h( ViewValue, { a, set, device, k, label, kind: 'select', options } );
+			// The default is the CSS initial value: shown when nothing is written, and chosen on Desktop it clears the value.
+			const dflt = STYLE_INITIAL[ k ] !== undefined ? STYLE_INITIAL[ k ] : options[ 0 ].value;
+			if ( type === 'keywordlength' ) {
+				return h( ViewValue, { a, set, device, k, label, kind: 'keywordlength', options, dflt, fallback: dflt, unit: ' px', clearDefault: true } );
+			}
+			return h( ViewValue, { a, set, device, k, label, kind: 'select', options, dflt, fallback: dflt, clearDefault: true } );
 		}
 		if ( type === 'color' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'color' } );
 		}
 		if ( STYLE_SIZE.indexOf( type ) !== -1 || type === 'size' ) {
 			return h( ViewValue, { a, set, device, k, label, unit: ' px', kind: 'size', placeholder: '0' } );
+		}
+		// An image address (background image): the media library button sits in its field.
+		if ( type === 'url' ) {
+			return h( ViewValue, { a, set, device, k, label, media: true } );
 		}
 		return h( ViewValue, { a, set, device, k, label, unit: STYLE_UNIT[ k ] } );
 	}

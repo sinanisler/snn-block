@@ -877,6 +877,9 @@ class SNN_Layout_Blocks {
 		$pane   = 'includes/block/controls/animation-pane.js';
 		$pane_css = 'includes/block/controls/animation-pane.css';
 
+		// The media library (wp.media) opens from an image field, such as the background image.
+		wp_enqueue_media();
+
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
 		wp_enqueue_style( 'snn-animation-pane', SNN_URL . $pane_css, array( 'snn-controls' ), self::version( $pane_css ) );
 		// The tooltips (tooltips.js) load first: the controls draw their tip attributes from them.

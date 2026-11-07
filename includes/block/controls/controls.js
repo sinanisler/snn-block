@@ -45,6 +45,36 @@
 		);
 	}
 
+	/** A small picture: the media library button of an image field. */
+	function ImageIcon() {
+		return h(
+			'svg',
+			{ className: 'snn-image-icon', viewBox: '0 0 16 16', width: 12, height: 12, 'aria-hidden': 'true', focusable: 'false' },
+			h( 'rect', { x: 2.5, y: 3.5, width: 11, height: 9, rx: 1, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4 } ),
+			h( 'path', { d: 'M3 11.5l3-3.2 2.4 2.4 1.6-1.6 3 2.4', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinejoin: 'round' } ),
+			h( 'circle', { cx: 5.7, cy: 6.2, r: 1, fill: 'currentColor' } )
+		);
+	}
+
+	/**
+	 * The WordPress media library: picks one image and hands its address to onChange as url(...), the form the
+	 * background image takes (style-props.php check()). Nothing happens when the media library is not on the page.
+	 */
+	function pickMedia( onChange ) {
+		if ( ! window.wp || ! window.wp.media ) {
+			return;
+		}
+		const frame = window.wp.media( { title: __( 'Choose an image', 'snn' ), library: { type: 'image' }, button: { text: __( 'Use this image', 'snn' ) }, multiple: false } );
+		frame.on( 'select', () => {
+			const picked = frame.state().get( 'selection' ).first();
+			const url = picked && picked.toJSON ? picked.toJSON().url : '';
+			if ( url ) {
+				onChange( 'url(' + url + ')' );
+			}
+		} );
+		frame.open();
+	}
+
 	/** The value differs from its default: a small dot, as Bricks marks a stored value. */
 	function Dot() {
 		return h( 'span', { className: 'snn-dot', 'aria-hidden': 'true' } );
@@ -501,7 +531,7 @@
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
 	 * what it resolves to under the field. swatch: a colour field, with its colour at the start.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch, tip } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch, tip, media } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -526,7 +556,7 @@
 			{ className: 'snn-field', ref: wrap },
 			h(
 				'div',
-				{ className: 'snn-input-wrap' + ( variables ? ' has-vars' : '' ) + ( showUnit ? ' has-unit' : '' ) },
+				{ className: 'snn-input-wrap' + ( variables ? ' has-vars' : '' ) + ( showUnit ? ' has-unit' : '' ) + ( media ? ' has-media' : '' ) },
 				swatch ? h( ColourSwatch, { value: current, variables, label, onChange } ) : null,
 				h( 'input', {
 					ref: input,
@@ -541,6 +571,19 @@
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
 				showUnit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
+				media
+					? h(
+							'button',
+							{
+								type: 'button',
+								className: 'snn-tool snn-tool-media',
+								...tipAttr( 'mediaLibrary' ),
+								'aria-label': __( 'Choose from the media library', 'snn' ),
+								onClick: () => pickMedia( onChange ),
+							},
+							h( ImageIcon )
+					  )
+					: null,
 				variables
 					? h(
 							'button',
