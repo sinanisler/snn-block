@@ -1771,17 +1771,37 @@
 	}
 
 	/**
+	 * The place in the panel: the tab, the sub-panel (null, or conditions, interactions, animations) and the Style group.
+	 * The block's Edit unmounts when another block is selected, so the place is kept here instead. The next block opens
+	 * where the last one was left. It lasts for the editor session; a reload starts on Content.
+	 */
+	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout' };
+
+	/** A panel state kept across blocks (see panelPlace): the same pair as useState, and the new value is saved. */
+	function usePlace( key ) {
+		const [ value, setNow ] = useState( panelPlace[ key ] );
+		return [
+			value,
+			( next ) => {
+				panelPlace[ key ] = next;
+				setNow( next );
+			},
+		];
+	}
+
+	/**
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
 	function Panel( { a, set, tag, parent, title, device, base, text } ) {
 		const q = a.query;
-		const [ tab, setTab ] = useState( 'default' );
+		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
+		const [ tab, setTab ] = usePlace( 'tab' );
 		// null, 'conditions', 'interactions' or 'animations': a sub-panel that takes the whole view (see the end of this function).
-		const [ sub, setSub ] = useState( null );
+		const [ sub, setSub ] = usePlace( 'sub' );
 		const [ openQuery, setOpenQuery ] = useState( false );
 		// The Style group on show (one at a time, chosen on the rail).
-		const [ stylePage, setStylePage ] = useState( 'layout' );
+		const [ stylePage, setStylePage ] = usePlace( 'stylePage' );
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
