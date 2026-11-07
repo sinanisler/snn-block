@@ -71,7 +71,43 @@ class SNN_Layout_Blocks {
 	);
 
 	/** The settings a view can set for itself. Each is the attribute of the same name. */
-	const VIEW_KEYS = array( 'gap', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity', 'overflow', 'backgroundColor' );
+	const VIEW_KEYS = array(
+		'gap',
+		'paddingTop',
+		'paddingBottom',
+		'maxWidth',
+		'opacity',
+		'overflow',
+		'backgroundColor',
+		// The layout: every flex and grid setting, and the item settings, are per view as well.
+		'display',
+		'flexDirection',
+		'flexWrap',
+		'justifyContent',
+		'alignItems',
+		'alignContent',
+		'columnGap',
+		'rowGap',
+		'gridColumns',
+		'gridRows',
+		'gridAutoColumns',
+		'gridAutoRows',
+		'gridAreas',
+		'gridAutoFlow',
+		'gridDense',
+		'justifyItems',
+		'alignSelf',
+		'justifySelf',
+		'order',
+		'flexGrow',
+		'flexShrink',
+		'flexBasis',
+		'columnSpan',
+		'rowSpan',
+		'columnStart',
+		'rowStart',
+		'gridArea',
+	);
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
@@ -347,15 +383,17 @@ class SNN_Layout_Blocks {
 	 * gap apply to flex and grid. The item settings (align self, grow, span and so on) act on the
 	 * block inside a flex or grid parent, so they are written whatever the block's own display is.
 	 */
-	public static function style( array $a, array $dyn = array() ) {
+	public static function style( array $a, array $dyn = array(), $view = false ) {
 		$css     = array();
-		$display = $a['display'];
+		// A view's own value is not cleaned by clean(), so each one is checked here, as the rest of this function does.
+		$display = self::pick( $a['display'], self::DISPLAYS, 'block' );
 		$flex    = in_array( $display, array( 'flex', 'inline-flex' ), true );
 		$grid    = in_array( $display, array( 'grid', 'inline-grid' ), true );
 		$wrap    = self::pick( $a['flexWrap'], self::FLEX_WRAP, 'nowrap' );
 
-		// Every display but block is written: the inline ones, none, and flex and grid with their own settings.
-		if ( 'block' !== $display ) {
+		// Every display but block is written: the inline ones, none, and flex and grid with their own settings. A view's
+		// rule writes block too, because the view may turn a flex base back into a block.
+		if ( 'block' !== $display || $view ) {
 			$css[] = 'display:' . $display;
 		}
 
@@ -383,8 +421,11 @@ class SNN_Layout_Blocks {
 			if ( '' !== $auto_rows ) {
 				$css[] = 'grid-auto-rows:' . $auto_rows;
 			}
-			if ( $a['gridDense'] || 'column' === $a['gridAutoFlow'] ) {
-				$css[] = 'grid-auto-flow:' . $a['gridAutoFlow'] . ( $a['gridDense'] ? ' dense' : '' );
+			// A view's own off is '0', which empty() takes as off (as it takes '' and false).
+			$dense = ! empty( $a['gridDense'] );
+			$flow  = self::pick( $a['gridAutoFlow'], self::GRID_FLOW, 'row' );
+			if ( $dense || 'column' === $flow ) {
+				$css[] = 'grid-auto-flow:' . $flow . ( $dense ? ' dense' : '' );
 			}
 		}
 
@@ -567,7 +608,7 @@ class SNN_Layout_Blocks {
 				continue;
 			}
 			$merge = array_merge( $merge, $own[ $view ] );
-			$css  .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn ) . '}}';
+			$css  .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn, true ) . '}}';
 		}
 		return $css;
 	}

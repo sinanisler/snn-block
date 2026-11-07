@@ -35,7 +35,7 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
@@ -233,11 +233,6 @@
 		return pairs.map( ( [ value, label ] ) => ( { value, label, glyph: glyph( value ) } ) );
 	}
 
-	/** Pairs as the dropdowns take them: { value, label }. */
-	function toOptions( pairs ) {
-		return pairs.map( ( [ value, label ] ) => ( { value, label } ) );
-	}
-
 	/** The pairs whose value has a picture in the version 12 mock, in the order of the pairs. */
 	function picked( pairs, keys ) {
 		return pairs.filter( ( [ value ] ) => keys.indexOf( value ) !== -1 );
@@ -250,6 +245,7 @@
 	const JUSTIFY_PICS = [ 'flex-start', 'center', 'flex-end', 'space-between' ];
 	const ALIGN_PICS = [ 'stretch', 'flex-start', 'center', 'flex-end' ];
 	const ALIGN_CONTENT_PICS = [ 'stretch', 'flex-start', 'center', 'flex-end', 'space-between' ];
+	const ALIGN_SELF_PICS = [ 'auto', 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' ];
 
 	const DISPLAY_OPTIONS = [
 		{ value: 'block', label: __( 'Block', 'snn' ) },
@@ -354,8 +350,8 @@
 		const flex = a.display === 'flex' || a.display === 'inline-flex';
 		const grid = a.display === 'grid' || a.display === 'inline-grid';
 
-		// Every display but block is written, as the front end writes it.
-		if ( a.display && a.display !== 'block' ) {
+		// Every display is written, block too: a view may turn a flex base back into a block (the front end does the same in its view rules).
+		if ( a.display ) {
 			css.display = a.display;
 		}
 
@@ -383,8 +379,10 @@
 			if ( autoRows ) {
 				css.gridAutoRows = autoRows;
 			}
-			if ( a.gridDense || a.gridAutoFlow === 'column' ) {
-				css.gridAutoFlow = a.gridAutoFlow + ( a.gridDense ? ' dense' : '' );
+			// A view's own off is '0', which is true in JavaScript: only true or '1' means dense.
+			const dense = a.gridDense === true || a.gridDense === '1';
+			if ( dense || a.gridAutoFlow === 'column' ) {
+				css.gridAutoFlow = a.gridAutoFlow + ( dense ? ' dense' : '' );
 			}
 		}
 
@@ -770,400 +768,140 @@
 	 * Layout and item rows
 	 * ---------------------------------------------------------------- */
 
-	function layoutChanged( a, tag ) {
-		return a.tagName !== tag || Object.keys( LAYOUT_DEFAULTS ).some( ( k ) => a[ k ] !== LAYOUT_DEFAULTS[ k ] );
-	}
-
-	function itemChanged( a ) {
-		return Object.keys( ITEM_DEFAULTS ).some( ( k ) => a[ k ] !== ITEM_DEFAULTS[ k ] );
-	}
-
 	/**
-	 * The flex and grid settings, in the order they are used. Display is a dropdown. A flex box has its
-	 * direction (two pictures and a Reverse switch), its wrap, its justify and its align. A grid has its
-	 * columns and rows, its flow, its justify items and align content, and its gaps. Each row shows only when
-	 * it applies to the display chosen. The pictures are the version 12 mock's (layout-icons.js).
+	 * The flex and grid settings, in the order they are used. Every setting is per view (ViewValue): Desktop holds the
+	 * base, and Tablet and Mobile set their own. The rows follow the display the panel's view shows (effectiveValues), so
+	 * a Tablet that is block shows no flex rows. Align self sits under Align: it acts on the parent's cross axis, so its
+	 * pictures turn with the parent's direction.
 	 */
-	function LayoutFields( { a, set, base } ) {
-		const flex = a.display === 'flex' || a.display === 'inline-flex';
-		const grid = a.display === 'grid' || a.display === 'inline-grid';
+	function LayoutFields( { a, set, base, device, parent } ) {
+		const shown = effectiveValues( a, device );
+		const flexDirection = shown.flexDirection || 'row';
+		const flex = shown.display === 'flex' || shown.display === 'inline-flex';
+		const grid = shown.display === 'grid' || shown.display === 'inline-grid';
 		const box = flex || grid;
-		const axis = /^column/.test( a.flexDirection ) ? 'y' : 'x';
-		const reverse = /reverse$/.test( a.flexDirection );
-		const flow = a.flexDirection.replace( /-reverse$/, '' );
-		const baseFlow = base.flexDirection.replace( /-reverse$/, '' );
+		const wrapped = shown.flexWrap !== 'nowrap';
+		const parentFlex = parent.display === 'flex' || parent.display === 'inline-flex';
+		const parentBox = parentFlex || parent.display === 'grid' || parent.display === 'inline-grid';
+		const reverse = /reverse$/.test( flexDirection );
+		const flow = flexDirection.replace( /-reverse$/, '' );
+		const directionOwn = viewOwn( a, device, 'flexDirection', base.flexDirection ) !== undefined;
 		// A flex column runs its main axis down the block, so its pictures turn a quarter turn.
-		const turned = ! grid && axis === 'y';
-		const rows = [];
-
-		rows.push(
-			h(
-				Row,
-				{ key: 'display', label: __( 'Display', 'snn' ), changed: a.display !== base.display },
-				h( Select, {
-					label: __( 'Display', 'snn' ),
-					value: a.display,
-					options: DISPLAY_OPTIONS,
-					onChange: ( v ) => set( { display: v } ),
-				} )
-			)
-		);
+		const turned = ! grid && /^column/.test( flexDirection );
+		const v = ( key, k, props ) => h( ViewValue, Object.assign( { key, a, set, device, k }, props ) );
+		const setDirection = ( patch ) => setValue( a, set, device, 'flexDirection', patch );
+		const resetDirection = () => clearValue( a, set, device, 'flexDirection' );
+		const rows = [
+			v( 'display', 'display', { label: __( 'Display', 'snn' ), kind: 'select', options: DISPLAY_OPTIONS, dflt: base.display } ),
+		];
 
 		if ( flex ) {
 			rows.push(
 				h(
-					Row,
-					{ key: 'direction', label: __( 'Direction', 'snn' ), changed: flow !== baseFlow },
+					ViewRow,
+					{ key: 'direction', label: __( 'Direction', 'snn' ), device, own: directionOwn, onReset: resetDirection },
 					h( Segmented, {
 						label: __( 'Direction', 'snn' ),
 						value: flow,
-						options: options( FLOW_PAIRS, ( v ) => directionPic( v ) ),
-						onChange: ( v ) => set( { flexDirection: reverse ? v + '-reverse' : v } ),
+						options: options( FLOW_PAIRS, ( x ) => directionPic( x ) ),
+						onChange: ( x ) => setDirection( reverse ? x + '-reverse' : x ),
 					} )
 				),
-				h( SwitchRow, {
-					key: 'reverse',
-					label: __( 'Reverse', 'snn' ),
-					checked: reverse,
-					onChange: ( v ) => set( { flexDirection: flow + ( v ? '-reverse' : '' ) } ),
-				} ),
 				h(
-					Row,
-					{ key: 'wrap', label: __( 'Wrap', 'snn' ), changed: a.flexWrap !== 'nowrap' },
-					h( Select, {
-						label: __( 'Wrap', 'snn' ),
-						value: a.flexWrap,
-						options: WRAP_OPTIONS,
-						onChange: ( v ) => set( { flexWrap: v } ),
+					ViewRow,
+					{ key: 'reverse', label: __( 'Reverse', 'snn' ), device, own: directionOwn, onReset: resetDirection },
+					h( Switch, {
+						label: __( 'Reverse', 'snn' ),
+						checked: reverse,
+						onChange: ( on ) => setDirection( flow + ( on ? '-reverse' : '' ) ),
 					} )
-				)
+				),
+				v( 'wrap', 'flexWrap', { label: __( 'Wrap', 'snn' ), kind: 'select', options: WRAP_OPTIONS, dflt: 'nowrap' } )
 			);
 		}
 
 		if ( grid ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'columns', label: __( 'Columns', 'snn' ), changed: a.gridColumns !== '' },
-					h( Segmented, {
-						label: __( 'Columns', 'snn' ),
-						value: a.gridColumns,
-						options: columnOptions(),
-						onChange: ( v ) => set( { gridColumns: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'template', label: __( 'Template', 'snn' ), changed: a.gridColumns !== '' && ! /^\d+$/.test( a.gridColumns ) },
-					h( TextField, {
-						label: __( 'Column template', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.gridColumns,
-						placeholder: __( '1fr 2fr', 'snn' ),
-						onChange: ( v ) => set( { gridColumns: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'rows', label: __( 'Rows', 'snn' ), changed: a.gridRows !== '' },
-					h( TextField, {
-						label: __( 'Row template', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.gridRows,
-						placeholder: __( 'auto', 'snn' ),
-						onChange: ( v ) => set( { gridRows: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'auto-columns', label: __( 'Auto columns', 'snn' ), changed: a.gridAutoColumns !== '' },
-					h( TextField, {
-						label: __( 'Auto columns', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.gridAutoColumns,
-						placeholder: __( 'auto', 'snn' ),
-						onChange: ( v ) => set( { gridAutoColumns: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'auto-rows', label: __( 'Auto rows', 'snn' ), changed: a.gridAutoRows !== '' },
-					h( TextField, {
-						label: __( 'Auto rows', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.gridAutoRows,
-						placeholder: __( 'auto', 'snn' ),
-						onChange: ( v ) => set( { gridAutoRows: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'areas', label: __( 'Areas', 'snn' ), changed: a.gridAreas !== '' },
-					h( TextField, {
-						label: __( 'Grid areas', 'snn' ),
-						value: a.gridAreas,
-						placeholder: '"header header" "main side"',
-						onChange: ( v ) => set( { gridAreas: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'flow', label: __( 'Flow', 'snn' ), changed: a.gridAutoFlow !== 'row' },
-					h( Segmented, {
-						label: __( 'Flow', 'snn' ),
-						value: a.gridAutoFlow,
-						options: options( FLOW_PAIRS, ( v ) => directionPic( v ) ),
-						onChange: ( v ) => set( { gridAutoFlow: v } ),
-					} )
-				),
-				h( SwitchRow, {
-					key: 'dense',
-					label: __( 'Dense', 'snn' ),
-					checked: a.gridDense,
-					onChange: ( v ) => set( { gridDense: v } ),
-				} )
+				v( 'columns', 'gridColumns', { label: __( 'Columns', 'snn' ), kind: 'icons', options: columnOptions() } ),
+				v( 'template', 'gridColumns', { label: __( 'Template', 'snn' ), placeholder: __( '1fr 2fr', 'snn' ) } ),
+				v( 'rows', 'gridRows', { label: __( 'Rows', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
+				v( 'auto-columns', 'gridAutoColumns', { label: __( 'Auto columns', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
+				v( 'auto-rows', 'gridAutoRows', { label: __( 'Auto rows', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
+				v( 'areas', 'gridAreas', { label: __( 'Areas', 'snn' ), placeholder: '"header header" "main side"', variables: null } ),
+				v( 'flow', 'gridAutoFlow', { label: __( 'Flow', 'snn' ), kind: 'icons', options: options( FLOW_PAIRS, ( x ) => directionPic( x ) ), dflt: 'row', fallback: 'row' } ),
+				v( 'dense', 'gridDense', { label: __( 'Dense', 'snn' ), kind: 'switch', dflt: false } )
 			);
 		}
 
 		if ( box ) {
 			// In a grid, justify content runs along the columns and align items along the rows.
 			rows.push(
-				h(
-					Row,
-					{ key: 'justify', label: __( 'Justify', 'snn' ), changed: !! a.justifyContent },
-					h( Segmented, {
-						label: __( 'Justify content', 'snn' ),
-						value: a.justifyContent || 'flex-start',
-						options: options( picked( CHOICES.justify, JUSTIFY_PICS ), ( v ) => mainPic( v, turned ) ),
-						onChange: ( v ) => set( { justifyContent: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'align', label: __( 'Align', 'snn' ), changed: !! a.alignItems },
-					h( Segmented, {
-						label: __( 'Align items', 'snn' ),
-						value: a.alignItems || 'stretch',
-						options: options( picked( CHOICES.align, ALIGN_PICS ), ( v ) => crossPic( v, turned ) ),
-						onChange: ( v ) => set( { alignItems: v } ),
-					} )
-				)
+				v( 'justify', 'justifyContent', { label: __( 'Justify', 'snn' ), kind: 'icons', options: options( picked( CHOICES.justify, JUSTIFY_PICS ), ( x ) => mainPic( x, turned ) ), fallback: 'flex-start' } ),
+				v( 'align', 'alignItems', { label: __( 'Align', 'snn' ), kind: 'icons', options: options( picked( CHOICES.align, ALIGN_PICS ), ( x ) => crossPic( x, turned ) ), fallback: 'stretch' } )
 			);
 		}
 
-		if ( flex && a.flexWrap !== 'nowrap' ) {
+		if ( parentBox ) {
+			// The parent's cross axis: the pictures turn when the parent is a flex column.
+			const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
 			rows.push(
-				h(
-					Row,
-					{ key: 'flex-align-content', label: __( 'Align content', 'snn' ), changed: !! a.alignContent },
-					h( Segmented, {
-						label: __( 'Align content', 'snn' ),
-						value: a.alignContent || 'stretch',
-						options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( v ) => mainPic( v, ! turned ) ),
-						onChange: ( v ) => set( { alignContent: v } ),
-					} )
-				)
+				v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
 			);
 		}
+
+		if ( flex && wrapped ) {
+			rows.push(
+				v( 'flex-align-content', 'alignContent', { label: __( 'Align content', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( x ) => mainPic( x, ! turned ) ), fallback: 'stretch' } )
+			);
+		}
+
 		if ( grid ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'justify-items', label: __( 'Justify items', 'snn' ), changed: !! a.justifyItems },
-					h( Segmented, {
-						label: __( 'Justify items', 'snn' ),
-						value: a.justifyItems || 'stretch',
-						options: options( picked( CHOICES.cell, ALIGN_PICS ), ( v ) => crossPic( v, true ) ),
-						onChange: ( v ) => set( { justifyItems: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'align-content', label: __( 'Align content', 'snn' ), changed: !! a.alignContent },
-					h( Segmented, {
-						label: __( 'Align content', 'snn' ),
-						value: a.alignContent || 'stretch',
-						options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( v ) => mainPic( v, true ) ),
-						onChange: ( v ) => set( { alignContent: v } ),
-					} )
-				)
+				v( 'justify-items', 'justifyItems', { label: __( 'Justify items', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
+				v( 'align-content', 'alignContent', { label: __( 'Align content', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignContent, ALIGN_CONTENT_PICS ), ( x ) => mainPic( x, true ) ), fallback: 'stretch' } )
 			);
 		}
 
 		if ( box ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'column-gap', label: __( 'Column gap', 'snn' ), changed: !! a.columnGap },
-					h( TextField, {
-						label: __( 'Column gap', 'snn' ),
-						value: a.columnGap,
-						placeholder: '0',
-						variables: VARIABLE_GROUPS, kind: 'size',
-						onChange: ( v ) => set( { columnGap: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'row-gap', label: __( 'Row gap', 'snn' ), changed: !! a.rowGap },
-					h( TextField, {
-						label: __( 'Row gap', 'snn' ),
-						value: a.rowGap,
-						placeholder: '0',
-						variables: VARIABLE_GROUPS, kind: 'size',
-						onChange: ( v ) => set( { rowGap: v } ),
-					} )
-				)
+				v( 'column-gap', 'columnGap', { label: __( 'Column gap', 'snn' ), kind: 'size', placeholder: '0' } ),
+				v( 'row-gap', 'rowGap', { label: __( 'Row gap', 'snn' ), kind: 'size', placeholder: '0' } )
 			);
 		}
 
 		return h( Fragment, null, rows );
 	}
 
-	/** The item settings. They depend on the parent: flex or grid, or neither (then only a hint). */
-	function ItemFields( { a, set, parent } ) {
+	/**
+	 * The item settings: how the block sits in its flex or grid parent, per view as the layout settings are. The parent
+	 * the view shows decides the rows: a grid parent places the block (justify self, lines, spans, area); a flex parent
+	 * sizes it (grow, shrink, basis). Order is for both. Align self is under Align in the layout.
+	 */
+	function ItemFields( { a, set, parent, device } ) {
 		const flex = parent.display === 'flex' || parent.display === 'inline-flex';
 		const grid = parent.display === 'grid' || parent.display === 'inline-grid';
 		if ( ! flex && ! grid ) {
 			return h( 'div', { className: 'snn-hint' }, __( 'Put this block inside a flex or grid block to set its place in it.', 'snn' ) );
 		}
-		const rows = [
-			h(
-				Row,
-				{ key: 'align-self', label: __( 'Align self', 'snn' ), changed: !! a.alignSelf },
-				h( Select, {
-					label: __( 'Align self', 'snn' ),
-					value: a.alignSelf || 'auto',
-					options: toOptions( CHOICES.alignSelf ),
-					onChange: ( v ) => set( { alignSelf: v } ),
-				} )
-			),
-		];
+		const v = ( key, k, props ) => h( ViewValue, Object.assign( { key, a, set, device, k }, props ) );
+		const rows = [ v( 'order', 'order', { label: __( 'Order', 'snn' ), placeholder: '0', inputMode: 'numeric' } ) ];
 
-		rows.push(
-			h(
-				Row,
-				{ key: 'order', label: __( 'Order', 'snn' ), changed: a.order !== '' },
-				h( TextField, {
-					label: __( 'Order', 'snn' ),
-					variables: VARIABLE_GROUPS,
-					value: a.order,
-					placeholder: '0',
-					inputMode: 'numeric',
-					onChange: ( v ) => set( { order: v } ),
-				} )
-			)
-		);
 		if ( grid ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'justify-self', label: __( 'Justify self', 'snn' ), changed: !! a.justifySelf },
-					h( Select, {
-						label: __( 'Justify self', 'snn' ),
-						value: a.justifySelf || 'stretch',
-						options: toOptions( CHOICES.cell ),
-						onChange: ( v ) => set( { justifySelf: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'column-start', label: __( 'Column start', 'snn' ), changed: !! a.columnStart },
-					h( TextField, {
-						label: __( 'Column start', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.columnStart,
-						placeholder: __( 'auto', 'snn' ),
-						inputMode: 'numeric',
-						onChange: ( v ) => set( { columnStart: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'column-span', label: __( 'Column span', 'snn' ), changed: !! a.columnSpan },
-					h( TextField, {
-						label: __( 'Column span', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.columnSpan,
-						placeholder: '1',
-						inputMode: 'numeric',
-						onChange: ( v ) => set( { columnSpan: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'row-start', label: __( 'Row start', 'snn' ), changed: !! a.rowStart },
-					h( TextField, {
-						label: __( 'Row start', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.rowStart,
-						placeholder: __( 'auto', 'snn' ),
-						inputMode: 'numeric',
-						onChange: ( v ) => set( { rowStart: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'row-span', label: __( 'Row span', 'snn' ), changed: !! a.rowSpan },
-					h( TextField, {
-						label: __( 'Row span', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.rowSpan,
-						placeholder: '1',
-						inputMode: 'numeric',
-						onChange: ( v ) => set( { rowSpan: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'area', label: __( 'Area', 'snn' ), changed: !! a.gridArea },
-					h( TextField, {
-						label: __( 'Grid area', 'snn' ),
-						value: a.gridArea,
-						placeholder: __( 'name', 'snn' ),
-						onChange: ( v ) => set( { gridArea: v } ),
-					} )
-				)
+				v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
+				v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+				v( 'column-span', 'columnSpan', { label: __( 'Column span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+				v( 'row-start', 'rowStart', { label: __( 'Row start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
+				v( 'row-span', 'rowSpan', { label: __( 'Row span', 'snn' ), placeholder: '1', inputMode: 'numeric' } ),
+				v( 'area', 'gridArea', { label: __( 'Grid area', 'snn' ), placeholder: __( 'name', 'snn' ), variables: null } )
 			);
 		}
 
 		if ( flex ) {
 			rows.push(
-				h(
-					Row,
-					{ key: 'grow', label: __( 'Grow', 'snn' ), changed: !! a.flexGrow },
-					h( TextField, {
-						label: __( 'Flex grow', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.flexGrow,
-						placeholder: '0',
-						inputMode: 'decimal',
-						onChange: ( v ) => set( { flexGrow: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'shrink', label: __( 'Shrink', 'snn' ), changed: !! a.flexShrink },
-					h( TextField, {
-						label: __( 'Flex shrink', 'snn' ),
-						variables: VARIABLE_GROUPS,
-						value: a.flexShrink,
-						placeholder: '1',
-						inputMode: 'decimal',
-						onChange: ( v ) => set( { flexShrink: v } ),
-					} )
-				),
-				h(
-					Row,
-					{ key: 'basis', label: __( 'Basis', 'snn' ), changed: !! a.flexBasis },
-					h( TextField, {
-						label: __( 'Flex basis', 'snn' ),
-						value: a.flexBasis,
-						placeholder: __( 'auto', 'snn' ),
-						variables: VARIABLE_GROUPS, kind: 'size',
-						onChange: ( v ) => set( { flexBasis: v } ),
-					} )
-				)
+				v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
+				v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
+				v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } )
 			);
 		}
 
@@ -1232,41 +970,55 @@
 	];
 
 	/**
-	 * One value a view can set: its field, in a row with the Reset (see ViewRow in controls.js).
-	 * The field shows the device's own value, or the value it inherits.
+	 * The value a view sets for one key. On Desktop that is the base value, unless it is empty or the setting's default
+	 * (a default is not a change). On Tablet and Mobile it is the view's own value. Undefined when the view sets none.
 	 */
-	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder } ) {
-		const own = setHere( a, device, k );
-		const inherited = inheritedValue( a, device, k );
-		const value = own !== undefined ? own : inherited.value;
+	function viewOwn( a, device, k, dflt ) {
+		if ( device === 'Desktop' ) {
+			const v = a[ k ];
+			return v === undefined || v === '' || v === dflt ? undefined : v;
+		}
+		return ownValue( a, device, k );
+	}
+
+	/**
+	 * One value a view can set: its field, in a row with the Reset (see ViewRow in controls.js). The dot on the label
+	 * shows that the view sets its own value. A value the view inherits shows as the field's placeholder; a switch or an
+	 * icon row shows it as its state, as those have no placeholder. dflt is the setting's default (see viewOwn).
+	 */
+	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode } ) {
+		const own = viewOwn( a, device, k, dflt );
+		const value = own !== undefined ? own : inheritedValue( a, device, k ).value;
 		const change = ( v ) => setValue( a, set, device, k, v );
+		const groups = variables === undefined ? VARIABLE_GROUPS : variables;
+		const empty = value === undefined || value === null || value === '';
 		let control;
 		if ( kind === 'select' ) {
-			control = h( Select, { label, value: value || options[ 0 ].value, options, onChange: change } );
+			control = h( Select, { label, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: change } );
 		} else if ( kind === 'icons' ) {
-			control = h( Segmented, { label, value: value || '', options, onChange: change } );
+			control = h( Segmented, { label, value: empty ? fallback || '' : String( value ), options, onChange: change } );
+		} else if ( kind === 'switch' ) {
+			// A view's own off is '0' (an empty value would mean inherit). Desktop keeps the boolean.
+			control = h( Switch, {
+				label,
+				checked: value === true || value === '1',
+				onChange: ( on ) => change( device === 'Desktop' ? on : on ? '1' : '0' ),
+			} );
 		} else {
+			const inherits = own === undefined && ! empty;
 			control = h( TextField, {
 				label,
-				value: value === undefined || value === null ? '' : String( value ),
-				placeholder,
+				value: own === undefined ? '' : String( own ),
+				placeholder: inherits ? String( value ) : placeholder,
 				unit,
-				variables: VARIABLE_GROUPS,
+				variables: groups,
 				kind: kind === 'size' ? 'size' : kind === 'color' ? 'color' : undefined,
 				swatch: kind === 'color',
+				inputMode,
 				onChange: change,
 			} );
 		}
-		return h(
-			ViewRow,
-			{
-				label,
-				device,
-				own: own !== undefined,
-				onReset: () => clearValue( a, set, device, k ),
-			},
-			control
-		);
+		return h( ViewRow, { label, device, own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
 	}
 
 	/**
@@ -1920,7 +1672,7 @@
 			h(
 				Group,
 				{ title: __( 'Layout', 'snn' ) },
-				h( LayoutFields, { a, set, tag, base } )
+				h( LayoutFields, { a, set, base, device, parent } )
 			),
 			// A Text block has no query loop: its panel leaves the group out.
 			text
@@ -1954,7 +1706,7 @@
 			h(
 				Disclosure,
 				{ title: __( 'Item', 'snn' ) },
-				h( ItemFields, { a, set, parent } )
+				h( ItemFields, { a, set, parent, device } )
 			),
 			h(
 				Disclosure,
@@ -2157,10 +1909,6 @@
 					( select ) => ( parentId ? select( 'core/block-editor' ).getBlockAttributes( parentId ) : null ),
 					[ parentId ]
 				);
-				const parent = {
-					display: ( parentAttrs && parentAttrs.display ) || '',
-					flexDirection: ( parentAttrs && parentAttrs.flexDirection ) || 'row',
-				};
 				// Another block with the same CSS ID (a copied block): this one gets a new ID below.
 				const duplicateId = useSelect(
 					( select ) => {
@@ -2190,6 +1938,12 @@
 						return 'Desktop';
 					}
 				}, [] );
+				// The parent as this view shows it: its display and direction for the device (Align self and the item rows follow them).
+				const parentShown = effectiveValues( parentAttrs || {}, device );
+				const parent = {
+					display: parentShown.display || '',
+					flexDirection: parentShown.flexDirection || 'row',
+				};
 				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
 				const parts = splitStyle( styleFor( effectiveValues( a, device ) ) );
 				// The custom CSS as the front end prints it, scoped to this block: the class goes on the wrapper, the

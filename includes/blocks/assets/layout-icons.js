@@ -24,6 +24,9 @@
 		center: { line: 'M1 7h12', boxes: [ [ 3, 3.5, 3, 7 ], [ 7.5, 4.5, 3, 5 ] ] },
 		'flex-end': { line: 'M1 12h12', boxes: [ [ 3, 5, 3, 7 ], [ 7.5, 8, 3, 4 ] ] },
 		stretch: { line: null, boxes: [ [ 3, 2, 3, 10 ], [ 7.5, 2, 3, 10 ] ] },
+		// Auto (align self): the parent decides, so the box is only an outline, dashed.
+		auto: { line: 'M1 7h12', boxes: [], ghost: [ [ 3.5, 3.5, 7, 7 ] ] },
+		baseline: { line: 'M1 9h12', boxes: [ [ 3, 5, 3, 4 ], [ 7.5, 3, 3, 6 ] ] },
 	};
 
 	/** The two directions: boxes side by side (row) or one above the other (column). */
@@ -45,6 +48,10 @@
 		}
 		parts.boxes.forEach( ( b, i ) => {
 			kids.push( h( 'rect', { key: 'b' + i, x: b[ 0 ], y: b[ 1 ], width: b[ 2 ], height: b[ 3 ], rx: 0.5 } ) );
+		} );
+		// Outlines only (dashed), for a choice that leaves the place to the parent.
+		( parts.ghost || [] ).forEach( ( g, i ) => {
+			kids.push( h( 'rect', { key: 'g' + i, x: g[ 0 ], y: g[ 1 ], width: g[ 2 ], height: g[ 3 ], rx: 0.5, style: { fill: 'none', strokeDasharray: '2 1.5' } } ) );
 		} );
 		return h(
 			'svg',
