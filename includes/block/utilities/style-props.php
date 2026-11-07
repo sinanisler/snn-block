@@ -82,7 +82,7 @@ class SNN_Style_Props {
 		'textShadow'        => array( 'text-shadow', 'text' ),
 		// Background
 		'backgroundImage'   => array( 'background-image', 'url' ),
-		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'auto', 'cover', 'contain' ) ),
+		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'cover', 'contain', 'auto' ) ),
 		'backgroundPosition' => array( 'background-position', 'text' ),
 		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ) ),
 		// Gradient (composed into background-image): the type, the angle, the colour stops (a JSON list, the repeater), and
@@ -281,6 +281,10 @@ class SNN_Style_Props {
 				continue;
 			}
 			$value = self::check( $spec[1], $a[ $key ] ?? '', $spec[2] ?? array() );
+			// The default size of an image is cover: an image with no size chosen is drawn at cover (the editor's Size choice shows it).
+			if ( '' === $value && 'backgroundSize' === $key && '' !== self::check( 'url', $a['backgroundImage'] ?? '' ) ) {
+				$value = 'cover';
+			}
 			if ( '' !== $value ) {
 				$out[] = $spec[0] . ':' . $value;
 			}

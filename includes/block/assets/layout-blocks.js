@@ -1763,8 +1763,11 @@
 	const STYLE_EXTRA = { gap: 'size', paddingTop: 'size', paddingBottom: 'size', maxWidth: 'size', opacity: 'number' };
 	/** The types a size field shows px for. */
 	const STYLE_SIZE = [ 'length', 'margin', 'size', 'sizenone', 'width', 'lengthnormal', 'keywordlength' ];
-	/** The CSS initial value of a choice where the first option is not the initial one (what the browser shows with nothing written). */
-	const STYLE_INITIAL = { backgroundSize: 'auto', backgroundRepeat: 'repeat' };
+	/**
+	 * The default of a choice: what the front end draws with nothing written. The background size default is cover (an
+	 * image with no size is drawn at cover, see style-props.php declarations()); the repeat default is repeat.
+	 */
+	const STYLE_INITIAL = { backgroundSize: 'cover', backgroundRepeat: 'repeat' };
 
 	/** The rows the table's types decide: a select for keywords, a colour field, a size field, or a plain field. */
 	function StyleRow( { a, set, device, k } ) {

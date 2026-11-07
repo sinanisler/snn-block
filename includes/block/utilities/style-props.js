@@ -241,7 +241,11 @@
 			if ( ! css ) {
 				return;
 			}
-			const value = check( row[ 2 ], a[ row[ 0 ] ], row[ 3 ] || [] );
+			let value = check( row[ 2 ], a[ row[ 0 ] ], row[ 3 ] || [] );
+			// The default size of an image is cover (the same rule as style-props.php declarations()).
+			if ( ! value && row[ 0 ] === 'backgroundSize' && check( 'url', a.backgroundImage ) ) {
+				value = 'cover';
+			}
 			if ( value ) {
 				out.push( [ css, value ] );
 			}
