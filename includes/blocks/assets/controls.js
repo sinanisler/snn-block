@@ -28,6 +28,11 @@
 		}
 	}
 
+	/** The tooltip attributes of a control, for the key of its text (tooltips.js). Empty when there is no key. */
+	function tipAttr( key ) {
+		return key && window.snnTips ? window.snnTips.attr( key ) : {};
+	}
+
 	/** A small lightning bolt, the dynamic data mark. */
 	function Bolt() {
 		return h(
@@ -42,7 +47,7 @@
 		return h( 'span', { className: 'snn-dot', 'aria-hidden': 'true' } );
 	}
 
-	function Switch( { checked, onChange, label } ) {
+	function Switch( { checked, onChange, label, tip } ) {
 		return h(
 			'button',
 			{
@@ -51,27 +56,28 @@
 				className: 'snn-switch' + ( checked ? ' is-on' : '' ),
 				'aria-checked': checked ? 'true' : 'false',
 				'aria-label': label,
-				onClick: () => onChange( ! checked ),
+				'data-snn-tip': tip || undefined,
+					onClick: () => onChange( ! checked ),
 			},
 			h( 'span', { className: 'snn-switch-knob', 'aria-hidden': 'true' } )
 		);
 	}
 
-	function Row( { label, changed, children } ) {
+	function Row( { label, changed, tip, children } ) {
 		return h(
 			'div',
 			{ className: 'snn-row' },
-			h( 'span', { className: 'snn-row-label' }, label, changed ? h( Dot ) : null ),
+			h( 'span', Object.assign( { className: 'snn-row-label' }, tipAttr( tip ) ), label, changed ? h( Dot ) : null ),
 			h( 'div', { className: 'snn-row-control' }, children )
 		);
 	}
 
 	/** A row with a switch on the right. */
-	function SwitchRow( { label, checked, onChange, changed } ) {
+	function SwitchRow( { label, checked, onChange, changed, tip } ) {
 		return h(
 			Row,
-			{ label, changed: changed !== undefined ? changed : checked },
-			h( Switch, { checked, onChange, label } )
+			{ label, changed: changed !== undefined ? changed : checked, tip },
+			h( Switch, { checked, onChange, label, tip } )
 		);
 	}
 
@@ -79,20 +85,20 @@
 	 * A section that opens and closes. When disabled, the header is greyed and cannot open, and
 	 * the hint says why (for example: turn on the query loop first).
 	 */
-	function Accordion( { title, open, onToggle, disabled, changed, hint, planned, note, children } ) {
+	function Accordion( { title, open, onToggle, disabled, changed, tip, planned, note, children } ) {
 		const isOpen = !! open && ! disabled;
 		return h(
 			'div',
 			{ className: 'snn-acc' + ( isOpen ? ' is-open' : '' ) + ( disabled ? ' is-disabled' : '' ) },
 			h(
 				'button',
-				{
-					type: 'button',
-					className: 'snn-acc-head',
-					'aria-expanded': isOpen ? 'true' : 'false',
-					'aria-disabled': disabled ? 'true' : 'false',
-					title: disabled ? hint : undefined,
-					onClick: () => {
+									{
+						type: 'button',
+						className: 'snn-acc-head',
+						'aria-expanded': isOpen ? 'true' : 'false',
+						'aria-disabled': disabled ? 'true' : 'false',
+						'data-snn-tip': tip || undefined,
+						onClick: () => {
 						if ( ! disabled ) {
 							onToggle( ! open );
 						}
@@ -116,11 +122,12 @@
 		);
 	}
 
-	function Select( { value, options, onChange, label } ) {
+	function Select( { value, options, onChange, label, tip } ) {
 		return h(
 			'select',
 			{
 				className: 'snn-select',
+					...tipAttr( tip ),
 				value,
 				'aria-label': label,
 				onChange: ( e ) => onChange( e.target.value ),
@@ -133,7 +140,7 @@
 	 * A row of icon buttons, one per option. options: { value, label, glyph (an icon element), changed (a small dot on
 	 * the button's top right, when the option holds a change) }.
 	 */
-	function Segmented( { value, options, onChange, label } ) {
+	function Segmented( { value, options, onChange, label, tip } ) {
 		return h(
 			'div',
 			{ className: 'snn-seg', role: 'group', 'aria-label': label },
@@ -146,7 +153,7 @@
 						className: 'snn-seg-btn' + ( o.value === value ? ' is-on' : '' ),
 						'aria-pressed': o.value === value ? 'true' : 'false',
 						'aria-label': o.label,
-						title: o.label,
+						...( o.tip ? tipAttr( o.tip ) : tip ? window.snnTips.optionAttr( o.label, tip ) : {} ),
 						onClick: () => onChange( o.value ),
 					},
 					o.glyph || null,
@@ -294,6 +301,7 @@
 				type: 'search',
 				className: 'snn-input snn-pop-search',
 				placeholder: __( 'Search dynamic data', 'snn' ),
+					...tipAttr( 'dynamicSearch' ),
 				value: query,
 				autoFocus: true,
 				onChange: ( e ) => setQuery( e.target.value ),
@@ -315,6 +323,8 @@
 								'button',
 								{
 									key: t.key,
+										'data-snn-tip-name': t.label,
+										'data-snn-tip-text': t.hint || __( 'Inserts this tag at the cursor.', 'snn' ),
 									type: 'button',
 									className: 'snn-pop-item',
 									onClick: () => {
@@ -354,7 +364,7 @@
 				g.items.map( ( it ) =>
 					h(
 						'button',
-						{ key: it.value, type: 'button', className: 'snn-pop-item', onClick: () => onPick( it.value ) },
+						{ key: it.value, type: 'button', className: 'snn-pop-item', onClick: () => onPick( it.value ), 'data-snn-tip-name': '--' + it.label, 'data-snn-tip-text': __( 'Click to use this variable.', 'snn' ) },
 						it.color ? h( 'span', { className: 'snn-swatch', style: { background: it.color }, 'aria-hidden': 'true' } ) : null,
 						h( 'span', { className: 'snn-pop-label' }, it.label ),
 						h( 'code', null, it.value )
@@ -372,7 +382,7 @@
 					? h(
 							'details',
 							{ className: 'snn-pop-more' },
-							h( 'summary', { className: 'snn-pop-group snn-pop-more-title' }, otherLabel ),
+							h( 'summary', Object.assign( { className: 'snn-pop-group snn-pop-more-title' }, tipAttr( 'variablesMore' ) ), otherLabel ),
 							other.map( group )
 					  )
 					: null,
@@ -412,7 +422,7 @@
 		}
 		return h(
 			'label',
-			{ className: 'snn-swatch-btn', title: __( 'Colour', 'snn' ) },
+			{ className: 'snn-swatch-btn', ...tipAttr( 'swatch' ) },
 			h( 'span', { className: 'snn-swatch', style: { background: colour || 'transparent' }, 'aria-hidden': 'true' } ),
 			h( 'input', {
 				type: 'color',
@@ -429,7 +439,7 @@
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
 	 * what it resolves to under the field. swatch: a colour field, with its colour at the start.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch, tip } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -462,6 +472,7 @@
 					inputMode,
 					'aria-label': label,
 					spellCheck: false,
+						...tipAttr( tip ),
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
 				unit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
@@ -471,7 +482,7 @@
 							{
 								type: 'button',
 								className: 'snn-tool snn-tool-vars',
-								title: __( 'Variables', 'snn' ),
+								...tipAttr( 'variables' ),
 								'aria-label': __( 'Variables', 'snn' ),
 								'aria-expanded': picker === 'vars' ? 'true' : 'false',
 								onClick: () => setPicker( picker === 'vars' ? null : 'vars' ),
@@ -484,7 +495,7 @@
 					{
 						type: 'button',
 						className: 'snn-tool snn-tool-dyn' + ( picker === 'tags' ? ' is-on' : '' ),
-						title: __( 'Dynamic data', 'snn' ),
+						...tipAttr( 'dynamic' ),
 						'aria-label': __( 'Dynamic data', 'snn' ),
 						'aria-expanded': picker === 'tags' ? 'true' : 'false',
 						onClick: () => setPicker( picker === 'tags' ? null : 'tags' ),
@@ -492,7 +503,7 @@
 					h( Bolt )
 				)
 			),
-			preview ? h( 'div', { className: 'snn-preview', title: preview }, '→ ' + preview ) : null,
+			preview ? h( 'div', { className: 'snn-preview', ...tipAttr( 'preview' ) }, '→ ' + preview ) : null,
 			picker === 'tags' ? inBody( h( TagPicker, { onPick: insert, onClose: () => setPicker( null ), popRef: pop } ) ) : null,
 			picker === 'vars'
 				? inBody(
@@ -515,14 +526,14 @@
 	 * ---------------------------------------------------------------- */
 
 	/** A group of rows: a title in small capitals, a note on the right, then the rows. */
-	function Group( { title, note, children } ) {
+	function Group( { title, note, children, tip } ) {
 		return h(
 			'div',
 			{ className: 'snn-group' },
 			h(
 				'div',
 				{ className: 'snn-group-head' },
-				h( 'span', { className: 'snn-group-title' }, title ),
+				h( 'span', Object.assign( { className: 'snn-group-title' }, tipAttr( tip ) ), title ),
 				note ? h( 'span', { className: 'snn-group-note' }, note ) : null
 			),
 			children
@@ -533,7 +544,7 @@
 	 * A part that opens and closes, closed at first. card: a row of the Style tab, with its value on the right.
 	 * planned: its content is not built yet, so opening it says so (unless it has content).
 	 */
-	function Disclosure( { title, note, card, planned, startOpen, children } ) {
+	function Disclosure( { title, note, card, planned, startOpen, tip, children } ) {
 		const [ open, setOpen ] = useState( !! startOpen );
 		return h(
 			'div',
@@ -543,6 +554,7 @@
 				{
 					type: 'button',
 					className: 'snn-disc-head',
+					...tipAttr( tip ),
 					'aria-expanded': open ? 'true' : 'false',
 					onClick: () => setOpen( ! open ),
 				},
@@ -569,20 +581,20 @@
 	 * A value that can differ per view. No hint under the label: an inherited value shows as the field's placeholder,
 	 * and a value the view sets shows a dot on the label. Its Reset (not on Desktop) takes the view's own value back.
 	 */
-	function ViewRow( { label, device, own, onReset, children } ) {
+	function ViewRow( { label, device, own, onReset, tip, children } ) {
 		return h(
 			'div',
 			{ className: 'snn-row snn-view-row' + ( own ? ' is-own' : '' ) },
 			h(
 				'span',
 				{ className: 'snn-row-label' },
-				h( 'span', { className: 'snn-row-title' }, label, own ? h( Dot ) : null )
+				h( 'span', Object.assign( { className: 'snn-row-title' }, tipAttr( tip ) ), label, own ? h( Dot ) : null )
 			),
 			h(
 				'div',
 				{ className: 'snn-row-control snn-view-control' },
 				children,
-				own && onReset && device !== 'Desktop' ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset }, __( 'Reset', 'snn' ) ) : null
+				own && onReset && device !== 'Desktop' ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset, ...tipAttr( 'reset' ) }, __( 'Reset', 'snn' ) ) : null
 			)
 		);
 	}
@@ -660,7 +672,7 @@
 	 * Select Animation: the GSAP presets and modifiers (animation.php), in groups, with a search. Several can be
 	 * chosen (the block plays them together), or one (an interaction's action). The choices show as chips.
 	 */
-	function AnimationPicker( { value, onChange, multiple } ) {
+	function AnimationPicker( { value, onChange, multiple, tip } ) {
 		const [ open, setOpen ] = useState( false );
 		const wrap = useRef( null );
 		const pop = useRef( null );
@@ -700,6 +712,7 @@
 				{
 					type: 'button',
 					className: 'snn-anim-button',
+						...tipAttr( tip ),
 					'aria-expanded': open ? 'true' : 'false',
 					onClick: () => setOpen( ! open ),
 				},
@@ -712,13 +725,14 @@
 						chosen.map( ( v ) =>
 							h(
 								'span',
-								{ key: v, className: 'snn-chip', title: v },
+								{ key: v, className: 'snn-chip', 'data-snn-tip-name': labelOf[ v ] || v, 'data-snn-tip-text': __( 'GSAP animation on this element.', 'snn' ) },
 								labelOf[ v ] || v,
 								h(
 									'button',
 									{
 										type: 'button',
 										className: 'snn-chip-x',
+											...tipAttr( 'chipRemove' ),
 										'aria-label': __( 'Remove', 'snn' ),
 										onClick: () => pick( v ),
 									},
@@ -737,6 +751,7 @@
 							type: 'search',
 							className: 'snn-input',
 							placeholder: __( 'Search animations', 'snn' ),
+								...tipAttr( 'gsapSearch' ),
 							value: query,
 							onChange: ( e ) => setQuery( e.target.value ),
 						} ),
@@ -754,7 +769,8 @@
 											{
 												key: i.value,
 												type: 'button',
-												title: i.value,
+												'data-snn-tip-name': i.label,
+													'data-snn-tip-text': multiple ? __( 'Click to add or remove it.', 'snn' ) : __( 'Click to choose it.', 'snn' ),
 												className: 'snn-pop-item' + ( chosen.indexOf( i.value ) !== -1 ? ' is-on' : '' ),
 												onClick: () => pick( i.value ),
 											},
@@ -770,6 +786,7 @@
 	}
 
 	window.snnControls = {
+		tipAttr,
 		AnimationPicker,
 		Bolt,
 		Dot,

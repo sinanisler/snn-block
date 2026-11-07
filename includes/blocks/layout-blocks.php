@@ -852,9 +852,12 @@ class SNN_Layout_Blocks {
 		$blocks = 'includes/blocks/assets/layout-blocks.js';
 		$tools  = 'includes/blocks/assets/block-tools.js';
 		$style  = 'includes/blocks/assets/style-props.js';
+		$tips   = 'includes/blocks/assets/tooltips.js';
 
 		wp_enqueue_style( 'snn-controls', SNN_URL . $css, array(), self::version( $css ) );
-		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data' ), self::version( $js ), true );
+		// The tooltips (tooltips.js) load first: the controls draw their tip attributes from them.
+		wp_enqueue_script( 'snn-tooltips', SNN_URL . $tips, array( 'wp-i18n' ), self::version( $tips ), true );
+		wp_enqueue_script( 'snn-controls', SNN_URL . $js, array( 'wp-element', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'snn-tooltips' ), self::version( $js ), true );
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
 		// The CSS group of the Style tab is a code editor, as in the code snippets (administrators only). False when the

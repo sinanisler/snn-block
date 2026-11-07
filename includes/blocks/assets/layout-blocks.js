@@ -36,7 +36,7 @@
 	const { __ } = wp.i18n;
 	const data = window.snnControlsData || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor, AnimationsEditor } = window.snnBlockTools;
 
 	const QUERY_DEFAULTS = {
@@ -539,135 +539,148 @@
 			null,
 			h(
 				Row,
-				{ label: __( 'Post type', 'snn' ), changed: q.postType !== 'post' },
+				{ label: __( 'Post type', 'snn' ), changed: q.postType !== 'post', tip: 'postType' },
 				h( Select, {
 					label: __( 'Post type', 'snn' ),
 					value: q.postType,
+						tip: 'postType',
 					options: POST_TYPE_OPTIONS,
 					onChange: ( v ) => setQ( { postType: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Order by', 'snn' ), changed: q.orderBy !== 'date' },
+				{ label: __( 'Order by', 'snn' ), changed: q.orderBy !== 'date', tip: 'orderBy' },
 				h( Select, {
 					label: __( 'Order by', 'snn' ),
 					value: q.orderBy,
+						tip: 'orderBy',
 					options: ORDER_BY_OPTIONS,
 					onChange: ( v ) => setQ( { orderBy: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Order', 'snn' ), changed: q.order !== 'DESC' },
+				{ label: __( 'Order', 'snn' ), changed: q.order !== 'DESC', tip: 'queryOrder' },
 				h( Select, {
 					label: __( 'Order', 'snn' ),
 					value: q.order,
+						tip: 'queryOrder',
 					options: ORDER_OPTIONS,
 					onChange: ( v ) => setQ( { order: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Per page', 'snn' ), changed: q.perPage !== '10' },
+				{ label: __( 'Per page', 'snn' ), changed: q.perPage !== '10', tip: 'perPage' },
 				h( TextField, {
 					label: __( 'Posts per page', 'snn' ),
 					value: q.perPage,
+						tip: 'perPage',
 					inputMode: 'numeric',
 					onChange: ( v ) => setQ( { perPage: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Offset', 'snn' ), changed: q.offset !== '0' },
+				{ label: __( 'Offset', 'snn' ), changed: q.offset !== '0', tip: 'offset' },
 				h( TextField, {
 					label: __( 'Offset', 'snn' ),
 					value: q.offset,
+						tip: 'offset',
 					inputMode: 'numeric',
 					onChange: ( v ) => setQ( { offset: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Child of', 'snn' ), changed: !! q.parent },
+				{ label: __( 'Child of', 'snn' ), changed: !! q.parent, tip: 'parent' },
 				h( TextField, {
 					label: __( 'Child of', 'snn' ),
 					value: q.parent,
+						tip: 'parent',
 					placeholder: __( 'Post ID', 'snn' ),
 					onChange: ( v ) => setQ( { parent: v } ),
 				} )
 			),
 			h( SwitchRow, {
-				label: __( 'Ignore sticky', 'snn' ),
+				label: __( 'Ignore sticky', 'snn' ), tip: 'ignoreSticky',
 				checked: q.ignoreSticky,
 				onChange: ( v ) => setQ( { ignoreSticky: v } ),
 			} ),
 			h(
 				Row,
-				{ label: __( 'Include', 'snn' ), changed: !! q.include },
+				{ label: __( 'Include', 'snn' ), changed: !! q.include, tip: 'include' },
 				h( TextField, {
 					label: __( 'Include posts', 'snn' ),
 					value: q.include,
+						tip: 'include',
 					placeholder: __( 'IDs', 'snn' ),
 					onChange: ( v ) => setQ( { include: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Exclude', 'snn' ), changed: !! q.exclude },
+				{ label: __( 'Exclude', 'snn' ), changed: !! q.exclude, tip: 'exclude' },
 				h( TextField, {
 					label: __( 'Exclude posts', 'snn' ),
 					value: q.exclude,
+						tip: 'exclude',
 					placeholder: __( 'IDs', 'snn' ),
 					onChange: ( v ) => setQ( { exclude: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Authors', 'snn' ), changed: !! q.includeAuthors },
+				{ label: __( 'Authors', 'snn' ), changed: !! q.includeAuthors, tip: 'authorsIn' },
 				h( TextField, {
 					label: __( 'Include authors', 'snn' ),
 					value: q.includeAuthors,
+						tip: 'authorsIn',
 					placeholder: __( 'User IDs', 'snn' ),
 					onChange: ( v ) => setQ( { includeAuthors: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Not authors', 'snn' ), changed: !! q.excludeAuthors },
+				{ label: __( 'Not authors', 'snn' ), changed: !! q.excludeAuthors, tip: 'authorsOut' },
 				h( TextField, {
 					label: __( 'Exclude authors', 'snn' ),
 					value: q.excludeAuthors,
+						tip: 'authorsOut',
 					placeholder: __( 'User IDs', 'snn' ),
 					onChange: ( v ) => setQ( { excludeAuthors: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Taxonomy', 'snn' ), changed: !! q.taxonomy },
+				{ label: __( 'Taxonomy', 'snn' ), changed: !! q.taxonomy, tip: 'taxonomy' },
 				h( Select, {
 					label: __( 'Taxonomy', 'snn' ),
 					value: q.taxonomy || '',
+						tip: 'taxonomy',
 					options: TAXONOMY_OPTIONS,
 					onChange: ( v ) => setQ( { taxonomy: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Terms in', 'snn' ), changed: !! q.termsInclude },
+				{ label: __( 'Terms in', 'snn' ), changed: !! q.termsInclude, tip: 'termsIn' },
 				h( TextField, {
 					label: __( 'Include terms', 'snn' ),
 					value: q.termsInclude,
+						tip: 'termsIn',
 					placeholder: __( 'Term IDs', 'snn' ),
 					onChange: ( v ) => setQ( { termsInclude: v } ),
 				} )
 			),
 			h(
 				Row,
-				{ label: __( 'Terms out', 'snn' ), changed: !! q.termsExclude },
+				{ label: __( 'Terms out', 'snn' ), changed: !! q.termsExclude, tip: 'termsOut' },
 				h( TextField, {
 					label: __( 'Exclude terms', 'snn' ),
 					value: q.termsExclude,
+						tip: 'termsOut',
 					placeholder: __( 'Term IDs', 'snn' ),
 					onChange: ( v ) => setQ( { termsExclude: v } ),
 				} )
@@ -678,20 +691,22 @@
 					{ key: 'meta-' + i },
 					h(
 						Row,
-						{ label: __( 'Meta key', 'snn' ), changed: !! r.key },
+						{ label: __( 'Meta key', 'snn' ), changed: !! r.key, tip: 'metaKey' },
 						h( TextField, {
 							label: __( 'Meta key', 'snn' ),
 							value: r.key,
+								tip: 'metaKey',
 							placeholder: __( 'field_name', 'snn' ),
 							onChange: ( v ) => updateMeta( i, { key: v } ),
 						} )
 					),
 					h(
 						Row,
-						{ label: __( 'Compare', 'snn' ), changed: r.compare !== '=' },
+						{ label: __( 'Compare', 'snn' ), changed: r.compare !== '=', tip: 'metaCompare' },
 						h( Select, {
 							label: __( 'Compare', 'snn' ),
 							value: r.compare,
+								tip: 'metaCompare',
 							options: META_COMPARE_OPTIONS,
 							onChange: ( v ) => updateMeta( i, { compare: v } ),
 						} )
@@ -699,7 +714,7 @@
 					META_NO_VALUE.indexOf( r.compare ) === -1
 						? h(
 								Row,
-								{ label: __( 'Value', 'snn' ), changed: !! r.value },
+								{ label: __( 'Value', 'snn' ), changed: !! r.value, tip: 'metaValue' },
 								h( TextField, {
 									label: __( 'Meta value', 'snn' ),
 									value: r.value,
@@ -710,10 +725,11 @@
 						: null,
 					h(
 						Row,
-						{ label: __( 'Type', 'snn' ), changed: r.type !== 'CHAR' },
+						{ label: __( 'Type', 'snn' ), changed: r.type !== 'CHAR', tip: 'metaType' },
 						h( Select, {
 							label: __( 'Value type', 'snn' ),
 							value: r.type,
+								tip: 'metaType',
 							options: META_TYPE_OPTIONS,
 							onChange: ( v ) => updateMeta( i, { type: v } ),
 						} )
@@ -723,7 +739,7 @@
 						{ label: '' },
 						h(
 							'button',
-							{ type: 'button', className: 'snn-reset', onClick: () => removeMeta( i ) },
+							{ type: 'button', className: 'snn-reset', onClick: () => removeMeta( i ), ...tipAttr( 'metaRemove' ) },
 							__( 'Remove rule', 'snn' )
 						)
 					)
@@ -731,19 +747,19 @@
 			),
 			h(
 				Row,
-				{ label: __( 'Meta query', 'snn' ), changed: metaRows.length > 0 },
+				{ label: __( 'Meta query', 'snn' ), changed: metaRows.length > 0, tip: 'metaAdd' },
 				h(
 					'button',
-					{ type: 'button', className: 'snn-reset', onClick: addMeta },
+					{ type: 'button', className: 'snn-reset', onClick: addMeta, ...tipAttr( 'metaAdd' ) },
 					metaRows.length ? __( 'Add another rule', 'snn' ) : __( 'Add rule', 'snn' )
 				)
 			),
 			metaRows.length > 1
 				? h(
 						Row,
-						{ label: __( 'Rules', 'snn' ), changed: q.metaRelation !== 'AND' },
+						{ label: __( 'Rules', 'snn' ), changed: q.metaRelation !== 'AND', tip: 'metaRelation' },
 						h( Segmented, {
-							label: __( 'Rules must match', 'snn' ),
+							label: __( 'Rules must match', 'snn' ), tip: 'metaRelation',
 							value: q.metaRelation || 'AND',
 							options: [
 								{ value: 'AND', label: __( 'All', 'snn' ) },
@@ -754,12 +770,12 @@
 				  )
 				: null,
 			h( SwitchRow, {
-				label: __( 'Exclude current', 'snn' ),
+				label: __( 'Exclude current', 'snn' ), tip: 'excludeCurrent',
 				checked: !! q.excludeCurrent,
 				onChange: ( v ) => setQ( { excludeCurrent: v } ),
 			} ),
 			h( SwitchRow, {
-				label: __( 'Main query', 'snn' ),
+				label: __( 'Main query', 'snn' ), tip: 'isMain',
 				checked: q.isMain,
 				onChange: ( v ) => setQ( { isMain: v } ),
 			} )
@@ -784,7 +800,7 @@
 					className: 'snn-seg-btn' + ( on ? ' is-on' : '' ),
 					'aria-pressed': on ? 'true' : 'false',
 					'aria-label': text,
-					title: text,
+					...tipAttr( 'direction.' + key ),
 					onClick: press,
 				},
 				glyph
@@ -828,7 +844,7 @@
 			rows.push(
 				h(
 					ViewRow,
-					{ key: 'direction', label: __( 'Direction', 'snn' ), device, own: directionOwn, onReset: resetDirection },
+					{ key: 'direction', label: __( 'Direction', 'snn' ), tip: 'direction', device, own: directionOwn, onReset: resetDirection },
 					h( DirectionRow, {
 						label: __( 'Direction', 'snn' ),
 						flow,
@@ -844,7 +860,7 @@
 		if ( grid ) {
 			rows.push(
 				v( 'columns', 'gridColumns', { label: __( 'Columns', 'snn' ), kind: 'icons', options: columnOptions() } ),
-				v( 'template', 'gridColumns', { label: __( 'Template', 'snn' ), placeholder: __( '1fr 2fr', 'snn' ) } ),
+				v( 'template', 'gridColumns', { label: __( 'Template', 'snn' ), tip: 'gridTemplate', placeholder: __( '1fr 2fr', 'snn' ) } ),
 				v( 'rows', 'gridRows', { label: __( 'Rows', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
 				v( 'auto-columns', 'gridAutoColumns', { label: __( 'Auto columns', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
 				v( 'auto-rows', 'gridAutoRows', { label: __( 'Auto rows', 'snn' ), placeholder: __( 'auto', 'snn' ) } ),
@@ -952,7 +968,7 @@
 						key: v.value,
 						type: 'button',
 						'aria-pressed': ( current || 'Desktop' ) === v.value ? 'true' : 'false',
-						title: v.title,
+						...tipAttr( 'view.' + v.value.toLowerCase() ),
 						onClick: () => {
 							try {
 								wp.data.dispatch( 'core/editor' ).setDeviceType( v.value );
@@ -992,7 +1008,9 @@
 	 * shows that the view sets its own value. A value the view inherits shows as the field's placeholder; a switch or an
 	 * icon row shows it as its state, as those have no placeholder. dflt is the setting's default (see viewOwn).
 	 */
-	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode } ) {
+	function ViewValue( { a, set, device, k, label, unit, kind, options, placeholder, dflt = '', fallback, variables, inputMode, tip } ) {
+			// The tooltip key: the setting's own key, unless the row names another (the template is a grid column setting).
+			const key = tip || k;
 		const own = viewOwn( a, device, k, dflt );
 		const value = own !== undefined ? own : inheritedValue( a, device, k ).value;
 		const change = ( v ) => setValue( a, set, device, k, v );
@@ -1000,19 +1018,19 @@
 		const empty = value === undefined || value === null || value === '';
 		let control;
 		if ( kind === 'select' ) {
-			control = h( Select, { label, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: change } );
+			control = h( Select, { label, tip: key, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: change } );
 		} else if ( kind === 'icons' ) {
-			control = h( Segmented, { label, value: empty ? fallback || '' : String( value ), options, onChange: change } );
+			control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( value ), options, onChange: change } );
 		} else if ( kind === 'switch' ) {
 			// A view's own off is '0' (an empty value would mean inherit). Desktop keeps the boolean.
-			control = h( Switch, {
+			control = h( Switch, { tip: key,
 				label,
 				checked: value === true || value === '1',
 				onChange: ( on ) => change( device === 'Desktop' ? on : on ? '1' : '0' ),
 			} );
 		} else {
 			const inherits = own === undefined && ! empty;
-			control = h( TextField, {
+			control = h( TextField, { tip: key,
 				label,
 				value: own === undefined ? '' : String( own ),
 				placeholder: inherits ? String( value ) : placeholder,
@@ -1024,7 +1042,7 @@
 				onChange: change,
 			} );
 		}
-		return h( ViewRow, { label, device, own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
+		return h( ViewRow, { label, device, tip: key, own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
 	}
 
 	/**
@@ -1293,7 +1311,7 @@
 	function CssPane( { a, set, canCss, editor } ) {
 		return h(
 			'div',
-			{ className: 'snn-css-pane' },
+			{ className: 'snn-css-pane', ...tipAttr( 'customCss' ) },
 			canCss
 				? h( CssEditor, { value: a.customCss || '', onChange: ( v ) => set( { customCss: v } ), editor, label: __( 'Custom CSS', 'snn' ) } )
 				: h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
@@ -1306,10 +1324,10 @@
 			label: __( 'Layout', 'snn' ),
 			glyph: 'layout',
 			sections: [
-				{ title: __( 'Spacing', 'snn' ), rows: [ BOX_MARGIN, BOX_PADDING, 'gap' ] },
-				{ title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
-				{ title: __( 'Positioning', 'snn' ), rows: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ] },
-				{ title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
+				{ tip: 'sec.spacing', title: __( 'Spacing', 'snn' ), rows: [ BOX_MARGIN, BOX_PADDING, 'gap' ] },
+				{ tip: 'sec.sizing', title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
+				{ tip: 'sec.positioning', title: __( 'Positioning', 'snn' ), rows: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ] },
+				{ tip: 'sec.misc', title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
 			],
 		},
 		{
@@ -1317,10 +1335,10 @@
 			label: __( 'Typography', 'snn' ),
 			glyph: 'typography',
 			sections: [
-				{ title: __( 'Text', 'snn' ), rows: [ 'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle' ] },
-				{ title: __( 'Alignment', 'snn' ), rows: [ 'textAlign', 'textTransform' ] },
-				{ title: __( 'Spacing', 'snn' ), rows: [ 'lineHeight', 'letterSpacing' ] },
-				{ title: __( 'More', 'snn' ), rows: [ 'textDecoration', 'textWrap', 'whiteSpace', 'textShadow' ] },
+				{ tip: 'sec.text', title: __( 'Text', 'snn' ), rows: [ 'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle' ] },
+				{ tip: 'sec.alignment', title: __( 'Alignment', 'snn' ), rows: [ 'textAlign', 'textTransform' ] },
+				{ tip: 'sec.textSpacing', title: __( 'Spacing', 'snn' ), rows: [ 'lineHeight', 'letterSpacing' ] },
+				{ tip: 'sec.more', title: __( 'More', 'snn' ), rows: [ 'textDecoration', 'textWrap', 'whiteSpace', 'textShadow' ] },
 			],
 		},
 		{
@@ -1328,8 +1346,8 @@
 			label: __( 'Background', 'snn' ),
 			glyph: 'background',
 			sections: [
-				{ title: __( 'Colour', 'snn' ), rows: [ 'backgroundColor' ] },
-				{ title: __( 'Image', 'snn' ), rows: [ 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat' ] },
+				{ tip: 'sec.colour', title: __( 'Colour', 'snn' ), rows: [ 'backgroundColor' ] },
+				{ tip: 'sec.image', title: __( 'Image', 'snn' ), rows: [ 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat' ] },
 			],
 		},
 		{
@@ -1337,7 +1355,7 @@
 			label: __( 'Gradient', 'snn' ),
 			glyph: 'gradient',
 			sections: [
-				{ title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ] },
+				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientType', 'gradientAngle', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ] },
 			],
 		},
 		{
@@ -1345,8 +1363,8 @@
 			label: __( 'Border', 'snn' ),
 			glyph: 'border',
 			sections: [
-				{ title: __( 'Border', 'snn' ), rows: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius' ] },
-				{ title: __( 'Box shadow', 'snn' ), rows: [ 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ] },
+				{ tip: 'sec.border', title: __( 'Border', 'snn' ), rows: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius' ] },
+				{ tip: 'sec.shadow', title: __( 'Box shadow', 'snn' ), rows: [ 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ] },
 			],
 		},
 		{
@@ -1354,7 +1372,7 @@
 			label: __( 'Transform', 'snn' ),
 			glyph: 'transform',
 			sections: [
-				{ title: __( 'Transform', 'snn' ), rows: [ 'transformOrigin', 'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY' ] },
+				{ tip: 'sec.transform', title: __( 'Transform', 'snn' ), rows: [ 'transformOrigin', 'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY' ] },
 			],
 		},
 		{
@@ -1362,8 +1380,8 @@
 			label: __( 'Filters', 'snn' ),
 			glyph: 'filters',
 			sections: [
-				{ title: __( 'Filter', 'snn' ), rows: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia' ] },
-				{ title: __( 'Transition', 'snn' ), rows: [ 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ] },
+				{ tip: 'sec.filter', title: __( 'Filter', 'snn' ), rows: [ 'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia' ] },
+				{ tip: 'sec.transition', title: __( 'Transition', 'snn' ), rows: [ 'transitionProperty', 'transitionDuration', 'transitionTiming', 'transitionDelay' ] },
 			],
 		},
 		{
@@ -1550,7 +1568,7 @@
 			h(
 				'div',
 				{ className: 'snn-box-head' },
-				h( 'span', { className: 'snn-box-title' }, box.label, anyOwn ? h( Dot ) : null ),
+				h( 'span', Object.assign( { className: 'snn-box-title' }, tipAttr( box.box ) ), box.label, anyOwn ? h( Dot ) : null ),
 				h(
 					'span',
 					{ className: 'snn-box-tools' },
@@ -1560,7 +1578,7 @@
 							type: 'button',
 							className: 'snn-box-link' + ( linked ? ' is-on' : '' ),
 							'aria-pressed': linked ? 'true' : 'false',
-							title: __( 'Link the four sides', 'snn' ),
+							...tipAttr( 'boxLink' ),
 							'aria-label': __( 'Link the four sides', 'snn' ),
 							onClick: () => setLinked( ! linked ),
 						},
@@ -1573,6 +1591,7 @@
 									type: 'button',
 									className: 'snn-reset',
 									onClick: () => setMany( a, set, device, keys.map( ( key ) => [ key, '' ] ) ),
+										...tipAttr( 'reset' ),
 								},
 								__( 'Reset', 'snn' )
 						  )
@@ -1591,7 +1610,7 @@
 						{ key: k, className: 'snn-box-cell snn-box-' + BOX_AREA[ i ] },
 						own !== undefined ? h( 'span', { className: 'snn-box-mark', 'aria-hidden': 'true' }, h( Dot ) ) : null,
 						h( TextField, {
-							label: box.label + ' ' + SIDE_LABEL[ i ],
+							label: box.label + ' ' + SIDE_LABEL[ i ], tip: k,
 							value: own !== undefined ? String( own ) : '',
 							placeholder: inherited.value !== undefined && inherited.value !== '' ? String( inherited.value ) : '0',
 							unit: ' px',
@@ -1633,6 +1652,7 @@
 					type: 'button',
 					role: 'tab',
 					className: 'snn-tab',
+						...tipAttr( id === 'default' ? 'tab.content' : 'tab.style' ),
 					'aria-selected': tab === id ? 'true' : 'false',
 					onClick: () => setTab( id ),
 				},
@@ -1663,13 +1683,14 @@
 			{ className: 'snn-pane' },
 			h(
 				Group,
-				{ title: __( 'Element', 'snn' ) },
+				{ title: __( 'Element', 'snn' ), tip: 'group.element' },
 				h(
 					Row,
-					{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
+					{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag, tip: 'tagName' },
 					h( Select, {
 						label: __( 'HTML tag', 'snn' ),
 						value: a.tagName,
+							tip: 'tagName',
 						options: text ? TEXT_TAG_OPTIONS : TAG_OPTIONS,
 						onChange: ( v ) => set( { tagName: v } ),
 					} )
@@ -1677,7 +1698,7 @@
 			),
 			h(
 				Group,
-				{ title: __( 'Layout', 'snn' ) },
+				{ title: __( 'Layout', 'snn' ), tip: 'group.layout' },
 				h( LayoutFields, { a, set, base, device, parent } )
 			),
 			// A Text block has no query loop: its panel leaves the group out.
@@ -1685,9 +1706,10 @@
 				? null
 				: h(
 					Group,
-					{ title: __( 'Query loop', 'snn' ) },
+					{ title: __( 'Query loop', 'snn' ), tip: 'group.query' },
 					h( SwitchRow, {
 						label: __( 'Query loop', 'snn' ),
+						tip: 'queryLoop',
 						checked: q.enabled,
 						onChange: ( v ) => {
 							setQ( { enabled: v } );
@@ -1704,22 +1726,22 @@
 							onToggle: setOpenQuery,
 							disabled: ! q.enabled,
 							changed: changedQuery( q ),
-							hint: __( 'Turn on Query loop first.', 'snn' ),
+							tip: q.enabled ? 'query' : 'queryOff',
 						},
 						h( QueryFields, { q, setQ } )
 					)
 				),
 			h(
 				Disclosure,
-				{ title: __( 'Advanced', 'snn' ) },
+				{ title: __( 'Advanced', 'snn' ), tip: 'group.advanced' },
 				h(
 					Row,
-					{ label: __( 'Classes', 'snn' ) },
+					{ label: __( 'Classes', 'snn' ), tip: 'classes' },
 					h( ClassesEditor, { value: a.cssClasses, onChange: ( v ) => set( { cssClasses: v } ) } )
 				),
 				h(
 						Row,
-						{ label: __( 'Attributes', 'snn' ), changed: ( a.customAttributes || [] ).length > 0 },
+						{ label: __( 'Attributes', 'snn' ), tip: 'attributes', changed: ( a.customAttributes || [] ).length > 0 },
 						h( AttributesEditor, {
 							value: Array.isArray( a.customAttributes ) ? a.customAttributes : [],
 							onChange: ( v ) => set( { customAttributes: v } ),
@@ -1748,7 +1770,7 @@
 							value: p.id,
 							label: p.label,
 							glyph: p.text ? h( 'span', { className: 'snn-glyph-text', 'aria-hidden': 'true' }, p.text ) : h( Glyph, { name: p.glyph } ),
-							changed: groupChanged( a, p ),
+							changed: groupChanged( a, p ), tip: 'style.' + p.id,
 						} ) ),
 					onChange: setStylePage,
 				} )
@@ -1756,11 +1778,11 @@
 			h(
 				'div',
 				{ className: 'snn-page-head' },
-				h( 'span', { className: 'snn-page-title' }, page.label )
+				h( 'span', Object.assign( { className: 'snn-page-title' }, tipAttr( 'style.' + page.id ) ), page.label )
 			),
 			page.kind === 'css'
 				? h( CssPane, { a, set, canCss: data.canCss, editor: data.cssEditor } )
-				: page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title }, s.rows.map( rowFor ) ) )
+				: page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title, tip: s.tip }, s.rows.map( rowFor ) ) )
 		);
 
 		// Conditions or Interactions open: only that panel shows, under the two icons that open and close it.

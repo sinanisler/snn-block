@@ -1320,18 +1320,25 @@
 	position: sticky;
 	top: 47px;
 	z-index: 2;
-	padding: 8px var(--snn-inset) 6px;
+	padding: 8px 0 6px;
 	background: #fff;
 	border-bottom: 1px solid #e5e5e5;
 }
 
 .snn-rail .snn-seg {
-	height: 30px;
+	height: 34px;
+	border-radius: 0;
 }
 
 .snn-rail .snn-seg-btn {
 	height: 24px;
 	position: relative;
+}
+
+/* The group icons take the whole width of the rail: each button is an equal share, with a taller target to click. */
+.snn-rail .snn-seg-btn {
+	height: 28px;
+	border-radius: 0;
 }
 
 /* The dot on a group icon: the group holds a value on some view (Desktop, Tablet or Mobile). Top right, small. */
@@ -1353,6 +1360,45 @@
 	font-size: 13px;
 	font-weight: 600;
 	color: #1e1e1e;
+}
+
+/* The tooltips (tooltips.js): a white bubble in the body, 12 px text, 5 px padding, at most 220 px wide. Name in bold,
+ * the short description under it. It never takes the mouse (pointer-events none), so it cannot hide what it names. */
+.snn-tip {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 100001;
+	box-sizing: border-box;
+	max-width: 220px;
+	padding: 5px;
+	background: #fff;
+	color: #1e1e1e;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	font-size: 12px;
+	line-height: 1.35;
+	font-weight: 400;
+	text-align: left;
+	white-space: normal;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.1s ease;
+}
+
+.snn-tip.is-shown {
+	opacity: 1;
+}
+
+.snn-tip-name {
+	display: block;
+	font-weight: 600;
+}
+
+.snn-tip-text {
+	display: block;
+	color: #3c434a;
 }
 
 /* Glyphs: the group icons of the rail, the text align and transform icons, the link toggle */

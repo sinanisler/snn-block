@@ -18,7 +18,7 @@
 ( function ( wp, C ) {
 	const { createElement: h, Fragment, useState, useRef } = wp.element;
 	const { __ } = wp.i18n;
-	const { Row, Select, TextField, AnimationPicker } = C;
+	const { Row, Select, TextField, AnimationPicker, tipAttr } = C;
 	const data = window.snnBlockToolsData || {};
 	const CATALOG = data.conditions || [];
 	const GROUPS = data.groups || {};
@@ -66,8 +66,8 @@
 		return h( 'svg', { className: 'snn-bt-icon', viewBox: '0 0 16 16', 'aria-hidden': 'true', focusable: 'false' }, ...( parts[ name ] || [] ) );
 	}
 
-	function RemoveButton( { label, onClick } ) {
-		return h( 'button', { type: 'button', className: 'snn-bt-x', title: label, 'aria-label': label, onClick }, glyph( 'close' ) );
+	function RemoveButton( { label, onClick, tip } ) {
+		return h( 'button', { type: 'button', className: 'snn-bt-x', 'aria-label': label, ...tipAttr( tip ), onClick }, glyph( 'close' ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -94,7 +94,7 @@
 						key: it.key,
 						type: 'button',
 						className: 'snn-bt-head-btn' + ( open === it.key ? ' is-on' : '' ) + ( it.used ? ' is-used' : '' ),
-						title: it.label,
+						...tipAttr( 'head.' + it.key ),
 						'aria-label': it.label,
 						'aria-pressed': open === it.key ? 'true' : 'false',
 						onClick: () => onOpen( open === it.key ? null : it.key ),
@@ -146,7 +146,7 @@
 					'span',
 					{ key: n, className: 'snn-bt-token' },
 					n,
-					h( RemoveButton, { label: __( 'Remove class', 'snn' ) + ' ' + n, onClick: () => remove( n ) } )
+					h( RemoveButton, { label: __( 'Remove class', 'snn' ) + ' ' + n, tip: 'classRemove', onClick: () => remove( n ) } )
 				)
 			),
 			h( 'input', {
@@ -158,6 +158,7 @@
 				spellCheck: false,
 				autoComplete: 'off',
 				'aria-label': __( 'Classes', 'snn' ),
+			...tipAttr( 'classes' ),
 				onChange: ( e ) => {
 					// Every space ends a word: the words before the last space become tokens, the rest stays in the field.
 					const parts = cleanClassText( e.target.value ).split( ' ' );
@@ -217,10 +218,12 @@
 							placeholder: __( 'Name', 'snn' ),
 							spellCheck: false,
 							'aria-label': __( 'Attribute name', 'snn' ),
-							title: bad ? __( 'Use data-, aria- or a plain name. Names that start with on, and class, id and style, are not allowed.', 'snn' ) : '',
+							...( bad
+								? { 'data-snn-tip-name': __( 'Not allowed', 'snn' ), 'data-snn-tip-text': __( 'Use data-, aria- or a plain name. No on*, class, id or style.', 'snn' ) }
+								: tipAttr( 'attrName' ) ),
 							onChange: ( e ) => setAt( i, { name: e.target.value.toLowerCase().replace( /[^a-z0-9_-]/g, '' ) } ),
 						} ),
-						h( RemoveButton, { label: __( 'Remove attribute', 'snn' ), onClick: () => removeAt( i ) } )
+						h( RemoveButton, { label: __( 'Remove attribute', 'snn' ), tip: 'attrRemove', onClick: () => removeAt( i ) } )
 					),
 					h( 'input', {
 						type: 'text',
@@ -229,12 +232,13 @@
 						placeholder: __( 'Value', 'snn' ),
 						spellCheck: false,
 						'aria-label': __( 'Attribute value', 'snn' ),
+						...tipAttr( 'attrValue' ),
 						onChange: ( e ) => setAt( i, { value: e.target.value } ),
 					} )
 				);
 			} ),
 			rows.length < 20
-				? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add }, __( 'Add attribute', 'snn' ) )
+				? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add, ...tipAttr( 'attrAdd' ) }, __( 'Add attribute', 'snn' ) )
 				: null
 		);
 	}
@@ -264,18 +268,19 @@
 				className: 'snn-input',
 				value: c.value || '',
 				'aria-label': def.label,
+						...tipAttr( 'conditionValue' ),
 				onChange: ( e ) => onPatch( { value: e.target.value } ),
 			} );
 		}
 		if ( def.options && def.options.length ) {
-			return h( Select, {
+			return h( Select, { tip: 'conditionValue',
 				value: c.value,
 				options: def.options,
 				label: def.label,
 				onChange: ( v ) => onPatch( { value: v } ),
 			} );
 		}
-		return h( TextField, {
+		return h( TextField, { tip: 'conditionValue',
 			label: def.label,
 			value: c.value || '',
 			placeholder: __( 'value', 'snn' ),
@@ -298,6 +303,7 @@
 						className: 'snn-select',
 						value: def.key,
 						'aria-label': __( 'Condition', 'snn' ),
+							...tipAttr( 'conditionField' ),
 						onChange: ( e ) => onKey( e.target.value ),
 					},
 					Object.keys( GROUPS ).map( ( g ) => {
@@ -311,14 +317,14 @@
 							: null;
 					} )
 				),
-				h( RemoveButton, { label: __( 'Remove condition', 'snn' ), onClick: onRemove } )
+				h( RemoveButton, { label: __( 'Remove condition', 'snn' ), tip: 'conditionRemove', onClick: onRemove } )
 			),
 			def.left
 				? h(
 						'div',
 						{ className: 'snn-bt-cond-line' },
 						h( TextField, {
-							label: __( 'Dynamic data', 'snn' ),
+							label: __( 'Dynamic data', 'snn' ), tip: 'conditionField',
 							value: c.dynamic || '',
 							placeholder: '{post_title}',
 							onChange: ( v ) => onPatch( { dynamic: v } ),
@@ -334,7 +340,7 @@
 					h( Select, {
 						value: c.compare,
 						options: def.compare,
-						label: __( 'Compare', 'snn' ),
+						label: __( 'Compare', 'snn' ), tip: 'conditionCompare',
 						onChange: ( v ) => onPatch( { compare: v } ),
 					} )
 				),
@@ -383,7 +389,7 @@
 							} )
 						)
 					),
-					h( 'button', { type: 'button', className: 'snn-bt-link', onClick: () => addTo( si ) }, __( 'Add condition', 'snn' ) )
+					h( 'button', { type: 'button', className: 'snn-bt-link', onClick: () => addTo( si ), ...tipAttr( 'conditionAdd' ) }, __( 'Add condition', 'snn' ) )
 				)
 			);
 		} );
@@ -398,8 +404,8 @@
 				'div',
 				{ className: 'snn-bt-conds-end' },
 				list.length
-					? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: addOrGroup }, __( 'Add Or group', 'snn' ) )
-					: h( 'button', { type: 'button', className: 'snn-bt-link', onClick: start }, __( 'Add condition', 'snn' ) )
+					? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: addOrGroup, ...tipAttr( 'conditionAddGroup' ) }, __( 'Add Or group', 'snn' ) )
+					: h( 'button', { type: 'button', className: 'snn-bt-link', onClick: start, ...tipAttr( 'conditionAdd' ) }, __( 'Add condition', 'snn' ) )
 			)
 		);
 	}
@@ -451,27 +457,27 @@
 						'div',
 						{ className: 'snn-bt-card-head' },
 						h( 'span', null, __( 'Interaction', 'snn' ) + ' ' + ( i + 1 ) ),
-						h( RemoveButton, { label: __( 'Remove interaction', 'snn' ), onClick: () => removeAt( i ) } )
+						h( RemoveButton, { label: __( 'Remove interaction', 'snn' ), tip: 'interactionRemove', onClick: () => removeAt( i ) } )
 					),
-					h( Row, { label: __( 'When', 'snn' ) }, h( Select, { value: it.trigger, options: triggers, label: __( 'Trigger', 'snn' ), onChange: ( v ) => setAt( i, { trigger: v } ) } ) ),
-					h( Row, { label: __( 'Do', 'snn' ) }, h( Select, { value: it.action, options: actions, label: __( 'Action', 'snn' ), onChange: ( v ) => changeAction( i, v ) } ) ),
+					h( Row, { label: __( 'When', 'snn' ), tip: 'interactionTrigger' }, h( Select, { value: it.trigger, options: triggers, tip: 'interactionTrigger', label: __( 'Trigger', 'snn' ), onChange: ( v ) => setAt( i, { trigger: v } ) } ) ),
+					h( Row, { label: __( 'Do', 'snn' ), tip: 'interactionAction' }, h( Select, { value: it.action, options: actions, tip: 'interactionAction', label: __( 'Action', 'snn' ), onChange: ( v ) => changeAction( i, v ) } ) ),
 					h(
 						Row,
-						{ label: __( 'On', 'snn' ) },
+						{ label: __( 'On', 'snn' ), tip: 'interactionTarget' },
 						h( Select, {
 							value: custom ? 'custom' : 'self',
 							options: [
 								{ value: 'self', label: __( 'This element', 'snn' ) },
 								{ value: 'custom', label: __( 'Element with ID', 'snn' ) },
 							],
-							label: __( 'Target', 'snn' ),
+							label: __( 'Target', 'snn' ), tip: 'interactionTarget',
 							onChange: ( v ) => setAt( i, { target: v === 'self' ? 'self' : '' } ),
 						} )
 					),
 					custom
 						? h(
 								Row,
-								{ label: __( 'ID', 'snn' ) },
+								{ label: __( 'ID', 'snn' ), tip: 'interactionTargetId' },
 								h(
 									'div',
 									{ className: 'snn-bt-idwrap' },
@@ -483,6 +489,7 @@
 										placeholder: __( 'my-id', 'snn' ),
 										spellCheck: false,
 										'aria-label': __( 'Target ID', 'snn' ),
+											...tipAttr( 'interactionTargetId' ),
 										onChange: ( e ) => setAt( i, { target: sanitizeId( e.target.value ) } ),
 									} )
 								)
@@ -494,31 +501,33 @@
 							{ key: 'anim' },
 							h(
 								Row,
-								{ label: __( 'Animation', 'snn' ) },
+								{ label: __( 'Animation', 'snn' ), tip: 'interactionAnimation' },
 								h( Select, {
 									value: it.value || '',
-									options: [ { value: '', label: __( 'Choose', 'snn' ) } ].concat( animationTypes ),
+									options: [ { value: '', label: __( 'Choose', 'snn' ) } ].concat( animationTypes ), tip: 'interactionAnimation',
 									label: __( 'Animation', 'snn' ),
 									onChange: ( v ) => setAt( i, { value: v } ),
 								} )
 							),
 							h(
 								Row,
-								{ label: __( 'Duration', 'snn' ) },
+								{ label: __( 'Duration', 'snn' ), tip: 'interactionDuration' },
 								h( MsField, {
 									value: it.duration,
 									placeholder: String( msDefault ),
 									label: __( 'Duration', 'snn' ),
+									tip: 'interactionDuration',
 									onChange: ( v ) => setAt( i, { duration: v } ),
 								} )
 							),
 							h(
 								Row,
-								{ label: __( 'Delay', 'snn' ) },
+								{ label: __( 'Delay', 'snn' ), tip: 'interactionDelay' },
 								h( MsField, {
 									value: it.delay,
 									placeholder: '0',
 									label: __( 'Delay', 'snn' ),
+									tip: 'interactionDelay',
 									onChange: ( v ) => setAt( i, { delay: v } ),
 								} )
 							)
@@ -527,7 +536,7 @@
 					isClass
 						? h(
 								Row,
-								{ label: __( 'Class', 'snn' ) },
+								{ label: __( 'Class', 'snn' ), tip: 'interactionClass' },
 								h( 'input', {
 									type: 'text',
 									className: 'snn-input',
@@ -535,18 +544,19 @@
 									placeholder: __( 'class-name', 'snn' ),
 									spellCheck: false,
 									'aria-label': __( 'Class', 'snn' ),
+										...tipAttr( 'interactionClass' ),
 									onChange: ( e ) => setAt( i, { value: sanitizeClassList( e.target.value ) } ),
 								} )
 						  )
 						: null
 				);
 			} ),
-			h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add }, __( 'Add interaction', 'snn' ) )
+			h( 'button', { type: 'button', className: 'snn-bt-link', onClick: add, ...tipAttr( 'interactionAdd' ) }, __( 'Add interaction', 'snn' ) )
 		);
 	}
 
 	/** A time in milliseconds: a number field with the unit after it. Empty means the default (the placeholder). */
-	function MsField( { value, placeholder, label, onChange } ) {
+	function MsField( { value, placeholder, label, tip, onChange } ) {
 		return h(
 			'div',
 			{ className: 'snn-bt-idwrap' },
@@ -559,6 +569,7 @@
 				value: value === undefined || value === null ? '' : value,
 				placeholder,
 				'aria-label': label,
+				...tipAttr( tip ),
 				onChange: ( e ) => onChange( e.target.value ),
 			} ),
 			h( 'span', { className: 'snn-bt-unit' }, 'ms' )
@@ -576,8 +587,8 @@
 			{ className: 'snn-bt-anim' },
 			h(
 				Row,
-				{ label: __( 'Animation', 'snn' ), changed: list.length > 0 },
-				h( AnimationPicker, { value: list, multiple: true, onChange } )
+				{ label: __( 'Animation', 'snn' ), changed: list.length > 0, tip: 'gsapAnimation' },
+				h( AnimationPicker, { value: list, multiple: true, tip: 'gsapAnimation', onChange } )
 			),
 			h( 'p', { className: 'snn-hint' }, __( 'GSAP animations play on the front end. Add more than one to stack them.', 'snn' ) )
 		);
