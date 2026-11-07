@@ -98,6 +98,32 @@
 		return !! cfg.inEditor;
 	}
 
+	/** The post open in the block editor, when it is a page or post (its ID is a number). Null in the Site Editor. */
+	function currentPageId() {
+		if ( ! inEditor() || ! window.wp || ! window.wp.data ) {
+			return null;
+		}
+		var id = null;
+		try {
+			id = window.wp.data.select( 'core/editor' ).getCurrentPostId();
+		} catch ( error ) {
+			id = null;
+		}
+		return /^\d+$/.test( String( id ) ) ? String( id ) : null;
+	}
+
+	/** The page styles from the server, as an object (an empty PHP array is read as nothing). */
+	function pageValues( values ) {
+		return values && typeof values === 'object' && ! Array.isArray( values ) ? clone( values ) : {};
+	}
+
+	/** The draft without the page styles: those are saved to their own route. */
+	function globalValues( draft ) {
+		var out = clone( draft );
+		delete out.page;
+		return out;
+	}
+
 	/** A slug for a new colour: lower case, dashes, unique among the colours in the draft. */
 	function newSlug( name, colors ) {
 		var base = String( name ).toLowerCase().replace( /[^a-z0-9]+/g, '-' ).replace( /^-+|-+$/g, '' ) || 'colour';
@@ -737,6 +763,10 @@
 			'aria-labelledby': 'snn-gs-tab-' + tabId,
 			tabindex: '0',
 		} );
+		if ( tab.page && ! state.pageId ) {
+			panel.appendChild( el( 'p', { class: 'snn-gs-hint', text: state.pageError ? t.pageLoadError : t.pageNone } ) );
+			return panel;
+		}
 		if ( tab.palette ) {
 			panel.appendChild( paletteEditor() );
 		}
@@ -858,8 +888,10 @@
 
 	function resetDraft() {
 		var fonts = state.draft.fonts; // Installed fonts are not defaults: they stay.
+		var page = state.draft.page; // The page styles are not global defaults: they stay too.
 		state.draft = prepare( cfg.defaults );
 		state.draft.fonts = fonts;
+		state.draft.page = page;
 		showTab( state.tab );
 		setStatus( t.resetDone, '' );
 	}
@@ -871,9 +903,19 @@
 			return;
 		}
 		setStatus( t.saving, '' );
-		api( { method: 'POST', data: { values: state.draft } } ).then( function ( response ) {
-			state.draft = prepare( response.values );
-			state.saved = prepare( response.values );
+		var page = pageValues( state.draft.page );
+		api( { method: 'POST', data: { values: globalValues( state.draft ) } } ).then( function ( response ) {
+			if ( ! state.pageId ) {
+				return { global: response, page: page };
+			}
+			return api( { url: cfg.pageUrl + state.pageId, method: 'POST', data: { values: page } } ).then( function ( saved ) {
+				return { global: response, page: pageValues( saved.values ) };
+			} );
+		} ).then( function ( result ) {
+			state.draft = prepare( result.global.values );
+			state.saved = prepare( result.global.values );
+			state.draft.page = clone( result.page );
+			state.saved.page = clone( result.page );
 			showTab( state.tab ); // Redraw, so the fields and the colour list work on the new draft.
 			if ( inEditor() ) {
 				setStatus( t.savedEditor, 'ok', true );
@@ -978,6 +1020,23 @@
 		return root;
 	}
 
+	/**
+	 * The page styles of the post open in the editor. A page that cannot be read is treated as not
+	 * editable, so a save cannot overwrite its stored styles with empty ones.
+	 */
+	function loadPage() {
+		if ( ! state.pageId ) {
+			return Promise.resolve( {} );
+		}
+		return api( { url: cfg.pageUrl + state.pageId, method: 'GET' } ).then( function ( response ) {
+			return pageValues( response.values );
+		} ).catch( function () {
+			state.pageId = null;
+			state.pageError = true;
+			return {};
+		} );
+	}
+
 	function openModal() {
 		if ( overlay || ! window.wp || ! window.wp.apiFetch ) {
 			return;
@@ -987,6 +1046,8 @@
 			saved: null,
 			tab: schema.length ? schema[ 0 ].id : '',
 			opener: document.activeElement,
+			pageId: currentPageId(),
+			pageError: false,
 		};
 		overlay = buildShell();
 		document.body.appendChild( overlay );
@@ -994,6 +1055,11 @@
 		api( { method: 'GET' } ).then( function ( response ) {
 			state.draft = prepare( response.values );
 			state.saved = prepare( response.values );
+			return loadPage().then( function ( page ) {
+				state.draft.page = clone( page );
+				state.saved.page = clone( page );
+			} );
+		} ).then( function () {
 			renderTabs();
 			showTab( state.tab );
 			setStatus( '', '' );

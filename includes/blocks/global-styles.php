@@ -744,6 +744,7 @@ class SNN_Global_Styles {
 
 		return array(
 			self::global_tab( $cards ),
+			SNN_Page_Styles::tab( $weights ),
 			self::blocks_tab( $cards ),
 			array(
 				'id'      => 'colors',
@@ -951,6 +952,7 @@ class SNN_Global_Styles {
 			'snnGlobalStyles',
 			array(
 				'restUrl'   => rest_url( self::REST_NS . self::REST_ROUTE ),
+					'pageUrl'   => rest_url( SNN_Page_Styles::REST_NS . '/page-styles/' ),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
 				'defaults'  => self::defaults(),
 				'schema'    => self::schema(),
@@ -963,7 +965,7 @@ class SNN_Global_Styles {
 				'i18n'      => array(
 					'button'           => __( 'Global styles', 'snn' ),
 					'title'            => __( 'Global styles', 'snn' ),
-					'intro'            => __( 'Global styles apply to the whole site, and block styles to every block of a kind. Saved values apply on the front end and in the block editor.', 'snn' ),
+					'intro'            => __( 'Global styles apply to the whole site, page styles to one page, and block styles to every block of a kind. Saved values apply on the front end and in the block editor.', 'snn' ),
 					'close'            => __( 'Close', 'snn' ),
 					'save'             => __( 'Save', 'snn' ),
 					'saving'           => __( 'Saving…', 'snn' ),
@@ -1015,6 +1017,8 @@ class SNN_Global_Styles {
 					'fontLimit'        => __( 'Remove a font before adding another.', 'snn' ),
 					'system'           => __( 'System', 'snn' ),
 					'tabs'             => __( 'Global styles sections', 'snn' ),
+					'pageNone'         => __( 'Open a page or post in the block editor to style it. Its styles apply to that page only.', 'snn' ),
+					'pageLoadError'    => __( 'Could not load the page styles. Reopen the editor and try again.', 'snn' ),
 				),
 			)
 		);

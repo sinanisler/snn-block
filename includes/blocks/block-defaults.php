@@ -105,7 +105,7 @@ class SNN_Block_Defaults {
 		return $out;
 	}
 
-	private static function clean_value( $type, $value, $default, array $refs ) {
+	public static function clean_value( $type, $value, $default, array $refs ) {
 		$value = trim( (string) $value );
 		if ( '' === $value ) {
 			return '';
