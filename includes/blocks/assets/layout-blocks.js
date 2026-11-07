@@ -1777,15 +1777,6 @@
 		return pageKeys( page ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
 	}
 
-	/** The note of a Style group: how many of its properties the current view sets. */
-	function countView( a, device, keys ) {
-		const n = keys.filter( ( k ) => {
-			const v = setHere( a, device, k );
-			return v !== undefined && v !== '';
-		} ).length;
-		return n ? n + ' ' + __( 'set', 'snn' ) : __( 'None', 'snn' );
-	}
-
 	/**
 	 * Margin or padding: the four sides as a 2 by 2 grid. Linked, one edit sets all four. Each side shows the value
 	 * the view sets; the value it inherits is its placeholder. A dot marks a side the view sets.
@@ -1914,7 +1905,7 @@
 			{ className: 'snn-pane' },
 			h(
 				Group,
-				{ title: __( 'Element', 'snn' ), note: __( 'all viewports', 'snn' ) },
+				{ title: __( 'Element', 'snn' ) },
 				h(
 					Row,
 					{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== tag },
@@ -1928,7 +1919,7 @@
 			),
 			h(
 				Group,
-				{ title: __( 'Layout', 'snn' ), note: __( 'all viewports', 'snn' ) },
+				{ title: __( 'Layout', 'snn' ) },
 				h( LayoutFields, { a, set, tag, base } )
 			),
 			// A Text block has no query loop: its panel leaves the group out.
@@ -1962,7 +1953,7 @@
 				),
 			h(
 				Disclosure,
-				{ title: __( 'Item', 'snn' ), note: __( 'all viewports', 'snn' ) },
+				{ title: __( 'Item', 'snn' ) },
 				h( ItemFields, { a, set, parent } )
 			),
 			h(
@@ -2012,8 +2003,7 @@
 			h(
 				'div',
 				{ className: 'snn-page-head' },
-				h( 'span', { className: 'snn-page-title' }, page.label ),
-				h( 'span', { className: 'snn-group-note' }, page.kind === 'css' ? ( a.customCss ? __( 'Set', 'snn' ) : __( 'None', 'snn' ) ) : countView( a, device, pageKeys( page ) ) )
+				h( 'span', { className: 'snn-page-title' }, page.label )
 			),
 			page.kind === 'css'
 				? h( CssPane, { a, set, canCss: data.canCss, editor: data.cssEditor } )
