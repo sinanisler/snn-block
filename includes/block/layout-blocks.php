@@ -274,6 +274,23 @@ class SNN_Layout_Blocks {
 	}
 
 	/**
+	 * The custom CSS with the block's class in place of its name. %root% and selector both mean the block. selector
+	 * counts only where a rule names its selector (the text before a {), so .selector, #selector and a value such as
+	 * "selector" are left as they are. The editor's copy is scopeCss() in assets/layout-blocks.js: keep the two in step.
+	 */
+	public static function scope_css( $css, $selector ) {
+		$parts = preg_split( '/([{};])/', $css, -1, PREG_SPLIT_DELIM_CAPTURE );
+		$out   = '';
+		foreach ( $parts as $i => $part ) {
+			if ( 0 === $i % 2 && isset( $parts[ $i + 1 ] ) && '{' === $parts[ $i + 1 ] ) {
+				$part = preg_replace( '/(^|[\s,>+~(])selector(?![\w-])/i', '$1' . $selector, $part );
+			}
+			$out .= $part;
+		}
+		return str_replace( '%root%', $selector, $out );
+	}
+
+	/**
 	 * The custom CSS a block writes: only when the author of the post may write unfiltered HTML (an administrator,
 	 * by default), so a contributor's block writes no CSS. The rules go through %root% (see element()).
 	 */
@@ -366,7 +383,7 @@ class SNN_Layout_Blocks {
 		if ( '' !== $custom_css ) {
 			$custom_class = 'snn-c-' . substr( md5( $custom_css ), 0, 10 );
 			$extra['class'] .= ' ' . $custom_class;
-			$prefix         .= '<style>' . str_replace( '%root%', '.' . $custom_class, $custom_css ) . '</style>';
+			$prefix         .= '<style>' . self::scope_css( $custom_css, '.' . $custom_class ) . '</style>';
 		}
 		// Custom attributes: name and value rows, written on the element (get_block_wrapper_attributes escapes them).
 		foreach ( $a['customAttributes'] as $row ) {

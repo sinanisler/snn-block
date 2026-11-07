@@ -1176,6 +1176,19 @@
 			return 'snn-c-' + ( hash >>> 0 ).toString( 16 );
 		}
 
+		/** The custom CSS with the block's class in place of its name: %root% and selector both mean the block (scope_css in layout-blocks.php). */
+		function scopeCss( css, selector ) {
+			const parts = css.split( /([{};])/ );
+			let out = '';
+			parts.forEach( ( part, i ) => {
+				if ( i % 2 === 0 && parts[ i + 1 ] === '{' ) {
+					part = part.replace( /(^|[\s,>+~(])selector(?![\w-])/gi, '$1' + selector );
+				}
+				out += part;
+			} );
+			return out.split( '%root%' ).join( selector );
+		}
+
 		/**
 		 * Where the caret is in a CSS value: inside a rule, after the colon of the current declaration. Also the word
 		 * before the caret (var( and the dashes count as part of it) and the place where that word starts.
@@ -1402,7 +1415,7 @@
 	function CssPane( { a, set, canCss, editor } ) {
 		return h(
 			'div',
-			{ className: 'snn-css-pane', ...tipAttr( 'customCss' ) },
+			{ className: 'snn-css-pane' },
 			canCss
 				? h( CssEditor, { value: a.customCss || '', onChange: ( v ) => set( { customCss: v } ), editor, label: __( 'Custom CSS', 'snn' ) } )
 				: h( 'span', { className: 'snn-css-hint' }, __( 'Only administrators can add custom CSS.', 'snn' ) )
@@ -2064,7 +2077,7 @@
 				// rules in a style element inside it. Only for an administrator (the editor shows the CSS for canCss).
 				const cssText = data.canCss ? cleanCss( a.customCss ) : '';
 				const cssScoped = cssText ? cssScope( cssText ) : '';
-				const cssRules = cssScoped ? h( 'style', null, cssText.split( '%root%' ).join( '.' + cssScoped ) ) : null;
+				const cssRules = cssScoped ? h( 'style', null, scopeCss( cssText, '.' + cssScoped ) ) : null;
 				const blockProps = useBlockProps( {
 					id: a.htmlId || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses, cssScoped ].filter( Boolean ).join( ' ' ),

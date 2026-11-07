@@ -134,7 +134,6 @@
 		'padding': [ 'Padding', 'Space inside the block, around its contents.' ],
 		'boxLink': [ 'Link the four sides', 'One value sets all four sides.' ],
 		'reset': [ 'Reset', 'Removes this view\'s value. It inherits again.' ],
-		'customCss': [ 'Custom CSS', 'Your rules for this block. Use %root% for the block.' ],
 		'preview': [ 'Preview', 'What the dynamic data shows on this post.' ],
 
 		// Style tab: rows (the property names of the style table)
