@@ -27,6 +27,14 @@ class SNN_Layout_Blocks {
 	/** The definitions, once read (see definitions()). */
 	private static $definitions = null;
 
+	/**
+	 * What the outermost query loop has printed so far: its style rules (by class name) and its IDs (with a count).
+	 * Null outside a loop. A loop repeats the same blocks for each post, so a rule is printed once (its class name
+	 * is the hash of its text) and a repeated ID gets a number (card, card-2, card-3). It lives only while the loop
+	 * renders, so a block rendered on its own (the post content tag, the MCP post content) keeps its own styles.
+	 */
+	private static $loop_printed = null;
+
 	/** The tags the HTML tag field offers. */
 	const TAGS = array( 'section', 'div', 'header', 'footer', 'main', 'article', 'aside', 'nav' );
 
@@ -248,6 +256,27 @@ class SNN_Layout_Blocks {
 		// The query loop: the element, with its children, once for each post.
 		$found = SNN_Query_Loop::posts( $a['query'], self::dynamic_context( $ctx ) );
 		$html  = '';
+		// The outermost loop owns the record of what is printed; a loop inside it adds to the same record.
+		$owner = null === self::$loop_printed;
+		if ( $owner ) {
+			self::$loop_printed = array(
+				'styles' => array(),
+				'ids'    => array(),
+			);
+		}
+		try {
+			$html = self::loop_items( $a, $block, $ctx, $found );
+		} finally {
+			if ( $owner ) {
+				self::$loop_printed = null;
+			}
+		}
+		return $html;
+	}
+
+	/** The loop's element, with its children, once for each post found. */
+	private static function loop_items( array $a, $block, array $ctx, array $found ) {
+		$html = '';
 		foreach ( $found['posts'] as $index => $post ) {
 			$loop_ctx = array_merge(
 				$ctx,
@@ -358,11 +387,33 @@ class SNN_Layout_Blocks {
 		return self::children( $block, $ctx );
 	}
 
+	/** A style element, or nothing when the loop being rendered has printed the rule of this class already. */
+	private static function loop_once( $class, $html ) {
+		if ( null === self::$loop_printed ) {
+			return $html;
+		}
+		if ( isset( self::$loop_printed['styles'][ $class ] ) ) {
+			return '';
+		}
+		self::$loop_printed['styles'][ $class ] = true;
+		return $html;
+	}
+
+	/** The ID as written, or with a number (-2, -3) when the loop being rendered has used it already. */
+	private static function loop_id( $id ) {
+		if ( '' === $id || null === self::$loop_printed ) {
+			return $id;
+		}
+		$seen                             = self::$loop_printed['ids'][ $id ] ?? 0;
+		self::$loop_printed['ids'][ $id ] = $seen + 1;
+		return $seen ? $id . '-' . ( $seen + 1 ) : $id;
+	}
+
 	/** The element itself: tag, ID, classes and the inline layout style. */
 	private static function element( array $a, $name, array $ctx, $inner ) {
 		$dyn = self::dynamic_context( $ctx );
 
-		$id      = preg_replace( '/[^A-Za-z0-9_-]/', '', SNN_Dynamic_Data::render( $a['htmlId'], $dyn, 'plain' ) );
+		$id      = self::loop_id( preg_replace( '/[^A-Za-z0-9_-]/', '', SNN_Dynamic_Data::render( $a['htmlId'], $dyn, 'plain' ) ) );
 		$custom  = array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( SNN_Dynamic_Data::render( $a['cssClasses'], $dyn, 'plain' ) ) ) ) );
 		$style   = self::style( $a, $dyn );
 		// The image is a figure, which browsers give a margin. A margin set in Style comes after this one and wins.
@@ -383,7 +434,7 @@ class SNN_Layout_Blocks {
 			$classes[] = $class;
 			// The overlay is the block's ::before (Apply to: Overlay). Its rule sits beside the block's own rule.
 			$overlay   = '' !== $before ? '.' . $class . '::before{' . $before . '}' : '';
-			$prefix    = '<style>.' . $class . '{' . $style . '}' . $overlay . str_replace( '%CLASS%', $class, $views ) . '</style>';
+			$prefix    = self::loop_once( $class, '<style>.' . $class . '{' . $style . '}' . $overlay . str_replace( '%CLASS%', $class, $views ) . '</style>' );
 			$style     = '';
 		}
 
@@ -398,7 +449,7 @@ class SNN_Layout_Blocks {
 		if ( '' !== $custom_css ) {
 			$custom_class = 'snn-c-' . substr( md5( $custom_css ), 0, 10 );
 			$extra['class'] .= ' ' . $custom_class;
-			$prefix         .= '<style>' . self::scope_css( $custom_css, '.' . $custom_class ) . '</style>';
+			$prefix         .= self::loop_once( $custom_class, '<style>' . self::scope_css( $custom_css, '.' . $custom_class ) . '</style>' );
 		}
 		// Custom attributes: name and value rows, written on the element (get_block_wrapper_attributes escapes them).
 		foreach ( $a['customAttributes'] as $row ) {
