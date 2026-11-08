@@ -65,7 +65,7 @@ class SNN_Image_Block {
 			'linkTo'         => array( 'type' => 'string', 'default' => 'none' ),
 			'linkUrl'        => array( 'type' => 'string', 'default' => '' ),
 			'linkNewTab'     => array( 'type' => 'boolean', 'default' => false ),
-			// From a photo search (image-search.php): the alt text of the photo, and its credit when it is from Unsplash.
+			// From a photo search (image-search.php): the alt text of the photo, and where it came from (kept as data, not printed).
 			'imageAlt'       => array( 'type' => 'string', 'default' => '' ),
 			'imageSource'    => array( 'type' => 'object', 'default' => array() ),
 		);
@@ -123,7 +123,7 @@ class SNN_Image_Block {
 		if ( '' !== $caption ) {
 			$html .= '<figcaption>' . esc_html( $caption ) . '</figcaption>';
 		}
-		return $html . self::credit( $a );
+		return $html;
 	}
 
 	/**
@@ -282,25 +282,7 @@ class SNN_Image_Block {
 		return '';
 	}
 
-	/**
-	 * The credit line under a picture from Unsplash: the photographer and Unsplash, linked with the utm tags the
-	 * Unsplash guidelines ask for. Nothing for other pictures (a Pixabay import is a media library item).
-	 */
-	private static function credit( array $a ) {
-		$source = $a['imageSource'];
-		if ( 'unsplash' !== $source['provider'] || '' === $source['author'] ) {
-			return '';
-		}
-		$name = esc_html( $source['author'] );
-		if ( '' !== $source['authorUrl'] ) {
-			$name = '<a href="' . esc_url( $source['authorUrl'] ) . '" target="_blank" rel="noopener">' . $name . '</a>';
-		}
-		$home     = class_exists( 'SNN_Unsplash' ) ? SNN_Unsplash::home_url() : 'https://unsplash.com/';
-		$unsplash = '<a href="' . esc_url( $home ) . '" target="_blank" rel="noopener">Unsplash</a>';
-		return '<p class="snn-image-credit" style="font-size:12px;margin:4px 0 0">' . sprintf( __( 'Photo by %1$s on %2$s', 'snn' ), $name, $unsplash ) . '</p>';
-	}
-
-	/** The photo credit as the search gives it: the provider, and for Unsplash the photographer and links on unsplash.com. */
+	/** Where a searched photo came from: the provider, and for Unsplash the photographer and links. Kept as data, never printed. */
 	private static function clean_source( $raw ) {
 		$raw = is_array( $raw ) ? $raw : array();
 		if ( 'unsplash' !== ( $raw['provider'] ?? '' ) ) {

@@ -182,7 +182,7 @@
 		);
 	}
 
-		/** What a pick from the photo search sets on the block: the library picture (id and URL), or the Unsplash URL with its credit. */
+		/** What a pick from the photo search sets on the block: the library picture (id and URL), or the Unsplash URL (its source is kept as data, not shown). */
 	function fromSearch( pick ) {
 		return { imageId: pick.id || 0, imageUrl: pick.url || '', imageAlt: pick.alt || '', imageSource: pick.source || {} };
 	}
@@ -328,7 +328,7 @@
 						provider === 'unsplash' && importAll
 							? __( 'Photos from Unsplash. The chosen photo is saved to the media library.', 'snn' )
 							: provider === 'unsplash'
-							? __( 'Photos from Unsplash. The photographer is credited under the picture.', 'snn' )
+							? __( 'Photos from Unsplash.', 'snn' )
 							: __( 'Photos from Pixabay. The chosen photo is saved to the media library.', 'snn' )
 					)
 				)
@@ -397,10 +397,6 @@
 						? h( 'button', { type: 'button', className: 'snn-img-browse-icon', title: __( 'Browse Unsplash', 'snn' ), 'aria-label': __( 'Browse Unsplash', 'snn' ), onClick: () => setBrowse( 'unsplash' ) }, 'U' )
 						: null
 				),
-				// The credit of an Unsplash photo, under the picture.
-				a.imageSource && a.imageSource.provider === 'unsplash' && a.imageSource.author
-					? h( 'div', { className: 'snn-img-credit' }, sprintf( __( 'Photo by %s on Unsplash', 'snn' ), a.imageSource.author ) )
-					: null,
 				browse
 					? h( ImageBrowser, {
 							provider: browse,

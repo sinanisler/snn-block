@@ -2,9 +2,8 @@
 /**
  * Unsplash: the search API, for the Browse Unsplash modal of the Image block and of the featured image.
  *
- * The Image block follows Unsplash's API guidelines: it hotlinks the URLs the API returns, a pick sends a request to
- * the photo's download_location, and the photographer and Unsplash are credited with utm links (see
- * blocks/image/image.php). A featured image must be a media library item, so a featured image pick imports a copy
+ * The Image block hotlinks the URLs the API returns, and a pick sends a request to the photo's download_location.
+ * No credit line is printed (the user's rule, 8 Nov 2026). A featured image must be a media library item, so a featured image pick imports a copy
  * (import(), the user's choice of 8 Nov 2026), with the download request and an empty caption. The access
  * key stays on the server: the editor only gets the results.
  */

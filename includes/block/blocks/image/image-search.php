@@ -7,7 +7,7 @@
  *
  * Pixabay: a pick imports the photo into the media library (SNN_Pixabay::import, the theme's own rule, which keeps
  * a local copy), and the block uses that attachment. Unsplash: a pick sends the download request Unsplash asks for,
- * and the block hotlinks the photo's own URL with its credit (image.php). The featured image (assets/featured-image-search.js)
+ * and the block hotlinks the photo's own URL (image.php), with no credit line. The featured image (assets/featured-image-search.js)
  * sends import: true, and an Unsplash pick is then imported too (SNN_Unsplash::import), since a featured image must be an attachment. The keys stay on the server, and only
  * users who can edit posts can search. A provider with no key, or no integration, gives an error.
  */
