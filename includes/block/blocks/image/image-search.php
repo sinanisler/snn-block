@@ -7,7 +7,8 @@
  *
  * Pixabay: a pick imports the photo into the media library (SNN_Pixabay::import, the theme's own rule, which keeps
  * a local copy), and the block uses that attachment. Unsplash: a pick sends the download request Unsplash asks for,
- * and the block hotlinks the photo's own URL with its credit (image.php). The keys stay on the server, and only
+ * and the block hotlinks the photo's own URL with its credit (image.php). The featured image (assets/featured-image-search.js)
+ * sends import: true, and an Unsplash pick is then imported too (SNN_Unsplash::import), since a featured image must be an attachment. The keys stay on the server, and only
  * users who can edit posts can search. A provider with no key, or no integration, gives an error.
  */
 
@@ -75,6 +76,14 @@ class SNN_Image_Search {
 						'type'    => 'string',
 						'default' => '',
 					),
+					'unsplash_id' => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'import'      => array(
+						'type'    => 'boolean',
+						'default' => false,
+					),
 				),
 			)
 		);
@@ -86,10 +95,10 @@ class SNN_Image_Search {
 
 	/**
 	 * A Pixabay pick imports the photo into the media library, so it needs upload_files, as the
-	 * Pixabay ability does. An Unsplash pick only sends the download ping (the photo is hotlinked).
+	 * Pixabay ability does. An Unsplash pick only sends the download ping (the photo is hotlinked), unless it is imported.
 	 */
 	public static function can_pick( WP_REST_Request $request ) {
-		if ( 'pixabay' === (string) $request['provider'] ) {
+		if ( 'pixabay' === (string) $request['provider'] || ! empty( $request['import'] ) ) {
 			return current_user_can( 'upload_files' );
 		}
 		return self::can_use();
@@ -172,6 +181,16 @@ class SNN_Image_Search {
 
 		if ( ! class_exists( 'SNN_Unsplash' ) ) {
 			return new WP_Error( 'snn_images_off', 'Unsplash is not available on this site.', array( 'status' => 404 ) );
+		}
+		if ( ! empty( $request['import'] ) ) {
+			$saved = SNN_Unsplash::import( (string) $request['unsplash_id'], (string) $request['alt'] );
+			if ( is_wp_error( $saved ) ) {
+				return $saved;
+			}
+			return array(
+				'id'  => (int) $saved['id'],
+				'url' => (string) $saved['url'],
+			);
 		}
 		$tracked = SNN_Unsplash::track_download( (string) $request['download'] );
 		if ( is_wp_error( $tracked ) ) {

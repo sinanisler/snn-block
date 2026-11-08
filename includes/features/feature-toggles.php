@@ -137,6 +137,10 @@ function snn_get_features() {
             'label'    => __( 'Block Editor Settings', 'snn' ),
             'dashicon' => 'dashicons-admin-customizer',
         ),
+        'snn-integrations' => array(
+            'label'    => __( 'Integrations', 'snn' ),
+            'dashicon' => 'dashicons-admin-plugins',
+        ),
     );
 
     return $features;

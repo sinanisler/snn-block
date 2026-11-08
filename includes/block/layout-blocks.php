@@ -1112,9 +1112,16 @@ class SNN_Layout_Blocks {
 		// Copy and paste of styles, conditions, interactions and animations in the block menu (assets/block-clipboard.js).
 		$clipboard = 'includes/block/assets/block-clipboard.js';
 		wp_enqueue_script( 'snn-block-clipboard', SNN_URL . $clipboard, array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-element', 'wp-i18n', 'wp-plugins' ), self::version( $clipboard ), true );
+		// P and U under the featured image (assets/featured-image-search.js): the Image block's photo search, which imports
+		// the pick. Each icon needs its key and upload_files, since both providers save to the media library here.
+		$featured  = 'includes/block/assets/featured-image-search.js';
+		$providers = SNN_Image_Block::providers();
+		$can_up    = current_user_can( 'upload_files' );
+		wp_enqueue_script( 'snn-featured-image-search', SNN_URL . $featured, array( 'wp-element', 'wp-i18n', 'wp-hooks', 'snn-image-editor' ), self::version( $featured ), true );
+		wp_add_inline_script( 'snn-featured-image-search', 'window.snnFeaturedImageSearch = ' . wp_json_encode( array( 'pixabay' => $can_up && $providers['pixabay'], 'unsplash' => $can_up && $providers['unsplash'] ) ) . ';', 'before' );
 		// The scripts' translations: languages/snn-<locale>-<handle>.json, made from the .po files by
 		// languages/make-js-translations.php. The same handles as that script's list.
-		foreach ( array( 'snn-tooltips', 'snn-controls', 'snn-block-tools', 'snn-animation-pane', 'snn-image-editor', 'snn-layout-blocks', 'snn-block-clipboard' ) as $handle ) {
+		foreach ( array( 'snn-tooltips', 'snn-controls', 'snn-block-tools', 'snn-animation-pane', 'snn-image-editor', 'snn-layout-blocks', 'snn-block-clipboard', 'snn-featured-image-search' ) as $handle ) {
 			wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
 		}
 	}

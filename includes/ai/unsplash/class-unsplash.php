@@ -1,11 +1,12 @@
 <?php
 /**
- * Unsplash: the search API, for the Image block's Browse Unsplash modal.
+ * Unsplash: the search API, for the Browse Unsplash modal of the Image block and of the featured image.
  *
- * Unsplash's API guidelines this follows: every use of a photo uses the hotlinked URLs the API returns (so the
- * photo is never copied into the media library), a pick sends a request to the photo's download_location, and the
- * photographer and Unsplash are credited with utm links (see blocks/image/image.php). The access key stays on the
- * server: the editor only gets the results.
+ * The Image block follows Unsplash's API guidelines: it hotlinks the URLs the API returns, a pick sends a request to
+ * the photo's download_location, and the photographer and Unsplash are credited with utm links (see
+ * blocks/image/image.php). A featured image must be a media library item, so a featured image pick imports a copy
+ * (import(), the user's choice of 8 Nov 2026), with the download request and the credit in its caption. The access
+ * key stays on the server: the editor only gets the results.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,8 +20,11 @@ class SNN_Unsplash {
 	const MAX_PAGE     = 50;
 	const CACHE_TTL    = HOUR_IN_SECONDS;
 	const UTM_SOURCE   = 'snn-block';
+	const MAX_BYTES    = 10485760; // 10 MB, as the Pixabay import.
+	const IMPORT_WIDTH = 2000;
+	const META_ID      = '_snn_unsplash_id';
 
-	/** The access key the settings page saves (Settings > AI Agent & Chat Overlay). */
+	/** The access key the settings page saves (SNN Settings > Integrations). */
 	public static function api_key() {
 		return (string) get_option( 'snn_unsplash_api_key', '' );
 	}
@@ -112,6 +116,100 @@ class SNN_Unsplash {
 		return true;
 	}
 
+	/**
+	 * A copy of one photo in the media library, for a featured image. The photo is looked up by its id on the API
+	 * (no link from the request is downloaded), the download request is sent, and the file comes from the photo's
+	 * own image host. The credit goes in the caption, and a photo imported before is reused.
+	 *
+	 * @return array|WP_Error { id, url }
+	 */
+	public static function import( $photo_id, $alt = '' ) {
+		$key = self::api_key();
+		if ( '' === $key ) {
+			return self::no_key_error();
+		}
+		$photo_id = (string) $photo_id;
+		if ( ! preg_match( '#^[A-Za-z0-9_-]{1,64}$#', $photo_id ) ) {
+			return new WP_Error( 'snn_unsplash_bad_id', 'Choose an Unsplash photo first.', array( 'status' => 400 ) );
+		}
+
+		$existing = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => self::META_ID,
+				'meta_value'     => $photo_id,
+			)
+		);
+		if ( $existing ) {
+			return array( 'id' => (int) $existing[0], 'url' => (string) wp_get_attachment_url( $existing[0] ) );
+		}
+
+		$raw = self::request( self::API_URL . 'photos/' . rawurlencode( $photo_id ), $key );
+		if ( is_wp_error( $raw ) ) {
+			return $raw;
+		}
+		$item = self::normalize( $raw );
+		$urls = is_array( $raw['urls'] ?? null ) ? $raw['urls'] : array();
+		$file = self::image_url( $urls['raw'] ?? '' );
+		if ( ! $item || '' === $file || 'images.unsplash.com' !== wp_parse_url( $file, PHP_URL_HOST ) ) {
+			return new WP_Error( 'snn_unsplash_no_file', 'Unsplash did not return the photo.', array( 'status' => 502 ) );
+		}
+
+		// The download request Unsplash asks for. A failure does not stop the import.
+		self::track_download( $item['download'] );
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$tmp = download_url( add_query_arg( array( 'w' => self::IMPORT_WIDTH, 'q' => 85, 'fm' => 'jpg', 'fit' => 'max' ), $file ) );
+		if ( is_wp_error( $tmp ) ) {
+			return new WP_Error( 'snn_unsplash_download_failed', 'Unsplash did not return the image file.', array( 'status' => 502 ) );
+		}
+		if ( (int) filesize( $tmp ) > self::MAX_BYTES ) {
+			wp_delete_file( $tmp );
+			return new WP_Error( 'snn_unsplash_too_large', 'Image is larger than 10 MB.', array( 'status' => 400 ) );
+		}
+
+		$alt     = '' !== (string) $alt ? sanitize_text_field( (string) $alt ) : $item['alt'];
+		$author  = $item['author'];
+		$caption = '' !== $author
+			? sprintf(
+				/* translators: 1: photographer link, 2: Unsplash link */
+				__( 'Photo by %1$s on %2$s', 'snn' ),
+				'<a href="' . esc_url( $item['author_url'] ) . '">' . esc_html( $author ) . '</a>',
+				'<a href="' . esc_url( self::home_url() ) . '">Unsplash</a>'
+			)
+			: '';
+		$title = '' !== $alt ? mb_substr( $alt, 0, 80 ) : 'Unsplash ' . $photo_id;
+
+		$attachment_id = media_handle_sideload(
+			array( 'name' => 'unsplash-' . $photo_id . '.jpg', 'tmp_name' => $tmp ),
+			0,
+			null,
+			array( 'post_title' => $title, 'post_excerpt' => $caption )
+		);
+		if ( is_wp_error( $attachment_id ) ) {
+			if ( file_exists( $tmp ) ) {
+				wp_delete_file( $tmp );
+			}
+			return $attachment_id;
+		}
+
+		update_post_meta( $attachment_id, self::META_ID, $photo_id );
+		update_post_meta( $attachment_id, '_snn_unsplash_author', $author );
+		update_post_meta( $attachment_id, '_snn_unsplash_author_url', esc_url_raw( $item['author_url'] ) );
+		update_post_meta( $attachment_id, '_snn_unsplash_photo_url', esc_url_raw( $item['photo_url'] ) );
+		if ( '' !== $alt ) {
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt );
+		}
+
+		return array( 'id' => (int) $attachment_id, 'url' => (string) wp_get_attachment_url( $attachment_id ) );
+	}
+
 	/** The Unsplash home page with the utm tags the guidelines ask for. */
 	public static function home_url() {
 		return self::utm( 'https://unsplash.com/' );
@@ -190,6 +288,6 @@ class SNN_Unsplash {
 	}
 
 	private static function no_key_error() {
-		return new WP_Error( 'snn_unsplash_no_key', 'No Unsplash access key is set. Add it under AI Agent & Chat Overlay Settings.', array( 'status' => 400 ) );
+		return new WP_Error( 'snn_unsplash_no_key', 'No Unsplash access key is set. Add it under Integrations.', array( 'status' => 400 ) );
 	}
 }

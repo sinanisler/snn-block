@@ -190,9 +190,10 @@
 	/**
 	 * The photo search, a simple popup: a search box, the results as thumbnails, and Load more. A result is picked with a
 	 * click. The pick goes to the server (blocks/image/image-search.php): a Pixabay photo is imported into the media library,
-	 * and an Unsplash photo is hotlinked, with the download request Unsplash asks for. Escape or a click outside closes it.
+	 * and an Unsplash photo is hotlinked, with the download request Unsplash asks for. With importAll (the featured image),
+	 * an Unsplash photo is imported too. Escape or a click outside closes it.
 	 */
-	function ImageBrowser( { provider, onClose, onPick } ) {
+	function ImageBrowser( { provider, onClose, onPick, importAll } ) {
 		const [ typed, setTyped ] = useState( '' );
 		const [ term, setTerm ] = useState( '' );
 		const [ items, setItems ] = useState( [] );
@@ -238,7 +239,7 @@
 
 		const choose = ( item ) => {
 			setError( '' );
-			if ( provider === 'unsplash' ) {
+			if ( provider === 'unsplash' && ! importAll ) {
 				// The download request Unsplash asks for. If it fails, the photo is still the hotlinked one, so the pick goes on.
 				wp.apiFetch( { path: PICK_PATH, method: 'POST', data: { provider, download: item.download || '' } } ).catch( ( e ) => {
 					console.warn( 'Unsplash download request failed', e );
@@ -247,7 +248,8 @@
 				return;
 			}
 			setBusy( true );
-			wp.apiFetch( { path: PICK_PATH, method: 'POST', data: { provider, pixabay_id: item.id, alt: item.alt || '' } } )
+			const data = provider === 'unsplash' ? { provider, unsplash_id: String( item.id ), alt: item.alt || '', import: true } : { provider, pixabay_id: item.id, alt: item.alt || '' };
+			wp.apiFetch( { path: PICK_PATH, method: 'POST', data } )
 				.then( ( r ) => onPick( { id: r.id, url: r.url, alt: '', source: {} } ) )
 				.catch( ( e ) => {
 					setBusy( false );
@@ -323,7 +325,9 @@
 					h(
 						'div',
 						{ className: 'snn-img-modal-foot' },
-						provider === 'unsplash'
+						provider === 'unsplash' && importAll
+							? __( 'Photos from Unsplash. The chosen photo is saved to the media library, with the credit in its caption.', 'snn' )
+							: provider === 'unsplash'
 							? __( 'Photos from Unsplash. The photographer is credited under the picture.', 'snn' )
 							: __( 'Photos from Pixabay. The chosen photo is saved to the media library.', 'snn' )
 					)
@@ -550,5 +554,5 @@
 		);
 	}
 
-	window.snnImageBlock = { ImagePane, ImageCanvas };
+	window.snnImageBlock = { ImagePane, ImageCanvas, ImageBrowser };
 } )( window.wp );

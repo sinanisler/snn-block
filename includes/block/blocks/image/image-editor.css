@@ -240,3 +240,10 @@
 .snn-img-more {
 	justify-self: center;
 }
+
+/* The P and U icons under the featured image (assets/featured-image-search.js). */
+.snn-featured-search {
+	display: flex;
+	gap: 4px;
+	margin-top: 8px;
+}

@@ -192,7 +192,7 @@ class SNN_Pixabay {
     }
 
     private static function no_key_error() {
-        return new WP_Error( 'snn_pixabay_no_key', 'No Pixabay API key is set. Add it under AI Agent & Chat Overlay Settings.' );
+        return new WP_Error( 'snn_pixabay_no_key', 'No Pixabay API key is set. Add it under Integrations.' );
     }
 
     private static function hit_key( $id ) {

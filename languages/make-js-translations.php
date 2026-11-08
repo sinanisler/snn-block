@@ -27,6 +27,7 @@ $scripts = array(
 	'snn-image-editor'    => 'includes/block/blocks/image/image-editor.js',
 	'snn-layout-blocks'   => 'includes/block/assets/layout-blocks.js',
 	'snn-block-clipboard' => 'includes/block/assets/block-clipboard.js',
+	'snn-featured-image-search' => 'includes/block/assets/featured-image-search.js',
 );
 
 /** A JS single-quoted string body as text: \' \\ \n and the other escapes. */

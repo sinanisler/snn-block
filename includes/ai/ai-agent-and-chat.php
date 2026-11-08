@@ -448,8 +448,6 @@ class SNN_Chat_Overlay {
         register_setting( 'snn_ai_agent_settings', 'snn_ai_agent_max_retries' );
         register_setting( 'snn_ai_agent_settings', 'snn_ai_agent_max_history' );
         register_setting( 'snn_ai_agent_settings', 'snn_ai_agent_chat_width' );
-        register_setting( 'snn_ai_agent_settings', 'snn_pixabay_api_key' );
-        register_setting( 'snn_ai_agent_settings', 'snn_unsplash_api_key' );
     }
 
     /**
@@ -480,8 +478,6 @@ class SNN_Chat_Overlay {
             update_option( 'snn_ai_agent_max_retries', absint( $_POST['snn_ai_agent_max_retries'] ) );
             update_option( 'snn_ai_agent_max_history', absint( $_POST['snn_ai_agent_max_history'] ) );
             update_option( 'snn_ai_agent_chat_width', absint( $_POST['snn_ai_agent_chat_width'] ) );
-            update_option( 'snn_pixabay_api_key', sanitize_text_field( wp_unslash( $_POST['snn_pixabay_api_key'] ?? '' ) ) );
-            update_option( 'snn_unsplash_api_key', sanitize_text_field( wp_unslash( $_POST['snn_unsplash_api_key'] ?? '' ) ) );
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully!', 'snn' ) . '</p></div>';
         }
 
@@ -494,8 +490,6 @@ class SNN_Chat_Overlay {
         $max_retries = $this->get_max_retries();
         $max_history = $this->get_max_history();
         $chat_width = $this->get_chat_width();
-        $pixabay_api_key = get_option( 'snn_pixabay_api_key', '' );
-        $unsplash_api_key = get_option( 'snn_unsplash_api_key', '' );
 
         // Try to fetch abilities
         $abilities = $this->get_abilities();
@@ -634,46 +628,6 @@ class SNN_Chat_Overlay {
                                 <p class="description">
                                     <?php echo esc_html__('Width of the chat overlay panel in pixels.', 'snn'); ?><br>
                                     <strong><?php echo esc_html__('Default:', 'snn'); ?></strong> 400px | <strong><?php echo esc_html__('Range:', 'snn'); ?></strong> 300-800px
-                                </p>
-                            </td>
-                        </tr>
-
-                        <!-- Pixabay API Key -->
-                        <tr>
-                            <th scope="row">
-                                <label for="snn_pixabay_api_key"><?php echo esc_html__('Pixabay API Key', 'snn'); ?></label>
-                            </th>
-                            <td>
-                                <input type="text"
-                                       id="snn_pixabay_api_key"
-                                       name="snn_pixabay_api_key"
-                                       value="<?php echo esc_attr( $pixabay_api_key ); ?>"
-                                       class="regular-text"
-                                       placeholder="<?php echo esc_attr__('Paste your Pixabay API key here', 'snn'); ?>">
-                                <p class="description">
-                                    <?php echo esc_html__('Used for image search inside the AI agent. Get your free API key from', 'snn'); ?>
-                                    <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener noreferrer">pixabay.com/api/docs/</a>
-                                    <?php echo esc_html__('(your API key is shown there when logged in).', 'snn'); ?>
-                                </p>
-                            </td>
-                        </tr>
-
-                        <!-- Unsplash API Key -->
-                        <tr>
-                            <th scope="row">
-                                <label for="snn_unsplash_api_key"><?php echo esc_html__('Unsplash API Key', 'snn'); ?></label>
-                            </th>
-                            <td>
-                                <input type="text"
-                                       id="snn_unsplash_api_key"
-                                       name="snn_unsplash_api_key"
-                                       value="<?php echo esc_attr( $unsplash_api_key ); ?>"
-                                       class="regular-text"
-                                       placeholder="<?php echo esc_attr__('Paste your Unsplash access key here', 'snn'); ?>">
-                                <p class="description">
-                                    <?php echo esc_html__('Used for photo search in the Image block (Browse Unsplash). Get your access key from', 'snn'); ?>
-                                    <a href="https://unsplash.com/developers" target="_blank" rel="noopener noreferrer">unsplash.com/developers</a>
-                                    <?php echo esc_html__('(create an app, then copy its Access Key).', 'snn'); ?>
                                 </p>
                             </td>
                         </tr>

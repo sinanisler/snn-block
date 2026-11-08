@@ -116,4 +116,5 @@ add_action('after_setup_theme', function() {
 
 if ( snn_feature_enabled('snn-block-editor-settings') ) require_once SNN_PATH . 'includes/features/block-editor-settings.php';
 if ( snn_feature_enabled('snn-media-settings') )        require_once SNN_PATH . 'includes/features/media-image-opt.php';
+if ( snn_feature_enabled('snn-integrations') )          require_once SNN_PATH . 'includes/features/integrations.php';
 require_once SNN_PATH . 'includes/features/wp-admin-dashboard-widgets.php';
