@@ -296,10 +296,10 @@
 		x.stroke();
 	}
 
-	const NEW_FROM = { y: 40, opacity: 0 };
-	const NEW_TO = { y: 0, opacity: 1 };
-
-	/** A new tween: fades up over 0.7 s, like the prototype's Fade up. */
+	/**
+	 * A new tween: no presets and no property values, so it plays nothing until a preset is picked or a value is typed.
+	 * Its timing starts at the given start, 0.7 s, power2.out.
+	 */
 	function newTween( start ) {
 		return {
 			presets: [],
@@ -307,29 +307,9 @@
 			duration: 0.7,
 			stagger: 0,
 			ease: 'power2.out',
-			from: { ...NEW_FROM },
-			to: { ...NEW_TO },
+			from: {},
+			to: {},
 		};
-	}
-
-	/** Two sets of property values are the same. */
-	function sameValues( a, b ) {
-		const ka = Object.keys( a || {} );
-		return ka.length === Object.keys( b || {} ).length && ka.every( ( k ) => a[ k ] === b[ k ] );
-	}
-
-	/**
-	 * The change for a tween's presets. A new tween starts with the Fade up values in Properties. Choosing its first preset
-	 * takes those untouched values out, so the preset is the only motion; values the user typed are kept.
-	 */
-	function presetPatch( t, presets ) {
-		const patch = { presets };
-		const untouched = sameValues( t.from, NEW_FROM ) && sameValues( t.to, NEW_TO );
-		if ( untouched && presets.length && ! ( t.presets || [] ).length ) {
-			patch.from = {};
-			patch.to = {};
-		}
-		return patch;
 	}
 
 	/** The name of a tween on its bar: its presets, else the properties it sets. */
@@ -970,7 +950,7 @@
 							multiple: true,
 							groups: PRESET_GROUPS,
 							tip: 'anim.presets',
-							onChange: ( v ) => setTween( cur, presetPatch( tween, v ) ),
+							onChange: ( v ) => setTween( cur, { presets: v } ),
 						} )
 					),
 					h( Row, { key: 'start', label: __( 'Start', 'snn' ), tip: 'anim.start' },
