@@ -12,6 +12,7 @@
  *   block-defaults.php   The blocks and their default styles (the Global Styles and Block Styles tab)
  *   global-styles.php    Global styles: palette, fonts, sizes, block defaults; theme.json; REST
  *   page-styles.php      Page styles: one page's background, text colour, font, size, line height and body classes
+ *   page-title.php       Hide Title: a switch in the Page tab that hides the post title in the editor (per post, in the browser)
  *   dynamic-data.php     Dynamic tags ({post_title} and so on): the tags, the parser, the preview route
  *   query-loop.php       The query of a loop: its settings and the WP_Query arguments
  *   block-tools.php    Conditions (show when) and interactions (when X happens, do Y) of our blocks: the catalogs, checks and front end data
@@ -30,6 +31,7 @@ require_once __DIR__ . '/editor-list-view.php';
 require_once __DIR__ . '/block-defaults.php';
 require_once __DIR__ . '/global-styles.php';
 require_once __DIR__ . '/page-styles.php';
+require_once __DIR__ . '/page-title.php';
 require_once __DIR__ . '/dynamic-data.php';
 require_once __DIR__ . '/query-loop.php';
 require_once __DIR__ . '/utilities/style-props.php';
