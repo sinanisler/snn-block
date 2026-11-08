@@ -56,7 +56,7 @@ class SNN_Image_Search {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'rest_pick' ),
-				'permission_callback' => array( __CLASS__, 'can_use' ),
+				'permission_callback' => array( __CLASS__, 'can_pick' ),
 				'args'                => array(
 					'provider'    => array(
 						'type'     => 'string',
@@ -82,6 +82,17 @@ class SNN_Image_Search {
 
 	public static function can_use() {
 		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * A Pixabay pick imports the photo into the media library, so it needs upload_files, as the
+	 * Pixabay ability does. An Unsplash pick only sends the download ping (the photo is hotlinked).
+	 */
+	public static function can_pick( WP_REST_Request $request ) {
+		if ( 'pixabay' === (string) $request['provider'] ) {
+			return current_user_can( 'upload_files' );
+		}
+		return self::can_use();
 	}
 
 	/** The results of one page, in the editor's shape: thumb, alt, author and the links a pick needs. */
