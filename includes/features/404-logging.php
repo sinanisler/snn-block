@@ -25,6 +25,13 @@ function snn_handle_404_logs_actions() {
         return;
     }
 
+    // Only the forms on the 404 Logs page post these fields, and each of them carries the nonce.
+    $actions = array('snn_404_logging_submit', 'snn_404_log_size_limit', 'snn_clear_404_logs', 'snn_delete_logs');
+    if (!array_intersect($actions, array_keys($_POST))) {
+        return;
+    }
+    check_admin_referer('snn_404_logs', 'snn_404_logs_nonce');
+
     if (isset($_POST['snn_404_logging_submit'])) {
         if (isset($_POST['snn_404_logging_enabled'])) {
             update_option('snn_404_logging_enabled', '1');
@@ -246,6 +253,7 @@ function snn_render_404_logs_page() {
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
             <div style="flex: 1; margin-right: 20px;">
                 <form method="post" action="">
+                    <?php wp_nonce_field('snn_404_logs', 'snn_404_logs_nonce'); ?>
                     <p>
                         <label>
                             <input type="checkbox" name="snn_404_logging_enabled" <?php checked($logging_enabled); ?>>
@@ -272,6 +280,7 @@ function snn_render_404_logs_page() {
                 </form>
                 <br>
                 <form method="post" action="">
+                    <?php wp_nonce_field('snn_404_logs', 'snn_404_logs_nonce'); ?>
                     <?php submit_button(__('Clear All Logs', 'snn'), 'delete', 'snn_clear_404_logs', false); ?>
                 </form>
             </div>
@@ -279,6 +288,7 @@ function snn_render_404_logs_page() {
                 <h2><?php _e('Delete Logs by IP or User Agent', 'snn'); ?></h2>
                 <p><?php _e('Enter an IP address or a part of a user agent string (e.g. "bingbot") to remove all matching logs.', 'snn'); ?></p>
                 <form method="post" action="">
+                    <?php wp_nonce_field('snn_404_logs', 'snn_404_logs_nonce'); ?>
                     <p>
                         <label for="snn_delete_logs_value"><?php _e('IP or User Agent:', 'snn'); ?></label>
                         <input type="text" name="snn_delete_logs_value" id="snn_delete_logs_value" placeholder="<?php esc_attr_e('Enter value', 'snn'); ?>">

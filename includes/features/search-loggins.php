@@ -118,6 +118,11 @@ add_action('pre_get_posts', function ($query) {
 
 // Render Search Logs admin page
 function snn_render_search_logs_page() {
+    // Every form on this page carries the nonce; a post without it stops here.
+    if (array_intersect(array('snn_search_logging_submit', 'snn_clear_search_logs', 'snn_clear_top_searches'), array_keys($_POST))) {
+        check_admin_referer('snn_search_logs', 'snn_search_logs_nonce');
+    }
+
     // Process form submissions
     if (isset($_POST['snn_search_logging_submit'])) {
         // Update "Enable Search Logging" setting
@@ -173,8 +178,9 @@ function snn_render_search_logs_page() {
         <h1><?php echo esc_html(__('Search Logs', 'snn')); ?></h1>
 
         <form method="post" action="">
+            <?php wp_nonce_field('snn_search_logs', 'snn_search_logs_nonce'); ?>
             <label>
-                <input type="checkbox" name="snn_search_logging_enabled" 
+                <input type="checkbox" name="snn_search_logging_enabled"
                        <?php checked($logging_enabled); ?> >
                 <?php echo esc_html(__('Enable Search Logging', 'snn')); ?>
             </label>
@@ -193,9 +199,11 @@ function snn_render_search_logs_page() {
 
         <?php if ($logging_enabled): ?>
             <form method="post" action="" style="display:inline-block; margin-right:10px;">
+                <?php wp_nonce_field('snn_search_logs', 'snn_search_logs_nonce'); ?>
                 <?php submit_button(__('Clear All Logs', 'snn'), 'delete', 'snn_clear_search_logs'); ?>
             </form>
             <form method="post" action="" style="display:inline-block;">
+                <?php wp_nonce_field('snn_search_logs', 'snn_search_logs_nonce'); ?>
                 <?php submit_button(__('Clear Top 100 Searches', 'snn'), 'delete', 'snn_clear_top_searches'); ?>
             </form>
 
