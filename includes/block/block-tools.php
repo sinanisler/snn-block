@@ -503,7 +503,11 @@ class SNN_Block_Tools {
 		wp_enqueue_script( 'snn-interactions', SNN_URL . $js, array(), self::version( $js ), true );
 	}
 
-	private static function version( $file ) {
+	/**
+	 * The version of a theme file for its script or style tag: its modified time, so a changed file is loaded again.
+	 * The block files share this one (layout blocks, Image block, global styles).
+	 */
+	public static function version( $file ) {
 		return file_exists( SNN_PATH . $file ) ? (string) filemtime( SNN_PATH . $file ) : '1';
 	}
 }

@@ -1,8 +1,7 @@
 <?php
 /**
- * Generated from the team's "Select Animation" options (gsap-multi-element-register.php in the snn child
- * theme) by gen-animation-presets.js. Each row: group, value (the data-animate token), English label.
- * Edit the labels here, not the generator. Used by animation.php.
+ * The "Select Animation" presets. This file is the source of the list: add, remove and rename presets here.
+ * Each row: group, value (the data-animate token), English label. Used by animation.php.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

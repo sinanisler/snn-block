@@ -339,7 +339,7 @@ class SNN_Image_Block {
 	/** The lightbox script, only on pages that have a lightbox link. */
 	private static function enqueue_lightbox() {
 		$file = 'includes/block/blocks/image/image-lightbox.js';
-		wp_enqueue_script( 'snn-image-lightbox', SNN_URL . $file, array(), file_exists( SNN_PATH . $file ) ? (string) filemtime( SNN_PATH . $file ) : '1', true );
+		wp_enqueue_script( 'snn-image-lightbox', SNN_URL . $file, array(), SNN_Block_Tools::version( $file ), true );
 	}
 
 	/** The sources, cleaned: a breakpoint, a media query for a custom one, and an image (library or URL). Rows without an image are dropped. */

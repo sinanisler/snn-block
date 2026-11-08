@@ -1007,8 +1007,9 @@ class SNN_Layout_Blocks {
 		wp_enqueue_script( 'snn-block-clipboard', SNN_URL . $clipboard, array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-element', 'wp-i18n', 'wp-plugins' ), self::version( $clipboard ), true );
 	}
 
+	/** The file's version for its tag: the shared helper in block-tools.php. */
 	private static function version( $file ) {
-		return file_exists( SNN_PATH . $file ) ? (string) filemtime( SNN_PATH . $file ) : '1';
+		return SNN_Block_Tools::version( $file );
 	}
 }
 

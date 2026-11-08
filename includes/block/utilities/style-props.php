@@ -358,7 +358,7 @@ class SNN_Style_Props {
 		return $parts ? 'transform:' . implode( ' ', $parts ) : '';
 	}
 
-	/** filter: blur, brightness, contrast, grayscale, hue-rotate, invert, saturate and sepia, in that order. */
+	/** filter: blur, brightness, contrast, grayscale, invert, saturate, sepia and hue-rotate, in that order. */
 	private static function filter( array $a ) {
 		$parts = array();
 		$blur  = self::check( 'size', $a['filterBlur'] ?? '' );

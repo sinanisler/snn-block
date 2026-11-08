@@ -942,8 +942,8 @@ class SNN_Global_Styles {
 	private static function enqueue_assets( array $deps, $in_editor ) {
 		$css = 'includes/block/assets/global-styles.css';
 		$js  = 'includes/block/assets/global-styles.js';
-		$ver_css = file_exists( SNN_PATH . $css ) ? filemtime( SNN_PATH . $css ) : '1';
-		$ver_js  = file_exists( SNN_PATH . $js ) ? filemtime( SNN_PATH . $js ) : '1';
+		$ver_css = SNN_Block_Tools::version( $css );
+		$ver_js  = SNN_Block_Tools::version( $js );
 
 		wp_enqueue_style( 'snn-global-styles', SNN_URL . $css, array(), $ver_css );
 		wp_enqueue_script( 'snn-global-styles', SNN_URL . $js, $deps, $ver_js, true );
