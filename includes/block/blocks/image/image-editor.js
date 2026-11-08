@@ -151,16 +151,34 @@
 		frame.open();
 	}
 
-	/** A picture button: a dashed box, with its thumbnail and a remove button once an image is set. */
-	function ImageSlot( { value, label, onChange } ) {
+	/**
+	 * The picture slot: a dashed box until an image is set. Once an image is set, the picture fills the box, and a click on
+	 * it opens the media library to replace it. Under the box: the children (the photo search icons, bottom left) and the
+	 * Remove link (bottom right).
+	 */
+	function ImageSlot( { value, label, onChange, children } ) {
 		const media = useMedia( value.id );
 		const shown = value.url || ( media && media.source_url ) || '';
 		return h(
 			'div',
 			{ className: 'snn-img-slot' },
-			shown ? h( 'img', { className: 'snn-img-thumb', src: shown, alt: '' } ) : null,
-			h( 'button', { type: 'button', className: 'snn-img-pick', onClick: () => pickImage( onChange ) }, shown ? __( 'Replace image', 'snn' ) : label ),
-			shown ? h( 'button', { type: 'button', className: 'snn-bt-link', onClick: () => onChange( { id: 0, url: '' } ) }, __( 'Remove', 'snn' ) ) : null
+			h(
+				'button',
+				{
+					type: 'button',
+					className: 'snn-img-pick' + ( shown ? ' has-image' : '' ),
+					title: shown ? __( 'Replace image', 'snn' ) : label,
+					'aria-label': shown ? __( 'Replace image', 'snn' ) : label,
+					onClick: () => pickImage( onChange ),
+				},
+				shown ? h( 'img', { src: shown, alt: '' } ) : label
+			),
+			h(
+				'div',
+				{ className: 'snn-img-actions' },
+				h( 'div', { className: 'snn-img-actions-left' }, children ),
+				shown ? h( 'button', { type: 'button', className: 'snn-img-remove', onClick: () => onChange( { id: 0, url: '' } ) }, __( 'Remove', 'snn' ) ) : null
+			)
 		);
 	}
 
@@ -360,35 +378,35 @@
 			h(
 				Group,
 				{ title: __( 'Image', 'snn' ) },
-				h( ImageSlot, {
-					value: { id: a.imageId || 0, url: a.imageUrl || '' },
-					label: __( 'Select image', 'snn' ),
-					onChange: ( v ) => set( { imageId: v.id, imageUrl: v.url, imageAlt: '', imageSource: {} } ),
-				} ),
-				// Under Select image: a Browse button for each photo search whose key is set, and the credit of an Unsplash photo.
 				h(
-					'div',
-					{ className: 'snn-img-browse-row' },
+					ImageSlot,
+					{
+						value: { id: a.imageId || 0, url: a.imageUrl || '' },
+						label: __( 'Select image', 'snn' ),
+						onChange: ( v ) => set( { imageId: v.id, imageUrl: v.url, imageAlt: '', imageSource: {} } ),
+					},
+					// The photo search icons, bottom left: P for Pixabay, U for Unsplash, each shown when its key is set.
 					providers.pixabay
-						? h( 'button', { type: 'button', className: 'snn-img-browse', onClick: () => setBrowse( 'pixabay' ) }, __( 'Browse Pixabay', 'snn' ) )
+						? h( 'button', { type: 'button', className: 'snn-img-browse-icon', title: __( 'Browse Pixabay', 'snn' ), 'aria-label': __( 'Browse Pixabay', 'snn' ), onClick: () => setBrowse( 'pixabay' ) }, 'P' )
 						: null,
 					providers.unsplash
-						? h( 'button', { type: 'button', className: 'snn-img-browse', onClick: () => setBrowse( 'unsplash' ) }, __( 'Browse Unsplash', 'snn' ) )
-						: null,
-					a.imageSource && a.imageSource.provider === 'unsplash' && a.imageSource.author
-						? h( 'div', { className: 'snn-img-credit' }, sprintf( __( 'Photo by %s on Unsplash', 'snn' ), a.imageSource.author ) )
-						: null,
-					browse
-						? h( ImageBrowser, {
-								provider: browse,
-								onClose: () => setBrowse( null ),
-								onPick: ( pick ) => {
-									set( fromSearch( pick ) );
-									setBrowse( null );
-								},
-						  } )
+						? h( 'button', { type: 'button', className: 'snn-img-browse-icon', title: __( 'Browse Unsplash', 'snn' ), 'aria-label': __( 'Browse Unsplash', 'snn' ), onClick: () => setBrowse( 'unsplash' ) }, 'U' )
 						: null
 				),
+				// The credit of an Unsplash photo, under the picture.
+				a.imageSource && a.imageSource.provider === 'unsplash' && a.imageSource.author
+					? h( 'div', { className: 'snn-img-credit' }, sprintf( __( 'Photo by %s on Unsplash', 'snn' ), a.imageSource.author ) )
+					: null,
+				browse
+					? h( ImageBrowser, {
+							provider: browse,
+							onClose: () => setBrowse( null ),
+							onPick: ( pick ) => {
+								set( fromSearch( pick ) );
+								setBrowse( null );
+							},
+					  } )
+					: null,
 				h(
 					Row,
 					{ label: __( 'Dynamic data', 'snn' ), changed: !! a.imageDynamic },

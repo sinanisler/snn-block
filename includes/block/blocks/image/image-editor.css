@@ -1,19 +1,19 @@
 /*
- * SNN Image block, the Content tab: the picture slot, the hint and the sources (image-editor.js). The canvas picture
- * takes its style inline, so it needs nothing here.
+ * SNN Image block, the Content tab: the picture slot (the picture fills it once an image is set), the photo search
+ * icons (bottom left) and Remove (bottom right) under it, the hint and the sources (image-editor.js). The canvas
+ * picture takes its style inline, so it needs nothing here.
  */
 
 .snn-img-slot {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 10px 6px;
+	padding: 4px 10px 0;
 }
 
 .snn-img-pick {
-	flex: 1 1 auto;
-	min-height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 52px;
 	padding: 6px 8px;
 	border: 1px dashed #8c8f94;
 	border-radius: 2px;
@@ -23,6 +23,7 @@
 	font-weight: 600;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
+	overflow: hidden;
 	cursor: pointer;
 }
 
@@ -33,12 +34,84 @@
 	outline: none;
 }
 
-.snn-img-thumb {
-	width: 40px;
-	height: 40px;
+/* Once an image is set, the picture fills the slot. A click opens the media library to replace it. */
+.snn-img-pick.has-image {
+	height: 110px;
+	padding: 0;
+	border-style: solid;
+	border-color: #dcdcde;
+	background: #1d2327;
+}
+
+.snn-img-pick.has-image:hover,
+.snn-img-pick.has-image:focus-visible {
+	border-color: #2271b1;
+}
+
+.snn-img-pick img {
+	display: block;
+	width: 100%;
+	height: 100%;
 	object-fit: cover;
-	border: 1px solid #dcdcde;
+}
+
+/* Under the slot: the photo search icons on the left, Remove on the right. */
+.snn-img-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	min-height: 24px;
+	padding: 4px 0 4px;
+}
+
+.snn-img-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.snn-img-browse-icon {
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid #2271b1;
 	border-radius: 2px;
+	background: #fff;
+	color: #2271b1;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 20px;
+	text-align: center;
+	cursor: pointer;
+}
+
+.snn-img-browse-icon:hover,
+.snn-img-browse-icon:focus-visible {
+	background: #2271b1;
+	color: #fff;
+	outline: none;
+}
+
+.snn-img-remove {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #2271b1;
+	font-size: 12px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.snn-img-remove:hover,
+.snn-img-remove:focus-visible {
+	color: #135e96;
+}
+
+.snn-img-credit {
+	padding: 0 10px 6px;
+	color: #646970;
+	font-size: 11px;
 }
 
 .snn-img-hint {
@@ -68,43 +141,6 @@
 	grid-template-columns: minmax(0, 1fr) 22px;
 	align-items: center;
 	gap: 4px;
-}
-
-/* The photo search buttons under Select image, and the Unsplash credit line. */
-.snn-img-browse-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 6px;
-	padding: 0 10px 8px;
-}
-
-.snn-img-browse {
-	flex: 1 1 auto;
-	min-height: 30px;
-	padding: 4px 8px;
-	border: 1px solid #2271b1;
-	border-radius: 2px;
-	background: #fff;
-	color: #2271b1;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	cursor: pointer;
-}
-
-.snn-img-browse:hover,
-.snn-img-browse:focus-visible {
-	background: #2271b1;
-	color: #fff;
-	outline: none;
-}
-
-.snn-img-credit {
-	width: 100%;
-	color: #646970;
-	font-size: 11px;
 }
 
 /* The photo search popup. */
