@@ -12216,3 +12216,2355 @@ msgstr ""
 #: includes/features/utils.php:188
 msgid "⚠ WARNING – You can assign multiple roles, but overlapping capabilities can clash. Grant the minimum required and test thoroughly."
 msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Base values. Tablet and Mobile inherit from them."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "Tablet"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Values for screens up to 991 px."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Values for screens up to 478 px."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js includes/block/assets/layout-blocks.js
+msgid "Conditions"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Show this element only when rules hold."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Run an action when a trigger happens, such as a click."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/controls.js includes/block/controls/block-tools.js includes/block/assets/layout-blocks.js
+msgid "Animations"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Play animations on the front end."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Tag, layout, query loop and advanced settings."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Style"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colours, sizes, text, borders and effects."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Element"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The HTML tag of this block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "HTML tag"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The tag this block is printed as, such as section or div."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Layout"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the contents are arranged, and the place in the parent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Query loop"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Repeats this block for each post a query finds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Advanced"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Classes and extra HTML attributes."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Display"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Flex, grid or block: how the contents are laid out."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Which way the flex items run."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Column"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Items stack from top to bottom."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Row"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Items run from left to right."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Reverse"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Runs the items the other way round."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Wrap"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Moves items to a new line when they run out of room."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Justify"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Spreads the items along the main direction."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Align"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Places the items across the main direction."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Align self"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Places this block across its parent, overriding Align."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Align content"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Spaces the lines of wrapped items or grid rows."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Justify items"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Places the grid items along their columns."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Columns"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How many equal columns the grid has. Sets the template to repeat(n, minmax(0, 1fr))."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Template"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Column sizes, such as 1fr 2fr or repeat(4, minmax(0, 1fr))."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Rows"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Sizes of the grid rows, such as auto or 100px."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Auto columns"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Width of the columns the grid makes by itself."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Auto rows"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Height of the rows the grid makes by itself."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Areas"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Named grid areas, one row of names per line."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Flow"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Fills the grid by row or by column."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Dense"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Fills gaps by moving later items back."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Column gap"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space between the columns."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Row gap"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space between the rows."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Position in the parent. Lower numbers come first."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Flex grow"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How much this block grows into spare room."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Flex shrink"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How much this block shrinks when room is short."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Flex basis"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The size before grow and shrink apply."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Justify self"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Places this block along its grid cell."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Column start"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The grid column this block starts in."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Column span"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How many grid columns this block covers."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Row start"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The grid row this block starts in."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Row span"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How many grid rows this block covers."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Grid area"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The name of a grid area from Areas."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Repeats this block for each post the query finds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Query"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The posts to loop over."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Turn on Query loop first."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The kind of content to list, such as posts or pages."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Order by"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The field the posts are sorted by."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Ascending (low first) or descending (high first)."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Per page"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How many posts to show."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Offset"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How many posts to skip at the start."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Child of"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Only posts under this parent post ID."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Ignore sticky"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Keeps sticky posts in their normal order."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Include posts"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Only these post IDs, separated by commas."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Exclude posts"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Leaves out these post IDs."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Include authors"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Only posts by these user IDs."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Exclude authors"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Leaves out posts by these user IDs."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Taxonomy"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The category or tag system to filter by."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Include terms"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Only posts with these term IDs."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Exclude terms"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Leaves out posts with these term IDs."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Meta query"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds a rule on a custom field."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Meta key"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The custom field name to check."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the field is compared with the value."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Meta value"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value to compare the field with."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Value type"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Compares the values as text, numbers or dates."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Remove rule"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Deletes this meta rule."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Rules must match"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "All rules must match, or any one of them."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Exclude current"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Leaves out the post being viewed."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Main query"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Uses the page's own main query."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js includes/block/assets/layout-blocks.js
+msgid "Classes"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "CSS classes. Press Enter or Space after each one."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Remove class"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Takes this class off the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Attributes"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Extra HTML attributes, such as data-* or aria-*."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Attribute name"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Such as data-role. No on*, class, id or style."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Attribute value"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value of this attribute."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Add attribute"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds a new name and value row."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Remove attribute"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Deletes this attribute."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Spacing, sizing, position and misc rules."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Text colour, font, size, alignment and spacing."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Background"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Background colour and image."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Gradient"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "A two-colour blend for the background."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Border"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Border, corner radius and box shadow."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Transform"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Moves, turns, scales and slants the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Filters"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colour filters and the transition between states."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "CSS"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Your own CSS for this block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Spacing"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Margin, padding and gap."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Sizing"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Width, height and their limits."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Positioning"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the block sits, and its offsets."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Misc"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Opacity, overflow, cursor and other rules."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colour, font, weight and style."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Alignment"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Text align and text transform."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Line height and letter spacing."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "More"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Decoration, wrapping and text shadow."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Colour"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The background colour."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Image, size, position and repeat."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Type, angle, colours and stops."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Width, style, colour and corner radius."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Box shadow"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Offsets, blur, spread and colour."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Origin, move, turn, scale and slant."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Blur and colour effects."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Transition"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Which properties animate, and how."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Margin"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space outside the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Padding"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space inside the block, around its contents."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Link the four sides"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "One value sets all four sides."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Removes this view's value. It inherits again."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "What the dynamic data shows on this post."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Margin top"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space outside the top edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Margin right"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space outside the right edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Margin bottom"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space outside the bottom edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Margin left"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space outside the left edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Padding top"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space inside the top edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Padding right"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space inside the right edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Padding bottom"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space inside the bottom edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Padding left"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space inside the left edge."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space between the items of a flex or grid block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Width"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How wide the block is."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Min. width"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The narrowest the block can get."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Max. width"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The widest the block can get."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Height"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How tall the block is."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Min. height"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The shortest the block can get."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Max. height"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The tallest the block can get."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "Aspect ratio"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Width to height, such as 16 / 9."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Position"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the block is placed: static, relative, absolute, fixed or sticky."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Offset from the top edge of its positioned parent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Offset from the right edge of its positioned parent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Offset from the bottom edge of its positioned parent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Offset from the left edge of its positioned parent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Z-index"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Stacking order. Higher shows above lower."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Scroll snap"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the block snaps when the page scrolls."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How see-through the block is, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Overflow"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "What happens to contents that do not fit: visible, hidden or clipped."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Visibility"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Shows or hides the block. It keeps its space."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Cursor"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The mouse pointer shape over the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Isolation"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Starts a new stacking group for the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Blend mode"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the block mixes with what is behind it."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Pointer events"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Whether the block reacts to the mouse."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Perspective"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Depth for the 3D transforms of its children."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Perspective origin"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The point the perspective looks from."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The text colour."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Font family"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The typeface of the text."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Font size"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How big the text is."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Font weight"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How thick the text is."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Font style"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Normal or italic."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Line height"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space between lines of text."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Letter spacing"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Space between letters."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Text align"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Left, centre, right or justified text."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Text transform"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Capitals, lower case or capitalised words."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Decoration"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Underline, overline or line through."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Text wrap"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How lines break: balanced, pretty or normal."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "White space"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Whether text wraps or stays on one line."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Text shadow"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "A shadow behind the text."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Image URL"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The address of the background image, or pick one from the media library."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Media library"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Choose an image from the media library."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Apply to"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Background draws the gradient behind the content. Overlay draws it above the background and under the content. Text clips it to the text."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Cover (the default for an image), contain, auto, or Custom for a length of your own."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the background image sits in the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Repeat"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Whether the image repeats."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Linear or radial blend."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Angle"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Direction of a linear gradient, in degrees."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Colour 1"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The first colour of the gradient."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Stop 1"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the first colour ends, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Colour 2"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The second colour of the gradient."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Stop 2"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the second colour ends, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Border width"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Thickness of the border."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Border style"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Solid, dashed, dotted and so on."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Border colour"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colour of the border."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Radius"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Rounds the corners."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Shadow x"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Horizontal offset of the shadow."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Shadow y"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Vertical offset of the shadow."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Shadow blur"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How soft the shadow edge is."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Shadow spread"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How far the shadow grows beyond the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Shadow colour"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colour of the shadow."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Origin"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The point the transform turns and scales around."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Move x"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Moves the block sideways."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Move y"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Moves the block up or down."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Rotate"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Turns the block, in degrees."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Scale"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Makes the block bigger or smaller. 1 is normal size."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Skew x"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Slants the block sideways, in degrees."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Skew y"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Slants the block up or down, in degrees."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Blurs the block."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Lightens or darkens the block, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Strengthens or softens the difference of light and dark."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Turns the colours grey, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Hue rotate"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Shifts all colours round the colour wheel, in degrees."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Turns the colours into their opposites, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Makes the colours stronger or weaker, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Gives the block an old-photo tint, in percent."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js includes/block/assets/layout-blocks.js
+msgid "Property"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Which CSS properties animate when they change."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How long the change takes."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Timing"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the change speeds up and slows down."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Waits before the change starts."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/controls.js includes/block/controls/block-tools.js includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "Dynamic data"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Insert a live value, such as the post title."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/blocks/image/image-editor.js
+msgid "Search"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Finds a dynamic data tag by its name."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/controls.js includes/block/assets/layout-blocks.js
+msgid "Variables"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Insert a colour or size variable from the theme."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/controls.js
+msgid "Colours"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Colour variables, closed for size fields."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Pick a colour in the browser's colour picker."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Or group"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds a group. The element shows when any group holds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Add condition"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds a rule that must hold within its group."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Condition"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value to check, such as the post title."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the value is checked, such as equals or contains."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js includes/block/assets/layout-blocks.js
+msgid "Value"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value to check against."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Remove condition"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Deletes this condition."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Add interaction"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds a trigger and an action."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Remove interaction"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Deletes this interaction."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "When"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The event that starts the action, such as a click."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Do"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "What happens, such as show, hide or animate."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "On"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Which element the action applies to."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The ID of the element the action applies to."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The animation the action plays."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How long the animation takes, in milliseconds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Waits before the animation starts, in milliseconds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/block-tools.js
+msgid "Class"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "A class the action adds or removes."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "GSAP animations to play on the front end."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Finds an animation by its name."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Takes this animation off."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Rewind"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Back to the start of the animation on the canvas."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Play"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Plays the animation on the canvas. Pause stops it."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Ruler"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Click or drag to scrub through the animation."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Drag to move it in time. Drag its right edge to make it longer or shorter."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The animations of the top block and of the blocks under it, in time. Each bar is one animation."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/assets/layout-blocks.js
+msgid "Block"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Click to select this block. Its animation fields show on the right."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Add animation"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Adds an animation to the selected block, after its last one."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Presets"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Effects that play with this animation, such as fade up or zoom."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js includes/block/assets/layout-blocks.js
+msgid "Start"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "When the animation begins, in seconds from the start of the timeline."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How long the animation takes, in seconds."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Plays the inner blocks one after another, this many seconds apart."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Ease"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "How the motion speeds up and slows down."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Remove animation"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Deletes this animation from the timeline."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value at the start of the animation. Leave it empty to skip it."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The value at the end of the animation. Leave it empty to skip it."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Scroll Trigger"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Plays the animation as the block scrolls into view. Off: plays once it is in view."
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the trigger starts, such as top 80% (the block top at 80% of the window)."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js includes/block/assets/layout-blocks.js
+msgid "End"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Where the trigger ends, such as bottom 20%."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Scrub with scroll"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "The animation follows the scroll position instead of playing on its own."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Play once"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Plays the animation one time, not again when scrolling back."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Show markers"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Shows the trigger lines while you check the start and end."
+msgstr ""
+
+#: includes/block/controls/tooltips.js includes/block/controls/animation-pane.js
+msgid "Loop timeline"
+msgstr ""
+
+#: includes/block/controls/tooltips.js
+msgid "Repeats the animation. It works only while the Scroll Trigger is off."
+msgstr ""
+
+#: includes/block/controls/controls.js includes/block/blocks/image/image-editor.js
+msgid "Choose an image"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "planned"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Search dynamic data"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Inserts this tag at the cursor."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "No match."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Click to use this variable."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "No variables yet."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Choose from the media library"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Planned. Not saved yet."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Learn more about %s on MDN"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "chosen"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "GSAP animation on this element."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Search animations"
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Click to add or remove it."
+msgstr ""
+
+#: includes/block/controls/controls.js
+msgid "Click to choose it."
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Element settings"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Add classes"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Not allowed"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Use data-, aria- or a plain name. No on*, class, id or style."
+msgstr ""
+
+#: includes/block/controls/block-tools.js includes/block/assets/layout-blocks.js
+msgid "value"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Or"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "And"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Shown always. Add a condition to show this element only when it holds."
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Add Or group"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Nothing happens yet. When a trigger happens, do an action."
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Interaction"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Trigger"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "This element"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Element with ID"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Target"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "my-id"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Target ID"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "Choose"
+msgstr ""
+
+#: includes/block/controls/block-tools.js
+msgid "class-name"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Pause"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Drag a bar to move it, its right edge to resize. Click a bar or a name to edit it on the right. Double-click a lane to add there."
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "No animation on this block yet. Double-click its lane, or use Add animation."
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Close the timeline"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "from"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "to"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Plays as the block scrolls into view, between the start and the end."
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Plays once the block is in view. Loop repeats it."
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Properties"
+msgstr ""
+
+#: includes/block/controls/animation-pane.js
+msgid "Shown below the canvas. Close it here or with its × button."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Attachment"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "Custom"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Lightbox"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Attachment page"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Media file"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Custom query"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Replace image"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Type words to search."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "The search failed."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "The image could not be chosen."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Choose a photo from %s"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Search for photos"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "No photos found."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Load more"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Photos from Unsplash. The photographer is credited under the picture."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Photos from Pixabay. The chosen photo is saved to the media library."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Breakpoint"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Remove source"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Media query"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Select image"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Browse Pixabay"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Browse Unsplash"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Photo by %s on Unsplash"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Sources"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Add source"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Show different images per breakpoint."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Object fit"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Object position"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Caption type"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Custom caption"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Loading"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js includes/block/assets/layout-blocks.js
+msgid "Stretch"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Link to"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Link URL"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Open in new tab"
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Click to choose an image"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Subscript"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Superscript"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Remove highlight"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Highlight"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Inline image"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Post"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "No wrap"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Wrap reverse"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Center"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Baseline"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Space between"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Space around"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Space evenly"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Flex"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Grid"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Inline flex"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Inline grid"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Inline block"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Inline"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "None (hidden)"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "1 column"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "columns"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Equals"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Not equal"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Greater than"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Greater or equal"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Less than"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Less or equal"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Contains"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Does not contain"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "One of"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "None of"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Exists"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Does not exist"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Decimal"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Signed integer"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Unsigned integer"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Date and time"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Posts per page"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Post ID"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Include"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "IDs"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Exclude"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "User IDs"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Not authors"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Terms in"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Term IDs"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Terms out"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Add another rule"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Add rule"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Rules"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "All"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "1fr 2fr"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "auto"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Desktop: base styles"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Tablet: up to 991 px"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Mobile: up to 478 px"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "View"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Visible"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Hidden"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Clip"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Colour stops"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Stop"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Move colour stop"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Drag to reorder, or press the up and down arrow keys"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Remove colour stop"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Add colour stop"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "length"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "This block (%root%)"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Hover"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Keyboard focus"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Before (::before)"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "After (::after)"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Direct children"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Insert a selector"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Use %root% for this block. Type r and press Tab to insert it. Scripts and imports are removed."
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Custom CSS"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Centre"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Capitalise"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Uppercase"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Lowercase"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Style groups"
+msgstr ""
+
+#: includes/block/assets/layout-blocks.js
+msgid "Type text"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Copy styles"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Paste styles"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Copy conditions"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Paste conditions"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Copy interactions"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Paste interactions"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Copy animations"
+msgstr ""
+
+#: includes/block/assets/block-clipboard.js
+msgid "Paste animations"
+msgstr ""

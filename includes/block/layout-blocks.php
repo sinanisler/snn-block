@@ -1005,6 +1005,11 @@ class SNN_Layout_Blocks {
 		// Copy and paste of styles, conditions, interactions and animations in the block menu (assets/block-clipboard.js).
 		$clipboard = 'includes/block/assets/block-clipboard.js';
 		wp_enqueue_script( 'snn-block-clipboard', SNN_URL . $clipboard, array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-element', 'wp-i18n', 'wp-plugins' ), self::version( $clipboard ), true );
+		// The scripts' translations: languages/snn-<locale>-<handle>.json, made from the .po files by
+		// languages/make-js-translations.php. The same handles as that script's list.
+		foreach ( array( 'snn-tooltips', 'snn-controls', 'snn-block-tools', 'snn-animation-pane', 'snn-image-editor', 'snn-layout-blocks', 'snn-block-clipboard' ) as $handle ) {
+			wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
+		}
 	}
 
 	/** The file's version for its tag: the shared helper in block-tools.php. */

@@ -275,7 +275,10 @@
 		'scroll.loop': [ 'Loop timeline', 'Repeats the animation. It works only while the Scroll Trigger is off.' ],
 	};
 
-	/** The name and text of a key, translated. Null when the key has no entry. */
+	/**
+	 * The name and text of a key, translated. Null when the key has no entry. The table's strings are not in __() calls,
+	 * so languages/make-js-translations.php reads them from TIPS for the .pot and the JSON files.
+	 */
 	function textOf( key ) {
 		const t = TIPS[ key ];
 		return t ? [ __( t[ 0 ], 'snn' ), __( t[ 1 ], 'snn' ) ] : null;
