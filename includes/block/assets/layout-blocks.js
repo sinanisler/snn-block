@@ -1956,7 +1956,6 @@
 			h(
 				'div',
 				{ className: 'snn-box-grid' },
-				h( 'div', { className: 'snn-box-inner', 'aria-hidden': 'true' } ),
 				keys.map( ( k, i ) => {
 					const own = setHere( a, device, k );
 					const inherited = inheritedValue( a, device, k );

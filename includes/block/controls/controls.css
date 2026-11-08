@@ -1593,8 +1593,8 @@
 	line-height: 1;
 }
 
-/* Margin and padding: a box. Top and bottom sit centred; left and right sit at the edges, with a frame between them
- * that stands for the element. Each side keeps its own tools, a dot when the view sets it, and its inherited placeholder. */
+/* Margin and padding: a box. Top and bottom sit centred; left and right share the width under them and meet in the middle.
+ * Each side keeps its own tools, a dot when the view sets it, and its inherited placeholder. */
 .snn-box {
 	padding-bottom: 4px;
 }
@@ -1654,23 +1654,14 @@
 
 .snn-box-grid {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	grid-template-areas:
-		"top top top"
-		"left inner right"
-		"bottom bottom bottom";
+		"top top"
+		"left right"
+		"bottom bottom";
 	align-items: center;
 	gap: 4px 6px;
 	padding: 0 var(--snn-inset);
-}
-
-/* The empty space between the sides: a transparent box with no colour and no border. It keeps the grid cell and stretches to the height of the side fields. */
-.snn-box-inner {
-	grid-area: inner;
-	align-self: stretch;
-	min-height: 26px;
-	background: transparent;
-	border: 0;
 }
 
 .snn-box-cell {
