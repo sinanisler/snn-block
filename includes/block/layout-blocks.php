@@ -22,7 +22,18 @@ class SNN_Layout_Blocks {
 	 * The blocks, one folder each in blocks/. Each folder's block.php returns the block's definition (see definitions()).
 	 * A new block gets its folder, and its folder name goes in this list.
 	 */
-	const FOLDERS = array( 'section', 'container', 'div', 'text', 'image' );
+	const FOLDERS = array( 'section', 'container', 'div', 'text', 'image', 'button', 'icon', 'code' );
+
+	/**
+	 * The blocks whose settings and inside come from their own class: the definition's kind names the class. Each class
+	 * has TAGS, attributes(), clean(), element() (the tag, attributes and style it changes on the element) and render()
+	 * (the inside); bare() is optional (true: no element around the inside). See blocks/button/button.php.
+	 */
+	const KINDS = array(
+		'button' => 'SNN_Button_Block',
+		'icon'   => 'SNN_Icon_Block',
+		'code'   => 'SNN_Code_Block',
+	);
 
 	/** The definitions, once read (see definitions()). */
 	private static $definitions = null;
@@ -128,6 +139,10 @@ class SNN_Layout_Blocks {
 					if ( ! empty( $def['image'] ) ) {
 						$def['attributes'] = SNN_Image_Block::attributes();
 					}
+					// A block with a kind (Button, Icon, Code): its own settings, from its class.
+					if ( ! empty( $def['kind'] ) && isset( self::KINDS[ $def['kind'] ] ) ) {
+						$def['attributes'] = call_user_func( array( self::KINDS[ $def['kind'] ], 'attributes' ) );
+					}
 					self::$definitions[ $def['name'] ] = $def;
 				}
 			}
@@ -149,6 +164,12 @@ class SNN_Layout_Blocks {
 	/** True for the Image block: its picture comes from its own settings, with no inner blocks (blocks/image). */
 	public static function is_image( $name ) {
 		return ! empty( self::definition( $name )['image'] );
+	}
+
+	/** The class of a block with a kind (see KINDS), or null. */
+	public static function kind_class( $name ) {
+		$kind = self::definition( $name )['kind'] ?? '';
+		return isset( self::KINDS[ $kind ] ) ? self::KINDS[ $kind ] : null;
 	}
 
 	public static function register() {
@@ -491,6 +512,10 @@ class SNN_Layout_Blocks {
 		if ( self::is_image( $block->name ) ) {
 			return SNN_Image_Block::render( $a, self::dynamic_context( $ctx ) );
 		}
+		$kind = self::kind_class( $block->name );
+		if ( $kind ) {
+			return call_user_func( array( $kind, 'render' ), $a, self::dynamic_context( $ctx ) );
+		}
 		return self::children( $block, $ctx );
 	}
 
@@ -520,12 +545,26 @@ class SNN_Layout_Blocks {
 	private static function element( array $a, $name, array $ctx, $inner ) {
 		$dyn = self::dynamic_context( $ctx );
 
+		// A block with a kind changes its element: the tag (a for a link), attributes and style (see KINDS).
+		$kind      = self::kind_class( $name );
+		$kind_part = array( 'tag' => $a['tagName'], 'attrs' => array(), 'style' => array() );
+		if ( $kind ) {
+			if ( method_exists( $kind, 'bare' ) && call_user_func( array( $kind, 'bare' ), $a ) ) {
+				return $inner;
+			}
+			$kind_part = array_merge( $kind_part, (array) call_user_func( array( $kind, 'element' ), $a, $dyn ) );
+		}
+
 		$id      = self::loop_id( preg_replace( '/[^A-Za-z0-9_-]/', '', SNN_Dynamic_Data::render( $a['htmlId'], $dyn, 'plain' ) ) );
 		$custom  = array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( SNN_Dynamic_Data::render( $a['cssClasses'], $dyn, 'plain' ) ) ) ) );
 		$style   = self::style( $a, $dyn );
 		// The image is a figure, which browsers give a margin. A margin set in Style comes after this one and wins.
 		if ( self::is_image( $name ) ) {
 			$style = 'margin:0' . ( '' !== $style ? ';' . $style : '' );
+		}
+		// The kind's own declarations come first, so the Style groups win where both set a property.
+		if ( $kind_part['style'] ) {
+			$style = implode( ';', array_filter( $kind_part['style'] ) ) . ( '' !== $style ? ';' . $style : '' );
 		}
 
 		// The block's own class (wp-block-snn-section and so on) first, then the author's classes.
@@ -559,6 +598,10 @@ class SNN_Layout_Blocks {
 			$prefix         .= self::loop_once( $custom_class, '<style>' . self::scope_css( $custom_css, '.' . $custom_class ) . '</style>' );
 		}
 		// Custom attributes: name and value rows, written on the element (get_block_wrapper_attributes escapes them).
+		// The kind's attributes (a link's href, target and rel) come before the custom ones, which may change them.
+		foreach ( $kind_part['attrs'] as $attr_name => $attr_value ) {
+			$extra[ $attr_name ] = $attr_value;
+		}
 		foreach ( $a['customAttributes'] as $row ) {
 			$extra[ $row['name'] ] = $row['value'];
 		}
@@ -584,7 +627,8 @@ class SNN_Layout_Blocks {
 			$attrs .= ' style="' . esc_attr( $style ) . '"';
 		}
 
-		return $prefix . '<' . $a['tagName'] . ' ' . $attrs . '>' . $inner . '</' . $a['tagName'] . '>';
+		$tag = $kind_part['tag'];
+		return $prefix . '<' . $tag . ' ' . $attrs . '>' . $inner . '</' . $tag . '>';
 	}
 
 	/**
@@ -950,7 +994,8 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = $attributes[ $key ] ?? $spec['default'];
 		}
 
-		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : ( self::is_image( $block ) ? SNN_Image_Block::TAGS : self::TAGS );
+		$kind                  = self::kind_class( $block );
+		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : ( self::is_image( $block ) ? SNN_Image_Block::TAGS : ( $kind ? constant( $kind . '::TAGS' ) : self::TAGS ) );
 		$out['tagName']        = in_array( $out['tagName'], $tags, true ) ? $out['tagName'] : $default;
 		$out['display']        = self::pick( $out['display'], self::DISPLAYS, $def['layout']['display'] );
 		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, $def['layout']['flexDirection'] );
@@ -984,6 +1029,9 @@ class SNN_Layout_Blocks {
 		}
 		if ( self::is_image( $block ) ) {
 			$out = array_merge( $out, SNN_Image_Block::clean( $attributes ) );
+		}
+		if ( $kind ) {
+			$out = array_merge( $out, call_user_func( array( $kind, 'clean' ), $attributes ) );
 		}
 		return $out;
 	}
@@ -1084,6 +1132,7 @@ class SNN_Layout_Blocks {
 		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
 		// highlighting off: the group then shows a plain textarea.
 		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
+		self::enqueue_kind_editors();
 		wp_localize_script( 'snn-block-tools', 'snnBlockToolsData', SNN_Block_Tools::editor_data() );
 		wp_localize_script(
 			'snn-controls',
@@ -1102,7 +1151,7 @@ class SNN_Layout_Blocks {
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props', 'snn-image-editor' );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props', 'snn-image-editor', 'snn-button-editor', 'snn-icon-editor', 'snn-code-editor' );
 		if ( $css_editor ) {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}
@@ -1121,9 +1170,50 @@ class SNN_Layout_Blocks {
 		wp_add_inline_script( 'snn-featured-image-search', 'window.snnFeaturedImageSearch = ' . wp_json_encode( array( 'pixabay' => $can_up && $providers['pixabay'], 'unsplash' => $can_up && $providers['unsplash'] ) ) . ';', 'before' );
 		// The scripts' translations: languages/snn-<locale>-<handle>.json, made from the .po files by
 		// languages/make-js-translations.php. The same handles as that script's list.
-		foreach ( array( 'snn-tooltips', 'snn-controls', 'snn-block-tools', 'snn-animation-pane', 'snn-image-editor', 'snn-layout-blocks', 'snn-block-clipboard', 'snn-featured-image-search' ) as $handle ) {
+		foreach ( array( 'snn-tooltips', 'snn-controls', 'snn-block-tools', 'snn-animation-pane', 'snn-image-editor', 'snn-icon-picker', 'snn-link-fields', 'snn-button-editor', 'snn-icon-editor', 'snn-code-editor', 'snn-layout-blocks', 'snn-block-clipboard', 'snn-featured-image-search' ) as $handle ) {
 			wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
 		}
+	}
+
+	/**
+	 * The editor scripts of the blocks with a kind, and what they share: the icon picker (controls/icon-picker.js, with
+	 * the URL of the icon name lists), the Link group (controls/link-fields.js), and the code editor settings of the
+	 * Code block. Each block script loads before layout-blocks.js, which reads window.snnBlockKinds.
+	 */
+	private static function enqueue_kind_editors() {
+		$files = array(
+			'snn-icon-picker'   => array( 'includes/block/controls/icon-picker.js', array( 'wp-element', 'wp-i18n', 'wp-api-fetch', 'snn-controls' ) ),
+			'snn-link-fields'   => array( 'includes/block/controls/link-fields.js', array( 'wp-element', 'wp-i18n', 'snn-controls' ) ),
+			'snn-button-editor' => array( 'includes/block/blocks/button/button-editor.js', array( 'wp-element', 'wp-i18n', 'wp-block-editor', 'snn-controls', 'snn-icon-picker', 'snn-link-fields', 'snn-style-props' ) ),
+			'snn-icon-editor'   => array( 'includes/block/blocks/icon/icon-editor.js', array( 'wp-element', 'wp-i18n', 'snn-controls', 'snn-icon-picker', 'snn-link-fields', 'snn-style-props' ) ),
+			'snn-code-editor'   => array( 'includes/block/blocks/code/code-editor.js', array( 'wp-element', 'wp-i18n', 'snn-controls' ) ),
+		);
+		$editors = array(
+			'html' => wp_enqueue_code_editor( array( 'type' => 'text/html' ) ),
+			'css'  => wp_enqueue_code_editor( array( 'type' => 'text/css' ) ),
+			'js'   => wp_enqueue_code_editor( array( 'type' => 'application/javascript' ) ),
+		);
+		if ( $editors['html'] || $editors['css'] || $editors['js'] ) {
+			$files['snn-code-editor'][1][] = 'code-editor';
+		}
+		foreach ( $files as $handle => $file ) {
+			wp_enqueue_script( $handle, SNN_URL . $file[0], $file[1], self::version( $file[0] ), true );
+		}
+		foreach ( array( 'snn-icon-picker' => 'includes/block/controls/icon-picker.css', 'snn-code-editor' => 'includes/block/blocks/code/code-editor.css' ) as $handle => $file ) {
+			wp_enqueue_style( $handle, SNN_URL . $file, array( 'snn-controls' ), self::version( $file ) );
+		}
+		$lists = 'includes/block/assets/icons/icon-lists.json';
+		wp_add_inline_script( 'snn-icon-picker', 'window.snnIconData = ' . wp_json_encode( array( 'listsUrl' => add_query_arg( 'ver', self::version( $lists ), SNN_URL . $lists ) ) ) . ';', 'before' );
+		wp_add_inline_script(
+			'snn-code-editor',
+			'window.snnCodeBlockData = ' . wp_json_encode(
+				array(
+					'editors'       => $editors,
+					'canUnfiltered' => current_user_can( 'unfiltered_html' ),
+				)
+			) . ';',
+			'before'
+		);
 	}
 
 	/** The file's version for its tag: the shared helper in block-tools.php. */

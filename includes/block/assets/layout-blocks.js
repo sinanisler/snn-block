@@ -2031,7 +2031,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device, base, text, image, clientId } ) {
+	function Panel( { a, set, tag, parent, title, device, base, text, image, kind, clientId } ) {
 		const q = a.query;
 		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
 		const [ tab, setTab ] = usePlace( 'tab' );
@@ -2082,7 +2082,8 @@
 		);
 
 		// Default: the element, the layout, the query loop, the item, the effects (planned), and the advanced fields.
-		const defaultPane = image ? h( window.snnImageBlock.ImagePane, { a, set } ) : h(
+		// A block with a kind (Button, Icon, Code) has its own Content tab, from its folder's editor script (see kindOf).
+		const defaultPane = image ? h( window.snnImageBlock.ImagePane, { a, set } ) : kind ? h( kind.Pane, { a, set } ) : h(
 			'div',
 			{ className: 'snn-pane' },
 			h(
@@ -2451,6 +2452,24 @@
 				// With the query loop on, the loop's other items are drawn after the block (see LoopPreview).
 				const loopPreview = a.query.enabled ? h( LoopPreview, { clientId } ) : null;
 				// The Image block: its picture is drawn by the image script (blocks/image/image-editor.js), and its Content tab is that script's panel.
+				// A block with a kind (Button, Icon, Code): its Content tab and its canvas come from its folder's editor
+				// script (blocks/<name>/<name>-editor.js), as the Image block's do.
+				const kind = kindOf( def );
+				if ( kind ) {
+					return h(
+						Fragment,
+						null,
+						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), kind, clientId } ) ),
+						h(
+							'div',
+							blockProps,
+							cssRules,
+							overlayRule,
+							h( kind.Canvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined, set } )
+						),
+						loopPreview
+					);
+				}
 				if ( def.image ) {
 					return h(
 						Fragment,
@@ -2517,12 +2536,17 @@
 			// The saved markup keeps the inner blocks (a save of null would drop them). The front end
 			// is rendered by PHP from those inner blocks (includes/block/layout-blocks.php).
 			// A Text block has no inner blocks: it saves nothing, its text is an attribute, and PHP renders it.
-			save: def.text || def.image
+			save: def.text || def.image || kindOf( def )
 				? () => null
 				: function Save() {
 					return h( InnerBlocks.Content, null );
 				},
 		} );
+	}
+
+	/** The editor side of a block with a kind (window.snnBlockKinds, filled by blocks/<name>/<name>-editor.js), or null. */
+	function kindOf( def ) {
+		return def.kind && window.snnBlockKinds && window.snnBlockKinds[ def.kind ] ? window.snnBlockKinds[ def.kind ] : null;
 	}
 
 	// One block for each definition (blocks/<name>/block.php, in the order of FOLDERS in layout-blocks.php).

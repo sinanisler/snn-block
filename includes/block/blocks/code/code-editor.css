@@ -1,0 +1,34 @@
+/* The Code block's panel (code-editor.js): the three code fields and the notes. */
+
+.snn-code-area {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 0 var(--snn-inset) 10px;
+}
+
+.snn-code-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: #50575e;
+}
+
+.snn-code-area .CodeMirror {
+	height: 160px;
+	border: 1px solid #dcdcde;
+	font-size: 12px;
+}
+
+.snn-code-plain {
+	min-height: 140px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.snn-code-note {
+	margin: 0;
+	padding: 0 var(--snn-inset) 10px;
+	color: #646970;
+	font-size: 11px;
+}

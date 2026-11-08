@@ -1,0 +1,30 @@
+/*
+ * The look a new Button starts with: black with white text, the text and the icon centred in a row. Every rule is in
+ * :where(), which counts for nothing, so a value set in the block's Style tab or in a class always wins.
+ */
+/* In the editor the class is on the block wrapper, and the button itself is .snn-button-root (button-editor.js). */
+:where(.wp-block-snn-button:not(.block-editor-block-list__block)),
+:where(.snn-button-root) {
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	padding: 0.75em 1.5em;
+	border: 0;
+	background-color: #000;
+	color: #fff;
+	font: inherit;
+	line-height: 1.2;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+/*
+ * A button with a link is an a: the site's link colour rule (a:where(...)) counts as one tag, and it can come after
+ * this sheet (it does in the editor). html a counts as two tags, so this rule wins over it, and a class rule of the
+ * Style tab (one class) still wins over this one.
+ */
+html a:where(.wp-block-snn-button:not(.block-editor-block-list__block)),
+html a:where(.snn-button-root) {
+	color: #fff;
+	text-decoration: none;
+}
