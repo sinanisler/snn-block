@@ -89,9 +89,11 @@
  * Result: Reduced from ~20 lines to 2 lines, with better error handling!
  *
  * Files Ready to Migrate:
+ * - ai-overlay.php (2 locations)
  * - ai-block-editor.php (2 locations - text + image)
  * - ai-seo-generation.php (1 location)
  * - ai-agent-and-chat.php (1 location in callAI function)
+ * - ai-agent-and-chat-bricks.php (1 location in callAI function)
  *
  * When migrating, simply replace the fetch() call and body building logic with
  * SNN_AI_Helpers.makeTextCompletion() or makeImageGeneration() and the response
@@ -126,6 +128,28 @@ function snn_enqueue_ai_api_helpers() {
 }
 add_action( 'admin_enqueue_scripts', 'snn_enqueue_ai_api_helpers', 5 );
 
+/**
+ * Enqueue AI API helper functions on frontend for Bricks builder
+ * Bricks builder runs on frontend (?bricks=run) so we need to load helpers there too
+ */
+function snn_enqueue_ai_api_helpers_frontend() {
+    // Only load when Bricks builder is active on frontend
+    if ( is_admin() || ! isset( $_GET['bricks'] ) || $_GET['bricks'] !== 'run' ) {
+        return;
+    }
+
+    wp_add_inline_script( 'jquery', snn_get_ai_api_helpers_script(), 'after' );
+
+    // Inject proxy config for the Bricks builder frontend context.
+    if ( is_user_logged_in() ) {
+        $proxy_config = wp_json_encode( [
+            'url'   => admin_url( 'admin-ajax.php' ),
+            'nonce' => wp_create_nonce( 'snn_ai_proxy_nonce' ),
+        ] );
+        wp_add_inline_script( 'jquery', "window.snnAiProxy = {$proxy_config};", 'after' );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'snn_enqueue_ai_api_helpers_frontend', 5 );
 
 /**
  * Generate the JavaScript helper functions

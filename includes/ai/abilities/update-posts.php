@@ -13,7 +13,10 @@ function snn_register_update_post_ability() {
             'label'       => __( 'Update Post', 'snn' ),
             'description' => __( 'Updates an existing post by ID with new title, content (HTML supported), status (draft/publish/pending/private), or excerpt. All fields are optional - only provided fields will be updated. Automatically sanitizes input and preserves unchanged fields. Returns post ID, success status, updated permalink, and last modified timestamp. Use this to edit existing content, change post status, update excerpts, revise posts, or programmatically modify content. Requires post ID - use get-posts or search-content to find posts first if ID unknown.
 
-CONTENT IS CONVERTED TO BLOCKS: HTML content becomes native block markup, and anything a core block cannot hold stays in a Custom HTML block. Inline style attributes and <style> move to page CSS, and <script> tags move to page JavaScript (unfiltered_html needed). Page code can be changed with custom_css, custom_js, script_urls and template, without changing the content. See includes/ai/docs/block-generation-rules.md for the supported blocks.', 'snn' ),
+CRITICAL: When updating content, use valid HTML with ALL tags properly closed to prevent broken blocks:
+- Good: <h2>Updated Section</h2><p>New content here.</p><ul><li>Item 1</li><li>Item 2</li></ul>
+- Bad: <p>Unclosed tag <h2>Title (will cause block recovery errors)
+See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
             'category'    => 'content',
             'input_schema' => array(
                 'type'       => 'object',
@@ -29,29 +32,7 @@ CONTENT IS CONVERTED TO BLOCKS: HTML content becomes native block markup, and an
                     ),
                     'content' => array(
                         'type'        => 'string',
-                        'description' => 'New post content: an HTML design or section (converted to native blocks by default), or block markup when convert is false.',
-                    ),
-                    'convert' => array(
-                        'type'        => 'boolean',
-                        'description' => 'Convert HTML to native block markup (default true). Send false only when the content is already block markup.',
-                        'default'     => true,
-                    ),
-                    'custom_css' => array(
-                        'type'        => 'string',
-                        'description' => 'CSS for this page only. Needs unfiltered_html. Replaces the stored page CSS.',
-                    ),
-                    'custom_js' => array(
-                        'type'        => 'string',
-                        'description' => 'JavaScript for this page only (runs in the footer). Needs unfiltered_html. Replaces the stored page JavaScript.',
-                    ),
-                    'script_urls' => array(
-                        'type'        => 'array',
-                        'description' => 'https URLs of script files to load on this page before custom_js. Needs unfiltered_html.',
-                        'items'       => array( 'type' => 'string' ),
-                    ),
-                    'template' => array(
-                        'type'        => 'string',
-                        'description' => 'Theme template slug for a page, for example snn-canvas (full width, no header or footer).',
+                        'description' => 'New post content (valid HTML with ALL tags properly closed). Use: <p>Text</p>, <h2>Heading</h2>, <ul><li>Item</li></ul>. Avoid unclosed tags or empty blocks.',
                     ),
                     'status' => array(
                         'type'        => 'string',
@@ -101,19 +82,8 @@ CONTENT IS CONVERTED TO BLOCKS: HTML content becomes native block markup, and an
                     $update_data['post_title'] = sanitize_text_field( $input['title'] );
                 }
 
-                $allow_code = current_user_can( 'unfiltered_html' );
-                $has_code   = ! empty( $input['custom_css'] ) || ! empty( $input['custom_js'] ) || ! empty( $input['script_urls'] );
-                if ( $has_code && ! $allow_code ) {
-                    return new WP_Error( 'permission_denied', 'Custom CSS, JavaScript and script files need the unfiltered_html capability.', array( 'status' => 403 ) );
-                }
-                if ( ! empty( $input['template'] ) && ! snn_page_template_exists( $input['template'] ) ) {
-                    return new WP_Error( 'invalid_template', sprintf( 'Template "%s" does not exist in the active theme.', sanitize_file_name( $input['template'] ) ), array( 'status' => 400 ) );
-                }
-
-                $prepared = null;
                 if ( isset( $input['content'] ) ) {
-                    $prepared = snn_blocks_prepare_content( $input['content'], $input['convert'] ?? true, $allow_code );
-                    $update_data['post_content'] = $prepared['markup'];
+                    $update_data['post_content'] = wp_kses_post( $input['content'] );
                 }
 
                 if ( isset( $input['status'] ) ) {
@@ -124,31 +94,19 @@ CONTENT IS CONVERTED TO BLOCKS: HTML content becomes native block markup, and an
                     $update_data['post_excerpt'] = sanitize_textarea_field( $input['excerpt'] );
                 }
 
-                $result = wp_update_post( wp_slash( $update_data ), true );
+                $result = wp_update_post( $update_data, true );
 
                 if ( is_wp_error( $result ) ) {
                     return $result;
                 }
 
-                if ( null !== $prepared || array_key_exists( 'custom_css', $input ) || array_key_exists( 'custom_js', $input ) || array_key_exists( 'script_urls', $input ) ) {
-                    snn_page_code_save( $post_id, snn_ability_code_fields( $input, $prepared ) );
-                }
-                if ( ! empty( $input['template'] ) && 'page' === get_post_type( $post_id ) ) {
-                    update_post_meta( $post_id, '_wp_page_template', sanitize_file_name( $input['template'] ) );
-                }
-
                 $post = get_post( $post_id );
 
                 return array(
-                    'id'         => $post_id,
-                    'updated'    => true,
-                    'url'        => get_permalink( $post ),
-                    'modified'   => $post->post_modified,
-                    'conversion' => null === $prepared ? null : array(
-                        'blocks'         => $prepared['report']['blocks'],
-                        'html_fallbacks' => $prepared['report']['html_fallbacks'],
-                        'warnings'       => $prepared['report']['warnings'],
-                    ),
+                    'id'       => $post_id,
+                    'updated'  => true,
+                    'url'      => get_permalink( $post ),
+                    'modified' => $post->post_modified,
                 );
             },
             'permission_callback' => function() {

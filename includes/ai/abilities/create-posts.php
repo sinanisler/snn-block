@@ -13,7 +13,13 @@ function snn_register_create_post_ability() {
             'label'       => __( 'Create Post', 'snn' ),
             'description' => __( 'Creates a new WordPress post or page with specified title, content (HTML supported), excerpt, status (draft/publish/pending/private), categories, and tags. Automatically sanitizes input and sets the current user as author. Returns the new post ID, permalink, and edit URL. Use this when you need to programmatically create content, import posts, generate articles, or add new pages to the site. Always create as draft first unless explicitly instructed to publish immediately.
 
-CONTENT IS CONVERTED TO BLOCKS: the HTML becomes native block markup (headings, paragraphs, lists, images, buttons, groups, quotes, tables, code, details). Anything a core block cannot hold stays in a Custom HTML block. Inline style attributes and <style> move to page CSS, and <script> tags move to page JavaScript (unfiltered_html needed). Send a whole section or page as HTML, and set template to snn-canvas for a full-width page with no theme header or footer. Use custom_css, custom_js and script_urls for page code. See includes/ai/docs/block-generation-rules.md for the supported blocks.', 'snn' ),
+CRITICAL: Content must be valid HTML with ALL tags properly closed to prevent broken blocks:
+- Good: <h2>Title</h2><p>Introduction text.</p><ul><li>Point 1</li><li>Point 2</li></ul><p>Conclusion.</p>
+- Bad: <p>Text without closing <h2>Title</h2> More loose text (will break)
+- Lists must use: <ul><li>Item</li></ul> or <ol><li>Item</li></ol>
+- No empty blocks: <p></p> (remove these)
+
+See includes/ai/docs/block-generation-rules.md for complete guidelines.', 'snn' ),
             'category'    => 'content',
             'input_schema' => array(
                 'type'       => 'object',
@@ -55,28 +61,6 @@ CONTENT IS CONVERTED TO BLOCKS: the HTML becomes native block markup (headings, 
                         'type'        => 'array',
                         'description' => 'Array of tag names.',
                         'items'       => array( 'type' => 'string' ),
-                    ),
-                    'convert' => array(
-                        'type'        => 'boolean',
-                        'description' => 'Convert HTML to native block markup (default true). Send false only when the content is already block markup.',
-                        'default'     => true,
-                    ),
-                    'custom_css' => array(
-                        'type'        => 'string',
-                        'description' => 'CSS for this page only. Needs unfiltered_html. Replaces the stored page CSS.',
-                    ),
-                    'custom_js' => array(
-                        'type'        => 'string',
-                        'description' => 'JavaScript for this page only (runs in the footer). Needs unfiltered_html.',
-                    ),
-                    'script_urls' => array(
-                        'type'        => 'array',
-                        'description' => 'https URLs of script files to load on this page before custom_js (for example GSAP from cdnjs). Needs unfiltered_html.',
-                        'items'       => array( 'type' => 'string' ),
-                    ),
-                    'template' => array(
-                        'type'        => 'string',
-                        'description' => 'Theme template slug for a page, for example snn-canvas (full width, no header or footer).',
                     ),
                 ),
             ),
@@ -121,24 +105,9 @@ CONTENT IS CONVERTED TO BLOCKS: the HTML becomes native block markup (headings, 
                     );
                 }
 
-                $allow_code = current_user_can( 'unfiltered_html' );
-                $has_code   = ! empty( $input['custom_css'] ) || ! empty( $input['custom_js'] ) || ! empty( $input['script_urls'] );
-                if ( $has_code && ! $allow_code ) {
-                    return new WP_Error(
-                        'permission_denied',
-                        'Custom CSS, JavaScript and script files need the unfiltered_html capability.',
-                        array( 'status' => 403 )
-                    );
-                }
-                if ( ! empty( $input['template'] ) && ! snn_page_template_exists( $input['template'] ) ) {
-                    return new WP_Error( 'invalid_template', sprintf( 'Template "%s" does not exist in the active theme.', sanitize_file_name( $input['template'] ) ), array( 'status' => 400 ) );
-                }
-
-                $prepared = snn_blocks_prepare_content( $input['content'], $input['convert'] ?? true, $allow_code );
-
                 $post_data = array(
                     'post_title'   => sanitize_text_field( $input['title'] ),
-                    'post_content' => $prepared['markup'],
+                    'post_content' => wp_kses_post( $input['content'] ),
                     'post_status'  => $status,
                     'post_type'    => $post_type,
                     'post_author'  => get_current_user_id(),
@@ -150,7 +119,7 @@ CONTENT IS CONVERTED TO BLOCKS: the HTML becomes native block markup (headings, 
                 }
 
                 // Insert the post
-                $post_id = wp_insert_post( wp_slash( $post_data ), true );
+                $post_id = wp_insert_post( $post_data, true );
 
                 if ( is_wp_error( $post_id ) ) {
                     return $post_id;
@@ -166,21 +135,11 @@ CONTENT IS CONVERTED TO BLOCKS: the HTML becomes native block markup (headings, 
                     wp_set_post_tags( $post_id, $input['tags'] );
                 }
 
-                snn_page_code_save( $post_id, snn_ability_code_fields( $input, $prepared ) );
-                if ( ! empty( $input['template'] ) && 'page' === $post_type ) {
-                    update_post_meta( $post_id, '_wp_page_template', sanitize_file_name( $input['template'] ) );
-                }
-
                 return array(
-                    'id'         => $post_id,
-                    'url'        => get_permalink( $post_id ),
-                    'edit_url'   => get_edit_post_link( $post_id, 'raw' ),
-                    'status'     => get_post_status( $post_id ),
-                    'conversion' => array(
-                        'blocks'         => $prepared['report']['blocks'],
-                        'html_fallbacks' => $prepared['report']['html_fallbacks'],
-                        'warnings'       => $prepared['report']['warnings'],
-                    ),
+                    'id'       => $post_id,
+                    'url'      => get_permalink( $post_id ),
+                    'edit_url' => get_edit_post_link( $post_id, 'raw' ),
+                    'status'   => get_post_status( $post_id ),
                 );
             },
             'permission_callback' => function() {

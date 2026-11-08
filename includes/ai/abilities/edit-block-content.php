@@ -288,23 +288,6 @@ CRITICAL WORDPRESS BLOCK RULES:
                     return new WP_Error( 'permission_denied', __( 'You do not have permission to edit this post.', 'snn' ) );
                 }
 
-                // Through MCP there is no editor open: apply the edit to the stored post and save it.
-                if ( snn_mcp_is_request() ) {
-                    $applied = snn_block_edit_apply( $post_id, $input );
-                    if ( is_wp_error( $applied ) ) {
-                        return $applied;
-                    }
-                    return array(
-                        'success'                => true,
-                        'message'                => $applied['message'],
-                        'blocks_affected'        => $applied['blocks_affected'],
-                        'requires_client_update' => false,
-                        'saved'                  => true,
-                        'post_id'                => $applied['post_id'],
-                        'edit_url'               => $applied['edit_url'],
-                    );
-                }
-
                 // Build client command based on action
                 $client_command = array(
                     'type'    => 'edit_block_content',

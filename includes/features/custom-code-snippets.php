@@ -255,6 +255,10 @@ function snn_snippet_post_label( $post_id ) {
     }
     $status = get_post_status_object( $post->post_status );
     $kind   = $post->post_type;
+    if ( 'bricks_template' === $kind ) {
+        $template_type = (string) get_post_meta( $post->ID, '_bricks_template_type', true );
+        $kind          = __( 'Bricks template', 'snn' ) . ( '' !== $template_type ? ' (' . $template_type . ')' : '' );
+    }
     return array(
         'title' => '' !== $post->post_title ? $post->post_title : '#' . $post->ID,
         'meta'  => $kind . ' · ' . ( $status ? $status->label : $post->post_status ),
@@ -273,7 +277,7 @@ function snn_snippet_special_targets() {
 
 /**
  * Everything a "Page, post or template" rule value can hold, cleaned up:
- * "12" (a post or page), "term:5" (a category, tag or term
+ * "12" (a post, page or Bricks template), "term:5" (a category, tag or term
  * archive), "archive:product" (a post type archive), "special:search".
  */
 function snn_snippet_rule_targets( $value ) {
@@ -321,7 +325,7 @@ function snn_snippet_target_label( $target ) {
     return array( 'title' => $target, 'meta' => '' );
 }
 
-/** Is this request the page a target names? */
+/** Is this request the page a target names? Bricks templates are checked separately. */
 function snn_snippet_target_matches( $target ) {
     if ( ctype_digit( $target ) ) {
         return is_singular() && (int) get_queried_object_id() === (int) $target;
@@ -339,10 +343,11 @@ function snn_snippet_target_matches( $target ) {
     return false;
 }
 
-/** A front-end URL that shows a target, or '' (a template has none of its own). */
+/** A front-end URL that shows a target, or '' (Bricks templates have none of their own). */
 function snn_snippet_target_url( $target ) {
     if ( ctype_digit( $target ) ) {
-        return (string) get_permalink( (int) $target );
+        // A template's own permalink is its builder preview, not a page it renders.
+        return 'bricks_template' === get_post_type( (int) $target ) ? '' : (string) get_permalink( (int) $target );
     }
     list( $kind, $key ) = explode( ':', $target, 2 );
     switch ( $kind ) {
@@ -689,6 +694,31 @@ function snn_snippet_queried_post_types() {
     return array();
 }
 
+/**
+ * IDs of the Bricks templates rendering this request (header, footer, archive,
+ * content and so on), so picking "Archive-Codex" matches /codex/.
+ */
+function snn_snippet_active_bricks_template_ids() {
+    if ( ! class_exists( '\Bricks\Database' ) || ! method_exists( '\Bricks\Database', 'set_active_templates' ) ) {
+        return array();
+    }
+    // Bricks fills these on "wp"; a snippet on the same hook may run first.
+    // The call is guarded inside Bricks, so it only works them out once.
+    \Bricks\Database::set_active_templates();
+    $ids = array();
+    foreach ( (array) \Bricks\Database::$active_templates as $key => $template ) {
+        if ( 'post_id' === $key || 'content_type' === $key ) {
+            continue;
+        }
+        foreach ( (array) $template as $id ) {
+            if ( is_numeric( $id ) && (int) $id > 0 ) {
+                $ids[] = (int) $id;
+            }
+        }
+    }
+    return $ids;
+}
+
 /** Does one condition rule match this request? */
 function snn_snippet_rule_matches( $rule ) {
     $value = (string) $rule['value'];
@@ -749,6 +779,10 @@ function snn_snippet_rule_matches( $rule ) {
                     $match = true;
                     break;
                 }
+            }
+            if ( ! $match ) {
+                // A picked Bricks template matches every page it renders.
+                $match = (bool) array_intersect( snn_snippet_rule_post_ids( $value ), snn_snippet_active_bricks_template_ids() );
             }
             break;
         default:
@@ -4978,7 +5012,7 @@ function snn_ajax_snippet_toggle() {
 }
 
 /**
- * AJAX: pages, posts, archives and special pages for the
+ * AJAX: pages, posts, Bricks templates, archives and special pages for the
  * "Page, post or template" condition's search box.
  */
 add_action( 'wp_ajax_snn_snippet_search_posts', 'snn_ajax_snippet_search_posts' );

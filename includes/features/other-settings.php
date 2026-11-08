@@ -52,6 +52,14 @@ function snn_register_other_settings() {
     );
 
     add_settings_field(
+        'move_bricks_menu',
+        __('Move Bricks Menu to End', 'snn'),
+        'snn_move_bricks_menu_callback',
+        'snn-other-settings',
+        'snn_other_settings_section'
+    );
+
+    add_settings_field(
         'disable_comments',
         __('Require Login to Comment', 'snn'),
         'snn_disable_comments_callback',
@@ -158,6 +166,7 @@ function snn_sanitize_other_settings($input) {
         $sanitized['revisions_limit'] = '';
     }
 
+    $sanitized['move_bricks_menu'] = isset($input['move_bricks_menu']) && $input['move_bricks_menu'] ? 1 : 0;
     $sanitized['disable_comments'] = isset($input['disable_comments']) && $input['disable_comments'] ? 1 : 0;
     $sanitized['disable_comments_completely'] = isset($input['disable_comments_completely']) && $input['disable_comments_completely'] ? 1 : 0;
     $sanitized['enable_thumbnail_column'] = isset($input['enable_thumbnail_column']) && $input['enable_thumbnail_column'] ? 1 : 0;
@@ -199,6 +208,13 @@ function snn_revisions_limit_callback() {
              : '';
     ?>
     <input type="number" name="snn_other_settings[revisions_limit]" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr__( '9999', 'snn' ); ?>">
+    <?php
+}
+
+function snn_move_bricks_menu_callback() {
+    $options = get_option('snn_other_settings');
+    ?>
+    <input type="checkbox" name="snn_other_settings[move_bricks_menu]" value="1" <?php checked(1, isset($options['move_bricks_menu']) ? $options['move_bricks_menu'] : 0); ?>>
     <?php
 }
 
@@ -361,6 +377,34 @@ function snn_limit_post_revisions($num, $post) {
 }
 add_filter('wp_revisions_to_keep', 'snn_limit_post_revisions', 10, 2);
 
+function snn_custom_menu_order($menu_ord) {
+    $options = get_option('snn_other_settings');
+    if (isset($options['move_bricks_menu']) && $options['move_bricks_menu']) {
+        if (!$menu_ord) {
+            return true;
+        }
+        $bricks_menu = null;
+        foreach ($menu_ord as $i => $item) {
+            if ($item === 'bricks') {
+                $bricks_menu = $item;
+                unset($menu_ord[$i]);
+                break;
+            }
+        }
+        if ($bricks_menu) {
+            $target_index = 99;
+            $menu_ord = array_values($menu_ord);
+            if (count($menu_ord) >= $target_index) {
+                array_splice($menu_ord, $target_index, 0, array($bricks_menu));
+            } else {
+                $menu_ord[] = $bricks_menu;
+            }
+        }
+        return $menu_ord;
+    }
+    return $menu_ord;
+}
+add_filter('menu_order', 'snn_custom_menu_order');
 add_filter('custom_menu_order', '__return_true');
 
 function snn_hide_comments_section() {
@@ -488,6 +532,11 @@ function snn_display_custom_dashboard_metabox() {
         wp_print_scripts();
         $extra_resources = ob_get_clean();
 
+        if (false === strpos($frontend_head, "bricks-frontend-inline-inline-css")) {
+            ob_start();
+            wp_print_styles('bricks-frontend-inline-inline-css');
+            $bricks_inline_css = ob_get_clean();
+            $frontend_head .= $bricks_inline_css;
             echo '
             <style>
                 .postbox-container { width: 100% !important; }
@@ -500,6 +549,7 @@ function snn_display_custom_dashboard_metabox() {
                 .postbox { border: none !important; }
             </style>
             ';
+        }
 
         ob_start();
         do_action('wp_footer');

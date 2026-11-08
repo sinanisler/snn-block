@@ -1592,6 +1592,14 @@ function snn_seo_ai_meta_box_buttons($post) {
     $post_content = $post->post_content;
     $post_title = $post->post_title;
     
+    // Extract Bricks content if available
+    if (function_exists('snn_seo_extract_bricks_content')) {
+        $bricks_content = snn_seo_extract_bricks_content($post->ID);
+        if (!empty($bricks_content)) {
+            $post_content = $bricks_content;
+        }
+    }
+    
     ?>
     <div style="margin-top: 15px;">
         <button type="button" class="button button-large" id="snn-seo-ai-generate-btn" >
@@ -1647,6 +1655,14 @@ function snn_seo_ai_get_post_data_handler() {
     
     // Get post content
     $content = $post->post_content;
+    
+    // Extract Bricks content if available
+    if (function_exists('snn_seo_extract_bricks_content')) {
+        $bricks_content = snn_seo_extract_bricks_content($post_id);
+        if (!empty($bricks_content)) {
+            $content = $bricks_content;
+        }
+    }
     
     wp_send_json_success(array(
         'postId' => $post_id,
