@@ -388,7 +388,7 @@ window.onload = function () {
 
     function splitText(element, options) {
       if (!options.splittext) {
-        const childElements = element.children;
+        const childElements = element._snnStaggerTargets || element.children;
         if (options.stagger && childElements.length > 1) {
           return childElements;
         }

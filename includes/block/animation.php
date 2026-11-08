@@ -141,7 +141,7 @@ class SNN_Animation {
 	/**
 	 * The data-animate value of a block with tweens: one segment per tween, in the order of their start, joined by ';'.
 	 * The runtime plays the segments on one timeline. The Scroll Trigger goes on the first segment, which the runtime
-	 * reads. The preview on the canvas (preview = true) plays without the trigger, the loop or the markers.
+	 * reads. The preview on the canvas (preview = true) plays without the trigger or the markers; its loop is written as on the front end.
 	 */
 	public static function tweens_data_animate( $tweens, $scroll, $preview = false ) {
 		$tweens = self::clean_tweens( $tweens );
@@ -203,7 +203,7 @@ class SNN_Animation {
 	private static function scroll_options( array $scroll, $preview ) {
 		if ( $preview || ! $scroll['on'] ) {
 			$out = array( 'scroll:false' );
-			if ( $scroll['loop'] && ! $preview ) {
+			if ( $scroll['loop'] && ! $scroll['on'] ) {
 				$out[] = 'loop:true';
 			}
 			return $out;

@@ -151,6 +151,7 @@
 }
 
 .snn-anp-lane {
+	overflow: hidden;
 	position: relative;
 	flex: 1;
 	min-width: 0;
@@ -367,6 +368,29 @@
 	flex-direction: column;
 	gap: 3px;
 	min-width: 0;
+}
+
+/* The stagger's tail: it sticks out past the bar, to where the last child starts (clipped by the lane). */
+.snn-anp-bar {
+	overflow: visible;
+}
+
+.snn-anp-bar-text {
+	display: block;
+	overflow: hidden;
+}
+
+.snn-anp-tail {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 100%;
+	box-sizing: border-box;
+	border: 1px dashed #3858e9;
+	border-left: 0;
+	border-radius: 0 3px 3px 0;
+	background: repeating-linear-gradient( 90deg, #eef1fd 0 4px, #d6defc 4px 8px );
+	pointer-events: none;
 }
 
 .snn-anp-off {

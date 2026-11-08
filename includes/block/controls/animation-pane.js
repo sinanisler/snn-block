@@ -6,7 +6,8 @@
  * block under it that has animations, and one for the selected block itself. Click a lane name to select that block,
  * click a bar to edit that animation on the right, drag a bar to move it, drag its right edge to resize it, drag the
  * ruler to scrub, double-click a lane to add an animation there. Play runs all the lanes on the canvas together, with
- * the runtime the front end uses (assets/js/gsap-data-animate.js, through window.createDataAnimate).
+ * the runtime the front end uses (assets/js/gsap-data-animate.js, through window.createDataAnimate): a block with
+ * Loop timeline on repeats as it does on the front end, and a stagger goes over the child blocks.
  *
  * The data written here is turned into the data-animate value by SNN_Animation::tweens_data_animate (animation.php).
  * toDataAnimate below writes the same text, for the canvas attribute and the preview.
@@ -82,11 +83,19 @@
 		return p.key === 'blur' ? 'blur(' + num( v ) + 'px)' : num( v ) + p.unit;
 	}
 
+	/**
+	 * Whether a block loops. The loop belongs to the Scroll Trigger being off: the runtime loops a block only then, and the
+	 * same goes for the preview.
+	 */
+	function loops( sc ) {
+		return !! sc.loop && ! sc.on;
+	}
+
 	/** The options that come first in the first segment: the Scroll Trigger, or play when in view (and its loop). */
 	function scrollOptions( sc, preview ) {
 		if ( preview || ! sc.on ) {
 			const off = [ 'scroll:false' ];
-			if ( sc.loop && ! preview ) {
+			if ( loops( sc ) ) {
 				off.push( 'loop:true' );
 			}
 			return off;
@@ -368,16 +377,33 @@
 
 	/*
 	 * The preview on the canvas: each lane's block, with the runtime's own instance. One clock moves them all (seekPreview
-	 * sets every instance to the same time), so the lanes play together. It is kept here, not in the dock, and the dock
-	 * takes it down when it unmounts (the dock is remounted when another block is selected).
+	 * sets every instance to the same time), so the lanes play together, and a looping block keeps going as on the front
+	 * end. It is kept here, not in the dock, and the dock takes it down when it unmounts (the dock is remounted when
+	 * another block is selected).
 	 */
-	const preview = { items: [], key: '', pos: 0, playing: false, raf: 0, view: null };
+	const preview = { items: [], key: '', pos: 0, playing: false, looping: false, raf: 0, view: null };
 
 	/** The block's element on the canvas (in the editor's iframe), or null. */
 	function canvasEl( clientId ) {
 		const frame = document.querySelector( 'iframe[name="editor-canvas"]' );
 		const doc = frame && frame.contentDocument ? frame.contentDocument : document;
 		return doc.querySelector( '[data-block="' + clientId + '"]' );
+	}
+
+	/** The inline styles the preview changes, of one element. */
+	function styleOf( el ) {
+		return { transform: el.style.transform, opacity: el.style.opacity, filter: el.style.filter, visibility: el.style.visibility };
+	}
+
+	function setStyle( el, saved ) {
+		Object.keys( saved ).forEach( ( prop ) => {
+			el.style[ prop ] = saved[ prop ];
+		} );
+	}
+
+	/** The child blocks of a block on the canvas: on the front end these are the element's children, which a stagger uses. */
+	function childBlocks( el ) {
+		return [ ...el.querySelectorAll( '[data-block]' ) ].filter( ( c ) => c.parentElement && c.parentElement.closest( '[data-block]' ) === el );
 	}
 
 	/** Puts the canvas back as it was before the preview, and drops the runtime's instances. */
@@ -388,22 +414,28 @@
 			} catch ( e ) {
 				// The instance is gone already.
 			}
+		} );
+		preview.items.forEach( ( it ) => {
+			const all = [ it.el, ...it.kids.map( ( k ) => k.el ) ];
 			it.el._gsapAnimationInstance = null;
 			if ( window.gsap && window.gsap.killTweensOf ) {
-				window.gsap.killTweensOf( it.el );
+				all.forEach( ( t ) => window.gsap.killTweensOf( t ) );
 			}
-			Object.keys( it.saved ).forEach( ( prop ) => {
-				it.el.style[ prop ] = it.saved[ prop ];
+			setStyle( it.el, it.saved );
+			it.kids.forEach( ( k ) => setStyle( k.el, k.saved ) );
+			all.forEach( ( t ) => {
+				delete t._gsap;
 			} );
-			delete it.el._gsap;
 		} );
 		preview.items = [];
 		preview.key = '';
+		preview.looping = false;
 	}
 
 	/**
-	 * Builds the preview from a list of { clientId, str } (the data-animate text of each lane). Returns true when at least
-	 * one block can play. Only a block whose text changed, or whose element was replaced on the canvas, is built again.
+	 * Builds the preview from a list of { clientId, str, loop }: the data-animate text of each lane, and whether it loops.
+	 * Returns true when at least one block can play. Only a block whose text changed, or whose element was replaced on the
+	 * canvas, is built again.
 	 */
 	function buildPreview( list ) {
 		const key = list.map( ( x ) => x.clientId + '|' + x.str ).join( '\n' );
@@ -412,6 +444,7 @@
 		}
 		restorePreview();
 		preview.key = key;
+		preview.looping = list.some( ( x ) => x.loop );
 		if ( ! list.length || ! window.gsap || typeof window.createDataAnimate !== 'function' ) {
 			return false;
 		}
@@ -420,29 +453,36 @@
 			if ( ! el ) {
 				return;
 			}
-			const saved = { transform: el.style.transform, opacity: el.style.opacity, filter: el.style.filter, visibility: el.style.visibility };
+			const saved = styleOf( el );
+			const kids = childBlocks( el ).map( ( c ) => ( { el: c, saved: styleOf( c ) } ) );
+			// The runtime staggers over the children of an element. On the canvas those are not the child blocks (WordPress
+			// puts a wrapper and style tags in between), so the child blocks are handed to the runtime for this one build.
+			el._snnStaggerTargets = kids.map( ( k ) => k.el );
 			window.createDataAnimate( [ el ], x.str );
+			delete el._snnStaggerTargets;
 			const inst = el._gsapAnimationInstance;
 			if ( ! inst ) {
-				Object.keys( saved ).forEach( ( prop ) => {
-					el.style[ prop ] = saved[ prop ];
-				} );
+				setStyle( el, saved );
+				kids.forEach( ( k ) => setStyle( k.el, k.saved ) );
 				return;
 			}
 			// The runtime's viewport observer may call play() by itself. The pane's clock moves the blocks instead.
 			inst.play = () => inst;
 			inst.pause( 0 );
-			preview.items.push( { el, saved, inst } );
+			preview.items.push( { el, saved, kids, inst } );
 		} );
 		return preview.items.length > 0;
 	}
 
-	/** Sets every block's preview to the same time, and moves the playhead of the dock. */
+	/*
+	 * Sets every block's preview to the same time, and moves the playhead of the dock. A single tween keeps its delay (the
+	 * t_start of the timeline) outside its own time, so the time it is set to is t less that delay. A timeline has no delay.
+	 */
 	function seekPreview( t ) {
 		preview.pos = t;
 		preview.items.forEach( ( it ) => {
 			it.inst.pause();
-			it.inst.time( t );
+			it.inst.totalTime( Math.max( 0, t - it.inst.delay() ) );
 		} );
 		if ( preview.view ) {
 			preview.view.onTime( t );
@@ -464,12 +504,15 @@
 		}
 	}
 
-	/** Plays from the playhead to the end (from the start when the playhead is already there). */
+	/**
+	 * Plays from the playhead. Without a looping block it stops at the end of the last lane (and starts again from the
+	 * start when the playhead is already there). With one, the clock keeps going until Pause, as the block does.
+	 */
 	function playPreview( end ) {
 		if ( preview.playing || end <= 0 ) {
 			return;
 		}
-		if ( preview.pos >= end - 1e-6 ) {
+		if ( ! preview.looping && preview.pos >= end - 1e-6 ) {
 			preview.pos = 0;
 		}
 		preview.playing = true;
@@ -479,10 +522,11 @@
 		let last = window.performance.now();
 		const step = ( now ) => {
 			preview.raf = 0;
-			const t = Math.min( end, preview.pos + Math.max( 0, now - last ) / 1000 );
+			const next = preview.pos + Math.max( 0, now - last ) / 1000;
 			last = now;
+			const t = preview.looping ? next : Math.min( end, next );
 			seekPreview( t );
-			if ( t >= end ) {
+			if ( ! preview.looping && t >= end ) {
 				stopPreview();
 			} else {
 				preview.raf = window.requestAnimationFrame( step );
@@ -504,6 +548,16 @@
 	 * The dock under the canvas. Its lanes: the top block of the selected block's tree, every block under it that has
 	 * animations, and the selected block itself. One time line for all of them.
 	 */
+	/** How far a tween's stagger spreads its children past its own duration: the last child starts this much later. */
+	function spreadOf( t, kids ) {
+		return t.stagger > 0 && kids > 1 ? t.stagger * ( kids - 1 ) : 0;
+	}
+
+	/** When a lane ends: its last tween, with the stagger of its children. */
+	function laneEnd( l ) {
+		return l.st.tweens.reduce( ( m, t ) => Math.max( m, t.start + t.duration + spreadOf( t, l.kids ) ), 0 );
+	}
+
 	function TimelineDock( { clientId, onClose } ) {
 		// The blocks of the tree, top block first (the store's own block objects, so a change in one re-renders the dock).
 		const blocks = useSelect(
@@ -529,6 +583,8 @@
 		const [ playing, setPlaying ] = useState( preview.playing );
 		const [ width, setWidth ] = useState( 600 );
 		const [ drag, setDrag ] = useState( null );
+		// The page of the ruler: the time it starts at is page * total (see showTime).
+		const [ page, setPage ] = useState( 0 );
 		const tlRef = useRef( null );
 		const rulerRef = useRef( null );
 		const phRef = useRef( null );
@@ -536,7 +592,7 @@
 		const latest = useRef( null );
 
 		const lanes = blocks
-			.map( ( b ) => ( { clientId: b.clientId, name: b.name, attrs: b.attributes || {}, st: stateOf( b.attributes || {} ) } ) )
+			.map( ( b ) => ( { clientId: b.clientId, name: b.name, attrs: b.attributes || {}, kids: ( b.innerBlocks || [] ).length, st: stateOf( b.attributes || {} ) } ) )
 			.filter( ( l ) => l.st.tweens.length > 0 || l.clientId === clientId );
 		// Two blocks of one kind get numbers on their lanes: Text 1, Text 2.
 		const names = lanes.map( ( l ) => nameOf( l.name, l.attrs ) );
@@ -555,10 +611,12 @@
 		const selected = lanes.find( ( l ) => l.clientId === clientId ) || { st: { tweens: [], scroll: DEFAULT_SCROLL } };
 		const selCount = selected.st.tweens.length;
 		const cur = selCount ? Math.min( picked, selCount - 1 ) : -1;
-		const end = lanes.reduce( ( m, l ) => l.st.tweens.reduce( ( mm, t ) => Math.max( mm, t.start + t.duration ), m ), 0 );
+		const end = lanes.reduce( ( m, l ) => Math.max( m, laneEnd( l ) ), 0 );
 		const total = Math.max( 1.5, end ) + 0.2;
 		const k = Math.max( 40, width - LABEL_W ) / total;
-		latest.current = { lanes, clientId, end, total, k };
+		const pageStart = page * total;
+		const looping = lanes.some( ( l ) => l.st.tweens.length > 0 && loops( l.st.scroll ) );
+		latest.current = { lanes, clientId, end, total, k, page, looping };
 
 		const laneOf = ( id ) => latest.current.lanes.find( ( l ) => l.clientId === id );
 		const selectBlock = ( id ) => {
@@ -569,21 +627,29 @@
 		const previewList = () =>
 			latest.current.lanes
 				.filter( ( l ) => l.st.tweens.length > 0 )
-				.map( ( l ) => ( { clientId: l.clientId, str: toDataAnimate( l.st.tweens, l.st.scroll, true ) } ) )
+				.map( ( l ) => ( { clientId: l.clientId, str: toDataAnimate( l.st.tweens, l.st.scroll, true ), loop: loops( l.st.scroll ) } ) )
 				.filter( ( x ) => x.str );
 
+		/*
+		 * The ruler shows one page at a time, a page as long as the ruler (total). The page follows the playhead, so a
+		 * looping block keeps moving on past the ruler, and the bars and the playhead stay where their time is.
+		 */
 		const showTime = ( t ) => {
 			const L = latest.current;
+			const n = Math.max( 0, Math.floor( t / L.total + 1e-9 ) );
+			if ( n !== L.page ) {
+				setPage( n );
+			}
 			if ( phRef.current ) {
-				phRef.current.style.left = LABEL_W + t * L.k + 'px';
+				phRef.current.style.left = LABEL_W + ( t - n * L.total ) * L.k + 'px';
 			}
 			if ( timeRef.current ) {
-				timeRef.current.textContent = t.toFixed( 2 ) + ' / ' + L.end.toFixed( 2 ) + 's';
+				timeRef.current.textContent = L.looping ? t.toFixed( 2 ) + ' s, looping' : t.toFixed( 2 ) + ' / ' + L.end.toFixed( 2 ) + 's';
 			}
 		};
 		// The playhead and the time follow the preview; after a change the last position stays.
 		useEffect( () => {
-			showTime( Math.min( preview.pos, latest.current.total ) );
+			showTime( preview.pos );
 		} );
 
 		// This dock is the preview's view while it is mounted. Unmounting takes the preview down.
@@ -618,7 +684,7 @@
 		const seek = ( t ) => {
 			stopPreview();
 			buildPreview( previewList() );
-			seekPreview( Math.min( t, latest.current.total ) );
+			seekPreview( Math.max( 0, t ) );
 		};
 		const onPlay = () => {
 			if ( preview.playing ) {
@@ -635,7 +701,9 @@
 		const scrubStart = ( e ) => {
 			e.preventDefault();
 			const rect = rulerRef.current ? rulerRef.current.getBoundingClientRect() : null;
-			const at = ( x ) => Math.min( latest.current.total, Math.max( 0, ( x - ( rect ? rect.left : 0 ) ) / latest.current.k ) );
+			const at = ( x ) =>
+				latest.current.page * latest.current.total +
+				Math.min( latest.current.total, Math.max( 0, ( x - ( rect ? rect.left : 0 ) ) / latest.current.k ) );
 			seek( at( e.clientX ) );
 			const move = ( m ) => seek( at( m.clientX ) );
 			const up = () => {
@@ -730,11 +798,15 @@
 		/* ---------- the ruler and the lanes ---------- */
 		const ticks = [];
 		const step = total > 6 ? 1 : 0.5;
-		for ( let n = 0; n * step <= total + 1e-6; n++ ) {
+		for ( let n = Math.floor( pageStart / step + 1e-9 ); n * step - pageStart <= total + 1e-6; n++ ) {
 			const s = n * step;
-			ticks.push( h( 'i', { key: 't' + n, className: 'snn-anp-tick', style: { left: s * k + 'px' } } ) );
+			const at = ( s - pageStart ) * k;
+			if ( at < -1e-6 ) {
+				continue;
+			}
+			ticks.push( h( 'i', { key: 't' + n, className: 'snn-anp-tick', style: { left: at + 'px' } } ) );
 			if ( s % 1 === 0 ) {
-				ticks.push( h( 'b', { key: 'l' + n, className: 'snn-anp-tick-label', style: { left: s * k + 'px' } }, s + 's' ) );
+				ticks.push( h( 'b', { key: 'l' + n, className: 'snn-anp-tick-label', style: { left: at + 'px' } }, s + 's' ) );
 			}
 		}
 		const laneRow = ( l ) => {
@@ -746,11 +818,13 @@
 					{
 						key: i,
 						className: 'snn-anp-bar' + ( isSel && i === cur ? ' is-on' : '' ),
-						style: { left: v.start * k + 'px', width: Math.max( 8, v.duration * k ) + 'px' },
+						style: { left: ( v.start - pageStart ) * k + 'px', width: Math.max( 8, v.duration * k ) + 'px' },
 						...tipAttr( 'anim.bar' ),
 						onPointerDown: ( e ) => barStart( e, l.clientId, i, false ),
 					},
 					h( 'span', { className: 'snn-anp-bar-text' }, tweenName( t ) ),
+					// The stagger's spread: a light tail after the bar, as far as the last child starts later.
+					spreadOf( t, l.kids ) > 0 ? h( 'span', { className: 'snn-anp-tail', 'aria-hidden': 'true', style: { width: spreadOf( t, l.kids ) * k + 'px' } } ) : null,
 					h( 'span', { className: 'snn-anp-rz', onPointerDown: ( e ) => barStart( e, l.clientId, i, true ) } )
 				);
 			} );
@@ -768,7 +842,7 @@
 						className: 'snn-anp-lane',
 						onDoubleClick: ( e ) => {
 							if ( e.target === e.currentTarget ) {
-								addAt( l.clientId, e.nativeEvent.offsetX / k );
+								addAt( l.clientId, pageStart + e.nativeEvent.offsetX / k );
 							}
 						},
 					},
