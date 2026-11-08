@@ -201,9 +201,14 @@ function snn_page_code_canvas_reset() {
         . '.wp-block-post-content>*{max-width:none;margin-inline:0;margin-block-start:0;margin-block-end:0}'
         . '.wp-block-group.is-layout-flow>*+*,.wp-block-group.is-layout-constrained>*+*,.wp-block-post-content>*+*{margin-block-start:0}'
         . '.wp-block-group,.wp-block-buttons,.wp-block-list,.wp-block-quote,.wp-block-details,.wp-block-table,.wp-block-image,.wp-block-code,.wp-block-paragraph,.wp-block-heading,.wp-block-separator{max-width:none;margin-block:0}'
-        . '.wp-block-post-content :is(h1,h2,h3,h4,h5,h6){color:inherit}'
-        . '.wp-block-post-content a{color:inherit}'
+        // The theme's heading and link colours give way to the design: these rules weigh one tag (:where), so any class of
+        // the design wins over them, and they come after the theme's own a:where(...) rule.
+        . ':where(.wp-block-post-content) :is(h1,h2,h3,h4,h5,h6){color:inherit}'
+        . ':where(.wp-block-post-content) a{color:inherit}'
         . '.wp-block-paragraph,.wp-block-heading,.wp-block-list-item{text-wrap:wrap}'
+        // A design counts on the browser's own base size and line height (16px, normal); the theme's global styles
+        // set others (html 15px, body line height 1.6), which would scale every rem and em of the design.
+        . 'html{font-size:100%}body{font-size:1rem;line-height:normal}'
         . 'body{color:inherit;background:inherit}';
 }
 
@@ -231,8 +236,34 @@ function snn_page_code_print_head() {
  */
 function snn_page_code_editor_reset() {
     return '.is-root-container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}'
-        . '.is-root-container>*{max-width:none!important;margin-inline:0!important;margin-block:0!important}'
+        // The top-level blocks lose the editor's own width and margins, but not the design's: no !important here.
+        . '.is-root-container>*{max-width:none;margin-inline:0;margin-block:0}'
+        // The theme's link and heading colours give way to the design in the editor too (the front end's rules name
+        // .wp-block-post-content, which the canvas does not have).
+        . ':where(.is-root-container) a,:where(.is-root-container) :is(h1,h2,h3,h4,h5,h6){color:inherit}'
         . snn_page_code_canvas_reset();
+}
+
+/**
+ * The page CSS for the editor canvas, with the design's position kept. The editor gives every block element
+ * position: relative with two classes (.block-editor-block-list__layout .block-editor-block-list__block), which beats a
+ * design's .nav { position: fixed }. So each rule that sets position gets a twin after it, :is(its selectors) with
+ * :not(#snn-editor) added, which weighs one ID more: it beats the editor's rule, and the design's own rules keep their
+ * order among themselves. Selectors with a pseudo-element are left as they are (the editor rule does not reach them).
+ */
+function snn_page_code_editor_positions( $css ) {
+    return preg_replace_callback(
+        '/([^{}@;]+)\{([^{}]*)\}/',
+        function ( $m ) {
+            $selectors = trim( $m[1] );
+            if ( ! preg_match_all( '/(?:^|;)\s*(position\s*:[^;]+)/i', $m[2], $found ) || false !== strpos( $selectors, '::' ) || preg_match( '/:(before|after|first-line|first-letter)\b|^(from|to|\d+%)/i', $selectors ) ) {
+                return $m[0];
+            }
+            $last = trim( end( $found[1] ) );
+            return $m[0] . ':is(' . $selectors . '):not(#snn-editor){' . $last . '}';
+        },
+        (string) $css
+    );
 }
 
 /** Declarations of the html and body rules in a stylesheet, joined with ';'. */
@@ -259,7 +290,7 @@ function snn_page_code_editor_styles( $settings, $context ) {
     if ( '' === trim( $code['css'] ) ) {
         return $settings;
     }
-    $css = $code['css'];
+    $css = snn_page_code_editor_positions( $code['css'] );
     if ( 'snn-canvas' === get_page_template_slug( $post ) ) {
         $css = snn_page_code_editor_reset() . "\n" . $css;
     }
@@ -269,6 +300,11 @@ function snn_page_code_editor_styles( $settings, $context ) {
     $root = snn_page_code_root_declarations( $code['css'] );
     if ( '' !== $root ) {
         $css = '.editor-styles-wrapper.editor-styles-wrapper{' . $root . "}\n" . $css;
+    }
+    // The canvas reset's base size and line height (see snn_page_code_canvas_reset) on the wrapper, which stands in
+    // for the body; the design's own body declarations come after it and win.
+    if ( 'snn-canvas' === get_page_template_slug( $post ) ) {
+        $css = ".editor-styles-wrapper.editor-styles-wrapper{font-size:1rem;line-height:normal}\n" . $css;
     }
     // The design's body overflow would make the canvas wrapper a scroll container, which breaks sticky elements.
     $css .= "\n.editor-styles-wrapper{overflow:visible!important}";

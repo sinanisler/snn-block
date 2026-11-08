@@ -2428,47 +2428,44 @@
 					display: parentShown.display || '',
 					flexDirection: parentShown.flexDirection || 'row',
 				};
-				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
+				// The canvas draws each block as the front end prints it: ONE element with the block's tag, ID, classes and
+				// whole style (item and layout settings together), and its children right inside it. So the page's own CSS
+				// (a design's .grid > .card, section.hero) reaches the same elements in the editor as on the front end.
 				const parts = splitStyle( styleFor( effectiveValues( a, device ), hasViewRule( a, device ) ) );
-				// The custom CSS as the front end prints it, scoped to this block: the class goes on the wrapper, the
-				// rules in a style element inside it.
+				const ownStyle = parts.item || parts.layout ? { ...( parts.item || {} ), ...( parts.layout || {} ) } : undefined;
+				// The custom CSS as the front end prints it, scoped to this block: the class goes on the element, the
+				// rules in a style element (inside the element for a block with children, before it for the others).
 				const cssText = cleanCss( a.customCss );
 				const cssScoped = cssText ? cssScope( cssText ) : '';
 				const cssRules = cssScoped ? h( 'style', null, scopeCss( cssText, '.' + cssScoped ) ) : null;
-				// The overlay (Apply to: Overlay) is the ::before of the element that holds the layout style, the inner list.
-				// Its rule is written here, and the class goes on that element, as the front end puts both on the block.
+				// The overlay (Apply to: Overlay) is the ::before of the block's element, as on the front end.
 				const overlayPairs = window.snnStyleProps.overlay( effectiveValues( a, device ) );
 				const overlayClass = overlayPairs.length ? cssScope( 'overlay' + JSON.stringify( overlayPairs ) ) : '';
 				const overlayRule = overlayClass ? h( 'style', null, '.' + overlayClass + '::before{' + overlayPairs.map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' ) + '}' ) : null;
 				const blockProps = useBlockProps( {
 					id: cleanId( a.htmlId ) || undefined,
-					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped ].filter( Boolean ).join( ' ' ),
-					style: parts.item,
+					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped, overlayClass ].filter( Boolean ).join( ' ' ),
+					style: ownStyle,
 					'data-animate': canvasDataAnimate( a ),
 				} );
-				// The layout (display, gaps, tracks) goes on the element that holds the children. WordPress
-				// puts its own list element between the block wrapper and the children, so a style on the
-				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
-				const innerProps = useInnerBlocksProps( { style: parts.layout, className: overlayClass || undefined }, { __unstableDisableLayoutClassNames: true } );
+				// A block with children: the children go straight into the block's element (no list element between).
+				// The layout class names are off: our blocks do not use them.
+				const innerProps = useInnerBlocksProps( blockProps, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
 				// With the query loop on, the loop's other items are drawn after the block (see LoopPreview).
 				const loopPreview = a.query.enabled ? h( LoopPreview, { clientId } ) : null;
 				// The Image block: its picture is drawn by the image script (blocks/image/image-editor.js), and its Content tab is that script's panel.
 				// A block with a kind (Button, Icon, Code): its Content tab and its canvas come from its folder's editor
-				// script (blocks/<name>/<name>-editor.js), as the Image block's do.
+				// script (blocks/<name>/<name>-editor.js), as the Image block's do. The canvas element takes the block's props.
 				const kind = kindOf( def );
 				if ( kind ) {
 					return h(
 						Fragment,
 						null,
 						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), kind, clientId } ) ),
-						h(
-							'div',
-							blockProps,
-							cssRules,
-							overlayRule,
-							h( kind.Canvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined, set } )
-						),
+						cssRules,
+						overlayRule,
+						h( kind.Canvas, { a, tag: a.tagName, rootProps: blockProps, set } ),
 						loopPreview
 					);
 				}
@@ -2477,60 +2474,50 @@
 						Fragment,
 						null,
 						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), image: true, clientId } ) ),
-						h(
-							'div',
-							blockProps,
-							cssRules,
-							overlayRule,
-							h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined, set } )
-						),
+						cssRules,
+						overlayRule,
+						h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, rootProps: blockProps, set } ),
 						loopPreview
 					);
 				}
-				// A Text block: its text is a rich text, drawn in the element that takes the layout style (the item
-				// settings stay on the wrapper). The query badge shows as it does for a layout block.
+				// A Text block: the rich text is the block's element, with its tag.
 				if ( def.text ) {
 					return h(
 						Fragment,
 						null,
 						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), text: true, clientId } ) ),
-						h(
-							'div',
-							blockProps,
-							a.query.enabled
-								? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
-								: null,
-							cssRules,
-							overlayRule,
-							h( RichText, {
-								tagName: a.tagName,
-								value: a.content,
-								onChange: ( v ) => set( { content: v } ),
-								placeholder: __( 'Type text', 'snn' ),
-								style: parts.layout,
-								className: overlayClass || undefined,
-								allowedFormats: textAllowedFormats(),
-								// The render prop gives the rich text value while the block is selected. The buttons are filled into
-								// core's "unknown" slot (see TextBarButtons), which sits after Bold, Italic and Link.
-								children: ( { value, onChange, onFocus } ) => h( Fill, { name: 'RichText.ToolbarControls.unknown' }, h( TextBarButtons, { value, onChange, onFocus } ) ),
-							} )
-						),
+						cssRules,
+						overlayRule,
+						h( RichText, {
+							...blockProps,
+							tagName: a.tagName,
+							value: a.content,
+							onChange: ( v ) => set( { content: v } ),
+							placeholder: __( 'Type text', 'snn' ),
+							allowedFormats: textAllowedFormats(),
+							// The render prop gives the rich text value while the block is selected. The buttons are filled into
+							// core's "unknown" slot (see TextBarButtons), which sits after Bold, Italic and Link.
+							children: ( { value, onChange, onFocus } ) => h( Fill, { name: 'RichText.ToolbarControls.unknown' }, h( TextBarButtons, { value, onChange, onFocus } ) ),
+						} ),
 						loopPreview
 					);
 				}
+				// A layout block: its element with the tag it prints. The a tag is drawn as an a without href, so a click
+				// selects the block instead of following the link.
+				const { children: innerChildren, ...elementProps } = innerProps;
 				return h(
 					Fragment,
 					null,
 					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), link: !! def.link, clientId } ) ),
 					h(
-						'div',
-						blockProps,
+						canvasTag( a.tagName, def ),
+						elementProps,
 						a.query.enabled
 							? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) )
 							: null,
 						cssRules,
-							overlayRule,
-						h( 'div', innerProps )
+						overlayRule,
+						innerChildren
 					),
 					loopPreview
 				);
@@ -2544,6 +2531,15 @@
 					return h( InnerBlocks.Content, null );
 				},
 		} );
+	}
+
+	/**
+	 * The tag a layout block is drawn with on the canvas: the tag it prints (section, header, nav and so on). The a tag
+	 * of a Div or Container is drawn as an a without href (a click selects, it does not go away).
+	 */
+	function canvasTag( tagName, def ) {
+		const tags = ( data.tags || [] ).concat( def.link ? [ 'a' ] : [] );
+		return tags.indexOf( tagName ) !== -1 ? tagName : def.tag;
 	}
 
 	/** The editor side of a block with a kind (window.snnBlockKinds, filled by blocks/<name>/<name>-editor.js), or null. */

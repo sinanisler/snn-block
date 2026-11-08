@@ -4,9 +4,9 @@
  * A button with the snn-plain class (the HTML converter gives it to every button it makes) has no starting look: the
  * design's own CSS draws it.
  */
-/* In the editor the class is on the block wrapper, and the button itself is .snn-button-root (button-editor.js). */
+/* In the editor the button is .snn-button-root (button-editor.js), and it is also the block element (block-editor-block-list__block). */
 :where(.wp-block-snn-button:not(.block-editor-block-list__block):not(.snn-plain)),
-:where(:not(.snn-plain) > .snn-button-root) {
+:where(.snn-button-root:not(.snn-plain)) {
 	align-items: center;
 	justify-content: center;
 	gap: 0.5em;
@@ -26,7 +26,7 @@
  * Style tab (one class) still wins over this one.
  */
 html a:where(.wp-block-snn-button:not(.block-editor-block-list__block):not(.snn-plain)),
-html a:where(:not(.snn-plain) > .snn-button-root) {
+html a:where(.snn-button-root:not(.snn-plain)) {
 	color: #fff;
 	text-decoration: none;
 }

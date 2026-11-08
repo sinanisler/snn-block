@@ -46,14 +46,15 @@
 	}
 
 	/** The icon on the canvas: the size and colour on the element, the icon inside it. Empty: a dashed box to click. */
-	function Canvas( { a, tag, style, className } ) {
+	function Canvas( { a, tag, rootProps } ) {
+		const root = rootProps || {};
 		const shownTag = a.linkUrl ? 'a' : tag === 'a' ? 'span' : tag;
 		const size = check( 'size', a.iconSize );
 		const color = check( 'color', a.iconColor );
 		const own = { fontSize: size || undefined, color: color || undefined, fill: color || undefined };
 		return h(
 			shownTag,
-			{ style: { ...own, ...style }, className: [ 'snn-icon-root', className ].filter( Boolean ).join( ' ' ) },
+			{ ...root, style: { ...own, ...( root.style || {} ) }, className: [ root.className, 'snn-icon-root' ].filter( Boolean ).join( ' ' ) },
 			hasIcon( a.icon )
 				? h( IconGlyph, { icon: a.icon } )
 				: h( 'span', { className: 'snn-icon-empty', style: EMPTY }, __( 'Choose an icon in the panel', 'snn' ) )

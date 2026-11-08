@@ -88,7 +88,8 @@
 	 * The button on the canvas: the element (a with a link; a span stands in for button, so the text can be typed in),
 	 * the text written in place and the icon on its side. No href: a click on the canvas selects, it does not go away.
 	 */
-	function Canvas( { a, tag, style, className, set } ) {
+	function Canvas( { a, tag, rootProps, set } ) {
+		const root = rootProps || {};
 		const linked = !! a.linkUrl;
 		const shownTag = linked ? 'a' : tag === 'a' || tag === 'button' ? 'span' : tag;
 		const own = {};
@@ -114,7 +115,7 @@
 		} );
 		return h(
 			shownTag,
-			{ style: { ...own, ...style }, className: [ 'snn-button-root', className ].filter( Boolean ).join( ' ' ) },
+			{ ...root, style: { ...own, ...( root.style || {} ) }, className: [ root.className, 'snn-button-root' ].filter( Boolean ).join( ' ' ) },
 			a.iconPosition === 'left' ? [ icon, text ] : [ text, icon ]
 		);
 	}

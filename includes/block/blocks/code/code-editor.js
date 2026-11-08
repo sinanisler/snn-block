@@ -83,13 +83,22 @@
 		);
 	}
 
-	/** The HTML and the CSS on the canvas. Empty: a dashed box that says where the code goes. */
-	function Canvas( { a, tag, style, className } ) {
+	/**
+	 * The HTML and the CSS on the canvas, in the block's element. Empty: a dashed box that says where the code goes.
+	 * Without a wrapper the element is display: contents, so the code's own elements sit in the parent's layout (a
+	 * grid cell, a flex item) as they do on the front end, where nothing is around them.
+	 */
+	function Canvas( { a, tag, rootProps } ) {
+		const root = rootProps || {};
+		const props = { ...root, className: [ root.className, 'snn-code-root' ].filter( Boolean ).join( ' ' ) };
 		const html = ( a.code || '' ) + ( a.cssCode && a.cssCode.trim() ? '<style>' + a.cssCode + '</style>' : '' );
 		if ( ! html.trim() ) {
-			return h( tag, { style, className: [ 'snn-code-root', className ].filter( Boolean ).join( ' ' ) }, h( 'span', { className: 'snn-code-empty', style: EMPTY }, __( 'Code: write HTML, CSS and JavaScript in the panel', 'snn' ) ) );
+			return h( tag, props, h( 'span', { className: 'snn-code-empty', style: EMPTY }, __( 'Code: write HTML, CSS and JavaScript in the panel', 'snn' ) ) );
 		}
-		return h( tag, { style, className: [ 'snn-code-root', className ].filter( Boolean ).join( ' ' ) || undefined, dangerouslySetInnerHTML: { __html: html } } );
+		if ( a.noWrapper ) {
+			props.style = { ...( root.style || {} ), display: 'contents' };
+		}
+		return h( a.noWrapper ? 'div' : tag, { ...props, dangerouslySetInnerHTML: { __html: html } } );
 	}
 
 	window.snnBlockKinds = window.snnBlockKinds || {};

@@ -500,7 +500,8 @@
 	 * The picture on the canvas, drawn as the front end draws it: the dynamic value, the custom URL, or the picture
 	 * from the library. tag is the element (figure or div) and style its layout, as for the other blocks.
 	 */
-	function ImageCanvas( { a, tag, style, className, set } ) {
+	function ImageCanvas( { a, tag, rootProps, set } ) {
+		const root = rootProps || {};
 		const dynamicOut = useResolved( a.imageDynamic || '' );
 		const customOut = useResolved( a.imageCustomUrl || '' );
 		const captionOut = useResolved( a.captionCustom || '' );
@@ -544,7 +545,7 @@
 			  );
 		return h(
 			tag,
-			{ style, className: [ 'snn-image-root', className ].filter( Boolean ).join( ' ' ) || undefined },
+			{ ...root, style: { margin: 0, ...( root.style || {} ) }, className: [ root.className, 'snn-image-root' ].filter( Boolean ).join( ' ' ) },
 			picture,
 			caption ? h( 'figcaption', null, caption ) : null
 		);

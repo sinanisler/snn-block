@@ -164,7 +164,10 @@ class SNN_HTML_To_Snn_Blocks {
 
         if ( in_array( $tag, self::TEXT_TAGS, true ) ) {
             $rich = $this->rich( iterator_to_array( $el->childNodes ) );
-            if ( null === $rich ) {
+            if ( null === $rich || $this->has_empty_inline( $el ) ) {
+                if ( null !== $rich ) {
+                    return array( $this->code( $el, $tag . ' with empty shapes' ) );
+                }
                 return array( $this->code( $el, $tag . ' with blocks inside' ) );
             }
             if ( '' === trim( $el->textContent ) && false === strpos( $rich, '<br' ) ) {
@@ -177,8 +180,8 @@ class SNN_HTML_To_Snn_Blocks {
         if ( in_array( $tag, self::RICH_TAGS, true ) ) {
             // A formatting element on its own (b, em, small): a Text span that holds it.
             $rich = $this->rich( array( $el ) );
-            if ( null !== $rich && '' !== trim( $el->textContent ) ) {
-                return array( $this->text_block( null, 'span', $rich ) );
+            if ( null !== $rich && '' !== trim( $el->textContent ) && ! $this->has_empty_inline( $el ) ) {
+                return array( $this->text_block( null, 'span', $this->tidy( $rich ) ) );
             }
             return array( $this->code( $el, $tag ) );
         }
@@ -223,7 +226,7 @@ class SNN_HTML_To_Snn_Blocks {
 
     /** A box that only holds text (and inline formats): it becomes one Text. A box of links without text of its own is a layout. */
     private function text_like( DOMElement $el ) {
-        if ( ! $this->only_inline( $el ) || '' === trim( $el->textContent ) ) {
+        if ( ! $this->only_inline( $el ) || '' === trim( $el->textContent ) || $this->has_empty_inline( $el ) ) {
             return false;
         }
         $own_text = false;
@@ -280,7 +283,33 @@ class SNN_HTML_To_Snn_Blocks {
 
     private function text_from( DOMElement $el, $tag ) {
         $rich = $this->rich( iterator_to_array( $el->childNodes ) );
-        return $this->text_block( $el, $tag, trim( (string) $rich ) );
+        return $this->text_block( $el, $tag, $this->tidy( (string) $rich ) );
+    }
+
+    /**
+     * Rich text as the editor shows it: the editor keeps every space (white-space: pre-wrap), where a page drops a
+     * space at the start of a line. So the spaces around a line break and at both ends go, and runs become one space.
+     */
+    private function tidy( $html ) {
+        $html = preg_replace( '/ {2,}/', ' ', $html );
+        $html = preg_replace( '/\s*<br>\s*/', '<br>', $html );
+        // A space just inside an opening tag after a line break (<br> <span> stays <br><span>).
+        $html = preg_replace( '/<br>((?:<[a-z][^>]*>)+) /', '<br>$1', $html );
+        return trim( $html );
+    }
+
+    /**
+     * True when an element holds an empty inline element (a dot or a line drawn by CSS). The editor's rich text drops
+     * empty elements, so such a text would lose them when it is edited: it is kept as written (Code) instead.
+     */
+    private function has_empty_inline( DOMElement $el ) {
+        foreach ( $el->getElementsByTagName( '*' ) as $child ) {
+            $tag = strtolower( $child->nodeName );
+            if ( ! in_array( $tag, array( 'br', 'wbr', 'img' ), true ) && '' === trim( $child->textContent ) && ! $child->getElementsByTagName( 'img' )->length ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function text_block( $el, $tag, $content ) {
@@ -357,10 +386,10 @@ class SNN_HTML_To_Snn_Blocks {
                 return $this->code( $el, $tag . ' with other children' );
             }
             $rich = $this->rich( iterator_to_array( $li->childNodes ) );
-            if ( null === $rich ) {
+            if ( null === $rich || $this->has_empty_inline( $li ) ) {
                 return $this->code( $el, $tag . ' with blocks in an item' );
             }
-            $items .= '<li' . $this->inline_attrs( $li ) . '>' . trim( $rich ) . '</li>';
+            $items .= '<li' . $this->inline_attrs( $li ) . '>' . $this->tidy( $rich ) . '</li>';
         }
         $html = '<' . $tag . $this->inline_attrs( $el ) . '>' . $items . '</' . $tag . '>';
         return $this->text_block( null, 'div', $html );
