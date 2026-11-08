@@ -2378,7 +2378,7 @@
 							blockProps,
 							cssRules,
 							overlayRule,
-							h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined } )
+							h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined, set } )
 						)
 					);
 				}

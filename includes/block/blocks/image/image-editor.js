@@ -1,15 +1,17 @@
 /**
  * SNN Image block, the editor side: the Content tab (the Image and Link to groups of the Bricks image element, without its
- * overlay and Unsplash) and the picture on the canvas. The front end is drawn by ./image.php: keep the settings and the
+ * overlay) and the picture on the canvas, and the photo search (Browse Pixabay, Browse Unsplash). The front end is drawn by ./image.php: keep the settings and the
  * picture style in step with it.
  *
  * Loaded after controls.js and before layout-blocks.js (includes/block/layout-blocks.php). Exposes window.snnImageBlock.
  * layout-blocks.js puts ImagePane in the Content tab of this block, and ImageCanvas in its element.
  */
 ( function ( wp ) {
-	const { createElement: h, useEffect, useState } = wp.element;
-	const { __ } = wp.i18n;
+	const { createElement: h, createPortal, useEffect, useState } = wp.element;
+	const { __, sprintf } = wp.i18n;
 	const { Group, Row, SwitchRow, Select, TextField } = window.snnControls;
+	const PROVIDER_LABEL = { pixabay: 'Pixabay', unsplash: 'Unsplash' };
+	const PICK_PATH = '/snn/v1/images/pick';
 
 	const TAG_OPTIONS = [ { value: 'figure', label: 'figure' }, { value: 'div', label: 'div' } ];
 	const OBJECT_FIT_OPTIONS = [ 'fill', 'contain', 'cover', 'scale-down', 'none' ].map( ( v ) => ( { value: v, label: v } ) );
@@ -162,6 +164,157 @@
 		);
 	}
 
+		/** What a pick from the photo search sets on the block: the library picture (id and URL), or the Unsplash URL with its credit. */
+	function fromSearch( pick ) {
+		return { imageId: pick.id || 0, imageUrl: pick.url || '', imageAlt: pick.alt || '', imageSource: pick.source || {} };
+	}
+
+	/**
+	 * The photo search, a simple popup: a search box, the results as thumbnails, and Load more. A result is picked with a
+	 * click. The pick goes to the server (blocks/image/image-search.php): a Pixabay photo is imported into the media library,
+	 * and an Unsplash photo is hotlinked, with the download request Unsplash asks for. Escape or a click outside closes it.
+	 */
+	function ImageBrowser( { provider, onClose, onPick } ) {
+		const [ typed, setTyped ] = useState( '' );
+		const [ term, setTerm ] = useState( '' );
+		const [ items, setItems ] = useState( [] );
+		const [ page, setPage ] = useState( 1 );
+		const [ more, setMore ] = useState( false );
+		const [ busy, setBusy ] = useState( false );
+		const [ error, setError ] = useState( '' );
+		const [ searched, setSearched ] = useState( false );
+
+		useEffect( () => {
+			const onKey = ( e ) => {
+				if ( e.key === 'Escape' ) {
+					onClose();
+				}
+			};
+			document.addEventListener( 'keydown', onKey );
+			return () => document.removeEventListener( 'keydown', onKey );
+		}, [ onClose ] );
+
+		const search = ( q, p, append ) => {
+			const query = String( q || '' ).trim();
+			if ( ! query ) {
+				setError( __( 'Type words to search.', 'snn' ) );
+				return;
+			}
+			setBusy( true );
+			setError( '' );
+			wp.apiFetch( { path: '/snn/v1/images/search?provider=' + provider + '&q=' + encodeURIComponent( query ) + '&page=' + p } )
+				.then( ( r ) => {
+					const list = Array.isArray( r.items ) ? r.items : [];
+					setItems( ( prev ) => ( append ? prev.concat( list ) : list ) );
+					setMore( !! r.more );
+					setPage( p );
+					setTerm( query );
+					setSearched( true );
+					setBusy( false );
+				} )
+				.catch( ( e ) => {
+					setError( e && e.message ? e.message : __( 'The search failed.', 'snn' ) );
+					setBusy( false );
+				} );
+		};
+
+		const choose = ( item ) => {
+			setError( '' );
+			if ( provider === 'unsplash' ) {
+				// The download request Unsplash asks for. If it fails, the photo is still the hotlinked one, so the pick goes on.
+				wp.apiFetch( { path: PICK_PATH, method: 'POST', data: { provider, download: item.download || '' } } ).catch( ( e ) => {
+					console.warn( 'Unsplash download request failed', e );
+				} );
+				onPick( { id: 0, url: item.url, alt: item.alt, source: { provider: 'unsplash', author: item.author || '', authorUrl: item.author_url || '', photoUrl: item.photo_url || '' } } );
+				return;
+			}
+			setBusy( true );
+			wp.apiFetch( { path: PICK_PATH, method: 'POST', data: { provider, pixabay_id: item.id, alt: item.alt || '' } } )
+				.then( ( r ) => onPick( { id: r.id, url: r.url, alt: '', source: {} } ) )
+				.catch( ( e ) => {
+					setBusy( false );
+					setError( e && e.message ? e.message : __( 'The image could not be chosen.', 'snn' ) );
+				} );
+		};
+
+		const title = sprintf( __( 'Choose a photo from %s', 'snn' ), PROVIDER_LABEL[ provider ] || provider );
+		return createPortal(
+			h(
+				'div',
+				{
+					className: 'snn-img-modal-back',
+					onMouseDown: ( e ) => {
+						if ( e.target === e.currentTarget ) {
+							onClose();
+						}
+					},
+				},
+				h(
+					'div',
+					{ className: 'snn-img-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+					h(
+						'div',
+						{ className: 'snn-img-modal-head' },
+						h( 'strong', null, title ),
+						h( 'button', { type: 'button', className: 'snn-bt-x', 'aria-label': __( 'Close', 'snn' ), onClick: onClose }, '×' )
+					),
+					h(
+						'form',
+						{
+							className: 'snn-img-modal-search',
+							onSubmit: ( e ) => {
+								e.preventDefault();
+								search( typed, 1, false );
+							},
+						},
+						h( 'input', {
+							type: 'search',
+							className: 'snn-input',
+							value: typed,
+							placeholder: __( 'Search for photos', 'snn' ),
+							'aria-label': __( 'Search for photos', 'snn' ),
+							autoFocus: true,
+							onChange: ( e ) => setTyped( e.target.value ),
+						} ),
+						h( 'button', { type: 'submit', className: 'button button-primary', disabled: busy }, __( 'Search', 'snn' ) )
+					),
+					error ? h( 'div', { className: 'snn-img-modal-error', role: 'alert' }, error ) : null,
+					h(
+						'div',
+						{ className: 'snn-img-grid' },
+						items.map( ( item ) =>
+							h(
+								'button',
+								{
+									type: 'button',
+									key: String( item.id ),
+									className: 'snn-img-tile',
+									disabled: busy,
+									title: item.alt || '',
+									onClick: () => choose( item ),
+								},
+								h( 'img', { src: item.thumb, alt: item.alt || '', loading: 'lazy' } ),
+								item.author ? h( 'span', { className: 'snn-img-tile-author' }, item.author ) : null
+							)
+						)
+					),
+					searched && items.length === 0 && ! busy ? h( 'p', { className: 'snn-img-hint' }, __( 'No photos found.', 'snn' ) ) : null,
+					more
+						? h( 'button', { type: 'button', className: 'snn-bt-link snn-img-more', disabled: busy, onClick: () => search( term, page + 1, true ) }, __( 'Load more', 'snn' ) )
+						: null,
+					h(
+						'div',
+						{ className: 'snn-img-modal-foot' },
+						provider === 'unsplash'
+							? __( 'Photos from Unsplash. The photographer is credited under the picture.', 'snn' )
+							: __( 'Photos from Pixabay. The chosen photo is saved to the media library.', 'snn' )
+					)
+				)
+			),
+			document.body
+		);
+	}
+
 	/** The sources for other breakpoints: a row each, with its breakpoint, a media query for a custom one, and its picture. */
 	function SourcesList( { rows, onChange } ) {
 		const setAt = ( i, patch ) => onChange( rows.map( ( r, j ) => ( j === i ? { ...r, ...patch } : r ) ) );
@@ -197,6 +350,8 @@
 	 * aspect ratio, object fit and position, caption, loading and stretch) and the Link to group.
 	 */
 	function ImagePane( { a, set } ) {
+		const [ browse, setBrowse ] = useState( null );
+		const providers = window.snnImageProviders || {};
 		const sources = Array.isArray( a.sources ) ? a.sources : [];
 		const hasSources = sources.length > 0;
 		return h(
@@ -208,8 +363,32 @@
 				h( ImageSlot, {
 					value: { id: a.imageId || 0, url: a.imageUrl || '' },
 					label: __( 'Select image', 'snn' ),
-					onChange: ( v ) => set( { imageId: v.id, imageUrl: v.url } ),
+					onChange: ( v ) => set( { imageId: v.id, imageUrl: v.url, imageAlt: '', imageSource: {} } ),
 				} ),
+				// Under Select image: a Browse button for each photo search whose key is set, and the credit of an Unsplash photo.
+				h(
+					'div',
+					{ className: 'snn-img-browse-row' },
+					providers.pixabay
+						? h( 'button', { type: 'button', className: 'snn-img-browse', onClick: () => setBrowse( 'pixabay' ) }, __( 'Browse Pixabay', 'snn' ) )
+						: null,
+					providers.unsplash
+						? h( 'button', { type: 'button', className: 'snn-img-browse', onClick: () => setBrowse( 'unsplash' ) }, __( 'Browse Unsplash', 'snn' ) )
+						: null,
+					a.imageSource && a.imageSource.provider === 'unsplash' && a.imageSource.author
+						? h( 'div', { className: 'snn-img-credit' }, sprintf( __( 'Photo by %s on Unsplash', 'snn' ), a.imageSource.author ) )
+						: null,
+					browse
+						? h( ImageBrowser, {
+								provider: browse,
+								onClose: () => setBrowse( null ),
+								onPick: ( pick ) => {
+									set( fromSearch( pick ) );
+									setBrowse( null );
+								},
+						  } )
+						: null
+				),
 				h(
 					Row,
 					{ label: __( 'Dynamic data', 'snn' ), changed: !! a.imageDynamic },
@@ -303,7 +482,7 @@
 	 * The picture on the canvas, drawn as the front end draws it: the dynamic value, the custom URL, or the picture
 	 * from the library. tag is the element (figure or div) and style its layout, as for the other blocks.
 	 */
-	function ImageCanvas( { a, tag, style, className } ) {
+	function ImageCanvas( { a, tag, style, className, set } ) {
 		const dynamicOut = useResolved( a.imageDynamic || '' );
 		const customOut = useResolved( a.imageCustomUrl || '' );
 		const captionOut = useResolved( a.captionCustom || '' );
@@ -311,7 +490,7 @@
 		const dynamicUrl = shownOf( a.imageDynamic || '', dynamicOut );
 		const customUrl = shownOf( a.imageCustomUrl || '', customOut );
 		const src = dynamicUrl || customUrl || ( media && media.source_url ) || a.imageUrl || '';
-		const alt = media && src === media.source_url ? media.alt_text || '' : '';
+		const alt = media && src === media.source_url ? media.alt_text || '' : a.imageAlt || '';
 		let caption = '';
 		if ( a.captionType === 'attachment' && media && media.caption ) {
 			caption = plainText( media.caption.rendered );
@@ -322,9 +501,12 @@
 		const picture = src
 			? h( 'img', { src, alt, style: imageCss( a ) } )
 			: h(
-					'span',
+					'button',
 					{
-						className: 'snn-image-empty',
+						type: 'button',
+							className: 'snn-image-empty',
+							// A click on the empty picture opens the media library, as the Select image button does.
+							onClick: () => pickImage( ( v ) => set( { imageId: v.id, imageUrl: v.url, imageAlt: '', imageSource: {} } ) ),
 						style: {
 							display: 'flex',
 							alignItems: 'center',
@@ -334,9 +516,13 @@
 							color: '#646970',
 							fontSize: 12,
 							padding: 12,
+							width: '100%',
+							background: 'none',
+							cursor: 'pointer',
+							font: 'inherit',
 						},
 					},
-					__( 'Choose an image in the Image panel', 'snn' )
+					__( 'Click to choose an image', 'snn' )
 			  );
 		return h(
 			tag,

@@ -29,7 +29,7 @@ class SNN_Pixabay {
      * Search Pixabay. Hits come back in our own shape and are cached per request
      * and per image ID.
      *
-     * @param array $args query, per_page (3 to 20), orientation, order, min_width.
+     * @param array $args query, per_page (3 to 20), page (1 to 50), orientation, order, min_width.
      * @return array|WP_Error Hits. Each keeps large_url, which only the import uses.
      */
     public static function search( array $args ) {
@@ -48,6 +48,10 @@ class SNN_Pixabay {
             'order'       => in_array( $args['order'] ?? '', array( 'popular', 'latest' ), true ) ? $args['order'] : 'popular',
             'orientation' => in_array( $args['orientation'] ?? '', array( 'horizontal', 'vertical' ), true ) ? $args['orientation'] : 'all',
         );
+        // Later pages (the image block's Load more). Page 1 is left out, so its cache key is the same as before.
+        if ( (int) ( $args['page'] ?? 1 ) > 1 ) {
+            $params['page'] = min( 50, (int) $args['page'] );
+        }
         if ( ! empty( $args['min_width'] ) ) {
             $params['min_width'] = (int) $args['min_width'];
         }

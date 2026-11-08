@@ -65,6 +65,9 @@ class SNN_Image_Block {
 			'linkTo'         => array( 'type' => 'string', 'default' => 'none' ),
 			'linkUrl'        => array( 'type' => 'string', 'default' => '' ),
 			'linkNewTab'     => array( 'type' => 'boolean', 'default' => false ),
+			// From a photo search (image-search.php): the alt text of the photo, and its credit when it is from Unsplash.
+			'imageAlt'       => array( 'type' => 'string', 'default' => '' ),
+			'imageSource'    => array( 'type' => 'object', 'default' => array() ),
 		);
 	}
 
@@ -90,6 +93,8 @@ class SNN_Image_Block {
 		$out['linkTo']         = self::pick( $out['linkTo'], self::LINK, 'none' );
 		$out['linkUrl']        = self::text( $out['linkUrl'], 2000 );
 		$out['linkNewTab']     = self::flag( $out['linkNewTab'] );
+		$out['imageAlt']       = self::text( $out['imageAlt'], 300 );
+		$out['imageSource']    = self::clean_source( $out['imageSource'] );
 		return $out;
 	}
 
@@ -118,7 +123,7 @@ class SNN_Image_Block {
 		if ( '' !== $caption ) {
 			$html .= '<figcaption>' . esc_html( $caption ) . '</figcaption>';
 		}
-		return $html;
+		return $html . self::credit( $a );
 	}
 
 	/**
@@ -182,7 +187,7 @@ class SNN_Image_Block {
 				)
 			);
 		}
-		return '<img src="' . esc_url( $main['url'] ) . '" alt="" loading="' . esc_attr( $a['loading'] ) . '" decoding="async" style="' . esc_attr( $style ) . '">';
+		return '<img src="' . esc_url( $main['url'] ) . '" alt="' . esc_attr( $a['imageAlt'] ) . '" loading="' . esc_attr( $a['loading'] ) . '" decoding="async" style="' . esc_attr( $style ) . '">';
 	}
 
 	/**
@@ -275,6 +280,60 @@ class SNN_Image_Block {
 			return trim( SNN_Dynamic_Data::render( $a['captionCustom'], $dyn, 'plain' ) );
 		}
 		return '';
+	}
+
+	/**
+	 * The credit line under a picture from Unsplash: the photographer and Unsplash, linked with the utm tags the
+	 * Unsplash guidelines ask for. Nothing for other pictures (a Pixabay import is a media library item).
+	 */
+	private static function credit( array $a ) {
+		$source = $a['imageSource'];
+		if ( 'unsplash' !== $source['provider'] || '' === $source['author'] ) {
+			return '';
+		}
+		$name = esc_html( $source['author'] );
+		if ( '' !== $source['authorUrl'] ) {
+			$name = '<a href="' . esc_url( $source['authorUrl'] ) . '" target="_blank" rel="noopener">' . $name . '</a>';
+		}
+		$home     = class_exists( 'SNN_Unsplash' ) ? SNN_Unsplash::home_url() : 'https://unsplash.com/';
+		$unsplash = '<a href="' . esc_url( $home ) . '" target="_blank" rel="noopener">Unsplash</a>';
+		return '<p class="snn-image-credit" style="font-size:12px;margin:4px 0 0">' . sprintf( __( 'Photo by %1$s on %2$s', 'snn' ), $name, $unsplash ) . '</p>';
+	}
+
+	/** The photo credit as the search gives it: the provider, and for Unsplash the photographer and links on unsplash.com. */
+	private static function clean_source( $raw ) {
+		$raw = is_array( $raw ) ? $raw : array();
+		if ( 'unsplash' !== ( $raw['provider'] ?? '' ) ) {
+			return array(
+				'provider'  => '',
+				'author'    => '',
+				'authorUrl' => '',
+				'photoUrl'  => '',
+			);
+		}
+		return array(
+			'provider'  => 'unsplash',
+			'author'    => self::text( $raw['author'] ?? '', 120 ),
+			'authorUrl' => self::unsplash_url( $raw['authorUrl'] ?? '' ),
+			'photoUrl'  => self::unsplash_url( $raw['photoUrl'] ?? '' ),
+		);
+	}
+
+	/** An https link on unsplash.com or one of its subdomains, or '' for anything else. */
+	private static function unsplash_url( $value ) {
+		$value = is_string( $value ) ? esc_url_raw( $value ) : '';
+		return preg_match( '#^https://([a-z0-9-]+\.)*unsplash\.com/#i', $value ) ? $value : '';
+	}
+
+	/**
+	 * Which photo searches the editor offers. A provider is on when its integration is loaded and its key is saved.
+	 * The keys themselves are never sent to the editor.
+	 */
+	public static function providers() {
+		return array(
+			'pixabay'  => class_exists( 'SNN_Pixabay' ) && '' !== (string) get_option( 'snn_pixabay_api_key', '' ),
+			'unsplash' => class_exists( 'SNN_Unsplash' ) && SNN_Unsplash::configured(),
+		);
 	}
 
 	/** The lightbox script, only on pages that have a lightbox link. */

@@ -69,3 +69,138 @@
 	align-items: center;
 	gap: 4px;
 }
+
+/* The photo search buttons under Select image, and the Unsplash credit line. */
+.snn-img-browse-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px 8px;
+}
+
+.snn-img-browse {
+	flex: 1 1 auto;
+	min-height: 30px;
+	padding: 4px 8px;
+	border: 1px solid #2271b1;
+	border-radius: 2px;
+	background: #fff;
+	color: #2271b1;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.snn-img-browse:hover,
+.snn-img-browse:focus-visible {
+	background: #2271b1;
+	color: #fff;
+	outline: none;
+}
+
+.snn-img-credit {
+	width: 100%;
+	color: #646970;
+	font-size: 11px;
+}
+
+/* The photo search popup. */
+.snn-img-modal-back {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.snn-img-modal {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: min(760px, calc(100vw - 32px));
+	max-height: calc(100vh - 48px);
+	padding: 16px;
+	background: #fff;
+	border-radius: 4px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+	color: #1d2327;
+	font-size: 13px;
+}
+
+.snn-img-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.snn-img-modal-search {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 8px;
+}
+
+.snn-img-modal-error {
+	padding: 6px 8px;
+	border-left: 3px solid #d63638;
+	background: #fcf0f1;
+}
+
+.snn-img-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 8px;
+	min-height: 120px;
+	overflow: auto;
+}
+
+.snn-img-tile {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 4px;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+	background: #f6f7f7;
+	text-align: left;
+	cursor: pointer;
+}
+
+.snn-img-tile:hover,
+.snn-img-tile:focus-visible {
+	border-color: #2271b1;
+	outline: none;
+}
+
+.snn-img-tile:disabled {
+	opacity: 0.6;
+	cursor: progress;
+}
+
+.snn-img-tile img {
+	display: block;
+	width: 100%;
+	height: 110px;
+	object-fit: cover;
+}
+
+.snn-img-tile-author {
+	overflow: hidden;
+	color: #50575e;
+	font-size: 11px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snn-img-modal-foot {
+	color: #646970;
+	font-size: 11px;
+}
+
+.snn-img-more {
+	justify-self: center;
+}

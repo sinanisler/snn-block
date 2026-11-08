@@ -921,6 +921,8 @@ class SNN_Layout_Blocks {
 		// The Image block's panel and canvas (blocks/image/image-editor.js). It loads before the layout script, which uses it.
 		wp_enqueue_style( 'snn-image-editor', SNN_URL . $image_css, array( 'snn-controls' ), self::version( $image_css ) );
 		wp_enqueue_script( 'snn-image-editor', SNN_URL . $image_js, array( 'wp-element', 'wp-i18n', 'wp-data', 'wp-api-fetch', 'snn-controls' ), self::version( $image_js ), true );
+		// Which photo searches the Image block offers (Browse Pixabay, Browse Unsplash): on when the key is saved. No key is sent.
+		wp_add_inline_script( 'snn-image-editor', 'window.snnImageProviders = ' . wp_json_encode( SNN_Image_Block::providers() ) . ';', 'before' );
 		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
 		// highlighting off: the group then shows a plain textarea.
 		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );

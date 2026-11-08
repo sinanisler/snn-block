@@ -36,4 +36,5 @@ require_once __DIR__ . '/utilities/style-props.php';
 require_once __DIR__ . '/animation.php';
 require_once __DIR__ . '/block-tools.php';
 require_once __DIR__ . '/blocks/image/image.php';
+require_once __DIR__ . '/blocks/image/image-search.php';
 require_once __DIR__ . '/layout-blocks.php';
