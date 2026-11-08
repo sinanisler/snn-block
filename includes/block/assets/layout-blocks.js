@@ -445,13 +445,43 @@
 		return lineOk + ( countOk ? ' / span ' + countOk : '' );
 	}
 
-	function styleFor( a ) {
+	/**
+	 * True when the front end has a view rule for this device: Tablet with its own values, Mobile with its own or
+	 * Tablet's (the Tablet rule reaches Mobile widths too). Mirrors the empty() check in view_rules() in layout-blocks.php.
+	 */
+	function hasViewRule( a, device ) {
+		const layers = device === 'Mobile' ? [ 'tablet', 'mobile' ] : device === 'Tablet' ? [ 'tablet' ] : [];
+		return layers.some( ( v ) => {
+			const own = a.responsive && a.responsive[ v ];
+			return !! own && Object.keys( own ).some( ( k ) => own[ k ] !== undefined && own[ k ] !== '' );
+		} );
+	}
+
+	/** The ID as the front end writes it: letters, digits, hyphen and underscore. Mirrors element() in layout-blocks.php. */
+	function cleanId( v ) {
+		return String( v || '' ).replace( /[^A-Za-z0-9_-]/g, '' );
+	}
+
+	/** The custom classes as the front end writes them: each name through sanitize_html_class (octets and other characters dropped). */
+	function cleanClasses( v ) {
+		return String( v || '' ).trim().split( /\s+/ )
+			.map( ( c ) => c.replace( /%[a-fA-F0-9][a-fA-F0-9]/g, '' ).replace( /[^A-Za-z0-9_-]/g, '' ) )
+			.filter( Boolean )
+			.join( ' ' );
+	}
+
+	/**
+	 * The layout style, as style() in layout-blocks.php writes it. view is true when the device has a view rule on the
+	 * front end (hasViewRule).
+	 */
+	function styleFor( a, view ) {
 		const css = {};
 		const flex = a.display === 'flex' || a.display === 'inline-flex';
 		const grid = a.display === 'grid' || a.display === 'inline-grid';
 
-		// Every display is written, block too: a view may turn a flex base back into a block (the front end does the same in its view rules).
-		if ( a.display ) {
+		// Every display but block is written. A view rule writes block too, because the view may turn a flex base back
+		// into a block. The front end does the same: no display in the base rule for block, the display in each view rule.
+		if ( a.display && ( a.display !== 'block' || view ) ) {
 			css.display = a.display;
 		}
 
@@ -2344,7 +2374,7 @@
 					flexDirection: parentShown.flexDirection || 'row',
 				};
 				// The item settings go on the wrapper (the grid or flex item); the layout goes on the list below.
-				const parts = splitStyle( styleFor( effectiveValues( a, device ) ) );
+				const parts = splitStyle( styleFor( effectiveValues( a, device ), hasViewRule( a, device ) ) );
 				// The custom CSS as the front end prints it, scoped to this block: the class goes on the wrapper, the
 				// rules in a style element inside it.
 				const cssText = cleanCss( a.customCss );
@@ -2356,8 +2386,8 @@
 				const overlayClass = overlayPairs.length ? cssScope( 'overlay' + JSON.stringify( overlayPairs ) ) : '';
 				const overlayRule = overlayClass ? h( 'style', null, '.' + overlayClass + '::before{' + overlayPairs.map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' ) + '}' ) : null;
 				const blockProps = useBlockProps( {
-					id: a.htmlId || undefined,
-					className: [ 'wp-block-' + def.name.replace( '/', '-' ), a.cssClasses, cssScoped ].filter( Boolean ).join( ' ' ),
+					id: cleanId( a.htmlId ) || undefined,
+					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped ].filter( Boolean ).join( ' ' ),
 					style: parts.item,
 					'data-animate': canvasDataAnimate( a ),
 				} );
