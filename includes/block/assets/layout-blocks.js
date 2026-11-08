@@ -2031,7 +2031,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device, base, text, image, kind, clientId } ) {
+	function Panel( { a, set, tag, parent, title, device, base, text, image, kind, link, clientId } ) {
 		const q = a.query;
 		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
 		const [ tab, setTab ] = usePlace( 'tab' );
@@ -2096,11 +2096,13 @@
 						label: __( 'HTML tag', 'snn' ),
 						value: a.tagName,
 							tip: 'tagName',
-						options: text ? TEXT_TAG_OPTIONS : TAG_OPTIONS,
+						options: text ? TEXT_TAG_OPTIONS : link ? TAG_OPTIONS.concat( [ { value: 'a', label: 'a' } ] ) : TAG_OPTIONS,
 						onChange: ( v ) => set( { tagName: v } ),
 					} )
 				)
 			),
+			// The a tag (Div, Container): the link's URL, new tab, rel and ARIA label (controls/link-fields.js).
+			link && 'a' === a.tagName && window.snnLinkFields ? h( window.snnLinkFields.LinkGroup, { a, set } ) : null,
 			h(
 				Group,
 				{ title: __( 'Layout', 'snn' ), tip: 'group.layout' },
@@ -2519,7 +2521,7 @@
 				return h(
 					Fragment,
 					null,
-					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), clientId } ) ),
+					h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), link: !! def.link, clientId } ) ),
 					h(
 						'div',
 						blockProps,

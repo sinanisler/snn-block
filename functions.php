@@ -62,6 +62,8 @@ if ( snn_feature_enabled('snn-ai-agent-settings') ) require_once SNN_PATH . 'inc
 
 if ( snn_feature_enabled('snn-ai-agent-settings') ) {
 require_once SNN_PATH . 'includes/ai/blocks/html-to-blocks.php';
+require_once SNN_PATH . 'includes/ai/blocks/html-to-snn-blocks.php';
+require_once SNN_PATH . 'includes/ai/blocks/block-report.php';
 require_once SNN_PATH . 'includes/ai/blocks/block-edit.php';
 require_once SNN_PATH . 'includes/ai/pixabay/class-pixabay.php';
 require_once SNN_PATH . 'includes/ai/unsplash/class-unsplash.php';
@@ -93,6 +95,7 @@ require_once SNN_PATH . 'includes/ai/abilities/update-post-metadata.php';
 require_once SNN_PATH . 'includes/ai/abilities/analyze-post-seo.php';
 require_once SNN_PATH . 'includes/ai/abilities/html-to-blocks.php';
 require_once SNN_PATH . 'includes/ai/abilities/set-page-code.php';
+require_once SNN_PATH . 'includes/ai/abilities/get-block-schema.php';
 require_once SNN_PATH . 'includes/ai/fonts/font-library.php';
 require_once SNN_PATH . 'includes/ai/abilities/install-font.php';
 require_once SNN_PATH . 'includes/ai/abilities/global-styles.php';

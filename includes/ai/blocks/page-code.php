@@ -28,13 +28,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param string $content    HTML design or block markup.
  * @param bool   $convert    Convert HTML to block markup (default true in the abilities).
  * @param bool   $allow_code Whether the user may store scripts (unfiltered_html).
+ * @param string $mode       snn (our blocks, the default), core (one Custom HTML block per section with core text
+ *                           blocks inside) or blocks (the older per-element core conversion).
  * @return array { markup, css, scripts: { src, inline }, fonts, report }
  */
-function snn_blocks_prepare_content( $content, $convert, $allow_code ) {
+function snn_blocks_prepare_content( $content, $convert, $allow_code, $mode = 'snn' ) {
     $content = (string) $content;
+    $modes   = array(
+        'snn'    => 'snn',
+        'core'   => 'sections',
+        'blocks' => 'blocks',
+    );
 
     if ( $convert ) {
-        $result = SNN_HTML_To_Blocks::convert( $content, array( 'allow_code' => $allow_code ) );
+        $result = SNN_HTML_To_Blocks::convert( $content, array( 'allow_code' => $allow_code, 'mode' => $modes[ $mode ] ?? 'snn' ) );
     } else {
         $result = array(
             'markup'  => $content,
@@ -50,6 +57,38 @@ function snn_blocks_prepare_content( $content, $convert, $allow_code ) {
     }
 
     return $result;
+}
+
+/**
+ * The report an ability returns after it stores content: the converter's report (when it converted) with the check
+ * of the stored markup (snn_blocks_report): unknown and switched-off blocks, dropped values, Code blocks.
+ */
+function snn_blocks_content_report( array $prepared, $stored_markup ) {
+    $check  = snn_blocks_report( $stored_markup );
+    $report = (array) ( $prepared['report'] ?? array() );
+    $out    = array(
+        'mode'            => $report['mode'] ?? 'markup',
+        'blocks'          => $check['blocks'],
+        'code_fallbacks'  => $check['code_fallbacks'],
+        'unknown_blocks'  => $check['unknown_blocks'],
+        'disabled_blocks' => $check['disabled_blocks'],
+        'dropped'         => array_merge(
+            array_map( function ( $what ) {
+                return array( 'value' => $what, 'reason' => 'not kept by the converter' );
+            }, (array) ( $report['dropped'] ?? array() ) ),
+            $check['dropped']
+        ),
+        'warnings'        => (array) ( $report['warnings'] ?? array() ),
+    );
+    foreach ( array( 'code_tags', 'unknown_tags', 'editable_text', 'html_fallbacks' ) as $key ) {
+        if ( isset( $report[ $key ] ) ) {
+            $out[ $key ] = $report[ $key ];
+        }
+    }
+    if ( $stored_markup !== ( $prepared['markup'] ?? $stored_markup ) ) {
+        $out['warnings'][] = 'The content was filtered when it was saved (your role cannot post unfiltered HTML): scripts, SVG and some attributes were removed.';
+    }
+    return $out;
 }
 
 /**

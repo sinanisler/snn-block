@@ -1,11 +1,15 @@
-/* Every icon (utilities/icons.php): a font icon sits on the text line, an SVG icon is 1em square, so the font size sizes both. */
-.snn-icon {
+/*
+ * Every icon (utilities/icons.php): a font icon sits on the text line, an SVG icon is 1em square, so the font size
+ * sizes both. The rules are in :where(), which counts for nothing, so a class of the page's CSS (a design's own icon
+ * size) always wins.
+ */
+:where(.snn-icon) {
 	display: inline-block;
 	line-height: 1;
 	flex-shrink: 0;
 }
 
-svg.snn-icon {
+:where(svg.snn-icon) {
 	width: 1em;
 	height: 1em;
 }

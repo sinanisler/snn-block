@@ -95,7 +95,7 @@ class SNN_HTML_To_Blocks {
 
     private function __construct( $allow_code, $mode = 'sections' ) {
         $this->allow_code = (bool) $allow_code;
-        $this->mode       = 'blocks' === $mode ? 'blocks' : 'sections';
+        $this->mode       = in_array( $mode, array( 'blocks', 'snn' ), true ) ? $mode : 'sections';
     }
 
     private function run( $html ) {
@@ -136,6 +136,10 @@ class SNN_HTML_To_Blocks {
         $this->extract_page_code( $root );
 
         $children = iterator_to_array( $root->childNodes );
+        if ( 'snn' === $this->mode ) {
+            $blocks = SNN_HTML_To_Snn_Blocks::convert_nodes( $this, $children );
+            return $this->result( implode( "\n\n", $blocks ), $blocks, null );
+        }
         $blocks   = 'blocks' === $this->mode ? $this->nodes_to_blocks( $children ) : $this->section_nodes( $children );
 
         return $this->result( implode( "\n\n", $blocks ), $blocks, null );
@@ -159,13 +163,51 @@ class SNN_HTML_To_Blocks {
             ),
             'fonts'   => $this->fonts,
             'report'  => array(
+                'mode'           => $this->mode,
                 'blocks'         => null !== $counts ? $counts : $this->counts,
                 'html_fallbacks' => $this->fallbacks,
                 'dropped_attributes' => $this->dropped_attr,
                 'editable_text'  => $this->leaves,
                 'warnings'       => array_values( array_unique( $this->warnings ) ),
-            ),
+            ) + $this->extra_report,
         );
+    }
+
+    /* ----------------------------------------------------------------------
+     * Shared with the snn mode (html-to-snn-blocks.php)
+     * ------------------------------------------------------------------- */
+
+    /** Report keys the snn mode adds (code_fallbacks, unknown_tags, dropped). */
+    private $extra_report = array();
+
+    public function doc() {
+        return $this->doc;
+    }
+
+    /** The SVG source behind a raw placeholder span, or ''. */
+    public function raw_svg( $index ) {
+        return $this->raw_svg[ (int) $index ] ?? '';
+    }
+
+    /** Count one block of the given full name (snn/text) in the report. */
+    public function note_block( $name ) {
+        $this->counts[ $name ] = ( $this->counts[ $name ] ?? 0 ) + 1;
+    }
+
+    public function note_text() {
+        $this->leaves++;
+    }
+
+    public function warn( $message ) {
+        $this->warnings[] = $message;
+    }
+
+    public function note_dropped() {
+        $this->dropped_attr++;
+    }
+
+    public function set_report( $key, $value ) {
+        $this->extra_report[ $key ] = $value;
     }
 
     private function count_parsed( array $blocks ) {
@@ -534,7 +576,7 @@ class SNN_HTML_To_Blocks {
     }
 
     /** Class names that the design CSS sets to position: fixed. Read once per conversion. */
-    private function fixed_classes() {
+    public function fixed_classes() {
         if ( null === $this->fixed ) {
             $this->fixed = array();
             $css         = implode( "\n", $this->css_blocks );
@@ -1020,7 +1062,7 @@ class SNN_HTML_To_Blocks {
         return $this->block( 'html', array(), $this->restore_raw( $this->doc->saveHTML( $node ) ) );
     }
 
-    private function restore_raw( $html ) {
+    public function restore_raw( $html ) {
         return preg_replace_callback(
             '#<span data-snn-raw="(\d+)"></span>#',
             function ( $m ) {
@@ -1148,7 +1190,7 @@ class SNN_HTML_To_Blocks {
     }
 
     /** Usable classes of an element. Classes WordPress writes itself are left out. */
-    private function classes( DOMElement $el ) {
+    public function classes( DOMElement $el ) {
         $out = array();
         foreach ( preg_split( '/\s+/', trim( (string) $el->getAttribute( 'class' ) ), -1, PREG_SPLIT_NO_EMPTY ) as $class ) {
             if ( preg_match( '/^(wp-block-|wp-element-|wp-image-|is-layout-|has-alpha-channel)/', $class ) ) {
@@ -1164,7 +1206,7 @@ class SNN_HTML_To_Blocks {
     }
 
     /** Move an inline style into a generated class. Adds the class to $classes. */
-    private function style_class( DOMElement $el, array &$classes ) {
+    public function style_class( DOMElement $el, array &$classes ) {
         $style = trim( (string) $el->getAttribute( 'style' ) );
         if ( '' === $style ) {
             return;

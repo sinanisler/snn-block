@@ -13,10 +13,7 @@ function snn_register_update_post_ability() {
             'label'       => __( 'Update Post', 'snn' ),
             'description' => __( 'Updates an existing post by ID with new title, content (HTML supported), status (draft/publish/pending/private), or excerpt. All fields are optional - only provided fields will be updated. Automatically sanitizes input and preserves unchanged fields. Returns post ID, success status, updated permalink, and last modified timestamp. Use this to edit existing content, change post status, update excerpts, revise posts, or programmatically modify content. Requires post ID - use get-posts or search-content to find posts first if ID unknown.
 
-CRITICAL: When updating content, use valid HTML with ALL tags properly closed to prevent broken blocks:
-- Good: <h2>Updated Section</h2><p>New content here.</p><ul><li>Item 1</li><li>Item 2</li></ul>
-- Bad: <p>Unclosed tag <h2>Title (will cause block recovery errors)
-See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
+CONTENT: send an HTML design (a section, a page or a fragment) as content. It is converted to the own blocks of this site (mode snn, the default): Section, Container, Div, Text, Image, Button, Icon and Code. The <style> of the design and inline styles become the CSS of this page, its scripts the page JavaScript (unfiltered_html needed), its Google Fonts are listed under conversion.fonts. Block markup (with <!-- wp: comments) is stored as given. The answer has a conversion report: blocks per kind, code_fallbacks (parts kept as written HTML), unknown_blocks, disabled_blocks and dropped values. Read snn/get-block-schema before writing block markup by hand. See includes/ai/docs/block-generation-rules.md.', 'snn' ),
             'category'    => 'content',
             'input_schema' => array(
                 'type'       => 'object',
@@ -32,7 +29,7 @@ See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
                     ),
                     'content' => array(
                         'type'        => 'string',
-                        'description' => 'New post content (valid HTML with ALL tags properly closed). Use: <p>Text</p>, <h2>Heading</h2>, <ul><li>Item</li></ul>. Avoid unclosed tags or empty blocks.',
+                        'description' => 'HTML design or block markup. HTML is converted to blocks (see convert and mode).',
                     ),
                     'status' => array(
                         'type'        => 'string',
@@ -43,15 +40,16 @@ See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
                         'type'        => 'string',
                         'description' => 'New post excerpt.',
                     ),
-                ),
+                ) + snn_ability_content_properties(),
             ),
             'output_schema' => array(
                 'type'       => 'object',
                 'properties' => array(
-                    'id'       => array( 'type' => 'integer' ),
-                    'updated'  => array( 'type' => 'boolean' ),
-                    'url'      => array( 'type' => 'string' ),
-                    'modified' => array( 'type' => 'string' ),
+                    'id'         => array( 'type' => 'integer' ),
+                    'updated'    => array( 'type' => 'boolean' ),
+                    'url'        => array( 'type' => 'string' ),
+                    'modified'   => array( 'type' => 'string' ),
+                    'conversion' => array( 'type' => array( 'object', 'null' ), 'description' => 'Report on the stored content (when content was sent).' ),
                 ),
             ),
             'execute_callback' => function( $input ) {
@@ -82,8 +80,12 @@ See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
                     $update_data['post_title'] = sanitize_text_field( $input['title'] );
                 }
 
-                if ( isset( $input['content'] ) ) {
-                    $update_data['post_content'] = wp_kses_post( $input['content'] );
+                $prepared = snn_ability_prepare_input( $input );
+                if ( is_wp_error( $prepared ) ) {
+                    return $prepared;
+                }
+                if ( null !== $prepared ) {
+                    $update_data['post_content'] = $prepared['markup'];
                 }
 
                 if ( isset( $input['status'] ) ) {
@@ -94,19 +96,22 @@ See includes/ai/docs/block-generation-rules.md for guidelines.', 'snn' ),
                     $update_data['post_excerpt'] = sanitize_textarea_field( $input['excerpt'] );
                 }
 
-                $result = wp_update_post( $update_data, true );
+                // WordPress takes slashed data (the block attributes are JSON with backslashes).
+                $result = wp_update_post( wp_slash( $update_data ), true );
 
                 if ( is_wp_error( $result ) ) {
                     return $result;
                 }
 
-                $post = get_post( $post_id );
+                $conversion = snn_ability_store_extras( $post_id, $input, $prepared );
+                $post       = get_post( $post_id );
 
                 return array(
-                    'id'       => $post_id,
-                    'updated'  => true,
-                    'url'      => get_permalink( $post ),
-                    'modified' => $post->post_modified,
+                    'id'         => $post_id,
+                    'updated'    => true,
+                    'url'        => get_permalink( $post ),
+                    'modified'   => $post->post_modified,
+                    'conversion' => $conversion,
                 );
             },
             'permission_callback' => function() {

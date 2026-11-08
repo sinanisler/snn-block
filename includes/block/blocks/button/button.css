@@ -1,10 +1,12 @@
 /*
  * The look a new Button starts with: black with white text, the text and the icon centred in a row. Every rule is in
  * :where(), which counts for nothing, so a value set in the block's Style tab or in a class always wins.
+ * A button with the snn-plain class (the HTML converter gives it to every button it makes) has no starting look: the
+ * design's own CSS draws it.
  */
 /* In the editor the class is on the block wrapper, and the button itself is .snn-button-root (button-editor.js). */
-:where(.wp-block-snn-button:not(.block-editor-block-list__block)),
-:where(.snn-button-root) {
+:where(.wp-block-snn-button:not(.block-editor-block-list__block):not(.snn-plain)),
+:where(:not(.snn-plain) > .snn-button-root) {
 	align-items: center;
 	justify-content: center;
 	gap: 0.5em;
@@ -23,8 +25,8 @@
  * this sheet (it does in the editor). html a counts as two tags, so this rule wins over it, and a class rule of the
  * Style tab (one class) still wins over this one.
  */
-html a:where(.wp-block-snn-button:not(.block-editor-block-list__block)),
-html a:where(.snn-button-root) {
+html a:where(.wp-block-snn-button:not(.block-editor-block-list__block):not(.snn-plain)),
+html a:where(:not(.snn-plain) > .snn-button-root) {
 	color: #fff;
 	text-decoration: none;
 }

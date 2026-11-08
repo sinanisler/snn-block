@@ -46,7 +46,7 @@ function snn_mcp_ability_groups() {
                 'snn/search-content', 'snn/get-terms', 'snn/get-tags', 'snn/list-taxonomies',
                 'snn/get-media', 'snn/get-comments', 'snn/create-post', 'snn/update-post',
                 'snn/update-post-metadata', 'snn/create-terms', 'snn/edit-block-content',
-                'snn/generate-block-pattern', 'snn/html-to-blocks', 'snn/set-page-code',
+                'snn/generate-block-pattern', 'snn/html-to-blocks', 'snn/set-page-code', 'snn/get-block-schema',
             ),
         ),
         'design'   => array(

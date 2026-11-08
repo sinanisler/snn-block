@@ -143,6 +143,10 @@ class SNN_Layout_Blocks {
 					if ( ! empty( $def['kind'] ) && isset( self::KINDS[ $def['kind'] ] ) ) {
 						$def['attributes'] = call_user_func( array( self::KINDS[ $def['kind'] ], 'attributes' ) );
 					}
+					// A block that can be a link (Div, Container): the a tag and the link settings (utilities/links.php).
+					if ( ! empty( $def['link'] ) ) {
+						$def['attributes'] = SNN_Block_Link::attributes();
+					}
 					self::$definitions[ $def['name'] ] = $def;
 				}
 			}
@@ -164,6 +168,11 @@ class SNN_Layout_Blocks {
 	/** True for the Image block: its picture comes from its own settings, with no inner blocks (blocks/image). */
 	public static function is_image( $name ) {
 		return ! empty( self::definition( $name )['image'] );
+	}
+
+	/** True for a block that can be a link with the a tag (Div and Container: the definition's link flag). */
+	public static function is_link( $name ) {
+		return ! empty( self::definition( $name )['link'] );
 	}
 
 	/** The class of a block with a kind (see KINDS), or null. */
@@ -553,6 +562,13 @@ class SNN_Layout_Blocks {
 				return $inner;
 			}
 			$kind_part = array_merge( $kind_part, (array) call_user_func( array( $kind, 'element' ), $a, $dyn ) );
+		}
+		// The a tag of a Div or Container: a link with its settings, or a div when there is no URL (an a without href
+		// is not a link).
+		if ( 'a' === $a['tagName'] && self::is_link( $name ) ) {
+			$link               = SNN_Block_Link::element_attrs( $a, $dyn );
+			$kind_part['tag']   = $link ? 'a' : 'div';
+			$kind_part['attrs'] = $link ? $link : array();
 		}
 
 		$id      = self::loop_id( preg_replace( '/[^A-Za-z0-9_-]/', '', SNN_Dynamic_Data::render( $a['htmlId'], $dyn, 'plain' ) ) );
@@ -996,6 +1012,9 @@ class SNN_Layout_Blocks {
 
 		$kind                  = self::kind_class( $block );
 		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : ( self::is_image( $block ) ? SNN_Image_Block::TAGS : ( $kind ? constant( $kind . '::TAGS' ) : self::TAGS ) );
+		if ( self::is_link( $block ) ) {
+			$tags[] = 'a';
+		}
 		$out['tagName']        = in_array( $out['tagName'], $tags, true ) ? $out['tagName'] : $default;
 		$out['display']        = self::pick( $out['display'], self::DISPLAYS, $def['layout']['display'] );
 		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, $def['layout']['flexDirection'] );
@@ -1032,6 +1051,9 @@ class SNN_Layout_Blocks {
 		}
 		if ( $kind ) {
 			$out = array_merge( $out, call_user_func( array( $kind, 'clean' ), $attributes ) );
+		}
+		if ( self::is_link( $block ) ) {
+			$out = array_merge( $out, SNN_Block_Link::clean( $attributes ) );
 		}
 		return $out;
 	}
@@ -1151,7 +1173,7 @@ class SNN_Layout_Blocks {
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props', 'snn-image-editor', 'snn-button-editor', 'snn-icon-editor', 'snn-code-editor' );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props', 'snn-image-editor', 'snn-link-fields', 'snn-button-editor', 'snn-icon-editor', 'snn-code-editor' );
 		if ( $css_editor ) {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}

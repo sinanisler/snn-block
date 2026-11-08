@@ -20,6 +20,7 @@ function snn_register_html_to_blocks_ability() {
                         'type'        => 'string',
                         'description' => 'The HTML design: a section, a page or a fragment. Block markup is returned normalized.',
                     ),
+                    'mode' => snn_ability_content_properties()['mode'],
                 ),
             ),
             'output_schema' => array(
@@ -34,14 +35,14 @@ function snn_register_html_to_blocks_ability() {
             ),
             'execute_callback' => function( $input ) {
                 $allow_code = current_user_can( 'unfiltered_html' );
-                $prepared   = snn_blocks_prepare_content( $input['html'], true, $allow_code );
+                $prepared   = snn_blocks_prepare_content( $input['html'], true, $allow_code, (string) ( $input['mode'] ?? 'snn' ) );
 
                 return array(
                     'markup'  => $prepared['markup'],
                     'css'     => $prepared['css'],
                     'scripts' => $prepared['scripts'],
                     'fonts'   => (object) $prepared['fonts'],
-                    'report'  => $prepared['report'],
+                    'report'  => snn_blocks_content_report( $prepared, $prepared['markup'] ),
                 );
             },
             'permission_callback' => function() {

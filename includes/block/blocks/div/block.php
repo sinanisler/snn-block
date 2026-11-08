@@ -22,4 +22,6 @@ return array(
 	),
 	// Its content is inner blocks, not a rich text.
 	'text'   => false,
+	// It can be a link: the a tag, with the Link group (a whole card as one link). Without a URL it is a div.
+	'link'   => true,
 );
