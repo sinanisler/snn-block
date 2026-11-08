@@ -219,6 +219,88 @@
 	font-size: 11px;
 }
 
+/*
+ * The timeline dock: a box under the canvas in the editor's content column (between the list view and the sidebar,
+ * above the breadcrumb footer). Its height is set by the ResizableBox from the top edge (core's own resize handle).
+ * While it is there the canvas gives up the room it takes (the content column has the class snn-anp-docked).
+ */
+.snn-anp-host {
+	flex: none;
+}
+
+.interface-interface-skeleton__content.snn-anp-docked > .editor-visual-editor {
+	flex: 1 1 0;
+	min-height: 0;
+}
+
+.snn-anp-dock {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	min-width: 0;
+	background: #fff;
+	border-top: 1px solid #e0e0e0;
+	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.snn-anp-dock-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: none;
+	height: 32px;
+	padding: 0 6px 0 12px;
+	font-size: 12px;
+	color: #1e1e1e;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.snn-anp-dock-name {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.snn-anp-dock-block {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: #757575;
+}
+
+.snn-anp-dock-close {
+	display: grid;
+	place-items: center;
+	flex: none;
+	margin-left: auto;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	font-size: 16px;
+	line-height: 1;
+	color: #757575;
+	background: none;
+	border: 0;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.snn-anp-dock-close:hover {
+	color: #1e1e1e;
+	background: #f0f0f0;
+}
+
+.snn-anp-dock-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+	padding: 2px 12px 8px;
+}
+
+.snn-anp-dock-body .snn-anp-transport {
+	padding: 6px 0;
+}
+
 /* Scroll Trigger: start and end side by side; the fields off while the trigger is off */
 .snn-anp-two {
 	display: grid;

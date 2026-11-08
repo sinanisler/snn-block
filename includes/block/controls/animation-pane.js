@@ -12,14 +12,37 @@
  * Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp, C ) {
-	const { createElement: h, Fragment, useState, useRef, useEffect, useLayoutEffect } = wp.element;
+	const { createElement: h, createPortal, Fragment, useState, useRef, useEffect, useLayoutEffect } = wp.element;
 	const { __ } = wp.i18n;
+	const { ResizableBox } = wp.components;
 	const { Row, Select, Accordion, Switch, AnimationPicker, tipAttr } = C;
 	const DATA = window.snnAnimationData || {};
 	const EASES = DATA.eases || [ 'power2.out' ];
 	const PRESET_GROUPS = ( ( window.snnControlsData || {} ).animations || [] ).filter( ( g ) => g.label !== 'Scroll' );
 	const LABEL_W = 56;
 	const LANE_MAX = 20;
+	// The timeline dock: its height in px, kept in the browser between sessions.
+	const DOCK_KEY = 'snn-anp-dock-height';
+	// About what the dock's head, transport, timeline, hint and Add button take: nothing scrolls out of sight at this height.
+	const DOCK_MIN = 200;
+	const DOCK_DEFAULT = 240;
+
+	function loadDockHeight() {
+		try {
+			const v = parseInt( window.localStorage.getItem( DOCK_KEY ), 10 );
+			return v >= DOCK_MIN ? v : DOCK_DEFAULT;
+		} catch ( e ) {
+			return DOCK_DEFAULT;
+		}
+	}
+
+	function saveDockHeight( v ) {
+		try {
+			window.localStorage.setItem( DOCK_KEY, String( v ) );
+		} catch ( e ) {
+			// The height is then kept for this page only.
+		}
+	}
 
 	/** The properties of a tween: the key, the CSS name the runtime reads, the unit, and the value a new tween starts with. */
 	const PROPS = [
@@ -316,6 +339,8 @@ function presetPatch( t, presets ) {
 		const [ playing, setPlaying ] = useState( false );
 		const [ drag, setDrag ] = useState( null );
 		const [ width, setWidth ] = useState( 240 );
+		const [ dockHeight, setDockHeight ] = useState( loadDockHeight );
+		const [ dockHost, setDockHost ] = useState( null );
 		const tlRef = useRef( null );
 		const rulerRef = useRef( null );
 		const phRef = useRef( null );
@@ -353,6 +378,31 @@ function presetPatch( t, presets ) {
 			const ro = new ResizeObserver( measure );
 			ro.observe( el );
 			return () => ro.disconnect();
+		}, [ open.timeline, dockHost ] );
+
+		/*
+		 * The timeline dock: a box at the bottom of the editor's content column, between the list view and the
+		 * sidebar, above the breadcrumb footer. It exists while the Timeline is open. The column gets a class that
+		 * lets the canvas give up the room the dock takes.
+		 */
+		useLayoutEffect( () => {
+			if ( ! open.timeline ) {
+				return undefined;
+			}
+			const column = document.querySelector( '.interface-interface-skeleton__content' );
+			if ( ! column ) {
+				return undefined;
+			}
+			const node = document.createElement( 'div' );
+			node.className = 'snn-anp-host';
+			column.appendChild( node );
+			column.classList.add( 'snn-anp-docked' );
+			setDockHost( node );
+			return () => {
+				column.classList.remove( 'snn-anp-docked' );
+				node.remove();
+				setDockHost( null );
+			};
 		}, [ open.timeline ] );
 
 		/* The playhead and the time follow the preview, and the last position stays after a change. */
@@ -749,8 +799,46 @@ function presetPatch( t, presets ) {
 			h( 'p', { className: 'snn-anp-hint' }, scroll.on ? __( 'Plays as the block scrolls into view, between the start and the end.', 'snn' ) : __( 'Plays once the block is in view. Loop repeats it.', 'snn' ) )
 		);
 
+		/* The dock's height: at least DOCK_MIN, at most 80% of the content column, which the canvas keeps the rest of. */
+		const dockMax = dockHost && dockHost.parentElement ? Math.max( DOCK_MIN, Math.round( dockHost.parentElement.clientHeight * 0.8 ) ) : DOCK_DEFAULT;
+		const dockH = Math.min( Math.max( dockHeight, DOCK_MIN ), dockMax );
+		// The timeline itself, in the dock under the canvas (while the Timeline is open). The side panel keeps its header.
+		const dock =
+			dockHost && open.timeline
+				? createPortal(
+						h(
+							ResizableBox,
+							{
+								className: 'snn-anp-dock',
+								size: { width: '100%', height: dockH },
+								minHeight: DOCK_MIN,
+								maxHeight: dockMax,
+								enable: { top: true, right: false, bottom: false, left: false, topLeft: false, topRight: false, bottomLeft: false, bottomRight: false },
+								onResizeStop: ( e, dir, el ) => {
+									const v = Math.round( el.offsetHeight );
+									setDockHeight( v );
+									saveDockHeight( v );
+								},
+							},
+							h(
+								'div',
+								{ className: 'snn-anp-dock-head' },
+								h( 'span', { className: 'snn-anp-dock-name' }, __( 'Timeline', 'snn' ) ),
+								title ? h( 'span', { className: 'snn-anp-dock-block' }, title ) : null,
+								h(
+									'button',
+									{ type: 'button', className: 'snn-anp-dock-close', 'aria-label': __( 'Close the timeline', 'snn' ), onClick: () => setOpen( { ...open, timeline: false } ) },
+									'×'
+								)
+							),
+							h( 'div', { className: 'snn-anp-dock-body' }, timelineBody )
+						),
+						dockHost
+				  )
+				: null;
+
 		// Order: the Animation fields first, always open (no header, no accordion), then Properties, then the Timeline
-		// (its transport is at the top of it), then the Scroll Trigger.
+		// (its transport is at the top of it, in the dock), then the Scroll Trigger.
 		return h(
 			'div',
 			{ className: 'snn-anp' },
@@ -758,7 +846,12 @@ function presetPatch( t, presets ) {
 			tween
 				? h( Accordion, { title: __( 'Properties', 'snn' ), open: open.props, changed: tween.from && Object.keys( tween.from ).length > 0, onToggle: ( v ) => setOpen( { ...open, props: v } ) }, propsBody )
 				: null,
-			h( Accordion, { title: __( 'Timeline', 'snn' ), open: open.timeline, changed: hasTweens, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { ...open, timeline: v } ) }, timelineBody ),
+			h(
+				Accordion,
+				{ title: __( 'Timeline', 'snn' ), open: open.timeline, changed: hasTweens, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { ...open, timeline: v } ) },
+				h( 'p', { className: 'snn-anp-hint' }, __( 'Shown below the canvas. Close it here or with its × button.', 'snn' ) ),
+				dock
+			),
 			h( Accordion, { title: __( 'Scroll Trigger', 'snn' ), open: open.scroll, changed: scrollChanged, tip: 'scroll.on', onToggle: ( v ) => setOpen( { ...open, scroll: v } ) }, scrollBody )
 		);
 	}
