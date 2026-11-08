@@ -2002,7 +2002,7 @@
 	 * The inspector, as in the version 12 layout: the header (the Conditions and Interactions buttons, the view), then
 	 * the Default and Style tabs. Conditions and Interactions open on their own, in place of the whole panel.
 	 */
-	function Panel( { a, set, tag, parent, title, device, base, text, clientId } ) {
+	function Panel( { a, set, tag, parent, title, device, base, text, image, clientId } ) {
 		const q = a.query;
 		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
 		const [ tab, setTab ] = usePlace( 'tab' );
@@ -2053,7 +2053,7 @@
 		);
 
 		// Default: the element, the layout, the query loop, the item, the effects (planned), and the advanced fields.
-		const defaultPane = h(
+		const defaultPane = image ? h( window.snnImageBlock.ImagePane, { a, set } ) : h(
 			'div',
 			{ className: 'snn-pane' },
 			h(
@@ -2298,7 +2298,7 @@
 				shadow: false,
 				position: false,
 			},
-			attributes: withBlockLayout( def.text ? { ...layoutAttributes( def ), content: { type: 'string', default: '' } } : layoutAttributes( def ), def.name ),
+			attributes: withBlockLayout( { ...( def.text ? { ...layoutAttributes( def ), content: { type: 'string', default: '' } } : layoutAttributes( def ) ), ...( def.attributes || {} ) }, def.name ),
 			edit: function Edit( { attributes: saved, setAttributes, clientId } ) {
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
@@ -2367,6 +2367,21 @@
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
 				const innerProps = useInnerBlocksProps( { style: parts.layout, className: overlayClass || undefined }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
+				// The Image block: its picture is drawn by the image script (blocks/image/image-editor.js), and its Content tab is that script's panel.
+				if ( def.image ) {
+					return h(
+						Fragment,
+						null,
+						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), image: true, clientId } ) ),
+						h(
+							'div',
+							blockProps,
+							cssRules,
+							overlayRule,
+							h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined } )
+						)
+					);
+				}
 				// A Text block: its text is a rich text, drawn in the element that takes the layout style (the item
 				// settings stay on the wrapper). The query badge shows as it does for a layout block.
 				if ( def.text ) {
@@ -2416,7 +2431,7 @@
 			// The saved markup keeps the inner blocks (a save of null would drop them). The front end
 			// is rendered by PHP from those inner blocks (includes/block/layout-blocks.php).
 			// A Text block has no inner blocks: it saves nothing, its text is an attribute, and PHP renders it.
-			save: def.text
+			save: def.text || def.image
 				? () => null
 				: function Save() {
 					return h( InnerBlocks.Content, null );

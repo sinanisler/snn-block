@@ -1,0 +1,71 @@
+/*
+ * SNN Image block, the Content tab: the picture slot, the hint and the sources (image-editor.js). The canvas picture
+ * takes its style inline, so it needs nothing here.
+ */
+
+.snn-img-slot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px 6px;
+}
+
+.snn-img-pick {
+	flex: 1 1 auto;
+	min-height: 48px;
+	padding: 6px 8px;
+	border: 1px dashed #8c8f94;
+	border-radius: 2px;
+	background: #f6f7f7;
+	color: #3c434a;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.snn-img-pick:hover,
+.snn-img-pick:focus-visible {
+	border-color: #2271b1;
+	color: #2271b1;
+	outline: none;
+}
+
+.snn-img-thumb {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+}
+
+.snn-img-hint {
+	padding: 0 10px 6px;
+	color: #646970;
+	font-size: 11px;
+}
+
+.snn-img-sources {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 0 10px 8px;
+}
+
+.snn-img-source {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+}
+
+.snn-img-source-top {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 22px;
+	align-items: center;
+	gap: 4px;
+}

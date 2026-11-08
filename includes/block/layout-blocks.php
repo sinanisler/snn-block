@@ -1,6 +1,6 @@
 <?php
 /**
- * Our layout blocks: Section, Container, Div and Text. Each is one element with a tag, a display, the
+ * Our layout blocks: Section, Container, Div, Text and Image. Each is one element with a tag, a display, the
  * flex settings, a gap, an ID and classes, and an optional query loop. They share this engine, and each
  * block's own definition is in its folder: blocks/<name>/block.php (name, title, default tag, icon,
  * starting layout, and whether it is a Text block). The Blocks tab's theme defaults are in block-defaults.php.
@@ -22,7 +22,7 @@ class SNN_Layout_Blocks {
 	 * The blocks, one folder each in blocks/. Each folder's block.php returns the block's definition (see definitions()).
 	 * A new block gets its folder, and its folder name goes in this list.
 	 */
-	const FOLDERS = array( 'section', 'container', 'div', 'text' );
+	const FOLDERS = array( 'section', 'container', 'div', 'text', 'image' );
 
 	/** The definitions, once read (see definitions()). */
 	private static $definitions = null;
@@ -115,6 +115,10 @@ class SNN_Layout_Blocks {
 			foreach ( self::FOLDERS as $folder ) {
 				$def = include __DIR__ . '/blocks/' . $folder . '/block.php';
 				if ( is_array( $def ) && isset( $def['name'] ) ) {
+					// The Image block's own settings are attributes of its definition (blocks/image/image.php), so the editor gets them too.
+					if ( ! empty( $def['image'] ) ) {
+						$def['attributes'] = SNN_Image_Block::attributes();
+					}
 					self::$definitions[ $def['name'] ] = $def;
 				}
 			}
@@ -131,6 +135,11 @@ class SNN_Layout_Blocks {
 	/** True for the Text block: its content is a rich text, not inner blocks. */
 	public static function is_text( $name ) {
 		return ! empty( self::definition( $name )['text'] );
+	}
+
+	/** True for the Image block: its picture comes from its own settings, with no inner blocks (blocks/image). */
+	public static function is_image( $name ) {
+		return ! empty( self::definition( $name )['image'] );
 	}
 
 	public static function register() {
@@ -217,7 +226,7 @@ class SNN_Layout_Blocks {
 			'gsapScroll'      => array( 'type' => 'object', 'default' => array() ),
 			'customCss'       => array( 'type' => 'string', 'default' => '' ),
 			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
-		) + SNN_Style_Props::attributes() + ( self::is_text( $name ) ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() );
+		) + SNN_Style_Props::attributes() + ( self::is_text( $name ) ? array( 'content' => array( 'type' => 'string', 'default' => '' ) ) : array() ) + ( $def['attributes'] ?? array() );
 	}
 
 	/* ------------------------------------------------------------------
@@ -343,6 +352,9 @@ class SNN_Layout_Blocks {
 			// Tags such as {post_title} in the text are filled in when the page is shown (dynamic-data.php, html mode).
 			return wp_kses_post( SNN_Dynamic_Data::render( $a['content'], self::dynamic_context( $ctx ), 'html' ) );
 		}
+		if ( self::is_image( $block->name ) ) {
+			return SNN_Image_Block::render( $a, self::dynamic_context( $ctx ) );
+		}
 		return self::children( $block, $ctx );
 	}
 
@@ -353,6 +365,10 @@ class SNN_Layout_Blocks {
 		$id      = preg_replace( '/[^A-Za-z0-9_-]/', '', SNN_Dynamic_Data::render( $a['htmlId'], $dyn, 'plain' ) );
 		$custom  = array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( SNN_Dynamic_Data::render( $a['cssClasses'], $dyn, 'plain' ) ) ) ) );
 		$style   = self::style( $a, $dyn );
+		// The image is a figure, which browsers give a margin. A margin set in Style comes after this one and wins.
+		if ( self::is_image( $name ) ) {
+			$style = 'margin:0' . ( '' !== $style ? ';' . $style : '' );
+		}
 
 		// The block's own class (wp-block-snn-section and so on) first, then the author's classes.
 		$classes = array_merge( array( self::block_class( $name ) ), $custom );
@@ -776,7 +792,7 @@ class SNN_Layout_Blocks {
 			$out[ $key ] = $attributes[ $key ] ?? $spec['default'];
 		}
 
-		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : self::TAGS;
+		$tags                  = self::is_text( $block ) ? self::TEXT_TAGS : ( self::is_image( $block ) ? SNN_Image_Block::TAGS : self::TAGS );
 		$out['tagName']        = in_array( $out['tagName'], $tags, true ) ? $out['tagName'] : $default;
 		$out['display']        = self::pick( $out['display'], self::DISPLAYS, $def['layout']['display'] );
 		$out['flexDirection']  = self::pick( $out['flexDirection'], self::FLEX_DIRECTION, $def['layout']['flexDirection'] );
@@ -807,6 +823,9 @@ class SNN_Layout_Blocks {
 		$out['interactions'] = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		if ( self::is_text( $block ) ) {
 			$out['content'] = is_string( $out['content'] ) ? $out['content'] : '';
+		}
+		if ( self::is_image( $block ) ) {
+			$out = array_merge( $out, SNN_Image_Block::clean( $attributes ) );
 		}
 		return $out;
 	}
@@ -882,6 +901,8 @@ class SNN_Layout_Blocks {
 		$tips   = 'includes/block/controls/tooltips.js';
 		$pane   = 'includes/block/controls/animation-pane.js';
 		$pane_css = 'includes/block/controls/animation-pane.css';
+		$image_js  = 'includes/block/blocks/image/image-editor.js';
+		$image_css = 'includes/block/blocks/image/image-editor.css';
 
 		// The media library (wp.media) opens from an image field, such as the background image.
 		wp_enqueue_media();
@@ -897,6 +918,9 @@ class SNN_Layout_Blocks {
 		// wp-components: the ResizableBox that the timeline dock uses for its height. wp-data and wp-blocks: the dock reads the block tree and names.
 		wp_enqueue_script( 'snn-animation-pane', SNN_URL . $pane, array( 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-i18n', 'snn-controls' ), self::version( $pane ), true );
 		wp_localize_script( 'snn-animation-pane', 'snnAnimationData', SNN_Animation::editor_data() );
+		// The Image block's panel and canvas (blocks/image/image-editor.js). It loads before the layout script, which uses it.
+		wp_enqueue_style( 'snn-image-editor', SNN_URL . $image_css, array( 'snn-controls' ), self::version( $image_css ) );
+		wp_enqueue_script( 'snn-image-editor', SNN_URL . $image_js, array( 'wp-element', 'wp-i18n', 'wp-data', 'wp-api-fetch', 'snn-controls' ), self::version( $image_js ), true );
 		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
 		// highlighting off: the group then shows a plain textarea.
 		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
@@ -918,7 +942,7 @@ class SNN_Layout_Blocks {
 		);
 		wp_enqueue_script( 'snn-style-props', SNN_URL . $style, array(), self::version( $style ), true );
 		wp_localize_script( 'snn-style-props', 'snnStyleTable', SNN_Style_Props::for_editor() );
-		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props' );
+		$blocks_deps = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'snn-controls', 'snn-layout-icons', 'snn-block-tools', 'snn-animation-pane', 'snn-style-props', 'snn-image-editor' );
 		if ( $css_editor ) {
 			$blocks_deps[] = 'code-editor'; // wp.codeEditor, for the CSS group.
 		}
