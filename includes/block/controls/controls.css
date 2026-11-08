@@ -1424,6 +1424,17 @@
 	pointer-events: none;
 }
 
+/* The loop's other items on the canvas (layout-blocks.js, LoopPreview): children of the parent's layout, as on the
+   front end. They are a picture of the loop; a click selects the loop block. */
+.snn-loop-preview {
+	display: contents;
+}
+
+.snn-loop-preview * {
+	cursor: default;
+	user-select: none;
+}
+
 /* Select Animation (layout-blocks.js, AnimationPicker): the choice button, the chips of the choices, the list. */
 .snn-anim {
 	position: relative;

@@ -2238,6 +2238,58 @@
 		);
 	}
 
+	/**
+	 * The loop's other items on the canvas, after the block itself. The block stays the first item, with its tags as
+	 * tags, so it is the one to edit. The items after it come from the server (snn/v1/loop/preview), rendered as the
+	 * front end renders them, and follow every change to the block or its children after a short pause. They are a
+	 * picture: a click on one selects the loop block. The wrapper has display: contents, so each item is a child of
+	 * the parent's flex or grid, as on the front end.
+	 */
+	function LoopPreview( { clientId } ) {
+		const markup = useSelect(
+			( select ) => {
+				const block = select( 'core/block-editor' ).getBlock( clientId );
+				return block ? wp.blocks.serialize( block ) : '';
+			},
+			[ clientId ]
+		);
+		const postId = useSelect( ( select ) => {
+			try {
+				return select( 'core/editor' ).getCurrentPostId() || 0;
+			} catch ( e ) {
+				return 0;
+			}
+		}, [] );
+		const [ result, setResult ] = useState( null );
+		useEffect( () => {
+			let live = true;
+			const timer = setTimeout( () => {
+				wp.apiFetch( { path: '/snn/v1/loop/preview', method: 'POST', data: { block: markup, post_id: postId } } )
+					.then( ( r ) => live && setResult( r ) )
+					.catch( () => live && setResult( null ) );
+			}, 400 );
+			return () => {
+				live = false;
+				clearTimeout( timer );
+			};
+		}, [ markup, postId ] );
+		if ( ! result || ! Array.isArray( result.items ) || ! result.items.length ) {
+			return null;
+		}
+		return h( 'div', {
+			className: 'snn-loop-preview',
+			contentEditable: false,
+			'aria-hidden': true,
+			// A link or button in an item does nothing here; the click selects the loop block instead.
+			onClickCapture: ( e ) => {
+				e.preventDefault();
+				e.stopPropagation();
+				wp.data.dispatch( 'core/block-editor' ).selectBlock( clientId );
+			},
+			dangerouslySetInnerHTML: { __html: ( result.styles || '' ) + result.items.join( '' ) },
+		} );
+	}
+
 	/** A CSS ID for a block: 'snn-' and eight lowercase letters or digits. */
 	function newBlockId() {
 		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -2396,6 +2448,8 @@
 				// wrapper would not reach them. The layout class names are off: our blocks do not use them.
 				const innerProps = useInnerBlocksProps( { style: parts.layout, className: overlayClass || undefined }, { __unstableDisableLayoutClassNames: true } );
 				const set = ( patch ) => setAttributes( patch );
+				// With the query loop on, the loop's other items are drawn after the block (see LoopPreview).
+				const loopPreview = a.query.enabled ? h( LoopPreview, { clientId } ) : null;
 				// The Image block: its picture is drawn by the image script (blocks/image/image-editor.js), and its Content tab is that script's panel.
 				if ( def.image ) {
 					return h(
@@ -2408,7 +2462,8 @@
 							cssRules,
 							overlayRule,
 							h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, style: parts.layout, className: overlayClass || undefined, set } )
-						)
+						),
+						loopPreview
 					);
 				}
 				// A Text block: its text is a rich text, drawn in the element that takes the layout style (the item
@@ -2438,7 +2493,8 @@
 								// core's "unknown" slot (see TextBarButtons), which sits after Bold, Italic and Link.
 								children: ( { value, onChange, onFocus } ) => h( Fill, { name: 'RichText.ToolbarControls.unknown' }, h( TextBarButtons, { value, onChange, onFocus } ) ),
 							} )
-						)
+						),
+						loopPreview
 					);
 				}
 				return h(
@@ -2454,7 +2510,8 @@
 						cssRules,
 							overlayRule,
 						h( 'div', innerProps )
-					)
+					),
+					loopPreview
 				);
 			},
 			// The saved markup keeps the inner blocks (a save of null would drop them). The front end
