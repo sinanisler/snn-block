@@ -894,8 +894,8 @@ class SNN_Layout_Blocks {
 		wp_enqueue_script( 'snn-layout-icons', SNN_URL . $icons, array( 'wp-element' ), self::version( $icons ), true );
 		wp_enqueue_script( 'snn-block-tools', SNN_URL . $tools, array( 'wp-element', 'wp-i18n', 'snn-controls' ), self::version( $tools ), true );
 		// The GSAP pane: its timeline, presets and Scroll Trigger, with a preview on the canvas.
-		// wp-components: the ResizableBox that the timeline dock uses for its height.
-		wp_enqueue_script( 'snn-animation-pane', SNN_URL . $pane, array( 'wp-element', 'wp-components', 'wp-i18n', 'snn-controls' ), self::version( $pane ), true );
+		// wp-components: the ResizableBox that the timeline dock uses for its height. wp-data and wp-blocks: the dock reads the block tree and names.
+		wp_enqueue_script( 'snn-animation-pane', SNN_URL . $pane, array( 'wp-element', 'wp-components', 'wp-data', 'wp-blocks', 'wp-i18n', 'snn-controls' ), self::version( $pane ), true );
 		wp_localize_script( 'snn-animation-pane', 'snnAnimationData', SNN_Animation::editor_data() );
 		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
 		// highlighting off: the group then shows a plain textarea.

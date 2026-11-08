@@ -1,31 +1,42 @@
 /**
- * SNN GSAP pane: the Animations sub-panel of a block (the Animations icon). It edits the block's tweens and its
- * Scroll Trigger as a timeline: a ruler and bars (drag a bar to move it, drag its right edge to resize, drag the
- * ruler to scrub), the presets of the selected tween, its start, duration, stagger and ease, the from and to values,
- * and the Scroll Trigger switches. Play, rewind and scrubbing preview the block on the canvas, with the runtime the
- * front end uses (assets/js/gsap-data-animate.js, through window.createDataAnimate).
+ * SNN GSAP pane: the Animations sub-panel of a block (the Animations icon). Its side panel edits one animation of the
+ * block (the Animation fields and the Properties) and the block's Scroll Trigger.
+ *
+ * The timeline is a dock under the canvas. It has one lane for the top block of the selected block's tree, one for each
+ * block under it that has animations, and one for the selected block itself. Click a lane name to select that block,
+ * click a bar to edit that animation on the right, drag a bar to move it, drag its right edge to resize it, drag the
+ * ruler to scrub, double-click a lane to add an animation there. Play runs all the lanes on the canvas together, with
+ * the runtime the front end uses (assets/js/gsap-data-animate.js, through window.createDataAnimate).
  *
  * The data written here is turned into the data-animate value by SNN_Animation::tweens_data_animate (animation.php).
  * toDataAnimate below writes the same text, for the canvas attribute and the preview.
  *
  * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes window.snnAnimationPane.
- * Uses wp.element only, so it runs on the editor's own React.
+ * Uses wp.element, wp.data, wp.blocks and wp.components, so it runs on the editor's own React and data store.
  */
 ( function ( wp, C ) {
 	const { createElement: h, createPortal, Fragment, useState, useRef, useEffect, useLayoutEffect } = wp.element;
 	const { __ } = wp.i18n;
 	const { ResizableBox } = wp.components;
+	const { dispatch, useSelect } = wp.data;
+	const { getBlockType } = wp.blocks;
 	const { Row, Select, Accordion, Switch, AnimationPicker, tipAttr } = C;
 	const DATA = window.snnAnimationData || {};
 	const EASES = DATA.eases || [ 'power2.out' ];
 	const PRESET_GROUPS = ( ( window.snnControlsData || {} ).animations || [] ).filter( ( g ) => g.label !== 'Scroll' );
-	const LABEL_W = 56;
+	// The label of each preset, for the bars.
+	const LABEL_OF = {};
+	PRESET_GROUPS.forEach( ( g ) => g.items.forEach( ( i ) => {
+		LABEL_OF[ i.value ] = i.label;
+	} ) );
+	// The lane names: the left column of the timeline, in px.
+	const LABEL_W = 120;
 	const LANE_MAX = 20;
 	// The timeline dock: its height in px, kept in the browser between sessions.
 	const DOCK_KEY = 'snn-anp-dock-height';
-	// About what the dock's head, transport, timeline, hint and Add button take: nothing scrolls out of sight at this height.
-	const DOCK_MIN = 200;
-	const DOCK_DEFAULT = 240;
+	// About what the dock's head, transport, ruler, one lane and the hint take: nothing is cut off at this height.
+	const DOCK_MIN = 220;
+	const DOCK_DEFAULT = 260;
 
 	function loadDockHeight() {
 		try {
@@ -276,6 +287,9 @@
 		x.stroke();
 	}
 
+	const NEW_FROM = { y: 40, opacity: 0 };
+	const NEW_TO = { y: 0, opacity: 1 };
+
 	/** A new tween: fades up over 0.7 s, like the prototype's Fade up. */
 	function newTween( start ) {
 		return {
@@ -289,88 +303,309 @@
 		};
 	}
 
-	const NEW_FROM = { y: 40, opacity: 0 };
-const NEW_TO = { y: 0, opacity: 1 };
-
-/** Two sets of property values are the same. */
-function sameValues( a, b ) {
-	const ka = Object.keys( a || {} );
-	return ka.length === Object.keys( b || {} ).length && ka.every( ( k ) => a[ k ] === b[ k ] );
-}
-
-/**
- * The change for a tween's presets. A new tween starts with the Fade up values in Properties. Choosing its first preset
- * takes those untouched values out, so the preset is the only motion; values the user typed are kept.
- */
-function presetPatch( t, presets ) {
-	const patch = { presets };
-	const untouched = sameValues( t.from, NEW_FROM ) && sameValues( t.to, NEW_TO );
-	if ( untouched && presets.length && ! ( t.presets || [] ).length ) {
-		patch.from = {};
-		patch.to = {};
+	/** Two sets of property values are the same. */
+	function sameValues( a, b ) {
+		const ka = Object.keys( a || {} );
+		return ka.length === Object.keys( b || {} ).length && ka.every( ( k ) => a[ k ] === b[ k ] );
 	}
-	return patch;
-}
 
-/** The name of a tween on its bar: its presets, else the properties it sets. */
-	function tweenName( t, labelOf ) {
-		const names = ( t.presets || [] ).map( ( v ) => labelOf[ v ] || v );
+	/**
+	 * The change for a tween's presets. A new tween starts with the Fade up values in Properties. Choosing its first preset
+	 * takes those untouched values out, so the preset is the only motion; values the user typed are kept.
+	 */
+	function presetPatch( t, presets ) {
+		const patch = { presets };
+		const untouched = sameValues( t.from, NEW_FROM ) && sameValues( t.to, NEW_TO );
+		if ( untouched && presets.length && ! ( t.presets || [] ).length ) {
+			patch.from = {};
+			patch.to = {};
+		}
+		return patch;
+	}
+
+	/** The name of a tween on its bar: its presets, else the properties it sets. */
+	function tweenName( t ) {
+		const names = ( t.presets || [] ).map( ( v ) => LABEL_OF[ v ] || v );
 		if ( names.length ) {
 			return names.join( ' + ' );
 		}
 		const keys = [ ...new Set( Object.keys( t.from || {} ).concat( Object.keys( t.to || {} ) ) ) ];
-		return keys.length ? keys.join(' ') : '–';
+		return keys.length ? keys.join( ' ' ) : '–';
+	}
+
+	/** The name of a block on its lane: its name in the list view (metadata.name), else the title of its block type. */
+	function nameOf( name, attrs ) {
+		const meta = attrs && attrs.metadata;
+		return ( meta && meta.name ) || ( getBlockType( name ) || {} ).title || name;
+	}
+
+	/*
+	 * Which animation of a block the fields on the right show (its index in the block's list). The dock sets it when a bar
+	 * is picked; the pane of that block re-reads it.
+	 */
+	const picks = {};
+	const pickListeners = new Set();
+
+	function pickTween( clientId, i ) {
+		picks[ clientId ] = i;
+		pickListeners.forEach( ( fn ) => fn() );
+	}
+
+	function usePickedTween( clientId ) {
+		const [ , bump ] = useState( 0 );
+		useEffect( () => {
+			const fn = () => bump( ( n ) => n + 1 );
+			pickListeners.add( fn );
+			return () => {
+				pickListeners.delete( fn );
+			};
+		}, [] );
+		return picks[ clientId ] || 0;
+	}
+
+	/* The sections of the pane (Properties, Timeline, Scroll Trigger): open or closed, kept across blocks as the panel is. */
+	const sections = { props: true, timeline: true, scroll: true };
+
+	/*
+	 * The preview on the canvas: each lane's block, with the runtime's own instance. One clock moves them all (seekPreview
+	 * sets every instance to the same time), so the lanes play together. It is kept here, not in the dock, and the dock
+	 * takes it down when it unmounts (the dock is remounted when another block is selected).
+	 */
+	const preview = { items: [], key: '', pos: 0, playing: false, raf: 0, view: null };
+
+	/** The block's element on the canvas (in the editor's iframe), or null. */
+	function canvasEl( clientId ) {
+		const frame = document.querySelector( 'iframe[name="editor-canvas"]' );
+		const doc = frame && frame.contentDocument ? frame.contentDocument : document;
+		return doc.querySelector( '[data-block="' + clientId + '"]' );
+	}
+
+	/** Puts the canvas back as it was before the preview, and drops the runtime's instances. */
+	function restorePreview() {
+		preview.items.forEach( ( it ) => {
+			try {
+				it.inst.kill();
+			} catch ( e ) {
+				// The instance is gone already.
+			}
+			it.el._gsapAnimationInstance = null;
+			if ( window.gsap && window.gsap.killTweensOf ) {
+				window.gsap.killTweensOf( it.el );
+			}
+			Object.keys( it.saved ).forEach( ( prop ) => {
+				it.el.style[ prop ] = it.saved[ prop ];
+			} );
+			delete it.el._gsap;
+		} );
+		preview.items = [];
+		preview.key = '';
+	}
+
+	/**
+	 * Builds the preview from a list of { clientId, str } (the data-animate text of each lane). Returns true when at least
+	 * one block can play. Only a block whose text changed, or whose element was replaced on the canvas, is built again.
+	 */
+	function buildPreview( list ) {
+		const key = list.map( ( x ) => x.clientId + '|' + x.str ).join( '\n' );
+		if ( key === preview.key && preview.items.every( ( it ) => it.el.isConnected ) ) {
+			return preview.items.length > 0;
+		}
+		restorePreview();
+		preview.key = key;
+		if ( ! list.length || ! window.gsap || typeof window.createDataAnimate !== 'function' ) {
+			return false;
+		}
+		list.forEach( ( x ) => {
+			const el = canvasEl( x.clientId );
+			if ( ! el ) {
+				return;
+			}
+			const saved = { transform: el.style.transform, opacity: el.style.opacity, filter: el.style.filter, visibility: el.style.visibility };
+			window.createDataAnimate( [ el ], x.str );
+			const inst = el._gsapAnimationInstance;
+			if ( ! inst ) {
+				Object.keys( saved ).forEach( ( prop ) => {
+					el.style[ prop ] = saved[ prop ];
+				} );
+				return;
+			}
+			// The runtime's viewport observer may call play() by itself. The pane's clock moves the blocks instead.
+			inst.play = () => inst;
+			inst.pause( 0 );
+			preview.items.push( { el, saved, inst } );
+		} );
+		return preview.items.length > 0;
+	}
+
+	/** Sets every block's preview to the same time, and moves the playhead of the dock. */
+	function seekPreview( t ) {
+		preview.pos = t;
+		preview.items.forEach( ( it ) => {
+			it.inst.pause();
+			it.inst.time( t );
+		} );
+		if ( preview.view ) {
+			preview.view.onTime( t );
+		}
+	}
+
+	/** Stops the clock. */
+	function stopPreview() {
+		if ( preview.raf ) {
+			window.cancelAnimationFrame( preview.raf );
+		}
+		preview.raf = 0;
+		if ( ! preview.playing ) {
+			return;
+		}
+		preview.playing = false;
+		if ( preview.view ) {
+			preview.view.onPlaying( false );
+		}
+	}
+
+	/** Plays from the playhead to the end (from the start when the playhead is already there). */
+	function playPreview( end ) {
+		if ( preview.playing || end <= 0 ) {
+			return;
+		}
+		if ( preview.pos >= end - 1e-6 ) {
+			preview.pos = 0;
+		}
+		preview.playing = true;
+		if ( preview.view ) {
+			preview.view.onPlaying( true );
+		}
+		let last = window.performance.now();
+		const step = ( now ) => {
+			preview.raf = 0;
+			const t = Math.min( end, preview.pos + Math.max( 0, now - last ) / 1000 );
+			last = now;
+			seekPreview( t );
+			if ( t >= end ) {
+				stopPreview();
+			} else {
+				preview.raf = window.requestAnimationFrame( step );
+			}
+		};
+		preview.raf = window.requestAnimationFrame( step );
+	}
+
+	/** Writes a block's animations and Scroll Trigger (the attributes the sub-panel writes for the selected block). */
+	function writeTweens( clientId, tweens, scroll ) {
+		dispatch( 'core/block-editor' ).updateBlockAttributes( clientId, { gsapTweens: tweens, gsapScroll: scroll, animation: [] } );
 	}
 
 	/* ------------------------------------------------------------------
-	 * The pane
+	 * The timeline dock
 	 * ---------------------------------------------------------------- */
 
 	/**
-	 * The Animations sub-panel. attrs: the block's attributes. onChange({ tweens, scroll }) writes them back. title: the
-	 * block's name, shown on the lane. clientId: the block, to find it on the canvas for the preview.
+	 * The dock under the canvas. Its lanes: the top block of the selected block's tree, every block under it that has
+	 * animations, and the selected block itself. One time line for all of them.
 	 */
-	function AnimationsPane( { attrs, clientId, title, onChange } ) {
-		const st = stateOf( attrs || {} );
-		const tweens = st.tweens;
-		const scroll = st.scroll;
-		const [ selected, setSelected ] = useState( 0 );
-		const [ open, setOpen ] = useState( { timeline: true, props: true, scroll: true } );
-		const [ playing, setPlaying ] = useState( false );
+	function TimelineDock( { clientId, onClose } ) {
+		// The blocks of the tree, top block first (the store's own block objects, so a change in one re-renders the dock).
+		const blocks = useSelect(
+			( select ) => {
+				const be = select( 'core/block-editor' );
+				let top = clientId;
+				for ( let p = be.getBlockRootClientId( top ); p; p = be.getBlockRootClientId( top ) ) {
+					top = p;
+				}
+				const out = [];
+				const walk = ( b ) => {
+					if ( b ) {
+						out.push( b );
+						( b.innerBlocks || [] ).forEach( walk );
+					}
+				};
+				walk( be.getBlock( top ) );
+				return out;
+			},
+			[ clientId ]
+		);
+		const picked = usePickedTween( clientId );
+		const [ playing, setPlaying ] = useState( preview.playing );
+		const [ width, setWidth ] = useState( 600 );
 		const [ drag, setDrag ] = useState( null );
-		const [ width, setWidth ] = useState( 240 );
-		const [ dockHeight, setDockHeight ] = useState( loadDockHeight );
-		const [ dockHost, setDockHost ] = useState( null );
 		const tlRef = useRef( null );
 		const rulerRef = useRef( null );
 		const phRef = useRef( null );
 		const timeRef = useRef( null );
-		const curveRef = useRef( null );
-		const preview = useRef( null );
-		const pos = useRef( 0 );
-		const cur = tweens.length ? Math.min( selected, tweens.length - 1 ) : -1;
-		const tween = cur >= 0 ? tweens[ cur ] : null;
-		// The ruler runs a little past the last bar; the time readout shows where the animation really ends.
-		const end = Math.max( 0, ...tweens.map( ( t ) => t.start + t.duration ) );
+		const latest = useRef( null );
+
+		const lanes = blocks
+			.map( ( b ) => ( { clientId: b.clientId, name: b.name, attrs: b.attributes || {}, st: stateOf( b.attributes || {} ) } ) )
+			.filter( ( l ) => l.st.tweens.length > 0 || l.clientId === clientId );
+		// Two blocks of one kind get numbers on their lanes: Text 1, Text 2.
+		const names = lanes.map( ( l ) => nameOf( l.name, l.attrs ) );
+		const count = {};
+		names.forEach( ( n ) => {
+			count[ n ] = ( count[ n ] || 0 ) + 1;
+		} );
+		const seen = {};
+		lanes.forEach( ( l, i ) => {
+			const n = names[ i ];
+			seen[ n ] = ( seen[ n ] || 0 ) + 1;
+			l.label = count[ n ] > 1 ? n + ' ' + seen[ n ] : n;
+		} );
+
+		const top = blocks[ 0 ];
+		const selected = lanes.find( ( l ) => l.clientId === clientId ) || { st: { tweens: [], scroll: DEFAULT_SCROLL } };
+		const selCount = selected.st.tweens.length;
+		const cur = selCount ? Math.min( picked, selCount - 1 ) : -1;
+		const end = lanes.reduce( ( m, l ) => l.st.tweens.reduce( ( mm, t ) => Math.max( mm, t.start + t.duration ), m ), 0 );
 		const total = Math.max( 1.5, end ) + 0.2;
-		const lane = Math.max( 40, width - LABEL_W );
-		const k = lane / total;
-		const kRef = useRef( k );
-		const endRef = useRef( end );
-		kRef.current = k;
-		endRef.current = end;
+		const k = Math.max( 40, width - LABEL_W ) / total;
+		latest.current = { lanes, clientId, end, total, k };
 
-		const commit = ( nextTweens, nextScroll ) => onChange( { tweens: nextTweens, scroll: nextScroll || scroll } );
-		const setTween = ( i, patch ) => commit( tweens.map( ( t, j ) => ( j === i ? { ...t, ...patch } : t ) ) );
-		const setScroll = ( patch ) => commit( tweens, { ...scroll, ...patch } );
+		const laneOf = ( id ) => latest.current.lanes.find( ( l ) => l.clientId === id );
+		const selectBlock = ( id ) => {
+			if ( id !== latest.current.clientId ) {
+				dispatch( 'core/block-editor' ).selectBlock( id );
+			}
+		};
+		const previewList = () =>
+			latest.current.lanes
+				.filter( ( l ) => l.st.tweens.length > 0 )
+				.map( ( l ) => ( { clientId: l.clientId, str: toDataAnimate( l.st.tweens, l.st.scroll, true ) } ) )
+				.filter( ( x ) => x.str );
 
-		/* The timeline's width follows the panel. */
+		const showTime = ( t ) => {
+			const L = latest.current;
+			if ( phRef.current ) {
+				phRef.current.style.left = LABEL_W + t * L.k + 'px';
+			}
+			if ( timeRef.current ) {
+				timeRef.current.textContent = t.toFixed( 2 ) + ' / ' + L.end.toFixed( 2 ) + 's';
+			}
+		};
+		// The playhead and the time follow the preview; after a change the last position stays.
+		useEffect( () => {
+			showTime( Math.min( preview.pos, latest.current.total ) );
+		} );
+
+		// This dock is the preview's view while it is mounted. Unmounting takes the preview down.
+		useEffect( () => {
+			const view = { onTime: showTime, onPlaying: setPlaying };
+			preview.view = view;
+			return () => {
+				if ( preview.view === view ) {
+					preview.view = null;
+				}
+				stopPreview();
+				restorePreview();
+			};
+		}, [] );
+
+		// The timeline's width follows the dock.
 		useLayoutEffect( () => {
 			const el = tlRef.current;
 			if ( ! el ) {
 				return undefined;
 			}
-			const measure = () => setWidth( el.clientWidth || 240 );
+			const measure = () => setWidth( el.clientWidth || 600 );
 			measure();
 			if ( typeof ResizeObserver === 'undefined' ) {
 				return undefined;
@@ -378,12 +613,239 @@ function presetPatch( t, presets ) {
 			const ro = new ResizeObserver( measure );
 			ro.observe( el );
 			return () => ro.disconnect();
-		}, [ open.timeline, dockHost ] );
+		}, [] );
+
+		const seek = ( t ) => {
+			stopPreview();
+			buildPreview( previewList() );
+			seekPreview( Math.min( t, latest.current.total ) );
+		};
+		const onPlay = () => {
+			if ( preview.playing ) {
+				stopPreview();
+				return;
+			}
+			if ( buildPreview( previewList() ) ) {
+				playPreview( latest.current.end );
+			}
+		};
+		const onRewind = () => seek( 0 );
+
+		// Drags on the ruler scrub. A bar moves or resizes; the change is written when the mouse is let go.
+		const scrubStart = ( e ) => {
+			e.preventDefault();
+			const rect = rulerRef.current ? rulerRef.current.getBoundingClientRect() : null;
+			const at = ( x ) => Math.min( latest.current.total, Math.max( 0, ( x - ( rect ? rect.left : 0 ) ) / latest.current.k ) );
+			seek( at( e.clientX ) );
+			const move = ( m ) => seek( at( m.clientX ) );
+			const up = () => {
+				window.removeEventListener( 'pointermove', move );
+				window.removeEventListener( 'pointerup', up );
+			};
+			window.addEventListener( 'pointermove', move );
+			window.addEventListener( 'pointerup', up );
+		};
+		const barStart = ( e, id, i, resize ) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const lane = laneOf( id );
+			if ( ! lane || ! lane.st.tweens[ i ] ) {
+				return;
+			}
+			const t = lane.st.tweens[ i ];
+			const x0 = e.clientX;
+			const snap = ( v ) => Math.round( v * 20 ) / 20;
+			let next = null;
+			let moved = false;
+			const move = ( m ) => {
+				const dx = m.clientX - x0;
+				if ( Math.abs( dx ) > 2 ) {
+					moved = true;
+				}
+				const d = dx / latest.current.k;
+				next = resize
+					? { start: t.start, duration: Math.max( 0.05, snap( t.duration + d ) ) }
+					: { start: Math.max( 0, snap( t.start + d ) ), duration: t.duration };
+				setDrag( { clientId: id, i, ...next } );
+			};
+			const up = () => {
+				window.removeEventListener( 'pointermove', move );
+				window.removeEventListener( 'pointerup', up );
+				setDrag( null );
+				if ( ! moved || ! next ) {
+					// A click: the animation is picked and its block selected, so the fields on the right show it.
+					pickTween( id, i );
+					selectBlock( id );
+					return;
+				}
+				const now = laneOf( id );
+				if ( now ) {
+					writeTweens( id, now.st.tweens.map( ( x, j ) => ( j === i ? { ...x, ...next } : x ) ), now.st.scroll );
+				}
+			};
+			window.addEventListener( 'pointermove', move );
+			window.addEventListener( 'pointerup', up );
+		};
+		const addAt = ( id, start ) => {
+			const lane = laneOf( id );
+			if ( ! lane || lane.st.tweens.length >= LANE_MAX ) {
+				return;
+			}
+			const at = start === undefined ? lane.st.tweens.reduce( ( m, t ) => Math.max( m, t.start + t.duration ), 0 ) : start;
+			writeTweens( id, [ ...lane.st.tweens, newTween( at ) ], lane.st.scroll );
+			pickTween( id, lane.st.tweens.length );
+			selectBlock( id );
+		};
+
+		/* ---------- the transport ---------- */
+		const has = lanes.some( ( l ) => l.st.tweens.length > 0 );
+		const transport = h(
+			'div',
+			{ className: 'snn-anp-transport' },
+			h(
+				'button',
+				{ type: 'button', className: 'snn-anp-round', 'aria-label': __( 'Rewind', 'snn' ), ...tipAttr( 'anim.rewind' ), disabled: ! has, onClick: onRewind },
+				icon( 'rewind' )
+			),
+			h(
+				'button',
+				{
+					type: 'button',
+					className: 'snn-anp-round is-primary',
+					'aria-label': playing ? __( 'Pause', 'snn' ) : __( 'Play', 'snn' ),
+					...tipAttr( 'anim.play' ),
+					disabled: ! has,
+					onClick: onPlay,
+				},
+				icon( playing ? 'pause' : 'play' )
+			),
+			h( 'span', { className: 'snn-anp-time', ref: timeRef } ),
+			h(
+				'button',
+				{ type: 'button', className: 'snn-bt-link snn-anp-add', disabled: selCount >= LANE_MAX, onClick: () => addAt( clientId ), ...tipAttr( 'anim.add' ) },
+				__( 'Add animation', 'snn' )
+			)
+		);
+
+		/* ---------- the ruler and the lanes ---------- */
+		const ticks = [];
+		const step = total > 6 ? 1 : 0.5;
+		for ( let n = 0; n * step <= total + 1e-6; n++ ) {
+			const s = n * step;
+			ticks.push( h( 'i', { key: 't' + n, className: 'snn-anp-tick', style: { left: s * k + 'px' } } ) );
+			if ( s % 1 === 0 ) {
+				ticks.push( h( 'b', { key: 'l' + n, className: 'snn-anp-tick-label', style: { left: s * k + 'px' } }, s + 's' ) );
+			}
+		}
+		const laneRow = ( l ) => {
+			const isSel = l.clientId === clientId;
+			const bars = l.st.tweens.map( ( t, i ) => {
+				const v = drag && drag.clientId === l.clientId && drag.i === i ? { ...t, start: drag.start, duration: drag.duration } : t;
+				return h(
+					'div',
+					{
+						key: i,
+						className: 'snn-anp-bar' + ( isSel && i === cur ? ' is-on' : '' ),
+						style: { left: v.start * k + 'px', width: Math.max( 8, v.duration * k ) + 'px' },
+						...tipAttr( 'anim.bar' ),
+						onPointerDown: ( e ) => barStart( e, l.clientId, i, false ),
+					},
+					h( 'span', { className: 'snn-anp-bar-text' }, tweenName( t ) ),
+					h( 'span', { className: 'snn-anp-rz', onPointerDown: ( e ) => barStart( e, l.clientId, i, true ) } )
+				);
+			} );
+			return h(
+				'div',
+				{ key: l.clientId, className: 'snn-anp-row' + ( isSel ? ' is-sel' : '' ) },
+				h(
+					'button',
+					{ type: 'button', className: 'snn-anp-name', ...tipAttr( 'anim.lane' ), onClick: () => selectBlock( l.clientId ) },
+					l.label
+				),
+				h(
+					'div',
+					{
+						className: 'snn-anp-lane',
+						onDoubleClick: ( e ) => {
+							if ( e.target === e.currentTarget ) {
+								addAt( l.clientId, e.nativeEvent.offsetX / k );
+							}
+						},
+					},
+					bars
+				)
+			);
+		};
+		const timeline = h(
+			'div',
+			{ className: 'snn-anp-tl', ref: tlRef },
+			h( 'div', { className: 'snn-anp-ruler', ref: rulerRef, onPointerDown: scrubStart, ...tipAttr( 'anim.ruler' ) }, ticks ),
+			h( 'div', { className: 'snn-anp-rows' }, lanes.map( laneRow ) ),
+			h( 'div', { className: 'snn-anp-ph', ref: phRef } )
+		);
+		const hint = h(
+			'p',
+			{ className: 'snn-anp-hint snn-anp-dock-hint' },
+			selCount
+				? __( 'Drag a bar to move it, its right edge to resize. Click a bar or a name to edit it on the right. Double-click a lane to add there.', 'snn' )
+				: __( 'No animation on this block yet. Double-click its lane, or use Add animation.', 'snn' )
+		);
+
+		return h(
+			Fragment,
+			null,
+			h(
+				'div',
+				{ className: 'snn-anp-dock-head' },
+				h( 'span', { className: 'snn-anp-dock-name' }, __( 'Timeline', 'snn' ) ),
+				top ? h( 'span', { className: 'snn-anp-dock-block' }, nameOf( top.name, top.attributes ) ) : null,
+				h(
+					'button',
+					{ type: 'button', className: 'snn-anp-dock-close', 'aria-label': __( 'Close the timeline', 'snn' ), onClick: onClose },
+					'×'
+				)
+			),
+			h( 'div', { className: 'snn-anp-dock-body' }, transport, timeline, hint )
+		);
+	}
+
+	/* ------------------------------------------------------------------
+	 * The side panel
+	 * ---------------------------------------------------------------- */
+
+	/**
+	 * The Animations sub-panel. The fields show the animation picked in the timeline (Animation, Properties), and the Scroll
+	 * Trigger of the block. attrs: the block's attributes. onChange({ tweens, scroll }) writes them back. clientId: the block.
+	 */
+	function AnimationsPane( { attrs, clientId, onChange } ) {
+		const st = stateOf( attrs || {} );
+		const tweens = st.tweens;
+		const scroll = st.scroll;
+		const picked = usePickedTween( clientId );
+		const [ , bump ] = useState( 0 );
+		const [ dockHeight, setDockHeight ] = useState( loadDockHeight );
+		const [ dockHost, setDockHost ] = useState( null );
+		const curveRef = useRef( null );
+		const cur = tweens.length ? Math.min( picked, tweens.length - 1 ) : -1;
+		const tween = cur >= 0 ? tweens[ cur ] : null;
+		const open = sections;
+		const setOpen = ( patch ) => {
+			Object.assign( sections, patch );
+			bump( ( n ) => n + 1 );
+		};
+
+		const commit = ( nextTweens, nextScroll ) => onChange( { tweens: nextTweens, scroll: nextScroll || scroll } );
+		const setTween = ( i, patch ) => commit( tweens.map( ( t, j ) => ( j === i ? { ...t, ...patch } : t ) ) );
+		const setScroll = ( patch ) => commit( tweens, { ...scroll, ...patch } );
+
+		useEffect( () => {
+			drawCurve( curveRef.current, tween ? tween.ease : 'none' );
+		}, [ tween ? tween.ease : '', cur ] );
 
 		/*
-		 * The timeline dock: a box at the bottom of the editor's content column, between the list view and the
-		 * sidebar, above the breadcrumb footer. It exists while the Timeline is open. The column gets a class that
-		 * lets the canvas give up the room the dock takes.
+		 * The timeline dock: a box at the bottom of the editor's content column, between the list view and the sidebar,
+		 * above the breadcrumb footer. It exists while the Timeline is open. The column gets a class that lets the canvas
+		 * give up the room the dock takes.
 		 */
 		useLayoutEffect( () => {
 			if ( ! open.timeline ) {
@@ -405,180 +867,9 @@ function presetPatch( t, presets ) {
 			};
 		}, [ open.timeline ] );
 
-		/* The playhead and the time follow the preview, and the last position stays after a change. */
-		const showTime = ( t ) => {
-			pos.current = t;
-			if ( phRef.current ) {
-				phRef.current.style.left = LABEL_W + t * kRef.current + 'px';
-			}
-			if ( timeRef.current ) {
-				timeRef.current.textContent = t.toFixed( 2 ) + ' / ' + endRef.current.toFixed( 2 ) + 's';
-			}
-		};
-		useEffect( () => {
-			showTime( Math.min( pos.current, total ) );
-		} );
-		useEffect( () => {
-			drawCurve( curveRef.current, tween ? tween.ease : 'none' );
-		}, [ tween ? tween.ease : '', cur ] );
-
-		/* The preview: the block on the canvas, with the runtime the front end uses. */
-		const canvasEl = () => {
-			if ( ! clientId ) {
-				return null;
-			}
-			const frame = document.querySelector( 'iframe[name="editor-canvas"]' );
-			const doc = frame && frame.contentDocument ? frame.contentDocument : document;
-			return doc.querySelector( '[data-block="' + clientId + '"]' );
-		};
-		const restorePreview = () => {
-			const p = preview.current;
-			if ( ! p ) {
-				return;
-			}
-			const inst = p.el._gsapAnimationInstance;
-			if ( inst && typeof inst.kill === 'function' ) {
-				inst.kill();
-			}
-			p.el._gsapAnimationInstance = null;
-			if ( window.gsap && window.gsap.killTweensOf ) {
-				window.gsap.killTweensOf( p.el );
-			}
-			Object.keys( p.saved ).forEach( ( key ) => {
-				p.el.style[ key ] = p.saved[ key ];
-			} );
-			delete p.el._gsap;
-			preview.current = null;
-		};
-		const ensurePreview = () => {
-			const el = canvasEl();
-			if ( ! el || ! window.gsap || typeof window.createDataAnimate !== 'function' ) {
-				return null;
-			}
-			const str = toDataAnimate( tweens, scroll, true );
-			if ( ! str ) {
-				return null;
-			}
-			const p = preview.current;
-			if ( p && p.el === el && p.key === str && el._gsapAnimationInstance ) {
-				return el._gsapAnimationInstance;
-			}
-			restorePreview();
-			const saved = { transform: el.style.transform, opacity: el.style.opacity, filter: el.style.filter };
-			window.createDataAnimate( [ el ], str );
-			const inst = el._gsapAnimationInstance;
-			if ( ! inst ) {
-				return null;
-			}
-			// The runtime starts a paused timeline when the scroll trigger is off, and its observer may play it when
-			// the block comes into view. Only the pane's own play starts it.
-			const realPlay = inst.play;
-			inst.play = function ( ...args ) {
-				return inst._snnUserPlay ? realPlay.apply( inst, args ) : inst;
-			};
-			inst.eventCallback( 'onUpdate', () => showTime( inst.time() ) );
-			inst.eventCallback( 'onComplete', () => setPlaying( false ) );
-			preview.current = { el, key: str, saved };
-			return inst;
-		};
-		useEffect( () => () => restorePreview(), [] );
-
-		const playOn = ( inst, fn ) => {
-			inst._snnUserPlay = true;
-			try {
-				fn();
-			} finally {
-				inst._snnUserPlay = false;
-			}
-		};
-		const onPlay = () => {
-			const inst = ensurePreview();
-			if ( ! inst ) {
-				return;
-			}
-			if ( inst.isActive() ) {
-				inst.pause();
-				setPlaying( false );
-				return;
-			}
-			playOn( inst, () => ( inst.progress() >= 1 ? inst.restart() : inst.play() ) );
-			setPlaying( true );
-		};
-		const onRewind = () => {
-			const inst = ensurePreview();
-			setPlaying( false );
-			if ( inst ) {
-				inst.pause( 0 );
-			}
-			showTime( 0 );
-		};
-		const seek = ( t ) => {
-			const inst = ensurePreview();
-			if ( inst ) {
-				inst.pause();
-				inst.time( t );
-			}
-			setPlaying( false );
-			showTime( t );
-		};
-
-		/* Drags: the ruler scrubs, a bar moves or resizes. The change is written when the mouse is let go. */
-		const scrubStart = ( e ) => {
-			e.preventDefault();
-			const left = rulerRef.current ? rulerRef.current.getBoundingClientRect().left : 0;
-			const at = ( x ) => Math.min( total, Math.max( 0, ( x - left ) / k ) );
-			seek( at( e.clientX ) );
-			const move = ( m ) => seek( at( m.clientX ) );
-			const up = () => {
-				window.removeEventListener( 'pointermove', move );
-				window.removeEventListener( 'pointerup', up );
-			};
-			window.addEventListener( 'pointermove', move );
-			window.addEventListener( 'pointerup', up );
-		};
-		const barStart = ( e, i, resize ) => {
-			e.preventDefault();
-			e.stopPropagation();
-			setSelected( i );
-			const t = tweens[ i ];
-			const x0 = e.clientX;
-			const snap = ( v ) => Math.round( v * 20 ) / 20;
-			let last = null;
-			let moved = false;
-			const move = ( m ) => {
-				const dx = m.clientX - x0;
-				if ( Math.abs( dx ) > 2 ) {
-					moved = true;
-				}
-				const d = dx / k;
-				last = resize
-					? { start: t.start, duration: Math.max( 0.05, snap( t.duration + d ) ) }
-					: { start: Math.max( 0, snap( t.start + d ) ), duration: t.duration };
-				setDrag( { i, ...last } );
-			};
-			const up = () => {
-				window.removeEventListener( 'pointermove', move );
-				window.removeEventListener( 'pointerup', up );
-				setDrag( null );
-				if ( moved && last ) {
-					setTween( i, last );
-				}
-			};
-			window.addEventListener( 'pointermove', move );
-			window.addEventListener( 'pointerup', up );
-		};
-
-		const addTween = ( start ) => {
-			if ( tweens.length >= LANE_MAX ) {
-				return;
-			}
-			const end = tweens.reduce( ( m, t ) => Math.max( m, t.start + t.duration ), 0 );
-			commit( [ ...tweens, newTween( start === undefined ? end : start ) ] );
-			setSelected( tweens.length );
-		};
 		const removeTween = () => {
 			commit( tweens.filter( ( _, j ) => j !== cur ) );
-			setSelected( Math.max( 0, cur - 1 ) );
+			pickTween( clientId, Math.max( 0, cur - 1 ) );
 		};
 
 		/* A property: its from or to value. The other side takes the default when it has none, as the prototype does. */
@@ -595,97 +886,6 @@ function presetPatch( t, presets ) {
 			}
 			setTween( cur, side === 'from' ? { from: mine, to: other } : { to: mine, from: other } );
 		};
-
-		/* ---------- the transport ---------- */
-		const hasTweens = tweens.length > 0;
-		const transport = h(
-			'div',
-			{ className: 'snn-anp-transport' },
-			h(
-				'button',
-				{ type: 'button', className: 'snn-anp-round', 'aria-label': __( 'Rewind', 'snn' ), ...tipAttr( 'anim.rewind' ), disabled: ! hasTweens, onClick: onRewind },
-				icon( 'rewind' )
-			),
-			h(
-				'button',
-				{
-					type: 'button',
-					className: 'snn-anp-round is-primary',
-					'aria-label': playing ? __( 'Pause', 'snn' ) : __( 'Play', 'snn' ),
-					...tipAttr( 'anim.play' ),
-					disabled: ! hasTweens,
-					onClick: onPlay,
-				},
-				icon( playing ? 'pause' : 'play' )
-			),
-			h( 'span', { className: 'snn-anp-time', ref: timeRef } )
-		);
-
-		/* ---------- the timeline ---------- */
-		const labelOf = {};
-		PRESET_GROUPS.forEach( ( g ) => g.items.forEach( ( i ) => {
-			labelOf[ i.value ] = i.label;
-		} ) );
-		const ticks = [];
-		const step = total > 6 ? 1 : 0.5;
-		for ( let n = 0; n * step <= total + 1e-6; n++ ) {
-			const s = n * step;
-			ticks.push( h( 'i', { key: 't' + n, className: 'snn-anp-tick', style: { left: s * k + 'px' } } ) );
-			if ( s % 1 === 0 ) {
-				ticks.push( h( 'b', { key: 'l' + n, className: 'snn-anp-tick-label', style: { left: s * k + 'px' } }, s + 's' ) );
-			}
-		}
-		const bars = tweens.map( ( t, i ) => {
-			const v = drag && drag.i === i ? { ...t, start: drag.start, duration: drag.duration } : t;
-			return h(
-				'div',
-				{
-					key: i,
-					className: 'snn-anp-bar' + ( i === cur ? ' is-on' : '' ),
-					style: { left: v.start * k + 'px', width: Math.max( 8, v.duration * k ) + 'px' },
-					...tipAttr( 'anim.bar' ),
-					onPointerDown: ( e ) => barStart( e, i, false ),
-				},
-				h( 'span', { className: 'snn-anp-bar-text' }, tweenName( t, labelOf ) ),
-				h( 'span', { className: 'snn-anp-rz', onPointerDown: ( e ) => barStart( e, i, true ) } )
-			);
-		} );
-		const timelineBody = h(
-			Fragment,
-			null,
-			transport,
-			h(
-				'div',
-				{ className: 'snn-anp-tl', ref: tlRef },
-				h( 'div', { className: 'snn-anp-ruler', ref: rulerRef, onPointerDown: scrubStart, ...tipAttr( 'anim.ruler' ) }, ticks ),
-				h(
-					'div',
-					{ className: 'snn-anp-lanes' },
-					h( 'div', { className: 'snn-anp-name' }, title || '' ),
-					h(
-						'div',
-						{
-							className: 'snn-anp-lane',
-							onDoubleClick: ( e ) => {
-								if ( e.target === e.currentTarget ) {
-									addTween( e.nativeEvent.offsetX / k );
-								}
-							},
-						},
-						bars
-					)
-				),
-				h( 'div', { className: 'snn-anp-ph', ref: phRef } )
-			),
-			hasTweens
-				? h( 'p', { className: 'snn-anp-hint' }, __( 'Drag a bar to move it, its right edge to resize. Double-click the lane to add here.', 'snn' ) )
-				: h( 'p', { className: 'snn-anp-hint' }, __( 'No animation yet. Add one, then choose its presets.', 'snn' ) ),
-			h(
-				'button',
-				{ type: 'button', className: 'snn-bt-link', disabled: tweens.length >= LANE_MAX, onClick: () => addTween(), ...tipAttr( 'anim.add' ) },
-				__( 'Add animation', 'snn' )
-			)
-		);
 
 		/* ---------- the tween ---------- */
 		const tweenBody = tween
@@ -802,7 +1002,6 @@ function presetPatch( t, presets ) {
 		/* The dock's height: at least DOCK_MIN, at most 80% of the content column, which the canvas keeps the rest of. */
 		const dockMax = dockHost && dockHost.parentElement ? Math.max( DOCK_MIN, Math.round( dockHost.parentElement.clientHeight * 0.8 ) ) : DOCK_DEFAULT;
 		const dockH = Math.min( Math.max( dockHeight, DOCK_MIN ), dockMax );
-		// The timeline itself, in the dock under the canvas (while the Timeline is open). The side panel keeps its header.
 		const dock =
 			dockHost && open.timeline
 				? createPortal(
@@ -820,39 +1019,28 @@ function presetPatch( t, presets ) {
 									saveDockHeight( v );
 								},
 							},
-							h(
-								'div',
-								{ className: 'snn-anp-dock-head' },
-								h( 'span', { className: 'snn-anp-dock-name' }, __( 'Timeline', 'snn' ) ),
-								title ? h( 'span', { className: 'snn-anp-dock-block' }, title ) : null,
-								h(
-									'button',
-									{ type: 'button', className: 'snn-anp-dock-close', 'aria-label': __( 'Close the timeline', 'snn' ), onClick: () => setOpen( { ...open, timeline: false } ) },
-									'×'
-								)
-							),
-							h( 'div', { className: 'snn-anp-dock-body' }, timelineBody )
+							h( TimelineDock, { clientId, onClose: () => setOpen( { timeline: false } ) } )
 						),
 						dockHost
 				  )
 				: null;
 
-		// Order: the Animation fields first, always open (no header, no accordion), then Properties, then the Timeline
-		// (its transport is at the top of it, in the dock), then the Scroll Trigger.
+		// Order: the Animation fields first, always open (no header, no accordion), then Properties, then the Timeline (its
+		// dock is under the canvas), then the Scroll Trigger.
 		return h(
 			'div',
 			{ className: 'snn-anp' },
 			tween ? h( 'div', { className: 'snn-acc' }, h( 'div', { className: 'snn-acc-body' }, tweenBody ) ) : null,
 			tween
-				? h( Accordion, { title: __( 'Properties', 'snn' ), open: open.props, changed: tween.from && Object.keys( tween.from ).length > 0, onToggle: ( v ) => setOpen( { ...open, props: v } ) }, propsBody )
+				? h( Accordion, { title: __( 'Properties', 'snn' ), open: open.props, changed: tween.from && Object.keys( tween.from ).length > 0, onToggle: ( v ) => setOpen( { props: v } ) }, propsBody )
 				: null,
 			h(
 				Accordion,
-				{ title: __( 'Timeline', 'snn' ), open: open.timeline, changed: hasTweens, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { ...open, timeline: v } ) },
+				{ title: __( 'Timeline', 'snn' ), open: open.timeline, changed: tweens.length > 0, tip: 'anim.timeline', onToggle: ( v ) => setOpen( { timeline: v } ) },
 				h( 'p', { className: 'snn-anp-hint' }, __( 'Shown below the canvas. Close it here or with its × button.', 'snn' ) ),
 				dock
 			),
-			h( Accordion, { title: __( 'Scroll Trigger', 'snn' ), open: open.scroll, changed: scrollChanged, tip: 'scroll.on', onToggle: ( v ) => setOpen( { ...open, scroll: v } ) }, scrollBody )
+			h( Accordion, { title: __( 'Scroll Trigger', 'snn' ), open: open.scroll, changed: scrollChanged, tip: 'scroll.on', onToggle: ( v ) => setOpen( { scroll: v } ) }, scrollBody )
 		);
 	}
 

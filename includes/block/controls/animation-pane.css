@@ -1,5 +1,6 @@
-/* The GSAP pane (animation-pane.js): the transport, the timeline with its ruler and bars, the tween and property
-   fields, and the Scroll Trigger. The controls around it (rows, switches, accordions, inputs) come from controls.css. */
+/* The GSAP pane (animation-pane.js): the Animation fields, the properties, the Scroll Trigger, and the timeline dock under
+   the canvas (transport, ruler, one lane per block, the bars). The controls around it (rows, switches, accordions,
+   inputs) come from controls.css. */
 
 .snn-anp {
 	display: flex;
@@ -7,7 +8,7 @@
 	min-width: 0;
 }
 
-/* Transport: rewind, play and the time */
+/* Transport: rewind, play, the time, Add animation */
 .snn-anp-transport {
 	display: flex;
 	align-items: center;
@@ -53,10 +54,21 @@
 	white-space: nowrap;
 }
 
-/* Timeline: ruler on top, one lane with the bars, the playhead over both */
+.snn-anp-add {
+	flex: none;
+	white-space: nowrap;
+}
+
+/*
+ * Timeline: the ruler on top, the lanes under it (one row per block, they scroll inside the dock), the playhead over both.
+ * The left column holds the block names; the time starts after it (LABEL_W in animation-pane.js).
+ */
 .snn-anp-tl {
 	position: relative;
-	margin: 0 0 6px;
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-height: 0;
 	background: #fff;
 	border: 1px solid #e0e0e0;
 	border-radius: 3px;
@@ -66,8 +78,9 @@
 
 .snn-anp-ruler {
 	position: relative;
+	flex: none;
 	height: 20px;
-	margin-left: 56px;
+	margin-left: 120px;
 	border-bottom: 1px solid #e0e0e0;
 	cursor: ew-resize;
 	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -89,21 +102,52 @@
 	transform: translateX(3px);
 }
 
-.snn-anp-lanes {
+.snn-anp-rows {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.snn-anp-row {
 	display: flex;
+	min-height: 26px;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.snn-anp-row:last-child {
+	border-bottom: 0;
 }
 
 .snn-anp-name {
 	flex: none;
-	width: 56px;
-	padding: 0 6px;
+	box-sizing: border-box;
+	width: 120px;
+	margin: 0;
+	padding: 0 8px;
+	font: inherit;
 	font-size: 11px;
 	line-height: 26px;
+	text-align: left;
 	color: #1e1e1e;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	background: none;
+	border: 0;
 	border-right: 1px solid #e0e0e0;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.snn-anp-name:hover {
+	background: #f6f7f7;
+}
+
+.snn-anp-row.is-sel .snn-anp-name {
+	font-weight: 600;
+	color: #3858e9;
+	background: #f0f3ff;
 }
 
 .snn-anp-lane {
@@ -222,7 +266,8 @@
 /*
  * The timeline dock: a box under the canvas in the editor's content column (between the list view and the sidebar,
  * above the breadcrumb footer). Its height is set by the ResizableBox from the top edge (core's own resize handle).
- * While it is there the canvas gives up the room it takes (the content column has the class snn-anp-docked).
+ * While it is there the canvas gives up the room it takes (the content column has the class snn-anp-docked). The body
+ * takes the rest of the height: the transport and the ruler stay, the lanes scroll.
  */
 .snn-anp-host {
 	flex: none;
@@ -291,14 +336,22 @@
 }
 
 .snn-anp-dock-body {
+	display: flex;
 	flex: 1 1 auto;
+	flex-direction: column;
 	min-height: 0;
-	overflow: auto;
-	padding: 2px 12px 8px;
+	overflow: hidden;
+	padding: 0 12px 6px;
 }
 
 .snn-anp-dock-body .snn-anp-transport {
+	flex: none;
 	padding: 6px 0;
+}
+
+.snn-anp-dock-hint {
+	flex: none;
+	margin: 4px 0 0;
 }
 
 /* Scroll Trigger: start and end side by side; the fields off while the trigger is off */
