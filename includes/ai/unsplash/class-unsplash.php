@@ -5,7 +5,7 @@
  * The Image block follows Unsplash's API guidelines: it hotlinks the URLs the API returns, a pick sends a request to
  * the photo's download_location, and the photographer and Unsplash are credited with utm links (see
  * blocks/image/image.php). A featured image must be a media library item, so a featured image pick imports a copy
- * (import(), the user's choice of 8 Nov 2026), with the download request and the credit in its caption. The access
+ * (import(), the user's choice of 8 Nov 2026), with the download request and an empty caption. The access
  * key stays on the server: the editor only gets the results.
  */
 
@@ -119,7 +119,8 @@ class SNN_Unsplash {
 	/**
 	 * A copy of one photo in the media library, for a featured image. The photo is looked up by its id on the API
 	 * (no link from the request is downloaded), the download request is sent, and the file comes from the photo's
-	 * own image host. The credit goes in the caption, and a photo imported before is reused.
+	 * own image host. The caption stays empty (the user's choice); the photographer is kept in meta. A photo imported
+	 * before is reused.
 	 *
 	 * @return array|WP_Error { id, url }
 	 */
@@ -176,21 +177,13 @@ class SNN_Unsplash {
 
 		$alt     = '' !== (string) $alt ? sanitize_text_field( (string) $alt ) : $item['alt'];
 		$author  = $item['author'];
-		$caption = '' !== $author
-			? sprintf(
-				/* translators: 1: photographer link, 2: Unsplash link */
-				__( 'Photo by %1$s on %2$s', 'snn' ),
-				'<a href="' . esc_url( $item['author_url'] ) . '">' . esc_html( $author ) . '</a>',
-				'<a href="' . esc_url( self::home_url() ) . '">Unsplash</a>'
-			)
-			: '';
 		$title = '' !== $alt ? mb_substr( $alt, 0, 80 ) : 'Unsplash ' . $photo_id;
 
 		$attachment_id = media_handle_sideload(
 			array( 'name' => 'unsplash-' . $photo_id . '.jpg', 'tmp_name' => $tmp ),
 			0,
 			null,
-			array( 'post_title' => $title, 'post_excerpt' => $caption )
+			array( 'post_title' => $title )
 		);
 		if ( is_wp_error( $attachment_id ) ) {
 			if ( file_exists( $tmp ) ) {

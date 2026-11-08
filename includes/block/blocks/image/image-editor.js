@@ -326,7 +326,7 @@
 						'div',
 						{ className: 'snn-img-modal-foot' },
 						provider === 'unsplash' && importAll
-							? __( 'Photos from Unsplash. The chosen photo is saved to the media library, with the credit in its caption.', 'snn' )
+							? __( 'Photos from Unsplash. The chosen photo is saved to the media library.', 'snn' )
 							: provider === 'unsplash'
 							? __( 'Photos from Unsplash. The photographer is credited under the picture.', 'snn' )
 							: __( 'Photos from Pixabay. The chosen photo is saved to the media library.', 'snn' )

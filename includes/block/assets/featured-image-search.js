@@ -1,7 +1,7 @@
 /**
  * The photo search under the featured image (Post panel): P for Pixabay and U for Unsplash, the same icons and popup as
  * the Image block (blocks/image/image-editor.js, window.snnImageBlock.ImageBrowser). A featured image must be a media
- * library item, so both providers import the chosen photo (Unsplash with its credit in the caption), and the post's
+ * library item, so both providers import the chosen photo (the caption stays empty), and the post's
  * featured_media is set to it. Each icon shows when its key is saved and the user can upload files
  * (window.snnFeaturedImageSearch, from includes/block/layout-blocks.php).
  */
