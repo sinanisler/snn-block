@@ -1664,14 +1664,13 @@
 	padding: 0 var(--snn-inset);
 }
 
-/* The frame between the sides: it stands for the element. It stretches to the height of the side fields. */
+/* The empty space between the sides: a transparent box with no colour and no border. It keeps the grid cell and stretches to the height of the side fields. */
 .snn-box-inner {
 	grid-area: inner;
 	align-self: stretch;
 	min-height: 26px;
-	background: #f6f7f7;
-	border: 1px solid #dcdcde;
-	border-radius: 2px;
+	background: transparent;
+	border: 0;
 }
 
 .snn-box-cell {
