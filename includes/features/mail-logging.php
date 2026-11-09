@@ -57,13 +57,6 @@ function snn_handle_mail_logs_actions() {
         return;
     }
 
-    // Only the forms on the Mail Logs page post these fields, and each of them carries the nonce.
-    $actions = array('snn_mail_logging_submit', 'snn_mail_log_size_limit', 'snn_clear_mail_logs', 'snn_delete_log');
-    if (!array_intersect($actions, array_keys($_POST))) {
-        return;
-    }
-    check_admin_referer('snn_mail_logs', 'snn_mail_logs_nonce');
-
     // Handle enabling/disabling mail logging.
     if (isset($_POST['snn_mail_logging_submit'])) {
         if (isset($_POST['snn_mail_logging_enabled'])) {
@@ -98,10 +91,7 @@ function snn_handle_mail_logs_actions() {
     // Handle deleting a single mail log.
     if (isset($_POST['snn_delete_log']) && isset($_POST['snn_delete_log_id'])) {
         $log_id = intval($_POST['snn_delete_log_id']);
-        // Only a mail log is deleted here, never another post.
-        if ($log_id > 0 && get_post_type($log_id) === 'snn_mail_logs') {
-            wp_delete_post($log_id, true);
-        }
+        wp_delete_post($log_id, true);
     }
 }
 add_action('admin_init', 'snn_handle_mail_logs_actions');
@@ -193,7 +183,6 @@ function snn_render_mail_logs_page() {
 
     // Settings form.
     echo '<form method="post" action="">';
-    wp_nonce_field('snn_mail_logs', 'snn_mail_logs_nonce');
     echo '<label>';
     echo '<input type="checkbox" name="snn_mail_logging_enabled" ' . checked($logging_enabled, true, false) . '>';
     _e('Enable Mail Logging', 'snn');
@@ -211,7 +200,6 @@ function snn_render_mail_logs_page() {
     if ($logging_enabled) {
         echo '<div class="tablenav top">';
         echo '<form method="post" action="" style="float: left;">';
-        wp_nonce_field('snn_mail_logs', 'snn_mail_logs_nonce');
         submit_button(__('Clear All Logs', 'snn'), 'delete', 'snn_clear_mail_logs', false);
         echo '</form>';
         echo '</div>';
@@ -259,7 +247,6 @@ function snn_render_mail_logs_page() {
             // Delete Button (last column)
             echo '<td>';
             echo '<form method="post" action="">';
-            wp_nonce_field('snn_mail_logs', 'snn_mail_logs_nonce');
             echo '<input type="hidden" name="snn_delete_log_id" value="' . esc_attr($log->ID) . '">';
             submit_button(__('Delete', 'snn'), 'delete', 'snn_delete_log', false);
             echo '</form>';

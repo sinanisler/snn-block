@@ -13,7 +13,13 @@ function snn_register_create_post_ability() {
             'label'       => __( 'Create Post', 'snn' ),
             'description' => __( 'Creates a new WordPress post or page with specified title, content (HTML supported), excerpt, status (draft/publish/pending/private), categories, and tags. Automatically sanitizes input and sets the current user as author. Returns the new post ID, permalink, and edit URL. Use this when you need to programmatically create content, import posts, generate articles, or add new pages to the site. Always create as draft first unless explicitly instructed to publish immediately.
 
-CONTENT: send an HTML design (a section, a page or a fragment) as content. It is converted to the own blocks of this site (mode snn, the default): Section, Container, Div, Text, Image, Button, Icon and Code. The <style> of the design and inline styles become the CSS of this page, its scripts the page JavaScript (unfiltered_html needed), its Google Fonts are listed under conversion.fonts. Block markup (with <!-- wp: comments) is stored as given. The answer has a conversion report: blocks per kind, code_fallbacks (parts kept as written HTML), unknown_blocks, disabled_blocks and dropped values. Read snn/get-block-schema before writing block markup by hand. See includes/ai/docs/block-generation-rules.md.', 'snn' ),
+CRITICAL: Content must be valid HTML with ALL tags properly closed to prevent broken blocks:
+- Good: <h2>Title</h2><p>Introduction text.</p><ul><li>Point 1</li><li>Point 2</li></ul><p>Conclusion.</p>
+- Bad: <p>Text without closing <h2>Title</h2> More loose text (will break)
+- Lists must use: <ul><li>Item</li></ul> or <ol><li>Item</li></ol>
+- No empty blocks: <p></p> (remove these)
+
+See includes/ai/docs/block-generation-rules.md for complete guidelines.', 'snn' ),
             'category'    => 'content',
             'input_schema' => array(
                 'type'       => 'object',
@@ -27,7 +33,7 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                     ),
                     'content' => array(
                         'type'        => 'string',
-                        'description' => 'HTML design or block markup. HTML is converted to blocks (see convert and mode).',
+                        'description' => 'Post content (clean, valid HTML with ALL tags properly closed). WordPress will parse this into blocks. Use proper structure: <h2>Heading</h2><p>Paragraph</p><ul><li>List item</li></ul>. Avoid unclosed tags, empty blocks, or loose text.',
                         'minLength'   => 1,
                     ),
                     'status' => array(
@@ -56,7 +62,7 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                         'description' => 'Array of tag names.',
                         'items'       => array( 'type' => 'string' ),
                     ),
-                ) + snn_ability_content_properties(),
+                ),
             ),
             'output_schema' => array(
                 'type'       => 'object',
@@ -76,10 +82,6 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                     'status' => array(
                         'type'        => 'string',
                         'description' => 'Post status',
-                    ),
-                    'conversion' => array(
-                        'type'        => 'object',
-                        'description' => 'Report on the stored content: mode, blocks, code_fallbacks, code_tags, unknown_blocks, disabled_blocks, dropped, warnings, fonts.',
                     ),
                 ),
             ),
@@ -103,14 +105,9 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                     );
                 }
 
-                $prepared = snn_ability_prepare_input( $input );
-                if ( is_wp_error( $prepared ) ) {
-                    return $prepared;
-                }
-
                 $post_data = array(
                     'post_title'   => sanitize_text_field( $input['title'] ),
-                    'post_content' => $prepared['markup'],
+                    'post_content' => wp_kses_post( $input['content'] ),
                     'post_status'  => $status,
                     'post_type'    => $post_type,
                     'post_author'  => get_current_user_id(),
@@ -121,8 +118,8 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                     $post_data['post_excerpt'] = sanitize_textarea_field( $input['excerpt'] );
                 }
 
-                // Insert the post. WordPress takes slashed data (the block attributes are JSON with backslashes).
-                $post_id = wp_insert_post( wp_slash( $post_data ), true );
+                // Insert the post
+                $post_id = wp_insert_post( $post_data, true );
 
                 if ( is_wp_error( $post_id ) ) {
                     return $post_id;
@@ -138,14 +135,11 @@ CONTENT: send an HTML design (a section, a page or a fragment) as content. It is
                     wp_set_post_tags( $post_id, $input['tags'] );
                 }
 
-                $conversion = snn_ability_store_extras( $post_id, $input, $prepared );
-
                 return array(
-                    'id'         => $post_id,
-                    'url'        => get_permalink( $post_id ),
-                    'edit_url'   => get_edit_post_link( $post_id, 'raw' ),
-                    'status'     => get_post_status( $post_id ),
-                    'conversion' => $conversion,
+                    'id'       => $post_id,
+                    'url'      => get_permalink( $post_id ),
+                    'edit_url' => get_edit_post_link( $post_id, 'raw' ),
+                    'status'   => get_post_status( $post_id ),
                 );
             },
             'permission_callback' => function() {

@@ -17,11 +17,10 @@ window.onload = function () {
   setTimeout(() => {
     const animateElements = document.querySelectorAll('[data-animate]');
 
-    // The SNN breakpoints: tablet up to 991 px, mobile up to 478 px (the team's copy used 767 px).
     function getDevice() {
       const width = window.innerWidth;
-      if (width > 991) return 'desktop';
-      if (width > 478) return 'tablet';
+      if (width >= 991) return 'desktop';
+      if (width < 991 && width > 767) return 'tablet';
       return 'mobile';
     }
     function shouldDisableForDevice(options) {
@@ -91,15 +90,6 @@ window.onload = function () {
         return options.t_start;
       }
       return index > 0 ? `+=${options.delay || 0}` : 0;
-    }
-
-    /** The from values of a segment (its style_start options), for a fromTo. Empty when it has none. */
-    function segmentFrom(options) {
-      const from = {};
-      Object.keys(options.startStyles).forEach(key => {
-        from[key] = key === 'rotate' ? parseFloat(options.startStyles[key]) : options.startStyles[key];
-      });
-      return from;
     }
 
     animateElements.forEach(element => {
@@ -188,21 +178,11 @@ window.onload = function () {
           if (options.stagger) {
             animationProps.immediateRender = false;
           }
-          const fromValues = segmentFrom(options);
-          if (Object.keys(fromValues).length) {
-            timeline.fromTo(
-              splitText(element, options),
-              fromValues,
-              addVisibilityCallback(animationProps),
-              getTimelinePosition(options, index)
-            );
-          } else {
-            timeline.to(
-              splitText(element, options),
-              addVisibilityCallback(animationProps),
-              getTimelinePosition(options, index)
-            );
-          }
+          timeline.to(
+            splitText(element, options),
+            addVisibilityCallback(animationProps),
+            getTimelinePosition(options, index)
+          );
         });
         element._gsapAnimationInstance = timeline;
         if (firstOptions.scroll === 'false' && firstOptions.loop === 'true') {
@@ -251,7 +231,7 @@ window.onload = function () {
           duration: options.t_end !== undefined && options.t_start !== undefined 
             ? Math.max(0, options.t_end - options.t_start) 
             : (options.duration || 1),
-          delay: options.delay || options.t_start || 0,
+          delay: options.delay || 0,
           paused: options.scroll === 'false',
           ...(options.ease ? { ease: options.ease } : {}),
           ...(hasRotate ? { force3D: false } : {})
@@ -358,7 +338,7 @@ window.onload = function () {
         trigger: isBodyTrigger ? document.body : element,
         start: finalStart,
         end: finalEnd,
-        scrub: options.scrub === 'true' ? true : (options.scrub === 'false' ? false : (parseFloat(options.scrub) || 1)),
+        scrub: options.scrub === 'true' ? true : parseFloat(options.scrub) || 1,
         pin: options.pin === 'true',
         markers: (options.markers === 'true' && options.scroll !== 'false') ? true : false,
         toggleClass: options.toggleClass || null,
@@ -388,7 +368,7 @@ window.onload = function () {
 
     function splitText(element, options) {
       if (!options.splittext) {
-        const childElements = element._snnStaggerTargets || element.children;
+        const childElements = element.children;
         if (options.stagger && childElements.length > 1) {
           return childElements;
         }
@@ -574,21 +554,11 @@ window.onload = function () {
               animationProps.immediateRender = false;
             }
 
-            const fromValues = segmentFrom(options);
-            if (Object.keys(fromValues).length) {
-              timeline.fromTo(
-                splitText(element, options),
-                fromValues,
-                addVisibilityCallback(animationProps),
-                getTimelinePosition(options, index)
-              );
-            } else {
-              timeline.to(
-                splitText(element, options),
-                addVisibilityCallback(animationProps),
-                getTimelinePosition(options, index)
-              );
-            }
+            timeline.to(
+              splitText(element, options),
+              addVisibilityCallback(animationProps),
+              getTimelinePosition(options, index)
+            );
           });
 
           element._gsapAnimationInstance = timeline;
@@ -650,7 +620,7 @@ window.onload = function () {
           duration: options.t_end !== undefined && options.t_start !== undefined 
             ? Math.max(0, options.t_end - options.t_start) 
             : (options.duration || 1),
-          delay: options.delay || options.t_start || 0,
+          delay: options.delay || 0,
           paused: options.scroll === 'false',
           ...(options.ease ? { ease: options.ease } : {}),
           ...( (options.startStyles.rotate !== undefined || options.endStyles.rotate !== undefined) ? { force3D: false } : {} )

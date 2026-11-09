@@ -30,8 +30,6 @@ add_action( 'admin_init', 'snn_register_block_editor_settings' );
 function snn_block_editor_settings_page_callback() {
     $options    = get_option( 'snn_block_editor_settings', [] );
     $all_blocks = WP_Block_Type_Registry::get_instance()->get_all_registered();
-    // The dynamic blocks have their own checkboxes (below), so they are not in the per-block list.
-    $individual_blocks = array_diff_key( $all_blocks, array_flip( SNN_Block_Editor_Settings::dynamic_names() ) );
     ?>
     <style>
     .form-table th,
@@ -61,13 +59,12 @@ function snn_block_editor_settings_page_callback() {
                         <label for="snn_disable_fullscreen"><?php _e( 'Disable Fullscreen Mode', 'snn' ); ?></label>
                     </th>
                     <td>
-                        <input type="hidden" name="snn_block_editor_settings[disable_fullscreen]" value="0" />
                         <input
                             type="checkbox"
                             id="snn_disable_fullscreen"
                             name="snn_block_editor_settings[disable_fullscreen]"
                             value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'disable_fullscreen' ) ); ?>
+                            <?php checked( ! empty( $options['disable_fullscreen'] ) ); ?>
                         />
                     </td>
                 </tr>
@@ -104,62 +101,19 @@ function snn_block_editor_settings_page_callback() {
                         <label for="snn_enable_top_toolbar"><?php _e( 'Enable Top Toolbar', 'snn' ); ?></label>
                     </th>
                     <td>
-                        <input type="hidden" name="snn_block_editor_settings[enable_top_toolbar]" value="0" />
                         <input
                             type="checkbox"
                             id="snn_enable_top_toolbar"
                             name="snn_block_editor_settings[enable_top_toolbar]"
                             value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'enable_top_toolbar' ) ); ?>
-                        />
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">
-                        <label for="snn_disable_core_blocks"><?php _e( 'Disable Core Blocks', 'snn' ); ?></label>
-                    </th>
-                    <td>
-                        <input type="hidden" name="snn_block_editor_settings[disable_core_blocks]" value="0" />
-                        <input
-                            type="checkbox"
-                            id="snn_disable_core_blocks"
-                            name="snn_block_editor_settings[disable_core_blocks]"
-                            value="1"
-                            <?php checked( SNN_Block_Editor_Settings::enabled( 'disable_core_blocks' ) ); ?>
+                            <?php checked( ! empty( $options['enable_top_toolbar'] ) ); ?>
                         />
                     </td>
                 </tr>
             </table>
             <!-- End Editor Behavior Settings -->
 
-            <h2><?php _e( 'Dynamic Blocks', 'snn' ); ?></h2>
-            <p><?php _e( 'Template, content, title and archive blocks. They stay enabled, also while Disable Core Blocks is on. Uncheck one to disable it.', 'snn' ); ?></p>
-            <table class="form-table">
-                <?php foreach ( SNN_Block_Editor_Settings::dynamic_blocks() as $block_name => $fallback_title ) :
-                    $title = ! empty( $all_blocks[ $block_name ]->title ) ? $all_blocks[ $block_name ]->title : $fallback_title;
-                    $field = 'snn_block_editor_settings[dynamic_blocks][' . $block_name . ']';
-                    $id    = 'snn_dynamic_' . str_replace( array( '/', '-' ), '_', $block_name );
-                    ?>
-                    <tr>
-                        <th scope="row">
-                            <label for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></label>
-                        </th>
-                        <td>
-                            <input type="hidden" name="<?php echo esc_attr( $field ); ?>" value="0" />
-                            <input
-                                type="checkbox"
-                                id="<?php echo esc_attr( $id ); ?>"
-                                name="<?php echo esc_attr( $field ); ?>"
-                                value="1"
-                                <?php checked( SNN_Block_Editor_Settings::dynamic_enabled( $block_name ) ); ?>
-                            />
-                            <code><?php echo esc_html( $block_name ); ?></code>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </table>
-
-            <h2><?php _e( 'Disable Individual Blocks', 'snn' ); ?></h2>
+            <h2><?php _e( 'Disable Core Blocks', 'snn' ); ?></h2>
             <p><?php _e( 'Select the blocks you want to disable in the Gutenberg editor:', 'snn' ); ?></p>
 
             <button type="button" id="toggle-list"><?php _e( 'Show Blocks', 'snn' ); ?></button>
@@ -167,7 +121,7 @@ function snn_block_editor_settings_page_callback() {
             <div id="blocks-list">
                 <button type="button" id="toggle-select-all"><?php _e( 'Select All', 'snn' ); ?></button>
                 <table class="form-table">
-                    <?php foreach ( $individual_blocks as $block_name => $block_type ) : ?>
+                    <?php foreach ( $all_blocks as $block_name => $block_type ) : ?>
                         <tr>
                             <th scope="row"><?php echo esc_html( $block_name ); ?></th>
                             <td>
@@ -232,8 +186,7 @@ function snn_disable_selected_blocks( $allowed, $ctx ) {
     $opts     = (array) get_option( 'snn_block_editor_settings', [] );
 
     foreach ( $opts as $name => $val ) {
-        // The dynamic blocks are decided by their own checkboxes (SNN_Block_Editor_Settings::allowed_block_types).
-        if ( $val && in_array( $name, $all, true ) && ! in_array( $name, SNN_Block_Editor_Settings::dynamic_names(), true ) ) {
+        if ( $val && in_array( $name, $all, true ) ) {
             unset( $all[ array_search( $name, $all, true ) ] );
         }
     }
