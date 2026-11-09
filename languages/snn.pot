@@ -14568,3 +14568,11 @@ msgstr ""
 #: includes/block/assets/block-clipboard.js
 msgid "Paste animations"
 msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Photos from Unsplash. The chosen photo is saved to the media library."
+msgstr ""
+
+#: includes/block/blocks/image/image-editor.js
+msgid "Photos from Unsplash."
+msgstr ""

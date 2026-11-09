@@ -60,6 +60,13 @@
 				h( 'path', { key: 'a', d: 'M6 2.5Q6.6 5.6 9.5 6.25Q6.6 6.9 6 10Q5.4 6.9 2.5 6.25Q5.4 5.6 6 2.5Z' } ),
 				h( 'path', { key: 'b', d: 'M12 9.2Q12.2 10.8 13.8 11Q12.2 11.2 12 12.8Q11.8 11.2 10.2 11Q11.8 10.8 12 9.2Z' } ),
 			],
+			// Query loop: two arrows that repeat the block (the List View badge; the panel has the switch, not an icon)
+			loop: [
+				h( 'path', { key: 'a', d: 'M2.5 6.5v-1a2 2 0 0 1 2-2h7' } ),
+				h( 'path', { key: 'b', d: 'M9.5 1.5 12 3.5 9.5 5.5' } ),
+				h( 'path', { key: 'c', d: 'M13.5 9.5v1a2 2 0 0 1-2 2h-7' } ),
+				h( 'path', { key: 'd', d: 'M6.5 14.5 4 12.5l2.5-2' } ),
+			],
 			back: [ h( 'path', { key: 'a', d: 'M10 3.5 5.5 8l4.5 4.5' } ) ],
 			close: [ h( 'path', { key: 'a', d: 'M4 4l8 8M12 4l-8 8' } ) ],
 		};
@@ -583,5 +590,6 @@
 		ConditionsEditor,
 		InteractionsEditor,
 		sanitizeId,
+		glyph,
 	};
 } )( window.wp, window.snnControls );

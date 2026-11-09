@@ -28,6 +28,7 @@ $scripts = array(
 	'snn-layout-blocks'   => 'includes/block/assets/layout-blocks.js',
 	'snn-block-clipboard' => 'includes/block/assets/block-clipboard.js',
 	'snn-featured-image-search' => 'includes/block/assets/featured-image-search.js',
+	'snn-list-view-badges' => 'includes/block/assets/list-view-badges.js',
 );
 
 /** A JS single-quoted string body as text: \' \\ \n and the other escapes. */
