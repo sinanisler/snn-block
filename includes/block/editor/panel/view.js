@@ -12,7 +12,7 @@
 	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, ToolbarPicker } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, resetValue, closeStep, typingStep, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
@@ -109,7 +109,15 @@
 			const key = tip || k;
 		const own = viewOwn( a, device, k, dflt );
 		const value = own !== undefined ? own : inheritedValue( a, device, k ).value;
-		const change = ( v ) => setValue( a, set, device, k, v );
+		// A discrete change (a choice, a switch, an icon) is one undo step of its own; a typed change joins the run of typing in its field.
+		const change = ( v ) => {
+			closeStep();
+			setValue( a, set, device, k, v );
+		};
+		const typed = ( v ) => {
+			typingStep( device + ':' + k );
+			setValue( a, set, device, k, v );
+		};
 		// clearDefault (the Style rows): on Desktop, choosing the CSS default stores nothing, so no dot shows and nothing is written.
 		const choose = ( v ) => change( clearDefault && device === 'Desktop' && v === dflt ? '' : v );
 		const groups = variables === undefined ? VARIABLE_GROUPS : variables;
@@ -120,11 +128,13 @@
 		if ( kind === 'select' ) {
 			control = h( Select, { label, tip: key, value: empty ? fallback || options[ 0 ].value : String( value ), options, onChange: choose } );
 		} else if ( kind === 'keywordlength' ) {
-			control = h( KeywordLength, { label, tip: key, value, options, fallback: fallback || options[ 0 ].value, unit, onKeyword: choose, onLength: change } );
+			control = h( KeywordLength, { label, tip: key, value, options, fallback: fallback || options[ 0 ].value, unit, onKeyword: choose, onLength: typed } );
 		} else if ( kind === 'icons' ) {
 			// pick shows the stored value as one of the options (the column icons show the count of a template).
 			// store writes the chosen option as the stored value (a count becomes its template).
-			control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( pick ? pick( value ) : value ), options, onChange: store ? ( x ) => change( store( x ) ) : change } );
+			// A click on the icon that is set clears it, back to the default (one undo step). The fallback icon shown for an empty value is not stored, so choosing it sets it as before.
+				const picked = own !== undefined ? String( pick ? pick( own ) : own ) : null;
+				control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( pick ? pick( value ) : value ), options, onChange: ( x ) => ( picked !== null && picked === String( x ) ? resetValue( a, set, device, k ) : change( store ? store( x ) : x ) ) } );
 		} else if ( kind === 'switch' ) {
 			// A view's own off is '0' (an empty value would mean inherit). Desktop keeps the boolean.
 			control = h( Switch, { tip: key,
@@ -146,10 +156,10 @@
 				inputMode,
 				type: spec.type,
 				options: spec.options,
-				onChange: change,
+				onChange: typed,
 			} );
 		}
-		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => clearValue( a, set, device, k ) }, control );
+		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => resetValue( a, set, device, k ) }, control );
 	}
 
 	function KeywordLength( { value, options, fallback, unit, label, tip, onKeyword, onLength } ) {

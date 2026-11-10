@@ -12,7 +12,7 @@
 	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, ToolbarPicker } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, resetValue, closeStep, typingStep, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
@@ -74,8 +74,16 @@
 		const own = setHere( a, device, 'gradientStops' );
 		const stops = stopsOf( own !== undefined ? own : inheritedValue( a, device, 'gradientStops' ).value, a );
 		// The whole list is written at each change, so a stop added before its colour is typed stays in the list.
-		const write = ( list ) => setValue( a, set, device, 'gradientStops', JSON.stringify( list ) );
-		const replace = ( i, patch ) => write( stops.map( ( s, j ) => ( j === i ? { ...s, ...patch } : s ) ) );
+		// A typed change (a colour or a position) joins the typing in that field; add, remove and move are discrete steps.
+		const write = ( list, key ) => {
+			if ( key ) {
+				typingStep( key );
+			} else {
+				closeStep();
+			}
+			setValue( a, set, device, 'gradientStops', JSON.stringify( list ) );
+		};
+		const replace = ( i, patch ) => write( stops.map( ( s, j ) => ( j === i ? { ...s, ...patch } : s ) ), device + ':stop' + i + ':' + Object.keys( patch )[ 0 ] );
 		// Moves the stop at from to the place of to: a drop, or an arrow key on a grip.
 		const move = ( from, to ) => {
 			if ( from === to || to < 0 || to >= stops.length ) {
@@ -88,7 +96,7 @@
 		};
 		return h(
 			ViewRow,
-			{ label: __( 'Colour stops', 'snn' ), device, tip: 'gradientStops', own: own !== undefined, onReset: () => clearValue( a, set, device, 'gradientStops' ) },
+			{ label: __( 'Colour stops', 'snn' ), device, tip: 'gradientStops', own: own !== undefined, onReset: () => resetValue( a, set, device, 'gradientStops' ) },
 			h(
 				'div',
 				{ className: 'snn-stops' },
@@ -408,7 +416,14 @@ function pageKeys( page ) {
 		const [ linked, setLinked ] = useState( false );
 		const keys = box.keys;
 		const anyOwn = keys.some( ( k ) => setHere( a, device, k ) !== undefined );
-		const change = ( k, v ) => ( linked ? setMany( a, set, device, keys.map( ( key ) => [ key, v ] ) ) : setValue( a, set, device, k, v ) );
+		const change = ( k, v ) => {
+			typingStep( device + ':' + ( linked ? 'box' : k ) );
+			if ( linked ) {
+				setMany( a, set, device, keys.map( ( key ) => [ key, v ] ) );
+			} else {
+				setValue( a, set, device, k, v );
+			}
+		};
 		return h(
 			'div',
 			{ className: 'snn-box' },
@@ -431,13 +446,16 @@ function pageKeys( page ) {
 						},
 						h( Glyph, { name: 'link' } )
 					),
-					anyOwn && device !== 'Desktop'
+					anyOwn
 						? h(
 								'button',
 								{
 									type: 'button',
 									className: 'snn-reset',
-									onClick: () => setMany( a, set, device, keys.map( ( key ) => [ key, '' ] ) ),
+									onClick: () => {
+										closeStep();
+										setMany( a, set, device, keys.map( ( key ) => [ key, '' ] ) );
+									},
 										...tipAttr( 'reset' ),
 								},
 								__( 'Reset', 'snn' )

@@ -873,7 +873,7 @@
 				'div',
 				{ className: 'snn-row-control snn-view-control' },
 				children,
-				own && onReset && device !== 'Desktop' ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset, ...tipAttr( 'reset' ) }, __( 'Reset', 'snn' ) ) : null
+				own && onReset ? h( 'button', { type: 'button', className: 'snn-reset', onClick: onReset, ...tipAttr( 'reset' ) }, __( 'Reset', 'snn' ) ) : null
 			)
 		);
 	}
@@ -945,6 +945,45 @@
 			delete responsive[ view ];
 		}
 		set( { responsive } );
+	}
+
+	/**
+	 * Back to the block's default, with one set (so one undo step). On Desktop the base value is emptied: an empty value
+	 * is the default for every setting. On Tablet and Mobile the view's own value is taken back (clearValue).
+	 */
+	function resetValue( a, set, device, key ) {
+		closeStep();
+		if ( device === 'Desktop' ) {
+			set( { [ key ]: '' } );
+			return;
+		}
+		clearValue( a, set, device, key );
+	}
+
+	/** The key of the typing run in progress (a field and a view), or null. */
+	let typingKey = null;
+
+	/**
+	 * Undo steps. WordPress merges an update of a block's attributes into the step before when the update has the same
+	 * keys (block-editor isUpdatingSameBlockAttribute), so a Reset, an icon click or a view's value would undo together with
+	 * the edit before it. closeStep() ends the step before a discrete change (the same call WordPress makes for rich text).
+	 * It only ends a step that was recorded (isLastBlockChangePersistent), so a block's automatic ID stays out of undo.
+	 */
+	function closeStep() {
+		typingKey = null;
+		const be = wp.data.dispatch( 'core/block-editor' );
+		const sel = wp.data.select( 'core/block-editor' );
+		if ( be && be.__unstableMarkLastChangeAsPersistent && sel && sel.isLastBlockChangePersistent && sel.isLastBlockChangePersistent() ) {
+			be.__unstableMarkLastChangeAsPersistent();
+		}
+	}
+
+	/** Before a typed change: a run of typing in one field and view is one step; another field or view starts a new one. */
+	function typingStep( key ) {
+		if ( key !== typingKey ) {
+			closeStep();
+		}
+		typingKey = key;
 	}
 
 	/**
@@ -1119,5 +1158,8 @@
 		effectiveValues,
 		setValue,
 		clearValue,
+		resetValue,
+		closeStep,
+		typingStep,
 	};
 } )( window.wp );

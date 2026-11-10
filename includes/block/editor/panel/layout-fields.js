@@ -12,7 +12,7 @@
 	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, resetValue, closeStep, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
@@ -182,8 +182,11 @@
 		// A flex column runs its main axis down the block, so its pictures turn a quarter turn.
 		const turned = ! grid && /^column/.test( flexDirection );
 		const v = ( key, k, props ) => h( ViewValue, Object.assign( { key, a, set, device, k }, props ) );
-		const setDirection = ( patch ) => setValue( a, set, device, 'flexDirection', patch );
-		const resetDirection = () => clearValue( a, set, device, 'flexDirection' );
+		const setDirection = ( patch ) => {
+			closeStep();
+			setValue( a, set, device, 'flexDirection', patch );
+		};
+		const resetDirection = () => resetValue( a, set, device, 'flexDirection' );
 		const rows = [
 			v( 'display', 'display', { label: __( 'Display', 'snn' ), kind: 'select', options: DISPLAY_OPTIONS, dflt: base.display } ),
 		];
@@ -197,7 +200,7 @@
 						label: __( 'Direction', 'snn' ),
 						flow,
 						reverse,
-						onFlow: ( x ) => setDirection( reverse ? x + '-reverse' : x ),
+						onFlow: ( x ) => ( flow === x && directionOwn ? resetDirection() : setDirection( reverse ? x + '-reverse' : x ) ),
 						onReverse: ( on ) => setDirection( flow + ( on ? '-reverse' : '' ) ),
 					} )
 				),
