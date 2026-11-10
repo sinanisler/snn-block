@@ -21,14 +21,12 @@
 		{ value: 'left', label: __( 'Left', 'snn' ) },
 	];
 
-	/** The icon's size and colour, as icons.php writes them. */
-	function iconStyle( size, color ) {
-		const s = check( 'size', size );
-		const c = check( 'color', color );
-		return { fontSize: s || undefined, color: c || undefined, fill: c || undefined };
-	}
-
-	function Pane( { a, set } ) {
+	function Pane( { a, set, styleA, styleSet, device, hovering } ) {
+		// The icon's gap, size and colour are style values: the hover state while it is on (styleA, styleSet), and per view.
+		const V = snn.panel.ViewValue;
+		const Rest = snn.panel.ContentRest;
+		const sa = styleA || a;
+		const sset = styleSet || set;
 		const icon = hasIcon( a.icon );
 		return h(
 			'div',
@@ -37,47 +35,51 @@
 				Group,
 				{ title: __( 'Button', 'snn' ) },
 				h(
-					Row,
-					{ label: __( 'Text', 'snn' ), changed: a.text !== 'Button' },
-					h( TextField, { value: a.text || '', label: __( 'Text', 'snn' ), onChange: ( v ) => set( { text: v } ) } )
+					Rest,
+					{ hovering },
+					h(
+						Row,
+						{ label: __( 'Text', 'snn' ), changed: a.text !== 'Button' },
+						h( TextField, { value: a.text || '', label: __( 'Text', 'snn' ), onChange: ( v ) => set( { text: v } ) } )
+					)
 				),
 				// With a link the element is an a, so the tag is hidden, as Bricks does.
 				a.linkUrl
 					? null
 					: h(
-							Row,
-							{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== 'span' },
-							h( Select, { value: a.tagName === 'a' ? 'span' : a.tagName, options: TAG_OPTIONS, label: __( 'HTML tag', 'snn' ), onChange: ( v ) => set( { tagName: v } ) } )
+							Rest,
+							{ hovering },
+							h(
+								Row,
+								{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== 'span' },
+								h( Select, { value: a.tagName === 'a' ? 'span' : a.tagName, options: TAG_OPTIONS, label: __( 'HTML tag', 'snn' ), onChange: ( v ) => set( { tagName: v } ) } )
+							)
 					  )
 			),
-			h( LinkGroup, { a, set } ),
+			h( Rest, { hovering }, h( LinkGroup, { a, set } ) ),
 			h(
 				Group,
 				{ title: __( 'Icon', 'snn' ) },
-				h( Row, { label: __( 'Icon', 'snn' ), changed: icon }, h( IconField, { value: a.icon, onChange: ( v ) => set( { icon: v } ) } ) ),
+				h( Rest, { hovering }, h( Row, { label: __( 'Icon', 'snn' ), changed: icon }, h( IconField, { value: a.icon, onChange: ( v ) => set( { icon: v } ) } ) ) ),
 				icon
 					? [
 							h(
-								Row,
-								{ key: 'pos', label: __( 'Position', 'snn' ), changed: a.iconPosition !== 'right' },
-								h( Select, { value: a.iconPosition, options: POSITION_OPTIONS, label: __( 'Position', 'snn' ), onChange: ( v ) => set( { iconPosition: v } ) } )
+								Rest,
+								{ key: 'pos', hovering },
+								h(
+									Row,
+									{ label: __( 'Position', 'snn' ), changed: a.iconPosition !== 'right' },
+									h( Select, { value: a.iconPosition, options: POSITION_OPTIONS, label: __( 'Position', 'snn' ), onChange: ( v ) => set( { iconPosition: v } ) } )
+								)
 							),
+							h( V, { key: 'gap', a: sa, set: sset, device, k: 'iconGap', label: __( 'Gap', 'snn' ), unit: ' px', kind: 'size', placeholder: '0.5em' } ),
 							h(
-								Row,
-								{ key: 'gap', label: __( 'Gap', 'snn' ), changed: !! a.iconGap },
-								h( TextField, { value: a.iconGap || '', label: __( 'Gap', 'snn' ), unit: 'px', kind: 'size', variables: vars(), placeholder: '0.5em', onChange: ( v ) => set( { iconGap: v } ) } )
+								Rest,
+								{ key: 'space', hovering },
+								h( SwitchRow, { label: __( 'Space between', 'snn' ), checked: !! a.iconSpace, onChange: ( v ) => set( { iconSpace: v } ) } )
 							),
-							h( SwitchRow, { key: 'space', label: __( 'Space between', 'snn' ), checked: !! a.iconSpace, onChange: ( v ) => set( { iconSpace: v } ) } ),
-							h(
-								Row,
-								{ key: 'size', label: __( 'Size', 'snn' ), changed: !! a.iconSize },
-								h( TextField, { value: a.iconSize || '', label: __( 'Icon size', 'snn' ), unit: 'px', kind: 'size', variables: vars(), onChange: ( v ) => set( { iconSize: v } ) } )
-							),
-							h(
-								Row,
-								{ key: 'color', label: __( 'Colour', 'snn' ), changed: !! a.iconColor },
-								h( TextField, { value: a.iconColor || '', label: __( 'Icon colour', 'snn' ), kind: 'color', swatch: true, variables: vars(), onChange: ( v ) => set( { iconColor: v } ) } )
-							),
+							h( V, { key: 'size', a: sa, set: sset, device, k: 'iconSize', label: __( 'Size', 'snn' ), unit: ' px', kind: 'size' } ),
+							h( V, { key: 'color', a: sa, set: sset, device, k: 'iconColor', label: __( 'Colour', 'snn' ), kind: 'color' } ),
 					  ]
 					: null
 			)
@@ -94,15 +96,11 @@
 		const shownTag = linked ? 'a' : tag === 'a' || tag === 'button' ? 'span' : tag;
 		const own = {};
 		if ( hasIcon( a.icon ) ) {
-			const gap = check( 'size', a.iconGap );
-			if ( gap ) {
-				own.gap = gap;
-			}
 			if ( a.iconSpace ) {
 				own.justifyContent = 'space-between';
 			}
 		}
-		const icon = hasIcon( a.icon ) ? h( IconGlyph, { key: 'icon', icon: a.icon, style: iconStyle( a.iconSize, a.iconColor ) } ) : null;
+		const icon = hasIcon( a.icon ) ? h( IconGlyph, { key: 'icon', icon: a.icon } ) : null;
 		const text = h( RichText, {
 			key: 'text',
 			tagName: 'span',

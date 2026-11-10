@@ -123,12 +123,6 @@
 		const css = a.stretch
 			? { verticalAlign: 'top', width: '100%', height: '100%', maxWidth: '100%' }
 			: { verticalAlign: 'top', maxWidth: '100%', height: 'auto' };
-		if ( a.objectFit ) {
-			css.objectFit = a.objectFit;
-		}
-		if ( a.objectPosition ) {
-			css.objectPosition = a.objectPosition;
-		}
 		if ( a.aspectRatio ) {
 			css.aspectRatio = a.aspectRatio;
 		}
@@ -371,7 +365,12 @@
 	 * The Content tab of the Image block: the Image group (the picture, dynamic data, custom URL, HTML tag, sources,
 	 * aspect ratio, object fit and position, caption, loading and stretch) and the Link to group.
 	 */
-	function ImagePane( { a, set } ) {
+	function ImagePane( { a, set, styleA, styleSet, device, hovering } ) {
+		// The picture settings (aspect ratio, object fit and position) are style values: the hover state while it is on, and per view.
+		const V = snn.panel.ViewValue;
+		const Rest = snn.panel.ContentRest;
+		const sa = styleA || a;
+		const sset = styleSet || set;
 		const [ browse, setBrowse ] = useState( null );
 		const providers = ( ( snn.data.blocks || {} ).image || {} ).providers || {};
 		const sources = Array.isArray( a.sources ) ? a.sources : [];
@@ -380,6 +379,9 @@
 			'div',
 			{ className: 'snn-pane' },
 			h(
+				Rest,
+				{ hovering },
+				h(
 				Group,
 				{ title: __( 'Image', 'snn' ) },
 				h(
@@ -442,21 +444,6 @@
 				hasSources ? h( SourcesList, { rows: sources, onChange: ( v ) => set( { sources: v } ) } ) : null,
 				h(
 					Row,
-					{ label: __( 'Aspect ratio', 'snn' ), changed: !! a.aspectRatio },
-					h( TextField, { value: a.aspectRatio || '', label: __( 'Aspect ratio', 'snn' ), placeholder: '16 / 9', onChange: ( v ) => set( { aspectRatio: v } ) } )
-				),
-				h(
-					Row,
-					{ label: __( 'Object fit', 'snn' ), changed: a.objectFit !== 'fill' },
-					h( Select, { value: a.objectFit, options: OBJECT_FIT_OPTIONS, label: __( 'Object fit', 'snn' ), onChange: ( v ) => set( { objectFit: v } ) } )
-				),
-				h(
-					Row,
-					{ label: __( 'Object position', 'snn' ), changed: a.objectPosition !== '50% 50%' },
-					h( TextField, { value: a.objectPosition || '', label: __( 'Object position', 'snn' ), placeholder: '50% 50%', onChange: ( v ) => set( { objectPosition: v } ) } )
-				),
-				h(
-					Row,
 					{ label: __( 'Caption type', 'snn' ), changed: a.captionType !== 'attachment' },
 					h( Select, { value: a.captionType, options: CAPTION_OPTIONS, label: __( 'Caption type', 'snn' ), onChange: ( v ) => set( { captionType: v } ) } )
 				),
@@ -473,6 +460,14 @@
 					h( Select, { value: a.loading, options: LOADING_OPTIONS, label: __( 'Loading', 'snn' ), onChange: ( v ) => set( { loading: v } ) } )
 				),
 				h( SwitchRow, { label: __( 'Stretch', 'snn' ), checked: !! a.stretch, onChange: ( v ) => set( { stretch: v } ) } )
+			),
+			),
+			h(
+				Group,
+				{ title: __( 'Picture', 'snn' ) },
+				h( V, { a: sa, set: sset, device, k: 'aspectRatio', label: __( 'Aspect ratio', 'snn' ), placeholder: '16 / 9' } ),
+				h( V, { a: sa, set: sset, device, k: 'objectFit', label: __( 'Object fit', 'snn' ), kind: 'select', options: OBJECT_FIT_OPTIONS } ),
+				h( V, { a: sa, set: sset, device, k: 'objectPosition', label: __( 'Object position', 'snn' ), placeholder: '50% 50%' } )
 			),
 			h(
 				Group,

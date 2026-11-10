@@ -420,7 +420,8 @@
 	function styleObject( a, opts ) {
 		const out = {};
 		declarations( a, ( snn.data && snn.data.styleTable ) || [], opts ).forEach( ( d ) => {
-			out[ camel( d[ 0 ] ) ] = d[ 1 ];
+			// A custom property (--snn-icon-size) keeps its name: React takes it as it is.
+		out[ d[ 0 ].indexOf( '--' ) === 0 ? d[ 0 ] : camel( d[ 0 ] ) ] = d[ 1 ];
 		} );
 		return out;
 	}

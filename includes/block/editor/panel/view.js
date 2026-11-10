@@ -96,7 +96,8 @@
 			return COMPOSED_CSS[ k ];
 		}
 		const spec = ( snn.data.styleTable || [] ).find( ( row ) => row[ 0 ] === k );
-		return spec && spec[ 1 ] ? spec[ 1 ] : '';
+		// A variable (--snn-icon-size) has no property page on MDN: no link.
+		return spec && spec[ 1 ] && spec[ 1 ].indexOf( '--' ) !== 0 ? spec[ 1 ] : '';
 	}
 
 	/**

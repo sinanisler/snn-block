@@ -37,6 +37,25 @@
 	 * The layer the Style values are read from while the hover state is on: the block's hover values (base and views),
 	 * with the normal values as their inheritance (__inherit, see controls.js effectiveValues()).
 	 */
+	/**
+	 * A part of the Content tab that the hover state does not change: it is inert while the hover state is on (the wrapper
+	 * is dimmed by controls.css). The style rows of the same tab are outside it.
+	 */
+	function ContentRest( { hovering, children } ) {
+		return h(
+			'div',
+			{
+				className: 'snn-content-rest',
+				ref: ( el ) => {
+					if ( el ) {
+						el.inert = !! hovering;
+					}
+				},
+			},
+			children
+		);
+	}
+
 	function hoverLayer( a ) {
 		const hs = a.hoverStyle || {};
 		return { ...( hs.base || {} ), customCss: hs.css || '', responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
@@ -280,9 +299,9 @@
 		);
 
 		// Content: the block's own pane, or the generic one. The advanced group comes after a pane of its own.
-		const own = parts && parts.Pane ? h( parts.Pane, { a, set, def, device, parent, base, clientId } ) : null;
+		const own = parts && parts.Pane ? h( parts.Pane, { a, set, def, device, parent, base, clientId, styleA: sa, styleSet: sset, hovering } ) : null;
 		const defaultPane = own
-			? h( Fragment, null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
+			? h( Fragment, null, hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the style settings here change it. The other settings are not part of it, so they are off until H is turned off.', 'snn' ) ) : null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
 			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering } );
 
 		// Style: one group at a time, chosen on the rail of icons (as Bricks does). The group's sections follow, one
@@ -371,5 +390,5 @@
 	}
 
 
-	Object.assign( snn.panel, { Panel, badgeText } );
+	Object.assign( snn.panel, { Panel, badgeText, ContentRest } );
 } )( window.wp );
