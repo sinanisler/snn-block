@@ -35,6 +35,9 @@ $scripts = array(
 // The block folders' editor scripts: one handle per folder (snn-block-<folder>-editor), as SNN_Blocks::handle() names them.
 foreach ( glob( $root . 'includes/block/blocks/*/editor.js' ) as $file ) {
 	$folder = basename( dirname( $file ) );
+	if ( '_' === $folder[0] ) {
+		continue; // _template and other folders that start with an underscore are not blocks
+	}
 	$scripts[ 'snn-block-' . $folder . '-editor' ] = 'includes/block/blocks/' . $folder . '/editor.js';
 }
 

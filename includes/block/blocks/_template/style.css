@@ -1,0 +1,11 @@
+/*
+ * TEMPLATE stylesheet for a new block (copy to blocks/<name>/style.css). It loads on the front end on pages where the
+ * block is printed, and in the editor's canvas.
+ *
+ * Every rule is wrapped in :where(), so a Style setting in the panel always wins over it (the same as button.css).
+ * The block's element has the class wp-block-snn-<name> (for example wp-block-snn-template).
+ */
+:where(.wp-block-snn-template) {
+	/* The look a new block starts with. Keep it small: the panel and the page's own CSS set the rest. */
+	font: inherit;
+}
