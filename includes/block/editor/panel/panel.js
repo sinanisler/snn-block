@@ -31,7 +31,45 @@
 	 * The block's Edit unmounts when another block is selected, so the place is kept here instead. The next block opens
 	 * where the last one was left. It lasts for the editor session; a reload starts on Content.
 	 */
-	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout' };
+	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout', hover: false };
+
+	/**
+	 * The layer the Style values are read from while the hover state is on: the block's hover values (base and views),
+	 * with the normal values as their inheritance (__inherit, see controls.js effectiveValues()).
+	 */
+	function hoverLayer( a ) {
+		const hs = a.hoverStyle || {};
+		return { ...( hs.base || {} ), responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
+	}
+
+	/**
+	 * Writes a Style value to the hover state, in the shape hoverStyle keeps: a base value, or a view's values (the
+	 * responsive shape the panel's helpers write). One set is one undo step.
+	 */
+	function hoverWriter( a, set ) {
+		return ( patch ) => {
+			const hs = a.hoverStyle || {};
+			const next = { base: { ...( hs.base || {} ) }, tablet: { ...( hs.tablet || {} ) }, mobile: { ...( hs.mobile || {} ) } };
+			Object.keys( patch ).forEach( ( k ) => {
+				if ( k === 'responsive' ) {
+					const views = patch.responsive || {};
+					next.tablet = { ...( views.tablet || {} ) };
+					next.mobile = { ...( views.mobile || {} ) };
+				} else if ( patch[ k ] === '' || patch[ k ] === undefined ) {
+					delete next.base[ k ];
+				} else {
+					next.base[ k ] = patch[ k ];
+				}
+			} );
+			set( { hoverStyle: next } );
+		};
+	}
+
+	/** True when the block has a hover value on any level (its H button shows a dot). */
+	function hasHover( a ) {
+		const hs = a.hoverStyle || {};
+		return [ 'base', 'tablet', 'mobile' ].some( ( v ) => Object.keys( hs[ v ] || {} ).length > 0 );
+	}
 
 	/** A panel state kept across blocks (see panelPlace): the same pair as useState, and the new value is saved. */
 	function usePlace( key ) {
@@ -147,6 +185,26 @@
 		const [ tab, setTab ] = usePlace( 'tab' );
 		const [ sub, setSub ] = usePlace( 'sub' );
 		const [ stylePage, setStylePage ] = usePlace( 'stylePage' );
+		const [ hoverOn, setHoverOn ] = usePlace( 'hover' );
+		// The hover state is for the Style values. The Code block has none (its H button is not shown).
+		const isCode = def.name === 'snn/code';
+		const hovering = hoverOn && ! isCode;
+		// What the Style values are read and written as: the hover layer while the hover state is on, else the block itself.
+		const sa = hovering ? hoverLayer( a ) : a;
+		const sset = hovering ? hoverWriter( a, set ) : set;
+		const tabNow = hovering ? 'style' : tab;
+		// The canvas draws the hover state of this block while it is on: a class the canvas's hover rule also matches
+		// (register.js). Set again when the block's hover values change, since a re-render of the block can reset its class.
+		useEffect( () => {
+			const frame = document.querySelector( 'iframe[name="editor-canvas"]' );
+			const doc = frame && frame.contentDocument ? frame.contentDocument : document;
+			const el = doc.getElementById( 'block-' + clientId );
+			if ( ! el ) {
+				return undefined;
+			}
+			el.classList.toggle( 'snn-force-hover', !! hovering );
+			return () => el.classList.remove( 'snn-force-hover' );
+		}, [ hovering, clientId, a.hoverStyle ] );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
 		const gsapCount = stateOf( a ).tweens.length;
@@ -163,7 +221,7 @@
 					role: 'tab',
 					className: 'snn-tab',
 					...tipAttr( id === 'default' ? 'tab.content' : 'tab.style' ),
-					'aria-selected': tab === id ? 'true' : 'false',
+					'aria-selected': tabNow === id ? 'true' : 'false',
 					onClick: () => setTab( id ),
 				},
 				label
@@ -181,7 +239,25 @@
 					interactions: interactions.length,
 					animations: gsapCount,
 					open: sub,
-					onOpen: setSub,
+					onOpen: ( v ) => {
+						if ( v ) {
+							setHoverOn( false );
+						}
+						setSub( v );
+					},
+					hover: isCode
+						? undefined
+						: {
+								on: hovering,
+								used: hasHover( a ),
+								onToggle: () => {
+									if ( ! hovering ) {
+										setSub( null );
+										setTab( 'style' );
+									}
+									setHoverOn( ! hovering );
+								},
+						  },
 				} )
 			),
 			h( ViewSwitch, null )
@@ -195,14 +271,16 @@
 
 		// Style: one group at a time, chosen on the rail of icons (as Bricks does). The group's sections follow, one
 		// under another. Every value is per view: a view shows the value it sets, or the one it inherits.
-		const page = STYLE_PAGES.find( ( p ) => p.id === stylePage ) || STYLE_PAGES[ 0 ];
+		// The hover state has no CSS group (the custom CSS is one text, not a value per state).
+		const pages = hovering ? STYLE_PAGES.filter( ( p ) => p.kind !== 'css' ) : STYLE_PAGES;
+		const page = pages.find( ( p ) => p.id === stylePage ) || pages[ 0 ];
 		const rowFor = ( row ) => {
 			if ( 'LAYOUT' === row ) {
-				return h( LayoutFields, { key: 'layout', a, set, base, device, parent } );
+				return h( LayoutFields, { key: 'layout', a: sa, set: sset, base, device, parent } );
 			}
 			return typeof row === 'string'
-				? h( StyleRow, { key: row, a, set, device, k: row } )
-				: h( BoxModel, { key: row.box, a, set, device, box: row } );
+				? h( StyleRow, { key: row, a: sa, set: sset, device, k: row } )
+				: h( BoxModel, { key: row.box, a: sa, set: sset, device, box: row } );
 		};
 		const stylePane = h(
 			'div',
@@ -213,11 +291,11 @@
 				h( Segmented, {
 					label: __( 'Style groups', 'snn' ),
 					value: page.id,
-					options: STYLE_PAGES.map( ( p ) => ( {
+					options: pages.map( ( p ) => ( {
 						value: p.id,
 						label: p.label,
 						glyph: p.text ? h( 'span', { className: 'snn-glyph-text', 'aria-hidden': 'true' }, p.text ) : h( Glyph, { name: p.glyph } ),
-						changed: groupChanged( a, p ),
+						changed: groupChanged( sa, p ),
 						tip: 'style.' + p.id,
 					} ) ),
 					onChange: setStylePage,
@@ -226,7 +304,8 @@
 			h(
 				'div',
 				{ className: 'snn-page-head' },
-				h( 'span', Object.assign( { className: 'snn-page-title' }, tipAttr( 'style.' + page.id ) ), page.label )
+				h( 'span', Object.assign( { className: 'snn-page-title' }, tipAttr( 'style.' + page.id ) ), page.label ),
+				hovering ? h( 'span', { className: 'snn-hover-badge' }, __( 'Hover state', 'snn' ) ) : null
 			),
 			page.kind === 'css'
 				? h( CssPane, { a, set, editor: data.cssEditor } )
@@ -265,8 +344,8 @@
 			'div',
 			{ className: 'snn-panel' },
 			header,
-			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Content', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
-			tab === 'default' ? defaultPane : stylePane
+			h( 'div', { className: 'snn-tabs', role: 'tablist' }, hovering ? null : tabButton( 'default', __( 'Content', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+			tabNow === 'default' ? defaultPane : stylePane
 		);
 	}
 

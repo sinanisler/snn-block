@@ -448,5 +448,91 @@
 		return String( next ) + unit;
 	}
 
-	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf, step };
+	/** The table's keys (the settings a hover state may set). */
+	function tableKeys() {
+		return ( ( snn.data && snn.data.styleTable ) || [] ).map( ( row ) => row[ 0 ] );
+	}
+
+	/** A hover level as the server keeps it: the table's keys, and only values that are not empty. */
+	function cleanLevel( level ) {
+		const out = {};
+		if ( ! level || typeof level !== 'object' ) {
+			return out;
+		}
+		tableKeys().forEach( ( k ) => {
+			const v = level[ k ];
+			if ( v !== undefined && v !== null && String( v ) !== '' ) {
+				out[ k ] = String( v );
+			}
+		} );
+		return out;
+	}
+
+	/** The last value of each property of a list of [property, value] pairs (the browser reads the last one). */
+	function lastOf( pairs ) {
+		const map = {};
+		pairs.forEach( ( d ) => {
+			map[ d[ 0 ] ] = d[ 1 ];
+		} );
+		return map;
+	}
+
+	/** The overlay as text, so two overlays compare as the PHP does (SNN_Style::hover_parts()). */
+	function overlayText( a ) {
+		return overlay( a ).map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' );
+	}
+
+	/**
+	 * What a hover changes on one level, as [declarations, overlay] text: a property is written when its last value differs
+	 * from the normal level's. The same rule as hover_parts() in style.php.
+	 */
+	function hoverParts( normal, hovered, view ) {
+		const table = ( snn.data && snn.data.styleTable ) || [];
+		const nv = lastOf( declarations( normal, table, { view } ) );
+		const hv = lastOf( declarations( hovered, table, { view } ) );
+		const diff = Object.keys( hv )
+			.filter( ( p ) => nv[ p ] === undefined || nv[ p ] !== hv[ p ] )
+			.map( ( p ) => p + ':' + hv[ p ] );
+		const on = overlayText( normal );
+		const oh = overlayText( hovered );
+		return [ diff.join( ';' ), on !== oh ? ( oh || 'content:none' ) : '' ];
+	}
+
+	/**
+	 * The hover rule of one level of a block, for the editor's canvas (which draws one view at a time, so there is no media
+	 * rule): level is 'base', 'tablet' or 'mobile'. cls is the block's class (written twice, as the front end does).
+	 * forced adds the editor's class for a hover that is held on (snn-force-hover), so the panel can show the hover state.
+	 * The same layers as hover_rules() in style.php.
+	 */
+	function hoverRules( a, cls, level, forced ) {
+		const hs = a.hoverStyle || {};
+		const base = cleanLevel( hs.base );
+		const tab = cleanLevel( hs.tablet );
+		const mob = cleanLevel( hs.mobile );
+		const own = a.responsive || {};
+		const nt = Object.assign( {}, a, own.tablet || {} );
+		const nm = Object.assign( {}, nt, own.mobile || {} );
+		const lower = {
+			base: a,
+			tablet: Object.assign( {}, nt, base ),
+			mobile: Object.assign( {}, nm, base, tab ),
+		};
+		const hovered = {
+			base: Object.assign( {}, a, base ),
+			tablet: Object.assign( {}, lower.tablet, tab ),
+			mobile: Object.assign( {}, lower.mobile, mob ),
+		};
+		const [ decls, before ] = hoverParts( lower[ level ], hovered[ level ], level !== 'base' );
+		const pick = ( pseudo ) => ( forced ? '.' + cls + ':hover' + pseudo + ',.' + cls + '.snn-force-hover' + pseudo : '.' + cls + ':hover' + pseudo );
+		let out = '';
+		if ( decls ) {
+			out += pick( '' ) + '{' + decls + '}';
+		}
+		if ( before ) {
+			out += pick( '::before' ) + '{' + before + '}';
+		}
+		return out;
+	}
+
+	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf, step, hoverRules, cleanLevel };
 } )( typeof window !== 'undefined' ? window : globalThis );

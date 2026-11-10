@@ -23,6 +23,7 @@
 		'head.conditions': [ 'Conditions', 'Show this element only when rules hold.' ],
 		'head.interactions': [ 'Interactions', 'Run an action when a trigger happens, such as a click.' ],
 		'head.animations': [ 'Animations', 'Play animations on the front end.' ],
+		'head.hover': [ 'Hover state', 'Style values set now apply when the mouse is over the block. A dot shows the block has one.' ],
 		'tab.content': [ 'Content', 'Tag, layout, query loop and advanced settings.' ],
 		'tab.style': [ 'Style', 'Colours, sizes, text, borders and effects.' ],
 

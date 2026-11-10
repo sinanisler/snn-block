@@ -85,7 +85,25 @@
 	 * The Conditions and Interactions buttons, and the GSAP animations button when the GSAP setting is on.
 	 * open: the sub-panel shown (or null). A dot marks a block that uses them.
 	 */
-	function HeadIcons( { conditions, interactions, animations, open, onOpen } ) {
+	function HeadIcons( { conditions, interactions, animations, open, onOpen, hover } ) {
+		// The hover state: an H button that switches the Style values to the hover state (hover: { on, used, onToggle }).
+		// Its dot shows when the block has a hover value. Not given for the Code block (it has no hover).
+		const hoverBtn = hover
+			? h(
+					'button',
+					{
+						key: 'hover',
+						type: 'button',
+						className: 'snn-bt-head-btn snn-bt-head-hover' + ( hover.on ? ' is-on' : '' ) + ( hover.used ? ' is-used' : '' ),
+						...tipAttr( 'head.hover' ),
+						'aria-label': __( 'Hover state', 'snn' ),
+						'aria-pressed': hover.on ? 'true' : 'false',
+						onClick: hover.onToggle,
+					},
+					h( 'span', { className: 'snn-bt-head-letter', 'aria-hidden': 'true' }, 'H' ),
+					hover.used ? h( 'span', { className: 'snn-bt-head-dot', 'aria-hidden': 'true' } ) : null
+			  )
+			: null;
 		const items = [
 			{ key: 'conditions', label: __( 'Conditions', 'snn' ), used: conditions > 0, name: 'conditions' },
 			{ key: 'interactions', label: __( 'Interactions', 'snn' ), used: interactions > 0, name: 'interactions' },
@@ -94,6 +112,7 @@
 		return h(
 			'div',
 			{ className: 'snn-bt-head-icons', role: 'group', 'aria-label': __( 'Element settings', 'snn' ) },
+			hoverBtn,
 			items.map( ( it ) =>
 				h(
 					'button',

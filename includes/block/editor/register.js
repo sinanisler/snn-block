@@ -195,10 +195,18 @@
 				const overlayPairs = snn.styleProps.overlay( shown );
 				const overlayClass = overlayPairs.length ? cssScope( 'overlay' + JSON.stringify( overlayPairs ) ) : '';
 				const overlayRule = overlayClass ? h( 'style', null, '.' + overlayClass + '::before{' + overlayPairs.map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' ) + '}' ) : null;
+				// The hover state of this view, as a rule of the canvas (the front end's hover rule, style.php hover_rules()). An inline
+				// style would beat it, so while a block has a hover value its normal style moves into a rule too (a class written twice).
+				const hoverLevel = device === 'Tablet' ? 'tablet' : device === 'Mobile' ? 'mobile' : 'base';
+				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.hoverStyle || {} ) );
+				const hoverText = snn.styleProps.hoverRules( a, hoverKey + '.' + hoverKey, hoverLevel, true );
+				const hoverClass = hoverText ? hoverKey : '';
+				const normalText = Object.keys( ownStyle ).length ? '.' + hoverKey + '.' + hoverKey + '{' + Object.keys( ownStyle ).map( ( k ) => k.replace( /[A-Z]/g, ( m ) => '-' + m.toLowerCase() ) + ':' + ownStyle[ k ] ).join( ';' ) + '}' : '';
+				const hoverRule = hoverText ? h( 'style', null, normalText + hoverText ) : null;
 				const blockProps = useBlockProps( {
 					id: cleanId( a.htmlId ) || undefined,
-					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped, overlayClass ].filter( Boolean ).join( ' ' ),
-					style: Object.keys( ownStyle ).length ? ownStyle : undefined,
+					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped, overlayClass, hoverClass ].filter( Boolean ).join( ' ' ),
+					style: Object.keys( ownStyle ).length && ! hoverText ? ownStyle : undefined,
 					'data-animate': canvasDataAnimate( a ),
 				} );
 				// The children of a layout block go straight into the block's element (no list element between).
@@ -217,6 +225,7 @@
 						inspector,
 						cssRules,
 						overlayRule,
+						hoverRule,
 						h( parts.Canvas, { a, tag: a.tagName, rootProps: blockProps, set, def, clientId, device } ),
 						loopPreview
 					);
@@ -233,6 +242,7 @@
 						a.query.enabled ? h( 'div', { className: 'snn-loop-badge', contentEditable: false }, badgeText( a.query ) ) : null,
 						cssRules,
 						overlayRule,
+						hoverRule,
 						innerChildren
 					),
 					loopPreview

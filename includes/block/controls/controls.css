@@ -1834,3 +1834,23 @@
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
 }
+
+/* The hover state (Phase 4 follow-up): the H letter of its header button, and the badge on the Style page while it is on. */
+.snn-bt-head-letter {
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.snn-panel .snn-hover-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 0 6px;
+	font-size: 10px;
+	line-height: 16px;
+	color: #2271b1;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 8px;
+	vertical-align: middle;
+}

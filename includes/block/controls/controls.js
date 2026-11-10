@@ -956,17 +956,30 @@
 
 	/** The value a view inherits: from Tablet for Mobile when Tablet sets it, otherwise from Desktop. */
 	function inheritedValue( a, device, key ) {
+		// A hover layer inherits from the normal values (its __inherit), not from the hover values it sets.
+		const src = a.__inherit || a;
 		if ( device === 'Mobile' ) {
-			const tablet = ownValue( a, 'Tablet', key );
+			const tablet = ownValue( src, 'Tablet', key );
 			if ( tablet !== undefined ) {
 				return { value: tablet, from: 'Tablet' };
 			}
 		}
-		return { value: a[ key ], from: 'Desktop' };
+		return { value: src[ key ], from: 'Desktop' };
 	}
 
 	/** The values a device shows: the base, then the views above it, then its own (as the front end resolves them). */
 	function effectiveValues( a, device ) {
+		// A hover layer: the values the normal style shows, with the hover values laid over them.
+		if ( a.__inherit ) {
+			const out = { ...effectiveValues( a.__inherit, device ) };
+			const mine = effectiveValues( { ...a, __inherit: undefined }, device );
+			Object.keys( mine ).forEach( ( k ) => {
+				if ( k !== 'responsive' && k !== '__inherit' && mine[ k ] !== undefined && mine[ k ] !== '' ) {
+					out[ k ] = mine[ k ];
+				}
+			} );
+			return out;
+		}
 		const out = { ...a };
 		const layers = device === 'Mobile' ? [ 'tablet', 'mobile' ] : device === 'Tablet' ? [ 'tablet' ] : [];
 		layers.forEach( ( view ) => {
