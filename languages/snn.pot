@@ -14664,3 +14664,7 @@ msgstr ""
 #: includes/block/blocks/icon/editor.js
 msgid "Choose an icon in the panel"
 msgstr ""
+
+#: includes/block/editor/panel/style-pages.js
+msgid "Flex and grid"
+msgstr ""

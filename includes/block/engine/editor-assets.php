@@ -32,6 +32,14 @@ class SNN_Block_Editor_Assets {
 			'snn-animation-pane' => 'includes/block/controls/animation-pane.js',
 			'snn-icon-picker'    => 'includes/block/controls/icon-picker.js',
 			'snn-link-fields'    => 'includes/block/controls/link-fields.js',
+			// The panel: shared, then the parts that use it in order (each uses the ones before it).
+			'snn-panel-shared'        => 'includes/block/editor/panel/shared.js',
+			'snn-panel-view'          => 'includes/block/editor/panel/view.js',
+			'snn-panel-layout-fields' => 'includes/block/editor/panel/layout-fields.js',
+			'snn-panel-query-fields'  => 'includes/block/editor/panel/query-fields.js',
+			'snn-panel-css-editor'    => 'includes/block/editor/panel/css-editor.js',
+			'snn-panel-style-pages'   => 'includes/block/editor/panel/style-pages.js',
+			'snn-panel-panel'         => 'includes/block/editor/panel/panel.js',
 		);
 		$blocks = array();
 		foreach ( array_keys( SNN_Blocks::folders() ) as $folder ) {
@@ -41,7 +49,7 @@ class SNN_Block_Editor_Assets {
 			}
 		}
 		$after = array(
-			'snn-layout-blocks'         => 'includes/block/editor/layout-blocks.js',
+			'snn-layout-blocks'         => 'includes/block/editor/register.js',
 			'snn-block-clipboard'       => 'includes/block/editor/block-clipboard.js',
 			'snn-featured-image-search' => 'includes/block/editor/featured-image-search.js',
 		);
@@ -140,7 +148,7 @@ class SNN_Block_Editor_Assets {
 		$out = array();
 		foreach ( SNN_Blocks::definitions() as $name => $def ) {
 			unset( $def['class'] );
-			$def['attributes'] = SNN_Blocks::own_attributes( $name );
+			$def['attributes'] = SNN_Blocks::attributes( $name );
 			$out[]             = $def;
 		}
 		return $out;

@@ -1,17 +1,25 @@
 <?php
 /**
- * The CSS properties of the layout blocks' Style groups: spacing, sizing, positioning, misc, typography,
- * background, gradient, border, box shadow, transform, filters and transitions.
+ * The style of our blocks: ONE property table (SNN_Style_Props::TABLE). Every property a block can set is a row:
  *
- * Each property is one flat attribute, named after what it is (marginTop, zIndex, fontWeight). A flat
- * attribute gets the per-view values (Desktop, Tablet, Mobile) the same way gap and max width do. A few
- * properties are built from several attributes (the box shadow, the transform, the filters and the
- * gradient); their parts have no css of their own (css null) and are composed in declarations().
+ *   attribute => array( css property or null, type, options, rules )
  *
- * The editor reads this table through wp_localize_script (see layout-blocks.php) and mirrors check()
- * and declarations() in assets/layout-blocks.js: keep the two in step.
+ * The type decides how the value is checked (check()). The rules (all optional) say when the row is written:
  *
- * Every value is checked before it is written. A value that is not allowed writes nothing.
+ *   when      'flex', 'grid' or 'box' (flex or grid): the row is written only for that display. Absent: every display.
+ *   default   the value written when the stored one is not allowed (for example the display's block).
+ *   skip      a value that is not written on the base rule (display: block), but is written in a view rule.
+ *   gridWord  flex-start and flex-end become start and end on a grid (grid has no flex words). 'always': on flex too (align self).
+ *   cond      'packs': the row needs a grid, or a flex box that wraps (align content).
+ *   extra     declarations written after the row (max width also sets the auto margins).
+ *   compose   a composed row: its css is null and the named composer writes the declarations
+ *             ('autoflow', 'placement_column', 'placement_row').
+ *
+ * The rows are written in the order of the table. Layout rows come first (as the front end always wrote them), then
+ * the Style groups' rows, then the composed Style properties (box shadow, transform, filter, gradient).
+ *
+ * The editor mirrors this file in editor/style-props.js: the same types, rules and composers. The parity test
+ * (tests/style-parity.php and tests/style-parity.js) checks that the two agree on the same values.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,116 +34,158 @@ class SNN_Style_Props {
 	/** The most colour stops a gradient takes (the repeater's list). */
 	const MAX_STOPS = 12;
 
-	/** attribute => [ css property or null, type, options ]. The order is the order of the declarations. */
+	/** The layout choices (the option lists of the rows below). */
+	const DISPLAYS       = array( 'block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'inline-grid', 'none' );
+	const FLEX_DIRECTION = array( 'row', 'row-reverse', 'column', 'column-reverse' );
+	const FLEX_WRAP      = array( 'nowrap', 'wrap', 'wrap-reverse' );
+	const JUSTIFY        = array( 'flex-start', 'center', 'flex-end', 'space-between', 'space-around', 'space-evenly' );
+	const ALIGN          = array( 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
+	const ALIGN_CONTENT  = array( 'flex-start', 'center', 'flex-end', 'stretch', 'space-between', 'space-around', 'space-evenly' );
+	const JUSTIFY_ITEMS  = array( 'stretch', 'flex-start', 'center', 'flex-end' );
+	const GRID_FLOW      = array( 'row', 'column' );
+	const ALIGN_SELF     = array( 'auto', 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
+	const JUSTIFY_SELF   = array( 'stretch', 'flex-start', 'center', 'flex-end' );
+	const OVERFLOW       = array( 'visible', 'hidden', 'clip' );
+
+	/** attribute => [ css property or null, type, options, rules ]. The order is the order of the declarations. */
 	const TABLE = array(
+		// Layout: the display, the flex and grid settings, the item settings, then spacing, colour, width, opacity and overflow.
+		'display'          => array( 'display', 'keyword', self::DISPLAYS, array( 'default' => 'block', 'skip' => 'block' ) ),
+		'flexDirection'    => array( 'flex-direction', 'keyword', self::FLEX_DIRECTION, array( 'when' => 'flex', 'default' => 'row' ) ),
+		'flexWrap'         => array( 'flex-wrap', 'keyword', self::FLEX_WRAP, array( 'when' => 'flex', 'default' => 'nowrap' ) ),
+		'gridColumns'      => array( 'grid-template-columns', 'columns', array(), array( 'when' => 'grid' ) ),
+		'gridRows'         => array( 'grid-template-rows', 'template', array(), array( 'when' => 'grid' ) ),
+		'gridAreas'        => array( 'grid-template-areas', 'areas', array(), array( 'when' => 'grid' ) ),
+		'gridAutoColumns'  => array( 'grid-auto-columns', 'template', array(), array( 'when' => 'grid' ) ),
+		'gridAutoRows'     => array( 'grid-auto-rows', 'template', array(), array( 'when' => 'grid' ) ),
+		'gridAutoFlow'     => array( null, 'keyword', self::GRID_FLOW, array( 'when' => 'grid', 'compose' => 'autoflow' ) ),
+		'gridDense'        => array( null, 'flag', array(), array() ),
+		'justifyContent'   => array( 'justify-content', 'keyword', self::JUSTIFY, array( 'when' => 'box', 'gridWord' => true ) ),
+		'alignItems'       => array( 'align-items', 'keyword', self::ALIGN, array( 'when' => 'box', 'gridWord' => true ) ),
+		'justifyItems'     => array( 'justify-items', 'keyword', self::JUSTIFY_ITEMS, array( 'when' => 'grid', 'gridWord' => true ) ),
+		'alignContent'     => array( 'align-content', 'keyword', self::ALIGN_CONTENT, array( 'when' => 'box', 'gridWord' => true, 'cond' => 'packs' ) ),
+		'gap'              => array( 'gap', 'length', array(), array( 'when' => 'box' ) ),
+		'columnGap'        => array( 'column-gap', 'length', array(), array( 'when' => 'box' ) ),
+		'rowGap'           => array( 'row-gap', 'length', array(), array( 'when' => 'box' ) ),
+		'alignSelf'        => array( 'align-self', 'keyword', self::ALIGN_SELF, array( 'when' => 'box', 'gridWord' => 'always' ) ),
+		'justifySelf'      => array( 'justify-self', 'keyword', self::JUSTIFY_SELF, array( 'when' => 'grid', 'gridWord' => true ) ),
+		'order'            => array( 'order', 'order', array(), array() ),
+		'flexGrow'         => array( 'flex-grow', 'flexnumber', array(), array( 'when' => 'flex' ) ),
+		'flexShrink'       => array( 'flex-shrink', 'flexnumber', array(), array( 'when' => 'flex' ) ),
+		'flexBasis'        => array( 'flex-basis', 'lengthauto', array(), array( 'when' => 'flex' ) ),
+		'gridArea'         => array( 'grid-area', 'ident', array(), array( 'when' => 'grid' ) ),
+		'columnStart'      => array( null, 'line', array(), array( 'when' => 'grid', 'compose' => 'placement_column' ) ),
+		'columnSpan'       => array( null, 'span', array(), array() ),
+		'rowStart'         => array( null, 'line', array(), array( 'when' => 'grid', 'compose' => 'placement_row' ) ),
+		'rowSpan'          => array( null, 'span', array(), array() ),
+		'backgroundColor'  => array( 'background-color', 'color', array(), array() ),
+		'paddingTop'       => array( 'padding-top', 'size', array(), array() ),
+		'paddingBottom'    => array( 'padding-bottom', 'size', array(), array() ),
+		'maxWidth'         => array( 'max-width', 'size', array(), array( 'extra' => array( array( 'margin-left', 'auto' ), array( 'margin-right', 'auto' ) ) ) ),
+		'opacity'          => array( 'opacity', 'opacity', array(), array() ),
+		'overflow'         => array( 'overflow', 'keyword', self::OVERFLOW, array() ),
 		// Spacing
-		'marginTop'         => array( 'margin-top', 'margin' ),
-		'marginRight'       => array( 'margin-right', 'margin' ),
-		'marginBottom'      => array( 'margin-bottom', 'margin' ),
-		'marginLeft'        => array( 'margin-left', 'margin' ),
-		'paddingLeft'       => array( 'padding-left', 'size' ),
-		'paddingRight'      => array( 'padding-right', 'size' ),
+		'marginTop'         => array( 'margin-top', 'margin', array(), array() ),
+		'marginRight'       => array( 'margin-right', 'margin', array(), array() ),
+		'marginBottom'      => array( 'margin-bottom', 'margin', array(), array() ),
+		'marginLeft'        => array( 'margin-left', 'margin', array(), array() ),
+		'paddingLeft'       => array( 'padding-left', 'size', array(), array() ),
+		'paddingRight'      => array( 'padding-right', 'size', array(), array() ),
 		// Sizing
-		'width'             => array( 'width', 'width' ),
-		'minWidth'          => array( 'min-width', 'size' ),
-		'height'            => array( 'height', 'width' ),
-		'minHeight'         => array( 'min-height', 'size' ),
-		'maxHeight'         => array( 'max-height', 'sizenone' ),
-		'aspectRatio'       => array( 'aspect-ratio', 'ratio' ),
+		'width'             => array( 'width', 'width', array(), array() ),
+		'minWidth'          => array( 'min-width', 'size', array(), array() ),
+		'height'            => array( 'height', 'width', array(), array() ),
+		'minHeight'         => array( 'min-height', 'size', array(), array() ),
+		'maxHeight'         => array( 'max-height', 'sizenone', array(), array() ),
+		'aspectRatio'       => array( 'aspect-ratio', 'ratio', array(), array() ),
 		// Positioning
-		'position'          => array( 'position', 'keyword', array( 'static', 'relative', 'absolute', 'fixed', 'sticky' ) ),
-		'top'               => array( 'top', 'margin' ),
-		'right'             => array( 'right', 'margin' ),
-		'bottom'            => array( 'bottom', 'margin' ),
-		'left'              => array( 'left', 'margin' ),
-		'zIndex'            => array( 'z-index', 'integer' ),
-		'scrollSnapAlign'   => array( 'scroll-snap-align', 'keyword', array( 'none', 'start', 'center', 'end' ) ),
+		'position'          => array( 'position', 'keyword', array( 'static', 'relative', 'absolute', 'fixed', 'sticky' ), array() ),
+		'top'               => array( 'top', 'margin', array(), array() ),
+		'right'             => array( 'right', 'margin', array(), array() ),
+		'bottom'            => array( 'bottom', 'margin', array(), array() ),
+		'left'              => array( 'left', 'margin', array(), array() ),
+		'zIndex'            => array( 'z-index', 'integer', array(), array() ),
+		'scrollSnapAlign'   => array( 'scroll-snap-align', 'keyword', array( 'none', 'start', 'center', 'end' ), array() ),
 		// Misc
-		'visibility'        => array( 'visibility', 'keyword', array( 'visible', 'hidden', 'collapse' ) ),
+		'visibility'        => array( 'visibility', 'keyword', array( 'visible', 'hidden', 'collapse' ), array() ),
 		'cursor'            => array(
 			'cursor',
 			'keyword',
 			array( 'auto', 'default', 'pointer', 'text', 'move', 'not-allowed', 'grab', 'grabbing', 'wait', 'help', 'crosshair', 'zoom-in', 'zoom-out', 'none' ),
+			array(),
 		),
-		'isolation'         => array( 'isolation', 'keyword', array( 'auto', 'isolate' ) ),
+		'isolation'         => array( 'isolation', 'keyword', array( 'auto', 'isolate' ), array() ),
 		'mixBlendMode'      => array(
 			'mix-blend-mode',
 			'keyword',
 			array( 'normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity' ),
+			array(),
 		),
-		'pointerEvents'     => array( 'pointer-events', 'keyword', array( 'auto', 'none' ) ),
-		'perspective'       => array( 'perspective', 'sizenone' ),
-		'perspectiveOrigin' => array( 'perspective-origin', 'text' ),
+		'pointerEvents'     => array( 'pointer-events', 'keyword', array( 'auto', 'none' ), array() ),
+		'perspective'       => array( 'perspective', 'sizenone', array(), array() ),
+		'perspectiveOrigin' => array( 'perspective-origin', 'text', array(), array() ),
 		// Typography
-		'color'             => array( 'color', 'color' ),
-		'fontFamily'        => array( 'font-family', 'family' ),
-		'fontSize'          => array( 'font-size', 'size' ),
-		'fontWeight'        => array( 'font-weight', 'keyword', array( 'normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900' ) ),
-		'fontStyle'         => array( 'font-style', 'keyword', array( 'normal', 'italic', 'oblique' ) ),
-		'lineHeight'        => array( 'line-height', 'lineheight' ),
-		'letterSpacing'     => array( 'letter-spacing', 'lengthnormal' ),
-		'textAlign'         => array( 'text-align', 'keyword', array( 'left', 'center', 'right', 'justify', 'start', 'end' ) ),
-		'textTransform'     => array( 'text-transform', 'keyword', array( 'none', 'capitalize', 'uppercase', 'lowercase' ) ),
-		'textDecoration'    => array( 'text-decoration', 'keyword', array( 'none', 'underline', 'line-through', 'overline' ) ),
-		'textWrap'          => array( 'text-wrap', 'keyword', array( 'wrap', 'nowrap', 'balance', 'pretty', 'stable' ) ),
-		'whiteSpace'        => array( 'white-space', 'keyword', array( 'normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces' ) ),
-		'textShadow'        => array( 'text-shadow', 'text' ),
+		'color'             => array( 'color', 'color', array(), array() ),
+		'fontFamily'        => array( 'font-family', 'family', array(), array() ),
+		'fontSize'          => array( 'font-size', 'size', array(), array() ),
+		'fontWeight'        => array( 'font-weight', 'keyword', array( 'normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900' ), array() ),
+		'fontStyle'         => array( 'font-style', 'keyword', array( 'normal', 'italic', 'oblique' ), array() ),
+		'lineHeight'        => array( 'line-height', 'lineheight', array(), array() ),
+		'letterSpacing'     => array( 'letter-spacing', 'lengthnormal', array(), array() ),
+		'textAlign'         => array( 'text-align', 'keyword', array( 'left', 'center', 'right', 'justify', 'start', 'end' ), array() ),
+		'textTransform'     => array( 'text-transform', 'keyword', array( 'none', 'capitalize', 'uppercase', 'lowercase' ), array() ),
+		'textDecoration'    => array( 'text-decoration', 'keyword', array( 'none', 'underline', 'line-through', 'overline' ), array() ),
+		'textWrap'          => array( 'text-wrap', 'keyword', array( 'wrap', 'nowrap', 'balance', 'pretty', 'stable' ), array() ),
+		'whiteSpace'        => array( 'white-space', 'keyword', array( 'normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'break-spaces' ), array() ),
+		'textShadow'        => array( 'text-shadow', 'text', array(), array() ),
 		// Background
-		'backgroundImage'   => array( 'background-image', 'url' ),
-		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'cover', 'contain', 'auto' ) ),
-		'backgroundPosition' => array( 'background-position', 'text' ),
-		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ) ),
+		'backgroundImage'   => array( 'background-image', 'url', array(), array() ),
+		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'cover', 'contain', 'auto' ), array() ),
+		'backgroundPosition' => array( 'background-position', 'text', array(), array() ),
+		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ), array() ),
 		// Gradient (composed into background-image): the type, the angle, the colour stops (a JSON list, the repeater), and
 		// the two colour stops from before the repeater (kept, so saved blocks render the same)
-		'gradientApply'     => array( null, 'keyword', array( 'background', 'overlay', 'text' ) ),
-		'gradientType'      => array( null, 'keyword', array( 'linear', 'radial' ) ),
-		'gradientStops'     => array( null, 'stops' ),
-		'gradientAngle'     => array( null, 'number' ),
-		'gradientColor1'    => array( null, 'color' ),
-		'gradientStop1'     => array( null, 'percent' ),
-		'gradientColor2'    => array( null, 'color' ),
-		'gradientStop2'     => array( null, 'percent' ),
+		'gradientApply'     => array( null, 'keyword', array( 'background', 'overlay', 'text' ), array() ),
+		'gradientType'      => array( null, 'keyword', array( 'linear', 'radial' ), array() ),
+		'gradientStops'     => array( null, 'stops', array(), array() ),
+		'gradientAngle'     => array( null, 'number', array(), array() ),
+		'gradientColor1'    => array( null, 'color', array(), array() ),
+		'gradientStop1'     => array( null, 'percent', array(), array() ),
+		'gradientColor2'    => array( null, 'color', array(), array() ),
+		'gradientStop2'     => array( null, 'percent', array(), array() ),
 		// Border
-		'borderWidth'       => array( 'border-width', 'size' ),
-		'borderStyle'       => array( 'border-style', 'keyword', array( 'none', 'solid', 'dashed', 'dotted', 'double' ) ),
-		'borderColor'       => array( 'border-color', 'color' ),
-		'borderRadius'      => array( 'border-radius', 'size' ),
+		'borderWidth'       => array( 'border-width', 'size', array(), array() ),
+		'borderStyle'       => array( 'border-style', 'keyword', array( 'none', 'solid', 'dashed', 'dotted', 'double' ), array() ),
+		'borderColor'       => array( 'border-color', 'color', array(), array() ),
+		'borderRadius'      => array( 'border-radius', 'size', array(), array() ),
 		// Box shadow (composed): x, y, blur, spread and colour
-		'boxShadowX'        => array( null, 'length' ),
-		'boxShadowY'        => array( null, 'length' ),
-		'boxShadowBlur'     => array( null, 'size' ),
-		'boxShadowSpread'   => array( null, 'length' ),
-		'boxShadowColor'    => array( null, 'color' ),
+		'boxShadowX'        => array( null, 'length', array(), array() ),
+		'boxShadowY'        => array( null, 'length', array(), array() ),
+		'boxShadowBlur'     => array( null, 'size', array(), array() ),
+		'boxShadowSpread'   => array( null, 'length', array(), array() ),
+		'boxShadowColor'    => array( null, 'color', array(), array() ),
 		// Transform: the origin is a longhand, the rest is composed into transform
-		'transformOrigin'   => array( 'transform-origin', 'text' ),
-		'translateX'        => array( null, 'length' ),
-		'translateY'        => array( null, 'length' ),
-		'rotate'            => array( null, 'number' ),
-		'scale'             => array( null, 'number' ),
-		'skewX'             => array( null, 'number' ),
-		'skewY'             => array( null, 'number' ),
+		'transformOrigin'   => array( 'transform-origin', 'text', array(), array() ),
+		'translateX'        => array( null, 'length', array(), array() ),
+		'translateY'        => array( null, 'length', array(), array() ),
+		'rotate'            => array( null, 'number', array(), array() ),
+		'scale'             => array( null, 'number', array(), array() ),
+		'skewX'             => array( null, 'number', array(), array() ),
+		'skewY'             => array( null, 'number', array(), array() ),
 		// Filters (composed into filter)
-		'filterBlur'        => array( null, 'size' ),
-		'filterBrightness'  => array( null, 'percentnumber' ),
-		'filterContrast'    => array( null, 'percentnumber' ),
-		'filterGrayscale'   => array( null, 'percentnumber' ),
-		'filterHueRotate'   => array( null, 'number' ),
-		'filterInvert'      => array( null, 'percentnumber' ),
-		'filterSaturate'    => array( null, 'percentnumber' ),
-		'filterSepia'       => array( null, 'percentnumber' ),
+		'filterBlur'        => array( null, 'size', array(), array() ),
+		'filterBrightness'  => array( null, 'percentnumber', array(), array() ),
+		'filterContrast'    => array( null, 'percentnumber', array(), array() ),
+		'filterGrayscale'   => array( null, 'percentnumber', array(), array() ),
+		'filterHueRotate'   => array( null, 'number', array(), array() ),
+		'filterInvert'      => array( null, 'percentnumber', array(), array() ),
+		'filterSaturate'    => array( null, 'percentnumber', array(), array() ),
+		'filterSepia'       => array( null, 'percentnumber', array(), array() ),
 		// Transition: four longhands
-		'transitionProperty' => array( 'transition-property', 'keyword', array( 'all', 'opacity', 'transform', 'color', 'background-color', 'box-shadow', 'filter', 'border-color' ) ),
-		'transitionDuration' => array( 'transition-duration', 'time' ),
-		'transitionTiming'   => array( 'transition-timing-function', 'keyword', array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ) ),
-		'transitionDelay'    => array( 'transition-delay', 'time' ),
-	);
-
-	/** The attributes with no css of their own: composed in declarations(). */
-	const COMPOSED = array(
-		'gradientApply', 'gradientType', 'gradientAngle', 'gradientStops', 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2',
-		'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor',
-		'translateX', 'translateY', 'rotate', 'scale', 'skewX', 'skewY',
-		'filterBlur', 'filterBrightness', 'filterContrast', 'filterGrayscale', 'filterHueRotate', 'filterInvert', 'filterSaturate', 'filterSepia',
+		'transitionProperty' => array( 'transition-property', 'keyword', array( 'all', 'opacity', 'transform', 'color', 'background-color', 'box-shadow', 'filter', 'border-color' ), array() ),
+		'transitionDuration' => array( 'transition-duration', 'time', array(), array() ),
+		'transitionTiming'   => array( 'transition-timing-function', 'keyword', array( 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear' ), array() ),
+		'transitionDelay'    => array( 'transition-delay', 'time', array(), array() ),
 	);
 
 	/** The attributes, as the blocks register them: text, empty by default. */
@@ -152,11 +202,11 @@ class SNN_Style_Props {
 		return array_keys( self::TABLE );
 	}
 
-	/** The table for the editor: a list of [ attribute, css property, type, options ]. */
+	/** The table for the editor: a list of [ attribute, css property, type, options, rules ]. */
 	public static function for_editor() {
 		$out = array();
 		foreach ( self::TABLE as $key => $spec ) {
-			$out[] = array( $key, $spec[0] ?? null, $spec[1], $spec[2] ?? array() );
+			$out[] = array( $key, $spec[0], $spec[1], $spec[2], $spec[3] );
 		}
 		return $out;
 	}
@@ -177,6 +227,8 @@ class SNN_Style_Props {
 				return in_array( $v, $options, true ) ? $v : self::length( $v, false );
 			case 'length':
 				return self::length( $v, true );
+			case 'lengthauto':
+				return 'auto' === $v ? $v : self::length( $v, true );
 			case 'margin':
 				return 'auto' === $v ? $v : self::length( $v, true );
 			case 'lengthnormal':
@@ -194,12 +246,21 @@ class SNN_Style_Props {
 				return self::length( $v, false );
 			case 'integer':
 				return preg_match( '/^-?\d{1,4}$/', $v ) || self::is_var( $v ) ? $v : '';
+			case 'order':
+				return preg_match( '/^-?\d{1,3}$/', $v ) || self::is_var( $v ) ? $v : '';
+			case 'flexnumber':
+				return preg_match( '/^\d+(\.\d+)?$/', $v ) || self::is_var( $v ) ? $v : '';
 			case 'number':
 				return preg_match( '/^-?\d+(\.\d+)?$/', $v ) || self::is_var( $v ) ? $v : '';
 			case 'percent':
 				return preg_match( '/^\d+(\.\d+)?$/', $v ) && (float) $v <= 100 ? $v : '';
 			case 'percentnumber':
 				return preg_match( '/^\d+(\.\d+)?$/', $v ) || self::is_var( $v ) ? $v : '';
+			case 'opacity':
+				if ( self::is_var( $v ) ) {
+					return $v;
+				}
+				return preg_match( '/^\d{1,3}$/', $v ) && (int) $v <= 100 ? (string) ( (int) $v / 100 ) : '';
 			case 'ratio':
 				return 'auto' === $v || preg_match( '/^\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/', $v ) || self::is_var( $v ) ? $v : '';
 			case 'time':
@@ -212,12 +273,34 @@ class SNN_Style_Props {
 				return preg_match( '/^[A-Za-z0-9 ,\'"\-]{1,120}$/', $v ) ? $v : '';
 			case 'url':
 				return preg_match( '/^url\(("|\')?(https?:\/\/|\/)[^"\'()\s<>]{1,500}("|\')?\)$/', $v ) ? $v : '';
+			case 'template':
+				return preg_match( '/^[A-Za-z0-9 .,()%+-]{1,160}$/', $v ) ? $v : '';
+			case 'columns':
+				// A count from 1 to 12 is that many equal columns; a bare number outside that is not a template.
+				if ( preg_match( '/^(1[0-2]|[1-9])$/', $v ) ) {
+					return 'repeat(' . $v . ', minmax(0, 1fr))';
+				}
+				return preg_match( '/^\d+$/', $v ) ? '' : self::check( 'template', $v );
+			case 'areas':
+				if ( strlen( $v ) > 300 ) {
+					return '';
+				}
+				$row = '"[A-Za-z0-9_.-]+(\s+[A-Za-z0-9_.-]+)*"';
+				return preg_match( '/^' . $row . '(\s+' . $row . ')*$/', $v ) ? $v : '';
+			case 'ident':
+				return preg_match( '/^[A-Za-z][A-Za-z0-9_-]{0,39}$/', $v ) ? $v : '';
+			case 'line':
+				return preg_match( '/^([1-9]\d?|var\(--[a-z][a-z0-9-]*\))$/', $v ) ? $v : '';
+			case 'span':
+				return preg_match( '/^((1[0-2]|[1-9])|var\(--[a-z][a-z0-9-]*\))$/', $v ) ? $v : '';
+			case 'flag':
+				return '1' === $v || 'true' === $v ? '1' : '';
 		}
 		return '';
 	}
 
 	/** A variable reference: var(--name). Allowed wherever a value is. */
-	private static function is_var( $v ) {
+	public static function is_var( $v ) {
 		return (bool) preg_match( '/^var\(--[a-z][a-z0-9-]*\)$/', $v );
 	}
 
@@ -270,27 +353,54 @@ class SNN_Style_Props {
 	}
 
 	/**
-	 * The declarations the properties write, in the table's order, then the composed ones: the box shadow,
-	 * the transform, the filter and the gradient (last, so a gradient wins over a background image).
+	 * The declarations the table writes for one block, in the table's order, then the composed Style properties (the box
+	 * shadow, the transform, the filter and the gradient: last, so a gradient wins over a background image).
+	 *
+	 * $dyn: the context the dynamic tags read (null: the tags are not filled in). $view: the declarations of a view rule,
+	 * where a value that is the base's default is written too (a view may turn a flex base back into a block).
 	 *
 	 * @return string[] "property:value" strings.
 	 */
-	public static function declarations( array $a, $dyn = null ) {
+	public static function declarations( array $a, $dyn = null, $view = false ) {
 		if ( is_array( $dyn ) ) {
 			$a = self::with_tags( $a, $dyn );
 		}
-		$out = array();
+		$display = self::display_of( $a );
+		$out     = array();
 		foreach ( self::TABLE as $key => $spec ) {
+			$rule = $spec[3];
+			if ( ! self::applies( $rule, $display, $a ) ) {
+				continue;
+			}
+			if ( isset( $rule['compose'] ) ) {
+				foreach ( self::compose( $rule['compose'], $a ) as $declaration ) {
+					$out[] = $declaration;
+				}
+				continue;
+			}
 			if ( null === $spec[0] ) {
 				continue;
 			}
-			$value = self::check( $spec[1], $a[ $key ] ?? '', $spec[2] ?? array() );
+			$value = self::check( $spec[1], $a[ $key ] ?? '', $spec[2] );
 			// The default size of an image is cover: an image with no size chosen is drawn at cover (the editor's Size choice shows it).
 			if ( '' === $value && 'backgroundSize' === $key && '' !== self::check( 'url', $a['backgroundImage'] ?? '' ) ) {
 				$value = 'cover';
 			}
-			if ( '' !== $value ) {
-				$out[] = $spec[0] . ':' . $value;
+			if ( '' === $value && isset( $rule['default'] ) ) {
+				$value = $rule['default'];
+			}
+			if ( '' === $value ) {
+				continue;
+			}
+			if ( ! empty( $rule['gridWord'] ) && ( 'always' === $rule['gridWord'] || self::is_grid( $display ) ) ) {
+				$value = self::grid_word( $value );
+			}
+			if ( isset( $rule['skip'] ) && $rule['skip'] === $value && ! $view ) {
+				continue;
+			}
+			$out[] = $spec[0] . ':' . $value;
+			foreach ( $rule['extra'] ?? array() as $extra ) {
+				$out[] = $extra[0] . ':' . $extra[1];
 			}
 		}
 		foreach ( array( self::box_shadow( $a ), self::transform( $a ), self::filter( $a ) ) as $composed ) {
@@ -316,6 +426,74 @@ class SNN_Style_Props {
 			$out[] = 'isolation:isolate';
 		}
 		return $out;
+	}
+
+	/** The display of the block, as the table reads it: a display choice, or block when none is valid. */
+	public static function display_of( array $a ) {
+		$display = $a['display'] ?? '';
+		return in_array( $display, self::DISPLAYS, true ) ? $display : 'block';
+	}
+
+	/** True for a grid display (grid and inline grid). */
+	public static function is_grid( $display ) {
+		return in_array( $display, array( 'grid', 'inline-grid' ), true );
+	}
+
+	/** True for a flex display (flex and inline flex). */
+	public static function is_flex( $display ) {
+		return in_array( $display, array( 'flex', 'inline-flex' ), true );
+	}
+
+	/**
+	 * Whether a row applies: its 'when' display, and its 'cond'. A flex box that wraps, or any grid, packs its lines (align
+	 * content), so the 'packs' condition needs one of them.
+	 */
+	private static function applies( array $rule, $display, array $a ) {
+		if ( isset( $rule['when'] ) ) {
+			$ok = 'box' === $rule['when'] ? ( self::is_flex( $display ) || self::is_grid( $display ) ) : ( 'flex' === $rule['when'] ? self::is_flex( $display ) : self::is_grid( $display ) );
+			if ( ! $ok ) {
+				return false;
+			}
+		}
+		if ( isset( $rule['cond'] ) && 'packs' === $rule['cond'] ) {
+			$wrap = in_array( $a['flexWrap'] ?? '', self::FLEX_WRAP, true ) ? $a['flexWrap'] : 'nowrap';
+			return self::is_grid( $display ) || 'nowrap' !== $wrap;
+		}
+		return true;
+	}
+
+	/** A grid has start and end where flex has flex-start and flex-end: the grid words are written. */
+	public static function grid_word( $value ) {
+		$words = array(
+			'flex-start' => 'start',
+			'flex-end'   => 'end',
+		);
+		return $words[ $value ] ?? $value;
+	}
+
+	/** The composed rows: the grid's auto flow, and where an item sits on a grid line (column or row). */
+	private static function compose( $name, array $a ) {
+		if ( 'autoflow' === $name ) {
+			$dense = ! empty( $a['gridDense'] );
+			$flow  = in_array( $a['gridAutoFlow'] ?? '', self::GRID_FLOW, true ) ? $a['gridAutoFlow'] : 'row';
+			return $dense || 'column' === $flow ? array( 'grid-auto-flow:' . $flow . ( $dense ? ' dense' : '' ) ) : array();
+		}
+		$line = 'placement_column' === $name ? 'column' : 'row';
+		$at   = self::placement( $a[ $line . 'Start' ] ?? '', $a[ $line . 'Span' ] ?? '' );
+		return '' === $at ? array() : array( 'grid-' . $line . ':' . $at );
+	}
+
+	/**
+	 * Where an item sits on a grid line: a start line, a span, or both (start / span N). A start alone places the
+	 * item at that line; a span alone spans from the automatic place. '' when neither is set.
+	 */
+	public static function placement( $start, $span ) {
+		$start = self::check( 'line', $start );
+		$span  = self::check( 'span', $span );
+		if ( '' === $start ) {
+			return '' === $span ? '' : 'span ' . $span;
+		}
+		return $start . ( '' === $span ? '' : ' / span ' . $span );
 	}
 
 	/**

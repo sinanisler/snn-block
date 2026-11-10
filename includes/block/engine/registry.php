@@ -277,18 +277,17 @@ class SNN_Blocks {
 		$out['alignContent']   = self::pick( $out['alignContent'], SNN_Style::ALIGN_CONTENT, '' );
 		$out['alignSelf']      = self::pick( $out['alignSelf'], SNN_Style::ALIGN_SELF, '' );
 		$out['justifySelf']    = self::pick( $out['justifySelf'], SNN_Style::JUSTIFY_SELF, '' );
-		foreach ( array( 'htmlId', 'cssClasses', 'gap', 'columnGap', 'rowGap', 'gridColumns', 'gridRows', 'gridAreas', 'gridAutoColumns', 'gridAutoRows', 'flexGrow', 'flexShrink', 'flexBasis', 'columnSpan', 'rowSpan', 'columnStart', 'rowStart', 'gridArea', 'order', 'backgroundColor', 'paddingTop', 'paddingBottom', 'maxWidth', 'opacity' ) as $key ) {
-			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
-		}
-		foreach ( SNN_Style_Props::keys() as $key ) {
-			$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
+		// The text values: the table's (every layout and Style value, except the boolean grid dense) and the ID and classes.
+		foreach ( array_merge( array( 'htmlId', 'cssClasses' ), SNN_Style_Props::keys() ) as $key ) {
+			if ( 'gridDense' !== $key ) {
+				$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
+			}
 		}
 		$out['animation']        = SNN_Animation::clean_tokens( $out['animation'] );
 		$out['gsapTweens']       = SNN_Animation::clean_tweens( $out['gsapTweens'] );
 		$out['gsapScroll']       = SNN_Animation::clean_scroll( $out['gsapScroll'] );
 		$out['customCss']        = SNN_Style::clean_css( $out['customCss'] );
 		$out['customAttributes'] = self::clean_attributes( $out['customAttributes'] );
-		$out['overflow']         = self::pick( $out['overflow'], SNN_Style::OVERFLOW, '' );
 		$out['responsive']       = SNN_Style::clean_responsive( $out['responsive'] );
 		$out['conditions']       = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions']     = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
