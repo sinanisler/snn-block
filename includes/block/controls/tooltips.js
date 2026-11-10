@@ -149,6 +149,7 @@
 		'width': [ 'Width', 'How wide the block is.' ],
 		'minWidth': [ 'Min. width', 'The narrowest the block can get.' ],
 		'maxWidth': [ 'Max. width', 'The widest the block can get.' ],
+		'maxWidthCentre': [ 'Centre the block', 'Centres the block when it has a max. width. Off leaves it on the left.' ],
 		'height': [ 'Height', 'How tall the block is.' ],
 		'minHeight': [ 'Min. height', 'The shortest the block can get.' ],
 		'maxHeight': [ 'Max. height', 'The tallest the block can get.' ],

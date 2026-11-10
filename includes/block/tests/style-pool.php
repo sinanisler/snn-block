@@ -37,6 +37,7 @@ return array(
 	'paddingTop'      => array( '20', '2rem', '-4', '' ),
 	'paddingBottom'   => array( '20px', '1em', '' ),
 	'maxWidth'        => array( '1200', '60%', 'none', '' ),
+	'maxWidthOff'     => array( '1', '', 'true', '0', 'bogus' ),
 	'opacity'         => array( '50', '0', '100', '150', 'var(--o)', 'abc', '' ),
 	'overflow'        => array( 'hidden', 'clip', 'bogus', '' ),
 	'marginTop'       => array( '10', '-10', 'auto', '' ),

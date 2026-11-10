@@ -388,7 +388,13 @@
 				return;
 			}
 			out.push( [ css, value ] );
-			( rule.extra || [] ).forEach( ( e ) => out.push( [ e[ 0 ], e[ 1 ] ] ) );
+			// extra: written with the row, unless the flag named by extraUnless is on (the same rule as declarations() in PHP).
+			const extraOff = !! rule.extraUnless && check( 'flag', a[ rule.extraUnless ] ) === '1';
+			( rule.extra || [] ).forEach( ( e ) => {
+				if ( ! extraOff ) {
+					out.push( [ e[ 0 ], e[ 1 ] ] );
+				}
+			} );
 		} );
 		[ boxShadow( a ), transform( a ), filter( a ) ].forEach( ( d ) => {
 			if ( d ) {

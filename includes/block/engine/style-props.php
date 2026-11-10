@@ -12,6 +12,7 @@
  *   gridWord  flex-start and flex-end become start and end on a grid (grid has no flex words). 'always': on flex too (align self).
  *   cond      'packs': the row needs a grid, or a flex box that wraps (align content).
  *   extra     declarations written after the row (max width also sets the auto margins).
+ *   extraUnless the flag that turns extra off when it is on (max width: maxWidthOff, the Centre the block switch).
  *   compose   a composed row: its css is null and the named composer writes the declarations
  *             ('autoflow', 'placement_column', 'placement_row').
  *
@@ -81,7 +82,9 @@ class SNN_Style_Props {
 		'backgroundColor'  => array( 'background-color', 'color', array(), array() ),
 		'paddingTop'       => array( 'padding-top', 'size', array(), array() ),
 		'paddingBottom'    => array( 'padding-bottom', 'size', array(), array() ),
-		'maxWidth'         => array( 'max-width', 'size', array(), array( 'extra' => array( array( 'margin-left', 'auto' ), array( 'margin-right', 'auto' ) ) ) ),
+		'maxWidth'         => array( 'max-width', 'size', array(), array( 'extra' => array( array( 'margin-left', 'auto' ), array( 'margin-right', 'auto' ) ), 'extraUnless' => 'maxWidthOff' ) ),
+		// Centre the block (the Sizing group's switch). Empty means centred, so every block that has a max width today is unchanged.
+		'maxWidthOff'      => array( null, 'flag', array(), array() ),
 		'opacity'          => array( 'opacity', 'opacity', array(), array() ),
 		'overflow'         => array( 'overflow', 'keyword', self::OVERFLOW, array() ),
 		// Spacing
@@ -399,8 +402,12 @@ class SNN_Style_Props {
 				continue;
 			}
 			$out[] = $spec[0] . ':' . $value;
+			// extra: written with the row, unless the flag named by extraUnless is on (max width's auto margins stop with Centre off).
+			$extra_off = isset( $rule['extraUnless'] ) && '1' === self::check( 'flag', $a[ $rule['extraUnless'] ] ?? '' );
 			foreach ( $rule['extra'] ?? array() as $extra ) {
-				$out[] = $extra[0] . ':' . $extra[1];
+				if ( ! $extra_off ) {
+					$out[] = $extra[0] . ':' . $extra[1];
+				}
 			}
 		}
 		foreach ( array( self::box_shadow( $a ), self::transform( $a ), self::filter( $a ) ) as $composed ) {

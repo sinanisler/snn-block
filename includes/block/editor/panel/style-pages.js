@@ -194,7 +194,7 @@
 			sections: [
 				{ tip: 'sec.flexgrid', title: __( 'Flex and grid', 'snn' ), rows: [ 'LAYOUT' ] },
 				{ tip: 'sec.spacing', title: __( 'Spacing', 'snn' ), rows: [ BOX_MARGIN, BOX_PADDING, 'gap' ] },
-				{ tip: 'sec.sizing', title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
+				{ tip: 'sec.sizing', title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'maxWidthOff', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
 				{ tip: 'sec.positioning', title: __( 'Positioning', 'snn' ), rows: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ] },
 				{ tip: 'sec.misc', title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
 			],
@@ -356,6 +356,20 @@
 		const label = STYLE_LABEL[ k ] || k;
 		if ( k === 'gradientStops' ) {
 			return h( GradientStops, { a, set, device } );
+		}
+		if ( k === 'maxWidthOff' ) {
+			// Base only, not per view. Centred is the default, so the flag is empty for every block that has a max width today.
+			const off = a.maxWidthOff === '1' || a.maxWidthOff === true;
+			return h( SwitchRow, {
+				label: __( 'Centre the block', 'snn' ),
+				tip: 'maxWidthCentre',
+				checked: ! off,
+				changed: off,
+				onChange: ( on ) => {
+					closeStep();
+					set( { maxWidthOff: on ? '' : '1' } );
+				},
+			} );
 		}
 		if ( k === 'overflow' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'select', options: OVERFLOW_OPTIONS } );
