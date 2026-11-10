@@ -419,5 +419,28 @@
 		return out;
 	}
 
-	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf };
+	/** Units that step by a tenth (em, rem and percent). Other units, and a bare number, step by one. */
+	const TENTH_UNITS = [ 'em', 'rem', '%' ];
+
+	/**
+	 * The value of an arrow key on a number field: the number and its unit, moved by one step (a tenth for em, rem and %;
+	 * ten times the step with Shift, which is one for those). The unit stays. Null when the text is not a number with an
+	 * optional unit, so the field keeps what is typed. min: the least the value can go (0 for the sizes that take no minus).
+	 */
+	function step( text, dir, shift, min ) {
+		const m = /^(-?(?:\d+\.?\d*|\.\d+))(px|em|rem|%|vw|vh|deg|ms|s)?$/.exec( str( text ).trim() );
+		if ( ! m ) {
+			return null;
+		}
+		const unit = m[ 2 ] || '';
+		const tenth = TENTH_UNITS.indexOf( unit ) !== -1;
+		const by = shift ? ( tenth ? 1 : 10 ) : tenth ? 0.1 : 1;
+		let next = Math.round( ( Number( m[ 1 ] ) + dir * by ) * 1000 ) / 1000;
+		if ( min !== undefined && next < min ) {
+			next = min;
+		}
+		return String( next ) + unit;
+	}
+
+	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf, step };
 } )( typeof window !== 'undefined' ? window : globalThis );

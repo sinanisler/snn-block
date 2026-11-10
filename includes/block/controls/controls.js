@@ -69,6 +69,9 @@
 		text: __( 'Letters, digits, spaces and . , ( ) % # + - * / only.', 'snn' ),
 	};
 
+	/** The types a field cannot take below zero: an arrow key does not step under zero for them. */
+	const NON_NEGATIVE = [ 'size', 'sizenone', 'width', 'keywordlength', 'flexnumber', 'percent', 'opacity', 'time' ];
+
 	/**
 	 * True when the table rejects the value (the same check() as the PHP side). A tag ({...}) resolves on the server,
 	 * so it is not marked, and an empty field is not marked either.
@@ -719,6 +722,17 @@
 					'aria-label': label,
 					spellCheck: false,
 					'aria-invalid': rejected ? 'true' : undefined,
+					// Up and Down step the number (style-props.js step); the step is a typed change, so it joins the run of typing.
+					onKeyDown: ( e ) => {
+						if ( e.key !== 'ArrowUp' && e.key !== 'ArrowDown' ) {
+							return;
+						}
+						const next = snn.styleProps ? snn.styleProps.step( current, e.key === 'ArrowUp' ? 1 : -1, e.shiftKey, NON_NEGATIVE.indexOf( type ) !== -1 ? 0 : undefined ) : null;
+						if ( next !== null ) {
+							e.preventDefault();
+							onChange( next );
+						}
+					},
 						...fieldAttr( tip, type, rejected ),
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
