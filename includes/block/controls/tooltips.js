@@ -333,10 +333,10 @@
 	 */
 	const ROW_INPUT = '.snn-row-control .snn-input, .snn-row-control .snn-select, .snn-row-control .snn-seg-btn, .snn-row-control .snn-switch, .snn-row-control .snn-swatch-btn';
 
-	/** The control under a node (or the node itself) that has a tip. A field the table rejects keeps its tip: it says what is accepted. */
+	/** The control under a node (or the node itself) that has a tip. */
 	function tipOf( node ) {
 		const el = node && node.closest ? node.closest( '[data-snn-tip], [data-snn-tip-name]' ) : null;
-		return el && el.matches( ROW_INPUT ) && el.getAttribute( 'aria-invalid' ) !== 'true' ? null : el;
+		return el && el.matches( ROW_INPUT ) ? null : el;
 	}
 
 	/**

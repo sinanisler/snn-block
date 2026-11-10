@@ -122,7 +122,7 @@
 		// clearDefault (the Style rows): on Desktop, choosing the CSS default stores nothing, so no dot shows and nothing is written.
 		const choose = ( v ) => change( clearDefault && device === 'Desktop' && v === dflt ? '' : v );
 		const groups = variables === undefined ? VARIABLE_GROUPS : variables;
-		// The table's type of the setting: a text value the table rejects is marked in its field (controls.js isRejected).
+		// The table's type of the setting: the arrow keys do not step a non-negative setting under zero (controls.js NON_NEGATIVE).
 		const spec = tableSpec( k );
 		const empty = value === undefined || value === null || value === '';
 		let control;
@@ -156,7 +156,6 @@
 				media,
 				inputMode,
 				type: spec.type,
-				options: spec.options,
 				onChange: typed,
 			} );
 		}

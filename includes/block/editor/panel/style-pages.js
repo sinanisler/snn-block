@@ -488,7 +488,7 @@ function pageKeys( page ) {
 						{ key: k, className: 'snn-box-cell snn-box-' + BOX_AREA[ i ] },
 						own !== undefined ? h( 'span', { className: 'snn-box-mark', 'aria-hidden': 'true' }, h( Dot ) ) : null,
 						h( TextField, {
-							label: box.label + ' ' + SIDE_LABEL[ i ], tip: k, type: tableSpec( k ).type, options: tableSpec( k ).options,
+							label: box.label + ' ' + SIDE_LABEL[ i ], tip: k, type: tableSpec( k ).type,
 							value: own !== undefined ? String( own ) : '',
 							placeholder: inherited.value !== undefined && inherited.value !== '' ? String( inherited.value ) : '0',
 							unit: ' px',
