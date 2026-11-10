@@ -1,25 +1,32 @@
 <?php
 /**
- * Section (snn/section): a section of the page. A flex column by default, with the section tag.
+ * Section (snn/section): the outer part of a page. It stacks its children, as Bricks sections do.
  *
- * The shared engine (../../layout-blocks.php) builds the block from this definition, and the editor script
- * (../../assets/layout-blocks.js) reads the same definition. Settings that only Section has go in this folder.
+ * The engine (../../engine) builds the block from this class. Settings that only this block has go in this folder.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-return array(
-	'name'   => 'snn/section',
-	'title'  => __( 'Section', 'snn' ),
-	'tag'    => 'section',
-	'icon'   => 'editor-table',
-	// The display and direction it starts with. Section stacks its children, as Bricks sections do.
-	'layout' => array(
-		'display'       => 'flex',
-		'flexDirection' => 'column',
-	),
-	// Its content is inner blocks, not a rich text.
-	'text'   => false,
-);
+class SNN_Section_Block extends SNN_Block {
+
+	public static function definition() {
+		return array(
+			'name'     => 'snn/section',
+			'title'    => __( 'Section', 'snn' ),
+			'tag'      => 'section',
+			'icon'     => 'editor-table',
+			'order'    => 10,
+			// The display and direction it starts with.
+			'layout'   => array(
+				'display'       => 'flex',
+				'flexDirection' => 'column',
+			),
+			'supports' => array(
+				'children' => true,
+				'loop'     => true,
+			),
+		);
+	}
+}

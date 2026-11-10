@@ -14576,3 +14576,91 @@ msgstr ""
 #: includes/block/blocks/image/image-editor.js
 msgid "Photos from Unsplash."
 msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Choose an SVG file"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Use this SVG"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "SVG code"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "The SVG is printed as written. Its size follows the font size (1em)."
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Choose an icon"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Search icons"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Loading icons…"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "No icons found."
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Show more"
+msgstr ""
+
+#: includes/block/controls/icon-picker.js
+msgid "Remove the icon"
+msgstr ""
+
+#: includes/block/controls/link-fields.js
+msgid "Rel"
+msgstr ""
+
+#: includes/block/controls/link-fields.js
+msgid "ARIA label"
+msgstr ""
+
+#: includes/block/editor/page-title-switch.js
+msgid "Hide Title"
+msgstr ""
+
+#: includes/block/blocks/button/editor.js
+msgid "Button"
+msgstr ""
+
+#: includes/block/blocks/button/editor.js includes/block/blocks/icon/editor.js
+msgid "Icon size"
+msgstr ""
+
+#: includes/block/blocks/button/editor.js includes/block/blocks/icon/editor.js
+msgid "Icon colour"
+msgstr ""
+
+#: includes/block/blocks/code/editor.js
+msgid "Code"
+msgstr ""
+
+#: includes/block/blocks/code/editor.js
+msgid "Your role cannot save scripts: WordPress removes them when the page is saved."
+msgstr ""
+
+#: includes/block/blocks/code/editor.js
+msgid "The code is printed as written. JavaScript runs on the front end only."
+msgstr ""
+
+#: includes/block/blocks/code/editor.js
+msgid "No wrapper"
+msgstr ""
+
+#: includes/block/blocks/code/editor.js
+msgid "Code: write HTML, CSS and JavaScript in the panel"
+msgstr ""
+
+#: includes/block/blocks/icon/editor.js
+msgid "Choose an icon in the panel"
+msgstr ""

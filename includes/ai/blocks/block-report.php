@@ -45,7 +45,7 @@ function snn_blocks_report( $markup ) {
             if ( 'snn/code' === $name ) {
                 $report['code_fallbacks']++;
             }
-            if ( isset( SNN_Layout_Blocks::definitions()[ $name ] ) ) {
+            if ( isset( SNN_Blocks::definitions()[ $name ] ) ) {
                 foreach ( snn_blocks_dropped_values( $name, (array) ( $block['attrs'] ?? array() ) ) as $row ) {
                     $report['dropped'][] = $row;
                 }
@@ -75,8 +75,8 @@ function snn_blocks_allowed_names() {
 function snn_blocks_dropped_values( $name, array $attrs ) {
     $out      = array();
     $id       = is_string( $attrs['htmlId'] ?? null ) ? $attrs['htmlId'] : '';
-    $known    = SNN_Layout_Blocks::attributes( $name );
-    $clean    = SNN_Layout_Blocks::clean( $attrs, $name );
+    $known    = SNN_Blocks::attributes( $name );
+    $clean    = SNN_Blocks::clean( $attrs, $name );
     $add      = function ( $key, $value, $reason ) use ( &$out, $name, $id ) {
         $out[] = array(
             'block'     => $name,
@@ -87,28 +87,28 @@ function snn_blocks_dropped_values( $name, array $attrs ) {
         );
     };
     $checks = array(
-        'gap'             => array( 'SNN_Layout_Blocks', 'gap' ),
-        'columnGap'       => array( 'SNN_Layout_Blocks', 'gap' ),
-        'rowGap'          => array( 'SNN_Layout_Blocks', 'gap' ),
-        'paddingTop'      => array( 'SNN_Layout_Blocks', 'size_value' ),
-        'paddingBottom'   => array( 'SNN_Layout_Blocks', 'size_value' ),
-        'maxWidth'        => array( 'SNN_Layout_Blocks', 'size_value' ),
-        'backgroundColor' => array( 'SNN_Layout_Blocks', 'color' ),
-        'gridColumns'     => array( 'SNN_Layout_Blocks', 'columns' ),
-        'gridRows'        => array( 'SNN_Layout_Blocks', 'template' ),
-        'gridAutoColumns' => array( 'SNN_Layout_Blocks', 'template' ),
-        'gridAutoRows'    => array( 'SNN_Layout_Blocks', 'template' ),
-        'gridAreas'       => array( 'SNN_Layout_Blocks', 'areas' ),
-        'opacity'         => array( 'SNN_Layout_Blocks', 'opacity' ),
-        'flexGrow'        => array( 'SNN_Layout_Blocks', 'number' ),
-        'flexShrink'      => array( 'SNN_Layout_Blocks', 'number' ),
-        'flexBasis'       => array( 'SNN_Layout_Blocks', 'length_or_auto' ),
-        'order'           => array( 'SNN_Layout_Blocks', 'integer' ),
-        'columnSpan'      => array( 'SNN_Layout_Blocks', 'span' ),
-        'rowSpan'         => array( 'SNN_Layout_Blocks', 'span' ),
-        'columnStart'     => array( 'SNN_Layout_Blocks', 'line' ),
-        'rowStart'        => array( 'SNN_Layout_Blocks', 'line' ),
-        'gridArea'        => array( 'SNN_Layout_Blocks', 'ident' ),
+        'gap'             => array( 'SNN_Style', 'gap' ),
+        'columnGap'       => array( 'SNN_Style', 'gap' ),
+        'rowGap'          => array( 'SNN_Style', 'gap' ),
+        'paddingTop'      => array( 'SNN_Style', 'size_value' ),
+        'paddingBottom'   => array( 'SNN_Style', 'size_value' ),
+        'maxWidth'        => array( 'SNN_Style', 'size_value' ),
+        'backgroundColor' => array( 'SNN_Style', 'color' ),
+        'gridColumns'     => array( 'SNN_Style', 'columns' ),
+        'gridRows'        => array( 'SNN_Style', 'template' ),
+        'gridAutoColumns' => array( 'SNN_Style', 'template' ),
+        'gridAutoRows'    => array( 'SNN_Style', 'template' ),
+        'gridAreas'       => array( 'SNN_Style', 'areas' ),
+        'opacity'         => array( 'SNN_Style', 'opacity' ),
+        'flexGrow'        => array( 'SNN_Style', 'number' ),
+        'flexShrink'      => array( 'SNN_Style', 'number' ),
+        'flexBasis'       => array( 'SNN_Style', 'length_or_auto' ),
+        'order'           => array( 'SNN_Style', 'integer' ),
+        'columnSpan'      => array( 'SNN_Style', 'span' ),
+        'rowSpan'         => array( 'SNN_Style', 'span' ),
+        'columnStart'     => array( 'SNN_Style', 'line' ),
+        'rowStart'        => array( 'SNN_Style', 'line' ),
+        'gridArea'        => array( 'SNN_Style', 'ident' ),
     );
     $judge = function ( $key, $value ) use ( $checks ) {
         if ( ! is_scalar( $value ) || '' === (string) $value || false !== strpos( (string) $value, '{' ) ) {
@@ -134,7 +134,7 @@ function snn_blocks_dropped_values( $name, array $attrs ) {
         }
         if ( 'responsive' === $key ) {
             foreach ( is_array( $value ) ? $value : array() as $view => $own ) {
-                if ( ! isset( SNN_Layout_Blocks::VIEW_WIDTHS[ $view ] ) ) {
+                if ( ! isset( SNN_Style::VIEW_WIDTHS[ $view ] ) ) {
                     $add( 'responsive.' . $view, $own, 'views are tablet and mobile' );
                     continue;
                 }
@@ -237,40 +237,36 @@ function snn_ability_store_extras( $post_id, array $input, $prepared ) {
 /** The schema of our blocks, for agents that write block markup (snn/get-block-schema). */
 function snn_block_schema() {
     $blocks = array();
-    foreach ( SNN_Layout_Blocks::definitions() as $name => $def ) {
+    foreach ( SNN_Blocks::definitions() as $name => $def ) {
         $attributes = array();
-        foreach ( SNN_Layout_Blocks::attributes( $name ) as $key => $spec ) {
+        foreach ( SNN_Blocks::attributes( $name ) as $key => $spec ) {
             $attributes[ $key ] = array(
                 'type'    => $spec['type'],
                 'default' => $spec['default'],
             );
         }
-        $kind = SNN_Layout_Blocks::kind_class( $name );
-        $tags = SNN_Layout_Blocks::is_text( $name ) ? SNN_Layout_Blocks::TEXT_TAGS : ( SNN_Layout_Blocks::is_image( $name ) ? SNN_Image_Block::TAGS : ( $kind ? constant( $kind . '::TAGS' ) : SNN_Layout_Blocks::TAGS ) );
-        if ( SNN_Layout_Blocks::is_link( $name ) ) {
-            $tags[] = 'a';
-        }
+        $tags = $def['tags'];
         $attributes['tagName']['allowed'] = $tags;
         $blocks[ $name ] = array(
             'title'         => $def['title'],
-            'inner_blocks'  => ! ( $def['text'] || ! empty( $def['image'] ) || $kind ),
-            'markup'        => ( $def['text'] || ! empty( $def['image'] ) || $kind ) ? '<!-- wp:' . $name . ' {...} /-->' : '<!-- wp:' . $name . ' {...} -->inner blocks<!-- /wp:' . $name . ' -->',
+            'inner_blocks'  => ! empty( $def['supports']['children'] ),
+            'markup'        => empty( $def['supports']['children'] ) ? '<!-- wp:' . $name . ' {...} /-->' : '<!-- wp:' . $name . ' {...} -->inner blocks<!-- /wp:' . $name . ' -->',
             'attributes'    => $attributes,
         );
     }
 
     $allowed = array(
-        'display'        => SNN_Layout_Blocks::DISPLAYS,
-        'flexDirection'  => SNN_Layout_Blocks::FLEX_DIRECTION,
-        'flexWrap'       => SNN_Layout_Blocks::FLEX_WRAP,
-        'justifyContent' => SNN_Layout_Blocks::JUSTIFY,
-        'alignItems'     => SNN_Layout_Blocks::ALIGN,
-        'alignContent'   => SNN_Layout_Blocks::ALIGN_CONTENT,
-        'justifyItems'   => SNN_Layout_Blocks::JUSTIFY_ITEMS,
-        'gridAutoFlow'   => SNN_Layout_Blocks::GRID_FLOW,
-        'alignSelf'      => SNN_Layout_Blocks::ALIGN_SELF,
-        'justifySelf'    => SNN_Layout_Blocks::JUSTIFY_SELF,
-        'overflow'       => SNN_Layout_Blocks::OVERFLOW,
+        'display'        => SNN_Style::DISPLAYS,
+        'flexDirection'  => SNN_Style::FLEX_DIRECTION,
+        'flexWrap'       => SNN_Style::FLEX_WRAP,
+        'justifyContent' => SNN_Style::JUSTIFY,
+        'alignItems'     => SNN_Style::ALIGN,
+        'alignContent'   => SNN_Style::ALIGN_CONTENT,
+        'justifyItems'   => SNN_Style::JUSTIFY_ITEMS,
+        'gridAutoFlow'   => SNN_Style::GRID_FLOW,
+        'alignSelf'      => SNN_Style::ALIGN_SELF,
+        'justifySelf'    => SNN_Style::JUSTIFY_SELF,
+        'overflow'       => SNN_Style::OVERFLOW,
         'iconPosition'   => SNN_Button_Block::ICON_POSITION,
         'objectFit'      => SNN_Image_Block::OBJECT_FIT,
         'captionType'    => SNN_Image_Block::CAPTION,
@@ -304,8 +300,8 @@ function snn_block_schema() {
         ),
         'responsive'   => array(
             'format' => 'responsive = { "tablet": { key: value }, "mobile": { key: value } }. A view without a value uses the view above it, then Desktop (the plain attribute).',
-            'views'  => SNN_Layout_Blocks::VIEW_WIDTHS,
-            'keys'   => array_values( array_merge( SNN_Layout_Blocks::VIEW_KEYS, SNN_Style_Props::keys() ) ),
+            'views'  => SNN_Style::VIEW_WIDTHS,
+            'keys'   => array_values( array_merge( SNN_Style::VIEW_KEYS, SNN_Style_Props::keys() ) ),
         ),
         'icons'        => array(
             'format'    => 'icon = { "library": "fontawesome-solid", "name": "fa-star" } for a font icon, or { "library": "svg", "svg": "<svg ...>...</svg>" }.',
@@ -317,7 +313,7 @@ function snn_block_schema() {
                 'themify'             => 'Themify, names such as ti-star, ti-home',
                 'svg'                 => 'An inline SVG (svg) or an SVG from the media library (svgId)',
             ),
-            'names_url' => SNN_URL . 'includes/block/assets/icons/icon-lists.json',
+            'names_url' => SNN_URL . 'includes/block/icons/icon-lists.json',
         ),
         'rules'        => array(
             'Section is a part of the page; Container is the box inside a section; Div is any other box. Each holds inner blocks.',

@@ -20,16 +20,23 @@ $lang = __DIR__ . '/';
 
 // The editor scripts: handle => file. The same handles as the wp_set_script_translations() list in layout-blocks.php.
 $scripts = array(
-	'snn-tooltips'        => 'includes/block/controls/tooltips.js',
-	'snn-controls'        => 'includes/block/controls/controls.js',
-	'snn-block-tools'     => 'includes/block/controls/block-tools.js',
-	'snn-animation-pane'  => 'includes/block/controls/animation-pane.js',
-	'snn-image-editor'    => 'includes/block/blocks/image/image-editor.js',
-	'snn-layout-blocks'   => 'includes/block/assets/layout-blocks.js',
-	'snn-block-clipboard' => 'includes/block/assets/block-clipboard.js',
-	'snn-featured-image-search' => 'includes/block/assets/featured-image-search.js',
-	'snn-list-view-badges' => 'includes/block/assets/list-view-badges.js',
+	'snn-tooltips'             => 'includes/block/controls/tooltips.js',
+	'snn-controls'             => 'includes/block/controls/controls.js',
+	'snn-block-tools'          => 'includes/block/controls/block-tools.js',
+	'snn-animation-pane'       => 'includes/block/controls/animation-pane.js',
+	'snn-icon-picker'          => 'includes/block/controls/icon-picker.js',
+	'snn-link-fields'          => 'includes/block/controls/link-fields.js',
+	'snn-layout-blocks'        => 'includes/block/editor/layout-blocks.js',
+	'snn-block-clipboard'      => 'includes/block/editor/block-clipboard.js',
+	'snn-featured-image-search' => 'includes/block/editor/featured-image-search.js',
+	'snn-list-view-badges'     => 'includes/block/editor/list-view-badges.js',
+	'snn-page-title-switch'    => 'includes/block/editor/page-title-switch.js',
 );
+// The block folders' editor scripts: one handle per folder (snn-block-<folder>-editor), as SNN_Blocks::handle() names them.
+foreach ( glob( $root . 'includes/block/blocks/*/editor.js' ) as $file ) {
+	$folder = basename( dirname( $file ) );
+	$scripts[ 'snn-block-' . $folder . '-editor' ] = 'includes/block/blocks/' . $folder . '/editor.js';
+}
 
 /** A JS single-quoted string body as text: \' \\ \n and the other escapes. */
 function snn_js_unescape( $s ) {

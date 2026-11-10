@@ -1,0 +1,191 @@
+<?php
+/**
+ * The editor's scripts and styles for our blocks: the shared controls, the panel, and each block's editor.js and
+ * editor.css. The block files are found by the registry, so a new block's files load without a change here.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class SNN_Block_Editor_Assets {
+
+	/** The WordPress scripts the editor scripts use. Every script of ours gets them, so no block lists its own. */
+	const WP_DEPS = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'wp-api-fetch', 'wp-hooks', 'wp-plugins' );
+
+	public static function init() {
+		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue' ) );
+	}
+
+	/**
+	 * The shared scripts, in load order: handle => file. The blocks' editor.js files load after 'snn-link-fields' and
+	 * before 'snn-layout-blocks', which registers the block types with what each editor.js handed in.
+	 */
+	private static function scripts() {
+		$before = array(
+			'snn-tooltips'       => 'includes/block/controls/tooltips.js',
+			'snn-controls'       => 'includes/block/controls/controls.js',
+			'snn-layout-icons'   => 'includes/block/editor/layout-icons.js',
+			'snn-style-props'    => 'includes/block/editor/style-props.js',
+			'snn-block-tools'    => 'includes/block/controls/block-tools.js',
+			'snn-animation-pane' => 'includes/block/controls/animation-pane.js',
+			'snn-icon-picker'    => 'includes/block/controls/icon-picker.js',
+			'snn-link-fields'    => 'includes/block/controls/link-fields.js',
+		);
+		$blocks = array();
+		foreach ( array_keys( SNN_Blocks::folders() ) as $folder ) {
+			$file = SNN_Blocks::file( $folder, 'editor.js' );
+			if ( '' !== $file ) {
+				$blocks[ SNN_Blocks::handle( $folder ) . '-editor' ] = $file;
+			}
+		}
+		$after = array(
+			'snn-layout-blocks'         => 'includes/block/editor/layout-blocks.js',
+			'snn-block-clipboard'       => 'includes/block/editor/block-clipboard.js',
+			'snn-featured-image-search' => 'includes/block/editor/featured-image-search.js',
+		);
+		return $before + $blocks + $after;
+	}
+
+	/** The editor stylesheets: handle => file. Each block's editor.css follows the shared ones. */
+	private static function styles() {
+		$out = array(
+			'snn-controls'       => 'includes/block/controls/controls.css',
+			'snn-animation-pane' => 'includes/block/controls/animation-pane.css',
+			'snn-icon-picker'    => 'includes/block/controls/icon-picker.css',
+		);
+		foreach ( array_keys( SNN_Blocks::folders() ) as $folder ) {
+			$file = SNN_Blocks::file( $folder, 'editor.css' );
+			if ( '' !== $file ) {
+				$out[ SNN_Blocks::handle( $folder ) . '-editor' ] = $file;
+			}
+		}
+		return $out;
+	}
+
+	/** Every editor script file of the blocks, in load order (the translations builder reads this list too). */
+	public static function script_files() {
+		return array_values( self::scripts() );
+	}
+
+	public static function enqueue() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+		// The media library (wp.media) opens from an image field, such as the background image.
+		wp_enqueue_media();
+		// The CSS group of the Style tab is a code editor, as in the code snippets. False when the user has syntax
+		// highlighting off: the group then shows a plain textarea.
+		$css_editor = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
+
+		$previous = '';
+		foreach ( self::styles() as $handle => $file ) {
+			wp_enqueue_style( $handle, SNN_URL . $file, $previous ? array( $previous ) : array(), SNN_Block_Tools::version( $file ) );
+			$previous = $handle;
+		}
+
+		// The scripts load one after another, in the order of scripts(): each depends on the one before it.
+		$deps = self::WP_DEPS;
+		if ( $css_editor ) {
+			$deps[] = 'code-editor'; // wp.codeEditor, for the CSS group and the Code block.
+		}
+		foreach ( self::scripts() as $handle => $file ) {
+			wp_enqueue_script( $handle, SNN_URL . $file, $deps, SNN_Block_Tools::version( $file ), true );
+			// Each handle has its own translations: languages/snn-<locale>-<handle>.json, made by languages/make-js-translations.php.
+			wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
+			$deps = array( $handle );
+		}
+
+		// What the scripts read, set before the first of them runs.
+		wp_add_inline_script( 'snn-tooltips', self::data_script( $css_editor ), 'before' );
+	}
+
+	/** The data of the editor scripts, as one script: each line sets one of the globals they read. */
+	private static function data_script( $css_editor ) {
+		$lists = 'includes/block/icons/icon-lists.json';
+		// Each block's own data, from its class (editor_data()), keyed by its folder.
+		$block_data = array();
+		foreach ( SNN_Blocks::folders() as $folder => $class ) {
+			$own = call_user_func( array( $class, 'editor_data' ) );
+			if ( $own ) {
+				$block_data[ $folder ] = $own;
+			}
+		}
+		$data = array(
+			'snnControlsData'        => array(
+				'dynamic'    => SNN_Dynamic_Data::for_editor(),
+				'variables'  => self::variables(),
+				'postTypes'  => SNN_Query_Loop::post_type_options(),
+				'taxonomies' => SNN_Query_Loop::taxonomy_options(),
+				'animations' => SNN_Animation::options(),
+				'cssEditor'  => $css_editor,
+				'orderBy'    => SNN_Query_Loop::order_by_options(),
+				'tags'       => SNN_Blocks::TAGS,
+			),
+			'snnAnimationData'       => SNN_Animation::editor_data(),
+			'snnBlockToolsData'      => SNN_Block_Tools::editor_data(),
+			'snnStyleTable'          => SNN_Style_Props::for_editor(),
+			'snnIconData'            => array( 'listsUrl' => add_query_arg( 'ver', SNN_Block_Tools::version( $lists ), SNN_URL . $lists ) ),
+			'snnBlockData'           => (object) $block_data,
+			// The block definitions, read by the editor script before it registers the blocks.
+			'snnLayoutBlockDefs'     => self::definitions(),
+		);
+		$js = '';
+		foreach ( $data as $name => $value ) {
+			$js .= 'window.' . $name . ' = ' . wp_json_encode( $value, JSON_HEX_TAG ) . ";\n";
+		}
+		return $js;
+	}
+
+	/** The definitions as the editor reads them: each with its own attributes. */
+	private static function definitions() {
+		$out = array();
+		foreach ( SNN_Blocks::definitions() as $name => $def ) {
+			unset( $def['class'] );
+			$def['attributes'] = SNN_Blocks::own_attributes( $name );
+			$out[]             = $def;
+		}
+		return $out;
+	}
+
+	/**
+	 * The variables the V button offers, from Global Styles: colours and sizes, as plain variables (--black, --size-20).
+	 * Each group has a kind, 'color' or 'size', so the picker can show the groups of the field's kind first (see controls.js).
+	 */
+	public static function variables() {
+		$v      = SNN_Global_Styles::get_values();
+		$colors = array();
+		foreach ( $v['colors'] as $c ) {
+			$colors[] = array(
+				'label' => $c['slug'],
+				'value' => 'var(--' . $c['slug'] . ')',
+				'color' => $c['color'], // a swatch in the picker
+			);
+		}
+		$sizes = array();
+		foreach ( $v['sizes'] as $slug => $size ) {
+			$sizes[] = array(
+				'label' => $slug,
+				'value' => 'var(--' . $slug . ')',
+			);
+		}
+		$groups = array();
+		if ( $colors ) {
+			$groups[] = array(
+				'key'   => 'color',
+				'label' => __( 'Colours', 'snn' ),
+				'kind'  => 'color',
+				'items' => $colors,
+			);
+		}
+		if ( $sizes ) {
+			$groups[] = array(
+				'key'   => 'size',
+				'label' => __( 'Sizes', 'snn' ),
+				'kind'  => 'size',
+				'items' => $sizes,
+			);
+		}
+		return $groups;
+	}
+}

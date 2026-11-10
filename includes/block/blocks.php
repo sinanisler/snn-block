@@ -1,22 +1,17 @@
 <?php
 /**
- * Block: everything that makes, styles or configures the blocks of this theme. New block work
- * goes in this folder or in one of its subfolders (custom blocks, block controls, global styles,
- * block defaults, fonts).
+ * Block: everything that makes, styles or configures the blocks of this theme. All block work goes in this folder.
  *
- *   utilities/           PHP helpers and libraries: fonts, style property checks, animation presets, icons
- *   controls/            Shared controls for every block panel: controls.js and .css, tooltips, block tools
- *   assets/              Scripts, stylesheets and icons: the global styles modal, the layout blocks editor script, layout icons, interactions
- *   editor-settings.php  Editor switches shared with the Block Editor Settings page (core blocks, top toolbar)
- *   editor-list-view.php The width of the List View panel in the block editor
- *   block-defaults.php   The blocks and their default styles (the Global Styles and Block Styles tab)
- *   global-styles.php    Global styles: palette, fonts, sizes, block defaults; theme.json; REST
- *   page-styles.php      Page styles: one page's background, text colour, font, size, line height and body classes
- *   page-title.php       Hide Title: a switch in the Page tab that hides the post title in the editor (per post, in the browser)
- *   dynamic-data.php     Dynamic tags ({post_title} and so on): the tags, the parser, the preview route
- *   query-loop.php       The query of a loop: its settings and the WP_Query arguments
- *   block-tools.php    Conditions (show when) and interactions (when X happens, do Y) of our blocks: the catalogs, checks and front end data
- *   layout-blocks.php    Our blocks: Section, Container, Div, Text, Image, Button, Icon and Code (rendering, attributes, editor assets)
+ *   engine/     The engine every block runs on: the registry (finds the blocks), rendering, the style rules and
+ *               their checks, the editor's scripts, the loop preview route
+ *   blocks/     One folder per block: block.php (its class), editor.js, style.css, and when needed front.js and
+ *               editor.css. A new block is a new folder; nothing else lists it (see engine/registry.php)
+ *   features/   What the blocks use and the editor offers: dynamic data, the query loop, conditions and
+ *               interactions, animations, icons, links, fonts, global styles, page styles, editor settings
+ *   controls/   The shared controls of every block panel
+ *   editor/     The editor's own scripts: the panel, the block registration, the global styles screen
+ *   front/      Scripts for visitors that no single block owns (interactions)
+ *   icons/      The icon libraries
  *
  * Loaded from functions.php. Always on.
  */
@@ -25,23 +20,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once __DIR__ . '/utilities/fonts.php';
-require_once __DIR__ . '/editor-settings.php';
-require_once __DIR__ . '/editor-list-view.php';
-require_once __DIR__ . '/block-defaults.php';
-require_once __DIR__ . '/global-styles.php';
-require_once __DIR__ . '/page-styles.php';
-require_once __DIR__ . '/page-title.php';
-require_once __DIR__ . '/dynamic-data.php';
-require_once __DIR__ . '/query-loop.php';
-require_once __DIR__ . '/utilities/style-props.php';
-require_once __DIR__ . '/animation.php';
-require_once __DIR__ . '/block-tools.php';
-require_once __DIR__ . '/blocks/image/image.php';
-require_once __DIR__ . '/blocks/image/image-search.php';
-require_once __DIR__ . '/utilities/icons.php';
-require_once __DIR__ . '/utilities/links.php';
-require_once __DIR__ . '/blocks/button/button.php';
-require_once __DIR__ . '/blocks/icon/icon.php';
-require_once __DIR__ . '/blocks/code/code.php';
-require_once __DIR__ . '/layout-blocks.php';
+// Features: each is on its own, so the order only follows what a file uses at load time.
+foreach ( array( 'fonts', 'editor-settings', 'editor-list-view', 'block-defaults', 'global-styles', 'page-styles', 'page-title', 'dynamic-data', 'query-loop', 'animation', 'block-tools', 'image-search', 'icons', 'links' ) as $snn_feature ) {
+	require_once __DIR__ . '/features/' . $snn_feature . '.php';
+}
+unset( $snn_feature );
+
+// The engine. The registry loads every blocks/<folder>/block.php.
+require_once __DIR__ . '/engine/style-props.php';
+require_once __DIR__ . '/engine/style.php';
+require_once __DIR__ . '/engine/block.php';
+require_once __DIR__ . '/engine/registry.php';
+require_once __DIR__ . '/engine/render.php';
+require_once __DIR__ . '/engine/rest-preview.php';
+require_once __DIR__ . '/engine/editor-assets.php';
+
+SNN_Blocks::init();
+SNN_Block_Preview::init();
+SNN_Block_Editor_Assets::init();

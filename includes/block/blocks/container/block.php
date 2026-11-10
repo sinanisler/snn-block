@@ -1,27 +1,34 @@
 <?php
 /**
- * Container (snn/container): a box inside a section. A flex column by default, with a div.
+ * Container (snn/container): the box inside a section that holds the content. It stacks its children.
  *
- * The shared engine (../../layout-blocks.php) builds the block from this definition, and the editor script
- * (../../assets/layout-blocks.js) reads the same definition. Settings that only Container has go in this folder.
+ * The engine (../../engine) builds the block from this class. Settings that only this block has go in this folder.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-return array(
-	'name'   => 'snn/container',
-	'title'  => __( 'Container', 'snn' ),
-	'tag'    => 'div',
-	'icon'   => 'editor-expand',
-	// The display and direction it starts with. Container stacks its children, as Bricks containers do.
-	'layout' => array(
-		'display'       => 'flex',
-		'flexDirection' => 'column',
-	),
-	// Its content is inner blocks, not a rich text.
-	'text'   => false,
-	// It can be a link: the a tag, with the Link group (a whole card as one link). Without a URL it is a div.
-	'link'   => true,
-);
+class SNN_Container_Block extends SNN_Block {
+
+	public static function definition() {
+		return array(
+			'name'     => 'snn/container',
+			'title'    => __( 'Container', 'snn' ),
+			'tag'      => 'div',
+			'icon'     => 'editor-expand',
+			'order'    => 20,
+			// The display and direction it starts with.
+			'layout'   => array(
+				'display'       => 'flex',
+				'flexDirection' => 'column',
+			),
+			'supports' => array(
+				'children' => true,
+				'loop'     => true,
+				// It can be a link: the a tag, with the Link group (a whole card as one link). Without a URL it is a div.
+				'link'     => true,
+			),
+		);
+	}
+}
