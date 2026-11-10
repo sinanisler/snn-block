@@ -1854,3 +1854,7 @@
 	border-radius: 8px;
 	vertical-align: middle;
 }
+/* The Content settings that the hover state does not change are dimmed while it is on (the inert wrapper, panel GenericPane). */
+.snn-panel .snn-content-rest[inert] {
+	opacity: 0.5;
+}

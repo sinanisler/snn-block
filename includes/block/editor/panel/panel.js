@@ -39,7 +39,7 @@
 	 */
 	function hoverLayer( a ) {
 		const hs = a.hoverStyle || {};
-		return { ...( hs.base || {} ), responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
+		return { ...( hs.base || {} ), customCss: hs.css || '', responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
 	}
 
 	/**
@@ -49,9 +49,11 @@
 	function hoverWriter( a, set ) {
 		return ( patch ) => {
 			const hs = a.hoverStyle || {};
-			const next = { base: { ...( hs.base || {} ) }, tablet: { ...( hs.tablet || {} ) }, mobile: { ...( hs.mobile || {} ) } };
+			const next = { base: { ...( hs.base || {} ) }, tablet: { ...( hs.tablet || {} ) }, mobile: { ...( hs.mobile || {} ) }, css: hs.css || '' };
 			Object.keys( patch ).forEach( ( k ) => {
-				if ( k === 'responsive' ) {
+				if ( k === 'customCss' ) {
+					next.css = patch[ k ] || '';
+				} else if ( k === 'responsive' ) {
 					const views = patch.responsive || {};
 					next.tablet = { ...( views.tablet || {} ) };
 					next.mobile = { ...( views.mobile || {} ) };
@@ -68,7 +70,7 @@
 	/** True when the block has a hover value on any level (its H button shows a dot). */
 	function hasHover( a ) {
 		const hs = a.hoverStyle || {};
-		return [ 'base', 'tablet', 'mobile' ].some( ( v ) => Object.keys( hs[ v ] || {} ).length > 0 );
+		return !! hs.css || [ 'base', 'tablet', 'mobile' ].some( ( v ) => Object.keys( hs[ v ] || {} ).length > 0 );
 	}
 
 	/** A panel state kept across blocks (see panelPlace): the same pair as useState, and the new value is saved. */
@@ -108,68 +110,83 @@
 	 * The Content tab of a block without its own pane: its element (the tag), its link (the a tag), its layout (only the
 	 * layout blocks that hold children: Section, Container, Div) and its query loop (only the blocks that offer one).
 	 */
-	function GenericPane( { a, set, def, parent, device, base } ) {
+	function GenericPane( { a, set, def, parent, device, base, layoutA, layoutSet, hovering } ) {
 		const [ openQuery, setOpenQuery ] = useState( false );
 		const q = a.query;
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const LinkGroup = snn.linkFields && snn.linkFields.LinkGroup;
+		// The layout settings are style values: while the hover state is on they are its values (layoutA, layoutSet). The
+		// other settings here are not part of the hover state, so they are inert until H is off (the wrapper below).
+		const layout = def.supports.children
+			? h(
+					Group,
+					{ title: __( 'Layout', 'snn' ), tip: 'group.layout' },
+					h( LayoutFields, { a: layoutA || a, set: layoutSet || set, base, device, parent } )
+			  )
+			: null;
 		return h(
 			'div',
 			{ className: 'snn-pane' },
+			hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the layout settings change it. The settings below are not part of it, so they are off until H is turned off.', 'snn' ) ) : null,
+			layout,
 			h(
-				Group,
-				{ title: __( 'Element', 'snn' ), tip: 'group.element' },
+				'div',
+				{
+					className: 'snn-content-rest',
+					ref: ( el ) => {
+						if ( el ) {
+							el.inert = !! hovering;
+						}
+					},
+				},
 				h(
-					Row,
-					{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== def.tag, tip: 'tagName' },
-					h( Select, {
-						label: __( 'HTML tag', 'snn' ),
-						value: a.tagName,
-						tip: 'tagName',
-						options: def.tags.map( ( t ) => ( { value: t, label: t } ) ),
-						onChange: ( v ) => set( { tagName: v } ),
-					} )
-				)
-			),
-			// The a tag: the link's URL, new tab, rel and ARIA label (controls/link-fields.js).
-			def.supports.link && 'a' === a.tagName && LinkGroup ? h( LinkGroup, { a, set } ) : null,
-			def.supports.children
-				? h(
-						Group,
-						{ title: __( 'Layout', 'snn' ), tip: 'group.layout' },
-						h( LayoutFields, { a, set, base, device, parent } )
-				  )
-				: null,
-			def.supports.loop
-				? h(
-						Group,
-						{ title: __( 'Query loop', 'snn' ), tip: 'group.query' },
-						h( SwitchRow, {
-							label: __( 'Query loop', 'snn' ),
-							tip: 'queryLoop',
-							checked: q.enabled,
-							onChange: ( v ) => {
-								setQ( { enabled: v } );
-								if ( v ) {
-									setOpenQuery( true );
-								}
-							},
-						} ),
-						h(
-							Accordion,
-							{
-								title: __( 'Query', 'snn' ),
-								open: openQuery,
-								onToggle: setOpenQuery,
-								disabled: ! q.enabled,
-								changed: changedQuery( q ),
-								tip: q.enabled ? 'query' : 'queryOff',
-							},
-							h( QueryFields, { q, setQ } )
-						)
-				  )
-				: null,
-			h( AdvancedGroup, { a, set } )
+					Group,
+					{ title: __( 'Element', 'snn' ), tip: 'group.element' },
+					h(
+						Row,
+						{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== def.tag, tip: 'tagName' },
+						h( Select, {
+							label: __( 'HTML tag', 'snn' ),
+							value: a.tagName,
+							tip: 'tagName',
+							options: def.tags.map( ( t ) => ( { value: t, label: t } ) ),
+							onChange: ( v ) => set( { tagName: v } ),
+						} )
+					)
+				),
+				// The a tag: the link's URL, new tab, rel and ARIA label (controls/link-fields.js).
+				def.supports.link && 'a' === a.tagName && LinkGroup ? h( LinkGroup, { a, set } ) : null,
+				def.supports.loop
+					? h(
+							Group,
+							{ title: __( 'Query loop', 'snn' ), tip: 'group.query' },
+							h( SwitchRow, {
+								label: __( 'Query loop', 'snn' ),
+								tip: 'queryLoop',
+								checked: q.enabled,
+								onChange: ( v ) => {
+									setQ( { enabled: v } );
+									if ( v ) {
+										setOpenQuery( true );
+									}
+								},
+							} ),
+							h(
+								Accordion,
+								{
+									title: __( 'Query', 'snn' ),
+									open: openQuery,
+									onToggle: setOpenQuery,
+									disabled: ! q.enabled,
+									changed: changedQuery( q ),
+									tip: q.enabled ? 'query' : 'queryOff',
+								},
+								h( QueryFields, { q, setQ } )
+							)
+					  )
+					: null,
+				h( AdvancedGroup, { a, set } )
+			)
 		);
 	}
 
@@ -192,7 +209,7 @@
 		// What the Style values are read and written as: the hover layer while the hover state is on, else the block itself.
 		const sa = hovering ? hoverLayer( a ) : a;
 		const sset = hovering ? hoverWriter( a, set ) : set;
-		const tabNow = hovering ? 'style' : tab;
+		const tabNow = tab;
 		// The canvas draws the hover state of this block while it is on: a class the canvas's hover rule also matches
 		// (register.js). Set again when the block's hover values change, since a re-render of the block can reset its class.
 		useEffect( () => {
@@ -267,12 +284,11 @@
 		const own = parts && parts.Pane ? h( parts.Pane, { a, set, def, device, parent, base, clientId } ) : null;
 		const defaultPane = own
 			? h( Fragment, null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
-			: h( GenericPane, { a, set, def, parent, device, base } );
+			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering } );
 
 		// Style: one group at a time, chosen on the rail of icons (as Bricks does). The group's sections follow, one
 		// under another. Every value is per view: a view shows the value it sets, or the one it inherits.
-		// The hover state has no CSS group (the custom CSS is one text, not a value per state).
-		const pages = hovering ? STYLE_PAGES.filter( ( p ) => p.kind !== 'css' ) : STYLE_PAGES;
+				const pages = STYLE_PAGES;
 		const page = pages.find( ( p ) => p.id === stylePage ) || pages[ 0 ];
 		const rowFor = ( row ) => {
 			if ( 'LAYOUT' === row ) {
@@ -308,7 +324,7 @@
 				hovering ? h( 'span', { className: 'snn-hover-badge' }, __( 'Hover state', 'snn' ) ) : null
 			),
 			page.kind === 'css'
-				? h( CssPane, { a, set, editor: data.cssEditor } )
+				? h( CssPane, { a: sa, set: sset, editor: data.cssEditor } )
 				: page.sections.map( ( s ) => h( Group, { key: s.title, title: s.title, tip: s.tip }, s.rows.map( rowFor ) ) )
 		);
 
@@ -344,7 +360,7 @@
 			'div',
 			{ className: 'snn-panel' },
 			header,
-			h( 'div', { className: 'snn-tabs', role: 'tablist' }, hovering ? null : tabButton( 'default', __( 'Content', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
+			h( 'div', { className: 'snn-tabs', role: 'tablist' }, tabButton( 'default', __( 'Content', 'snn' ) ), tabButton( 'style', __( 'Style', 'snn' ) ) ),
 			tabNow === 'default' ? defaultPane : stylePane
 		);
 	}

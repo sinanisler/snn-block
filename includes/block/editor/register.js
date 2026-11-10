@@ -200,13 +200,16 @@
 				const hoverLevel = device === 'Tablet' ? 'tablet' : device === 'Mobile' ? 'mobile' : 'base';
 				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.hoverStyle || {} ) );
 				const hoverText = snn.styleProps.hoverRules( a, hoverKey + '.' + hoverKey, hoverLevel, true );
-				const hoverClass = hoverText ? hoverKey : '';
+				// The hover state's own CSS: %root% is the block in its hover state (or the forced one, while the panel holds it).
+				const hoverOwn = a.hoverStyle && a.hoverStyle.css ? scopeCss( a.hoverStyle.css, ':is(.' + hoverKey + '.' + hoverKey + ':hover,.' + hoverKey + '.' + hoverKey + '.snn-force-hover)' ) : '';
+				const hoverAll = hoverText + hoverOwn;
+				const hoverClass = hoverAll ? hoverKey : '';
 				const normalText = Object.keys( ownStyle ).length ? '.' + hoverKey + '.' + hoverKey + '{' + Object.keys( ownStyle ).map( ( k ) => k.replace( /[A-Z]/g, ( m ) => '-' + m.toLowerCase() ) + ':' + ownStyle[ k ] ).join( ';' ) + '}' : '';
-				const hoverRule = hoverText ? h( 'style', null, normalText + hoverText ) : null;
+				const hoverRule = hoverAll ? h( 'style', null, normalText + hoverAll ) : null;
 				const blockProps = useBlockProps( {
 					id: cleanId( a.htmlId ) || undefined,
 					className: [ 'wp-block-' + def.name.replace( '/', '-' ), cleanClasses( a.cssClasses ), cssScoped, overlayClass, hoverClass ].filter( Boolean ).join( ' ' ),
-					style: Object.keys( ownStyle ).length && ! hoverText ? ownStyle : undefined,
+					style: Object.keys( ownStyle ).length && ! hoverAll ? ownStyle : undefined,
 					'data-animate': canvasDataAnimate( a ),
 				} );
 				// The children of a layout block go straight into the block's element (no list element between).
