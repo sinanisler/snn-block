@@ -155,6 +155,7 @@
 		'minHeight': [ 'Min. height', 'The shortest the block can get.' ],
 		'maxHeight': [ 'Max. height', 'The tallest the block can get.' ],
 		'aspectRatio': [ 'Aspect ratio', 'Width to height, such as 16 / 9.' ],
+		'pictureAspectRatio': [ 'Aspect ratio', 'The picture\'s width to height, such as 16 / 9 or 1.5.' ],
 		'position': [ 'Position', 'How the block is placed: static, relative, absolute, fixed or sticky.' ],
 		'top': [ 'Top', 'Offset from the top edge of its positioned parent.' ],
 		'right': [ 'Right', 'Offset from the right edge of its positioned parent.' ],

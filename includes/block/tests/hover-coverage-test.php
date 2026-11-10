@@ -70,6 +70,7 @@ $samples = array(
 	'iconGap'            => array( '8px', '--snn-icon-gap' ),
 	'objectFit'          => array( 'cover', '--snn-object-fit' ),
 	'objectPosition'     => array( 'left top', '--snn-object-position' ),
+	'pictureAspectRatio' => array( '2 / 1', '--snn-picture-ratio' ),
 );
 
 // The composed groups: each prints its property when one of its keys is a hover value.

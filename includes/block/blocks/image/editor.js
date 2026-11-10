@@ -123,9 +123,6 @@
 		const css = a.stretch
 			? { verticalAlign: 'top', width: '100%', height: '100%', maxWidth: '100%' }
 			: { verticalAlign: 'top', maxWidth: '100%', height: 'auto' };
-		if ( a.aspectRatio ) {
-			css.aspectRatio = a.aspectRatio;
-		}
 		return css;
 	}
 
@@ -465,7 +462,7 @@
 			h(
 				Group,
 				{ title: __( 'Picture', 'snn' ) },
-				h( V, { a: sa, set: sset, device, k: 'aspectRatio', label: __( 'Aspect ratio', 'snn' ), placeholder: '16 / 9' } ),
+				h( V, { a: sa, set: sset, device, k: 'pictureAspectRatio', label: __( 'Aspect ratio', 'snn' ), placeholder: '16 / 9' } ),
 				h( V, { a: sa, set: sset, device, k: 'objectFit', label: __( 'Object fit', 'snn' ), kind: 'select', options: OBJECT_FIT_OPTIONS } ),
 				h( V, { a: sa, set: sset, device, k: 'objectPosition', label: __( 'Object position', 'snn' ), placeholder: '50% 50%' } )
 			),

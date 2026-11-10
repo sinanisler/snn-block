@@ -57,6 +57,9 @@ class SNN_Style_Props {
 		'iconGap'        => array( '--snn-icon-gap', 'size', array(), array() ),
 		'objectFit'      => array( '--snn-object-fit', 'keyword', array( 'fill', 'contain', 'cover', 'none', 'scale-down' ), array() ),
 		'objectPosition' => array( '--snn-object-position', 'text', array(), array() ),
+		// The Image block's picture ratio: a variable of its own, so the picture's ratio follows a hover or a view. It is not
+		// the block's aspect ratio (the Sizing row, aspect-ratio on the block), which the picture does not read.
+		'pictureAspectRatio' => array( '--snn-picture-ratio', 'ratio', array(), array() ),
 		// Layout: the display, the flex and grid settings, the item settings, then spacing, colour, width, opacity and overflow.
 		'display'          => array( 'display', 'keyword', self::DISPLAYS, array( 'default' => 'block', 'skip' => 'block' ) ),
 		'flexDirection'    => array( 'flex-direction', 'keyword', self::FLEX_DIRECTION, array( 'when' => 'flex', 'default' => 'row' ) ),

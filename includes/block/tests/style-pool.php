@@ -43,6 +43,7 @@ return array(
 	'iconGap'        => array( '8', '0.5em', '' ),
 	'objectFit'      => array( 'cover', 'bogus', 'none', '' ),
 	'objectPosition' => array( 'left top', '50% 50%', 'bogus;x', '' ),
+	'pictureAspectRatio' => array( '16 / 9', '1', '1.5', 'bogus', '' ),
 	'opacity'         => array( '50', '0', '100', '150', 'var(--o)', 'abc', '' ),
 	'overflow'        => array( 'hidden', 'clip', 'bogus', '' ),
 	'marginTop'       => array( '10', '-10', 'auto', '' ),

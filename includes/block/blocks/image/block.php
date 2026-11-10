@@ -31,8 +31,6 @@ class SNN_Image_Block extends SNN_Block {
 
 	const MAX_SOURCES = 10;
 
-	/** Aspect ratio: auto, a ratio such as 16 / 9 or 1.5, or a variable. */
-	const ASPECT = '/^(auto|\d+(\.\d+)?(\s*\/\s*\d+(\.\d+)?)?|var\(--[a-z][a-z0-9-]*\))$/i';
 
 	/** Object position: one or two lengths or keywords, such as 50% 50% or center top. */
 	const POSITION = '/^(-?\d+(\.\d+)?(px|%|em|rem|vw|vh)?|left|right|top|bottom|center)(\s+(-?\d+(\.\d+)?(px|%|em|rem|vw|vh)?|left|right|top|bottom|center))?$/i';
@@ -91,7 +89,6 @@ class SNN_Image_Block extends SNN_Block {
 			'imageDynamic'   => array( 'type' => 'string', 'default' => '' ),
 			'imageCustomUrl' => array( 'type' => 'string', 'default' => '' ),
 			'sources'        => array( 'type' => 'array', 'default' => array() ),
-			'aspectRatio'    => array( 'type' => 'string', 'default' => '' ),
 			'objectFit'      => array( 'type' => 'string', 'default' => 'fill' ),
 			'objectPosition' => array( 'type' => 'string', 'default' => '50% 50%' ),
 			'captionType'    => array( 'type' => 'string', 'default' => 'attachment' ),
@@ -119,7 +116,6 @@ class SNN_Image_Block extends SNN_Block {
 		$out['imageDynamic']   = self::text( $out['imageDynamic'], 300 );
 		$out['imageCustomUrl'] = self::text( $out['imageCustomUrl'], 2000 );
 		$out['sources']        = self::clean_sources( $out['sources'] );
-		$out['aspectRatio']    = self::matching( $out['aspectRatio'], self::ASPECT );
 		$out['objectFit']      = self::pick( $out['objectFit'], self::OBJECT_FIT, 'fill' );
 		$out['objectPosition'] = self::matching( $out['objectPosition'], self::POSITION );
 		$out['captionType']    = self::pick( $out['captionType'], self::CAPTION, 'attachment' );
@@ -235,9 +231,6 @@ class SNN_Image_Block extends SNN_Block {
 		$css = $a['stretch']
 			? array( 'vertical-align:top', 'width:100%', 'height:100%', 'max-width:100%' )
 			: array( 'vertical-align:top', 'max-width:100%', 'height:auto' );
-		if ( '' !== $a['aspectRatio'] ) {
-			$css[] = 'aspect-ratio:' . $a['aspectRatio'];
-		}
 		return implode( ';', $css );
 	}
 
