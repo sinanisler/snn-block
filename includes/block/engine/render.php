@@ -184,17 +184,19 @@ class SNN_Block_Render {
 		$inline_style = '';
 		$views        = SNN_Style::view_rules( $a, $dyn );
 		$before       = implode( ';', SNN_Style_Props::overlay( $a ) );
-		if ( '' === $views && '' === $before && ! SNN_Style_Sheet::in_page() ) {
+		$hover        = SNN_Style::hover_rules( $a, $dyn );
+		if ( '' === $views && '' === $before && '' === $hover && ! SNN_Style_Sheet::in_page() ) {
 			// Outside a page (a REST answer, a command-line render) a block with no view and no overlay keeps its inline style:
 			// there is no page sheet to print its rule in, and nothing else needs a rule.
 			$inline_style = $style;
-		} elseif ( '' !== $style || '' !== $views || '' !== $before ) {
-			$rule      = 'snn-s-' . substr( md5( $style . '|' . $views . '|' . $before ), 0, 10 );
+		} elseif ( '' !== $style || '' !== $views || '' !== $before || '' !== $hover ) {
+			$rule      = 'snn-s-' . substr( md5( $style . '|' . $views . '|' . $before . '|' . $hover ), 0, 10 );
 			$selector  = '.' . $rule . '.' . $rule;
 			$classes[] = $rule;
 			$css       = ( '' !== $style ? $selector . '{' . $style . '}' : '' )
 				. ( '' !== $before ? $selector . '::before{' . $before . '}' : '' )
-				. str_replace( '%CLASS%', $rule . '.' . $rule, $views );
+				. str_replace( '%CLASS%', $rule . '.' . $rule, $views )
+				. str_replace( '%CLASS%', $rule . '.' . $rule, $hover );
 			$prefix    = self::loop_once( $rule, SNN_Style_Sheet::add( $rule, $css ) );
 		}
 

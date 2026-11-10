@@ -210,6 +210,111 @@ class SNN_Style {
 	}
 
 	/* ------------------------------------------------------------------
+	 * Hover state
+	 * ---------------------------------------------------------------- */
+
+	/** The levels a hover value can be set on: the base, and the views (the same widths as the views). */
+	const HOVER_LEVELS = array( 'base', 'tablet', 'mobile' );
+
+	/**
+	 * The values a hover state sets: hoverStyle = array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ... ).
+	 * Only the table's keys, and only values that are not empty. The values are checked where they are written.
+	 */
+	public static function clean_hover( $value ) {
+		$out = array();
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		foreach ( self::HOVER_LEVELS as $level ) {
+			if ( ! isset( $value[ $level ] ) || ! is_array( $value[ $level ] ) ) {
+				continue;
+			}
+			$own = array();
+			foreach ( SNN_Style_Props::keys() as $key ) {
+				if ( isset( $value[ $level ][ $key ] ) && is_scalar( $value[ $level ][ $key ] ) && '' !== (string) $value[ $level ][ $key ] ) {
+					$own[ $key ] = mb_substr( (string) $value[ $level ][ $key ], 0, 300 );
+				}
+			}
+			if ( $own ) {
+				$out[ $level ] = $own;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * The hover rules: what a block's hover state changes, on the base and on each view. A hover value wins over the
+	 * normal value of its level, and a hover of a view wins over the base hover. The rule for a level holds only the
+	 * declarations that differ from the normal style of that level (the same comparison as view_rules()). Written with
+	 * the placeholder %CLASS% for the block's class, as view_rules() is. Returns '' when no hover value is set.
+	 */
+	public static function hover_rules( array $a, array $dyn ) {
+		$hover = self::clean_hover( $a['hoverStyle'] ?? array() );
+		if ( ! $hover ) {
+			return '';
+		}
+		$own   = is_array( $a['responsive'] ?? null ) ? $a['responsive'] : array();
+		$views = self::view_widths();
+		$css   = '';
+		$base  = $hover['base'] ?? array();
+		$tab   = $hover['tablet'] ?? array();
+		$mob   = $hover['mobile'] ?? array();
+		// Each level is compared with the layers that apply below it at the same width, in the browser's order: the normal
+		// values of the level, then the base hover (a hover rule is more specific than the normal rules), then the hover of
+		// the views above. The rule of a level holds what it changes on those.
+		$normal_tablet = array_merge( $a, $own['tablet'] ?? array() );
+		$normal_mobile = array_merge( $normal_tablet, $own['mobile'] ?? array() );
+		$lower_tablet  = array_merge( $normal_tablet, $base );
+		$lower_mobile  = array_merge( $normal_mobile, $base, $tab );
+		$levels        = array(
+			array( null, $a, array_merge( $a, $base ), false ),
+			array( 'tablet', $lower_tablet, array_merge( $lower_tablet, $tab ), true ),
+			array( 'mobile', $lower_mobile, array_merge( $lower_mobile, $mob ), true ),
+		);
+		foreach ( $levels as $level ) {
+			list( $view, $normal, $hovered, $is_view ) = $level;
+			list( $decls, $before ) = self::hover_parts( $normal, $hovered, $dyn, $is_view );
+			$body = '';
+			if ( '' !== $decls ) {
+				$body .= '.%CLASS%:hover{' . $decls . '}';
+			}
+			if ( '' !== $before ) {
+				$body .= '.%CLASS%:hover::before{' . $before . '}';
+			}
+			if ( '' === $body ) {
+				continue;
+			}
+			$css .= null === $view ? $body : '@media (max-width:' . $views[ $view ] . 'px){' . $body . '}';
+		}
+		return $css;
+	}
+
+	/**
+	 * What a hover changes on one level, as two parts: the declarations of the block, and the declarations of its ::before
+	 * (the overlay). A property is written when its last value differs from the normal level's last value. Both are ''
+	 * when the hover changes nothing there.
+	 *
+	 * @return string[] The declarations, then the overlay's declarations.
+	 */
+	private static function hover_parts( array $normal, array $hovered, $dyn, $view ) {
+		$normal_values = self::last_values( SNN_Style_Props::declarations( $normal, $dyn, $view ) );
+		$diff          = array();
+		foreach ( self::last_values( SNN_Style_Props::declarations( $hovered, $dyn, $view ) ) as $prop => $value ) {
+			if ( ! isset( $normal_values[ $prop ] ) || $normal_values[ $prop ] !== $value ) {
+				$diff[] = $prop . ':' . $value;
+			}
+		}
+		// The overlay (Apply to: Overlay): the hover's ::before, or none when the hover takes the overlay away.
+		$overlay_normal = SNN_Style_Props::overlay( $normal );
+		$overlay_hover  = SNN_Style_Props::overlay( $hovered );
+		$before         = '';
+		if ( $overlay_normal !== $overlay_hover ) {
+			$before = $overlay_hover ? implode( ';', $overlay_hover ) : 'content:none';
+		}
+		return array( implode( ';', $diff ), $before );
+	}
+
+	/* ------------------------------------------------------------------
 	 * Custom CSS
 	 * ---------------------------------------------------------------- */
 

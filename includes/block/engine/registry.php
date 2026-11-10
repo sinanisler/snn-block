@@ -225,6 +225,8 @@ class SNN_Blocks {
 			'overflow'         => array( 'type' => 'string', 'default' => '' ),
 			// The values a view sets for itself: responsive = array( 'tablet' => array( 'gap' => '16' ), 'mobile' => ... ).
 			'responsive'       => array( 'type' => 'object', 'default' => array() ),
+			// The hover state: hoverStyle = array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ... ), see SNN_Style::hover_rules().
+			'hoverStyle'       => array( 'type' => 'object', 'default' => array() ),
 			'conditions'       => array( 'type' => 'array', 'default' => array() ),
 			'interactions'     => array( 'type' => 'array', 'default' => array() ),
 			'animation'        => array( 'type' => 'array', 'default' => array() ),
@@ -288,6 +290,7 @@ class SNN_Blocks {
 		$out['customCss']        = SNN_Style::clean_css( $out['customCss'] );
 		$out['customAttributes'] = self::clean_attributes( $out['customAttributes'] );
 		$out['responsive']       = SNN_Style::clean_responsive( $out['responsive'] );
+		$out['hoverStyle']       = SNN_Style::clean_hover( $out['hoverStyle'] );
 		$out['conditions']       = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions']     = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
