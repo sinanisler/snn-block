@@ -18,8 +18,8 @@
 	const TIPS = {
 		// Header and tabs
 		'view.desktop': [ 'Desktop', 'Base values. Tablet and Mobile inherit from them.' ],
-		'view.tablet': [ 'Tablet', 'Values for screens up to 991 px.' ],
-		'view.mobile': [ 'Mobile', 'Values for screens up to 478 px.' ],
+		'view.tablet': [ 'Tablet', 'Values for screens up to {tablet} px.' ],
+		'view.mobile': [ 'Mobile', 'Values for screens up to {mobile} px.' ],
 		'head.conditions': [ 'Conditions', 'Show this element only when rules hold.' ],
 		'head.interactions': [ 'Interactions', 'Run an action when a trigger happens, such as a click.' ],
 		'head.animations': [ 'Animations', 'Play animations on the front end.' ],
@@ -281,7 +281,8 @@
 	 */
 	function textOf( key ) {
 		const t = TIPS[ key ];
-		return t ? [ __( t[ 0 ], 'snn' ), __( t[ 1 ], 'snn' ) ] : null;
+		// The widths of the Tablet and Mobile views are filled in here (the Global Styles breakpoints).
+		return t ? [ __( t[ 0 ], 'snn' ), __( t[ 1 ], 'snn' ).replace( '{tablet}', snn.data.breakpoints.tablet ).replace( '{mobile}', snn.data.breakpoints.mobile ) ] : null;
 	}
 
 	/** The attributes of a control whose text is a key. */

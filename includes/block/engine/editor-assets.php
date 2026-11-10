@@ -229,6 +229,7 @@ class SNN_Block_Editor_Assets {
 				'orderBy'    => SNN_Query_Loop::order_by_options(),
 				'tags'       => SNN_Blocks::TAGS,
 			),
+			'breakpoints'            => SNN_Style::view_widths(),
 			'animation'              => SNN_Animation::editor_data(),
 			'blockTools'             => SNN_Block_Tools::editor_data(),
 			'styleTable'             => SNN_Style_Props::for_editor(),

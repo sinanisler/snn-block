@@ -23,10 +23,12 @@
 
 	/** The style settings: the background colour, with the colour variables first in its picker. */
 	/** The three views of the header. The choice is the editor's own device, so the two move together. */
+	// The widths of the Tablet and Mobile views (the Global Styles breakpoints, see data_script()).
+	const BP = snn.data.breakpoints || { tablet: 991, mobile: 478 };
 	const VIEWS = [
 		{ value: 'Desktop', label: __( 'Desktop', 'snn' ), title: __( 'Desktop: base styles', 'snn' ) },
-		{ value: 'Tablet', label: __( 'Tablet', 'snn' ), title: __( 'Tablet: up to 991 px', 'snn' ) },
-		{ value: 'Mobile', label: __( 'Mobile', 'snn' ), title: __( 'Mobile: up to 478 px', 'snn' ) },
+		{ value: 'Tablet', label: __( 'Tablet', 'snn' ), title: sprintf( __( 'Tablet: up to %d px', 'snn' ), BP.tablet ) },
+		{ value: 'Mobile', label: __( 'Mobile', 'snn' ), title: sprintf( __( 'Mobile: up to %d px', 'snn' ), BP.mobile ) },
 	];
 
 	/** The icon of a view, as in the version 12 panel mock. */

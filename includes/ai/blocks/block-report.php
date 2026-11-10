@@ -134,7 +134,7 @@ function snn_blocks_dropped_values( $name, array $attrs ) {
         }
         if ( 'responsive' === $key ) {
             foreach ( is_array( $value ) ? $value : array() as $view => $own ) {
-                if ( ! isset( SNN_Style::VIEW_WIDTHS[ $view ] ) ) {
+                if ( ! isset( SNN_Style::view_widths()[ $view ] ) ) {
                     $add( 'responsive.' . $view, $own, 'views are tablet and mobile' );
                     continue;
                 }
@@ -300,7 +300,7 @@ function snn_block_schema() {
         ),
         'responsive'   => array(
             'format' => 'responsive = { "tablet": { key: value }, "mobile": { key: value } }. A view without a value uses the view above it, then Desktop (the plain attribute).',
-            'views'  => SNN_Style::VIEW_WIDTHS,
+            'views'  => SNN_Style::view_widths(),
             'keys'   => array_values( array_merge( SNN_Style::VIEW_KEYS, SNN_Style_Props::keys() ) ),
         ),
         'icons'        => array(

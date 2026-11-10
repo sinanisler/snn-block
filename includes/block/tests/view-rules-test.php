@@ -38,7 +38,7 @@ function old_view_rules( array $a, array $dyn ) {
 	$own   = is_array( $a['responsive'] ?? null ) ? $a['responsive'] : array();
 	$css   = '';
 	$merge = $a;
-	foreach ( SNN_Style::VIEW_WIDTHS as $view => $width ) {
+	foreach ( SNN_Style::view_widths() as $view => $width ) {
 		if ( empty( $own[ $view ] ) ) {
 			continue;
 		}

@@ -26,7 +26,7 @@ class SNN_Image_Block extends SNN_Block {
 	/** Link to: none, a lightbox on the page, the attachment page, the media file, or a custom URL. */
 	const LINK = array( 'none', 'lightbox', 'attachment', 'media', 'url' );
 
-	/** A source's breakpoint: one of the two views of the panel (SNN_Style::VIEW_WIDTHS), or a custom media query. */
+	/** A source's breakpoint: one of the two views of the panel (SNN_Style::view_widths()), or a custom media query. */
 	const SOURCE = array( 'tablet', 'mobile', 'custom' );
 
 	const MAX_SOURCES = 10;
@@ -252,7 +252,7 @@ class SNN_Image_Block extends SNN_Block {
 	 * takes the first source that matches, so the narrowest comes first, then the custom queries in their order.
 	 */
 	private static function sources_html( array $sources ) {
-		$widths = SNN_Style::VIEW_WIDTHS;
+		$widths = SNN_Style::view_widths();
 		$named  = array();
 		$custom = array();
 		foreach ( $sources as $row ) {

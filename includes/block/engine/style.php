@@ -27,13 +27,12 @@ class SNN_Style {
 	const OVERFLOW       = SNN_Style_Props::OVERFLOW;
 
 	/**
-	 * The views that can set their own values, and the widest width each one covers (the view menu's Tablet and Mobile).
-	 * A value a view does not set comes from the view above it, then from Desktop.
+	 * The Tablet and Mobile widths in px, from the Global Styles breakpoints (SNN_Global_Styles::breakpoints()). A value a view
+	 * sets applies up to its width: Tablet to 991 px, Mobile to 478 px by default.
 	 */
-	const VIEW_WIDTHS = array(
-		'tablet' => 991,
-		'mobile' => 478,
-	);
+	public static function view_widths() {
+		return SNN_Global_Styles::breakpoints();
+	}
 
 	/** The keys a view may set are the table's keys (SNN_Style_Props::keys()); nothing else is listed here. */
 	const VIEW_KEYS = array();
@@ -126,7 +125,7 @@ class SNN_Style {
 	 * ---------------------------------------------------------------- */
 
 	/**
-	 * The values each view sets: only the table's keys, only the views in VIEW_WIDTHS, and only values that are not
+	 * The values each view sets: only the table's keys, only the views in view_widths(), and only values that are not
 	 * empty. The values themselves are checked where they are written (declarations()).
 	 */
 	public static function clean_responsive( $value ) {
@@ -134,7 +133,7 @@ class SNN_Style {
 		if ( ! is_array( $value ) ) {
 			return $out;
 		}
-		foreach ( array_keys( self::VIEW_WIDTHS ) as $view ) {
+		foreach ( array_keys( self::view_widths() ) as $view ) {
 			if ( ! isset( $value[ $view ] ) || ! is_array( $value[ $view ] ) ) {
 				continue;
 			}
@@ -176,7 +175,7 @@ class SNN_Style {
 		// What the layer above prints: the base rule (no view flag), then each view's rule (with the view flag).
 		$above  = SNN_Style_Props::declarations( $a, $dyn, false );
 		$before = SNN_Style_Props::overlay( $a );
-		foreach ( self::VIEW_WIDTHS as $view => $width ) {
+		foreach ( self::view_widths() as $view => $width ) {
 			if ( empty( $own[ $view ] ) ) {
 				continue;
 			}

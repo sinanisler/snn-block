@@ -93,6 +93,8 @@ class SNN_Global_Styles {
 			),
 			// Fluid sizes: a clamp between two viewport widths, keyed by path (see fluid_css()).
 			'fluid'      => array(),
+			// The widths of the Tablet and Mobile views of every block, in px (see breakpoints_from()).
+			'breakpoints' => array( 'tablet' => 991, 'mobile' => 478 ),
 			'blocks'     => SNN_Block_Defaults::defaults(),
 			'editor'     => SNN_Block_Editor_Settings::defaults(),
 		);
@@ -201,6 +203,7 @@ class SNN_Global_Styles {
 			'sizes'      => $sizes,
 			'typography' => $typography,
 			'fluid'      => array(),
+			'breakpoints' => self::breakpoints_from( $input['breakpoints'] ?? null ),
 			'blocks'     => $blocks,
 		);
 		// A fluid setting is kept only when its size exists, and its value becomes the clamp.
@@ -216,6 +219,38 @@ class SNN_Global_Styles {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * The widths of the Tablet and Mobile views, in px: whole numbers, Tablet from 320 to 1920 and Mobile from 200 up to one
+	 * less than Tablet (a Mobile at or above Tablet would overlap it). A value outside its range is the default.
+	 */
+	public static function breakpoints_from( $value ) {
+		$value  = is_array( $value ) ? $value : array();
+		$tablet = self::whole( $value['tablet'] ?? null, 320, 1920, 991 );
+		$mobile = self::whole( $value['mobile'] ?? null, 200, 1919, 478 );
+		if ( $mobile >= $tablet ) {
+			$mobile = $tablet - 1;
+		}
+		return array(
+			'tablet' => $tablet,
+			'mobile' => $mobile,
+		);
+	}
+
+	/** The breakpoints as they are stored, sanitised (the widths the front end and the editor use). */
+	public static function breakpoints() {
+		$stored = get_option( self::OPTION, array() );
+		return self::breakpoints_from( is_array( $stored ) ? ( $stored['breakpoints'] ?? null ) : null );
+	}
+
+	/** A whole number from min to max, or the default when the value is not one of those. */
+	private static function whole( $value, $min, $max, $default ) {
+		if ( ! is_numeric( $value ) ) {
+			return $default;
+		}
+		$x = (int) round( (float) $value );
+		return ( $x >= $min && $x <= $max ) ? $x : $default;
 	}
 
 	public static function hex( $value ) {
@@ -837,6 +872,29 @@ class SNN_Global_Styles {
 							'label' => __( 'Disable full screen mode', 'snn' ),
 							'type'  => 'switch',
 							'hint'  => __( 'Full screen mode is off in every block editor, so the admin menu stays visible.', 'snn' ),
+						),
+					),
+				),
+				array(
+					'title'  => __( 'Responsive', 'snn' ),
+					'fields' => array(
+						array(
+							'path'  => 'breakpoints.tablet',
+							'label' => __( 'Tablet view: up to (px)', 'snn' ),
+							'type'  => 'number',
+							'min'   => 320,
+							'max'   => 1920,
+							'step'  => 1,
+							'hint'  => __( 'The widest screen that uses the Tablet values of a block.', 'snn' ),
+						),
+						array(
+							'path'  => 'breakpoints.mobile',
+							'label' => __( 'Mobile view: up to (px)', 'snn' ),
+							'type'  => 'number',
+							'min'   => 200,
+							'max'   => 1919,
+							'step'  => 1,
+							'hint'  => __( 'The widest screen that uses the Mobile values. It must be narrower than Tablet.', 'snn' ),
 						),
 					),
 				),
