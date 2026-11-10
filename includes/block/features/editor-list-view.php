@@ -21,7 +21,8 @@ class SNN_Block_Editor_List_View {
 
 	public static function init() {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue' ) );
-		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_badges' ) );
+		// Priority 20: after the editor scripts (SNN_Block_Editor_Assets::enqueue() at 10), so the joined script is enqueued first.
+		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_badges' ), 20 );
 	}
 
 	/**
@@ -53,7 +54,14 @@ class SNN_Block_Editor_List_View {
 		wp_register_style( 'snn-list-view-badges', false, array( 'wp-editor' ) );
 		wp_enqueue_style( 'snn-list-view-badges' );
 		wp_add_inline_style( 'snn-list-view-badges', $css );
-		wp_enqueue_script( 'snn-list-view-badges', SNN_URL . $js, array( 'wp-data', 'wp-element', 'wp-i18n', 'snn-block-tools', 'snn-animation-pane' ), SNN_Block_Tools::version( $js ), true );
+		// The block tools and the animation pane are in the joined editor script when it is enqueued; otherwise they are their own handles.
+		$deps = array( 'wp-data', 'wp-element', 'wp-i18n' );
+		if ( wp_script_is( SNN_Block_Editor_Assets::BUNDLE, 'enqueued' ) ) {
+			$deps[] = SNN_Block_Editor_Assets::BUNDLE;
+		} else {
+			$deps = array_merge( $deps, array( 'snn-block-tools', 'snn-animation-pane' ) );
+		}
+		wp_enqueue_script( 'snn-list-view-badges', SNN_URL . $js, $deps, SNN_Block_Tools::version( $js ), true );
 		wp_set_script_translations( 'snn-list-view-badges', 'snn', SNN_PATH . 'languages' );
 	}
 }
