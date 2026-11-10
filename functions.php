@@ -49,6 +49,7 @@ if ( snn_feature_enabled('snn-activity-log') )           require_once SNN_PATH .
 if ( snn_feature_enabled('snn-seo-settings') )           require_once SNN_PATH . 'includes/features/seo.php';
 if ( snn_feature_enabled('snn-interactions') )           require_once SNN_PATH . 'includes/features/interactions.php';
 if ( snn_feature_enabled('snn-other-settings') )         require_once SNN_PATH . 'includes/features/draft-revision.php';
+if ( snn_feature_enabled('snn-static-deploy') )          require_once SNN_PATH . 'includes/features/static-deploy.php';
 
 
 if ( snn_feature_enabled('snn-ai-settings') )      require_once SNN_PATH . 'includes/ai/api-call-templates.php';

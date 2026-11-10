@@ -1,0 +1,210 @@
+/* SNN Static Deploy: settings page. Plain WordPress admin look, no theme colours. */
+
+.snn-sd .snn-sd-lead {
+	max-width: 60em;
+	font-size: 14px;
+}
+
+.snn-sd .snn-sd-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 16px 20px 20px;
+	margin: 0 0 20px;
+	max-width: 1100px;
+}
+
+.snn-sd .snn-sd-card > h2 {
+	margin: 0 0 12px;
+	padding: 0;
+	font-size: 18px;
+}
+
+.snn-sd .snn-sd-card h3 {
+	margin: 20px 0 8px;
+	font-size: 14px;
+}
+
+.snn-sd .snn-sd-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.snn-sd .snn-sd-actions [hidden] {
+	display: none;
+}
+
+.snn-sd .snn-sd-progress {
+	height: 12px;
+	background: #f0f0f1;
+	border-radius: 6px;
+	overflow: hidden;
+	max-width: 720px;
+}
+
+.snn-sd .snn-sd-progress-bar {
+	height: 100%;
+	width: 0;
+	background: #2271b1;
+	transition: width 0.3s ease;
+}
+
+.snn-sd .snn-sd-status {
+	margin: 10px 0;
+	font-weight: 600;
+}
+
+.snn-sd .snn-sd-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+.snn-sd .snn-sd-count-n {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.snn-sd .snn-sd-log {
+	max-height: 360px;
+	overflow: auto;
+	margin: 0;
+	padding: 8px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.snn-sd .snn-sd-log li {
+	margin: 0 0 4px;
+	padding: 0;
+	word-break: break-word;
+}
+
+.snn-sd .snn-sd-log time {
+	color: #646970;
+	margin-right: 8px;
+	font-variant-numeric: tabular-nums;
+}
+
+.snn-sd .snn-sd-log-url {
+	display: block;
+	color: #646970;
+	margin-left: 62px;
+}
+
+.snn-sd .snn-sd-log-warning .snn-sd-log-text {
+	color: #996800;
+}
+
+.snn-sd .snn-sd-log-error .snn-sd-log-text {
+	color: #b32d2e;
+	font-weight: 600;
+}
+
+.snn-sd .snn-sd-log-success .snn-sd-log-text {
+	color: #00703c;
+}
+
+.snn-sd .snn-sd-form {
+	max-width: 1100px;
+}
+
+.snn-sd .snn-sd-form fieldset {
+	border: 0;
+	margin: 0 0 12px;
+	padding: 0;
+	min-width: 0;
+}
+
+.snn-sd .snn-sd-form legend {
+	font-weight: 600;
+	margin-bottom: 6px;
+	padding: 0;
+}
+
+.snn-sd .snn-sd-radio {
+	display: block;
+	margin: 0 0 8px;
+}
+
+.snn-sd .snn-sd-radio span {
+	display: block;
+	margin: 2px 0 0 22px;
+	color: #50575e;
+}
+
+.snn-sd .snn-sd-check {
+	display: block;
+	margin: 0 0 6px;
+}
+
+.snn-sd .snn-sd-check code {
+	color: #646970;
+	font-size: 11px;
+}
+
+.snn-sd .snn-sd-block {
+	display: block;
+	margin: 14px 0 0;
+}
+
+.snn-sd .snn-sd-block textarea,
+.snn-sd .snn-sd-block select {
+	display: block;
+	margin-top: 4px;
+}
+
+.snn-sd .snn-sd-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 12px 20px;
+	margin: 10px 0 14px;
+}
+
+.snn-sd .snn-sd-grid > label {
+	display: block;
+}
+
+.snn-sd .snn-sd-grid input[type="text"],
+.snn-sd .snn-sd-grid input[type="url"],
+.snn-sd .snn-sd-grid input[type="password"],
+.snn-sd .snn-sd-grid input[type="number"],
+.snn-sd .snn-sd-grid select {
+	display: block;
+	width: 100%;
+	margin-top: 4px;
+}
+
+.snn-sd .snn-sd-checks {
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.snn-sd .snn-sd-filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.snn-sd .snn-sd-table td,
+.snn-sd .snn-sd-table th {
+	vertical-align: top;
+}
+
+.snn-sd .snn-sd-url {
+	word-break: break-all;
+	font-size: 12px;
+}
+
+.snn-sd .snn-sd-pager .button {
+	margin: 0 4px 4px 0;
+}

@@ -141,6 +141,10 @@ function snn_get_features() {
             'label'    => __( 'Integrations', 'snn' ),
             'dashicon' => 'dashicons-admin-plugins',
         ),
+        'snn-static-deploy' => array(
+            'label'    => __( 'Static Deploy', 'snn' ),
+            'dashicon' => 'dashicons-download',
+        ),
     );
 
     return $features;
