@@ -12,7 +12,7 @@
 	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
@@ -114,8 +114,8 @@
 								setDrag( null );
 							},
 						},
-						h( TextField, { label: __( 'Colour', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.color, kind: 'color', swatch: true, variables: VARIABLE_GROUPS, onChange: ( v ) => replace( i, { color: v } ) } ),
-						h( TextField, { label: __( 'Stop', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.stop, unit: '%', onChange: ( v ) => replace( i, { stop: v } ) } ),
+						h( TextField, { label: __( 'Colour', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.color, kind: 'color', type: 'color', swatch: true, variables: VARIABLE_GROUPS, onChange: ( v ) => replace( i, { color: v } ) } ),
+						h( TextField, { label: __( 'Stop', 'snn' ) + ' ' + ( i + 1 ), tip: 'gradientStops', value: s.stop, unit: '%', type: 'percent', onChange: ( v ) => replace( i, { stop: v } ) } ),
 						h(
 							'span',
 							{
@@ -456,7 +456,7 @@ function pageKeys( page ) {
 						{ key: k, className: 'snn-box-cell snn-box-' + BOX_AREA[ i ] },
 						own !== undefined ? h( 'span', { className: 'snn-box-mark', 'aria-hidden': 'true' }, h( Dot ) ) : null,
 						h( TextField, {
-							label: box.label + ' ' + SIDE_LABEL[ i ], tip: k,
+							label: box.label + ' ' + SIDE_LABEL[ i ], tip: k, type: tableSpec( k ).type, options: tableSpec( k ).options,
 							value: own !== undefined ? String( own ) : '',
 							placeholder: inherited.value !== undefined && inherited.value !== '' ? String( inherited.value ) : '0',
 							unit: ' px',

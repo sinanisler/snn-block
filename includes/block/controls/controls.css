@@ -101,6 +101,11 @@
 	box-shadow: none;
 }
 
+/* A value the table rejects (controls.js isRejected): a red border. It comes after the focus rule, so it shows while focused too. */
+.snn-panel .snn-input[aria-invalid="true"] {
+	border-color: #d63638;
+}
+
 .snn-panel .snn-input::placeholder {
 	color: #8c8f94;
 	opacity: 1;

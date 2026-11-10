@@ -12,7 +12,7 @@
 	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
 	const { useSelect } = wp.data;
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
+	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, tableSpec, ToolbarPicker } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
@@ -113,6 +113,8 @@
 		// clearDefault (the Style rows): on Desktop, choosing the CSS default stores nothing, so no dot shows and nothing is written.
 		const choose = ( v ) => change( clearDefault && device === 'Desktop' && v === dflt ? '' : v );
 		const groups = variables === undefined ? VARIABLE_GROUPS : variables;
+		// The table's type of the setting: a text value the table rejects is marked in its field (controls.js isRejected).
+		const spec = tableSpec( k );
 		const empty = value === undefined || value === null || value === '';
 		let control;
 		if ( kind === 'select' ) {
@@ -142,6 +144,8 @@
 				swatch: kind === 'color',
 				media,
 				inputMode,
+				type: spec.type,
+				options: spec.options,
 				onChange: change,
 			} );
 		}
@@ -179,7 +183,7 @@
 				? h( TextField, {
 						label: label + ' ' + __( 'length', 'snn' ),
 						value: isLength ? current : '',
-						placeholder: '50% auto',
+						placeholder: '50% auto', type: 'size',
 						unit,
 						onChange: onLength,
 				  } )

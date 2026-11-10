@@ -36,6 +36,65 @@
 		return key && snn.tips ? snn.tips.attr( key ) : {};
 	}
 
+	/** What a field accepts, by the table's type: the tip of a value the table rejects. */
+	const LENGTH_TEXT = __( 'A length: 24, 24px, 2rem or a size variable.', 'snn' );
+	const ACCEPTS = {
+		length: LENGTH_TEXT,
+		size: LENGTH_TEXT,
+		keywordlength: LENGTH_TEXT,
+		margin: __( 'A length: 24, 24px, 2rem or a size variable, or auto.', 'snn' ),
+		lengthauto: __( 'A length: 24, 24px, 2rem or a size variable, or auto.', 'snn' ),
+		lengthnormal: __( 'A length: 24, 24px, 2rem or a size variable, or normal.', 'snn' ),
+		sizenone: __( 'A length: 24, 24px, 2rem or a size variable, or none.', 'snn' ),
+		width: __( 'A length such as 24px or 50%, a size variable, or auto, max-content, min-content or fit-content.', 'snn' ),
+		lineheight: __( 'A number such as 1.5, a length such as 24px, normal or a variable.', 'snn' ),
+		color: __( 'A colour: #1a2b3c, rgb(), rgba(), hsl(), transparent or a colour variable.', 'snn' ),
+		integer: __( 'A whole number, such as 2 or -1.', 'snn' ),
+		order: __( 'A whole number from -999 to 999.', 'snn' ),
+		flexnumber: __( 'A number from 0 up, such as 1 or 0.5.', 'snn' ),
+		number: __( 'A number, such as 1 or -0.5.', 'snn' ),
+		percent: __( 'A number from 0 to 100.', 'snn' ),
+		percentnumber: __( 'A number, such as 50.', 'snn' ),
+		opacity: __( 'A number from 0 to 100, as a percentage.', 'snn' ),
+		ratio: __( 'A ratio such as 16 / 9, or auto.', 'snn' ),
+		time: __( 'A time such as 300ms or 0.5s.', 'snn' ),
+		template: __( 'A track list such as 1fr 2fr or repeat(4, minmax(0, 1fr)).', 'snn' ),
+		columns: __( 'A count from 1 to 12, or a track list such as 1fr 2fr.', 'snn' ),
+		areas: __( 'Quoted area names, one string per row, such as "header header" "main side".', 'snn' ),
+		ident: __( 'A name that starts with a letter: letters, digits, - and _.', 'snn' ),
+		line: __( 'A grid line from 1 to 12, or a line variable.', 'snn' ),
+		span: __( 'A span from 1 to 12, or a span variable.', 'snn' ),
+		url: __( 'An image address: url(https://...) or url(/image.jpg).', 'snn' ),
+		family: __( 'A font name, such as Inter or Georgia.', 'snn' ),
+		text: __( 'Letters, digits, spaces and . , ( ) % # + - * / only.', 'snn' ),
+	};
+
+	/**
+	 * True when the table rejects the value (the same check() as the PHP side). A tag ({...}) resolves on the server,
+	 * so it is not marked, and an empty field is not marked either.
+	 */
+	function isRejected( type, value, options ) {
+		const v = value === undefined || value === null ? '' : String( value ).trim();
+		if ( ! type || v === '' || v.indexOf( '{' ) !== -1 || ! snn.styleProps ) {
+			return false;
+		}
+		return snn.styleProps.check( type, v, options || [] ) === '';
+	}
+
+	/** The attributes of a field: its tip, or, when the table rejects its value, the red mark and what is accepted. */
+	function fieldAttr( tip, type, rejected ) {
+		if ( ! rejected ) {
+			return tipAttr( tip );
+		}
+		return { 'aria-invalid': 'true', 'data-snn-tip-name': __( 'Not accepted', 'snn' ), 'data-snn-tip-text': ACCEPTS[ type ] || '' };
+	}
+
+	/** The table's type and options of a setting (empty when the setting is not in the table). */
+	function tableSpec( key ) {
+		const row = ( snn.data.styleTable || [] ).find( ( r ) => r[ 0 ] === key );
+		return row ? { type: row[ 2 ], options: row[ 3 ] || [] } : { type: undefined, options: [] };
+	}
+
 	/** A small lightning bolt, the dynamic data mark. */
 	function Bolt() {
 		return h(
@@ -621,7 +680,7 @@
 	 * lightning opens the dynamic data list; the field then keeps the tag as typed and shows
 	 * what it resolves to under the field. swatch: a colour field, with its colour at the start.
 	 */
-	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch, tip, media } ) {
+	function TextField( { value, onChange, label, placeholder, variables, kind, inputMode, unit, swatch, tip, media, type, options } ) {
 		const [ picker, setPicker ] = useState( null ); // null, 'tags' or 'vars'
 		const wrap = useRef( null );
 		const input = useRef( null );
@@ -631,6 +690,8 @@
 		// function is typed (50%, 10vw, calc(...)), the tag goes, so it never names a unit the value does not use.
 		const showUnit = !! unit && /^[\s+\-.\d]*$/.test( String( current ) );
 		const preview = usePreview( current );
+		// A value the table rejects: the field shows the red mark and what is accepted (its tip), and the value is kept as typed.
+		const rejected = isRejected( type, current, options );
 		usePopoverClose( picker !== null, [ wrap, pop ], () => setPicker( null ) );
 		usePopPlacement( picker !== null, wrap, pop );
 
@@ -657,7 +718,8 @@
 					inputMode,
 					'aria-label': label,
 					spellCheck: false,
-						...tipAttr( tip ),
+					'aria-invalid': rejected ? 'true' : undefined,
+						...fieldAttr( tip, type, rejected ),
 					onChange: ( e ) => onChange( e.target.value ),
 				} ),
 				showUnit ? h( 'span', { className: 'snn-unit', 'aria-hidden': 'true' }, unit ) : null,
@@ -1035,6 +1097,9 @@
 
 	snn.controls = {
 		tipAttr,
+		tableSpec,
+		isRejected,
+		fieldAttr,
 		AnimationPicker,
 		Bolt,
 		Dot,
