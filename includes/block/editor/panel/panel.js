@@ -270,7 +270,6 @@
 								onToggle: () => {
 									if ( ! hovering ) {
 										setSub( null );
-										setTab( 'style' );
 									}
 									setHoverOn( ! hovering );
 								},
