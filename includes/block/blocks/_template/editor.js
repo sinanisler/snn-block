@@ -1,17 +1,17 @@
 /**
  * TEMPLATE editor script for a new block (copy to blocks/<name>/editor.js). It is loaded in the block editor only.
  *
- * It registers two parts with window.snnBlockKinds (the model the editor uses now; Phase 2 moves it to snn.registerBlock):
+ * It registers two parts with snn.registerBlock( 'snn/template', { Pane, Canvas } ):
  *   Pane    the Content tab of the panel (the block's own settings, as rows)
  *   Canvas  the block on the canvas: the element, with the text written in place if it has any
  *
- * The shared controls come from window.snnControls (controls/controls.js): Group, Row, TextField, Select, SwitchRow.
+ * The shared controls come from snn.controls (controls/controls.js): Group, Row, TextField, Select, SwitchRow.
  * Keep the canvas in step with block.php (the front end).
  */
 ( function ( wp ) {
 	const { createElement: h } = wp.element;
 	const { __ } = wp.i18n;
-	const { Group, Row, TextField } = window.snnControls;
+	const { Group, Row, TextField } = snn.controls;
 
 	function Pane( { a, set } ) {
 		return h(
@@ -34,6 +34,5 @@
 		return wp.element.createElement( tag || 'div', rootProps || {}, a.exampleText || __( 'Template text', 'snn' ) );
 	}
 
-	window.snnBlockKinds = window.snnBlockKinds || {};
-	window.snnBlockKinds.template = { Pane, Canvas };
+	snn.registerBlock( 'snn/template', { Pane, Canvas } );
 } )( window.wp );

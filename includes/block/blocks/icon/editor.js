@@ -1,16 +1,16 @@
 /**
  * SNN Icon block, the editor side: the Content tab (Icon, Colour, Size and Link, as the Bricks icon element) and the
  * icon on the canvas. The front end is ./icon.php: keep the two in step. The picker is shared (controls/icon-picker.js).
- * Registers window.snnBlockKinds.icon for layout-blocks.js.
+ * Registers snn.blocks['snn/icon'] for register.js.
  */
 ( function ( wp ) {
 	const { createElement: h } = wp.element;
 	const { __ } = wp.i18n;
-	const { Group, Row, Select, TextField } = window.snnControls;
-	const { IconField, IconGlyph, hasIcon } = window.snnIconPicker;
-	const { LinkGroup } = window.snnLinkFields;
-	const check = ( type, v ) => window.snnStyleProps.check( type, v );
-	const vars = () => ( window.snnControlsData && window.snnControlsData.variables ) || [];
+	const { Group, Row, Select, TextField } = snn.controls;
+	const { IconField, IconGlyph, hasIcon } = snn.iconPicker;
+	const { LinkGroup } = snn.linkFields;
+	const check = ( type, v ) => snn.styleProps.check( type, v );
+	const vars = () => ( snn.data.controls && snn.data.controls.variables ) || [];
 	// The empty box on the canvas (an iframe, so its look is written here).
 	const EMPTY = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 40, padding: '8px 12px', border: '1px dashed #8c8f94', color: '#646970', fontSize: 12, fontFamily: 'system-ui, sans-serif' };
 	const TAG_OPTIONS = [ 'span', 'div' ].map( ( v ) => ( { value: v, label: v } ) );
@@ -61,6 +61,5 @@
 		);
 	}
 
-	window.snnBlockKinds = window.snnBlockKinds || {};
-	window.snnBlockKinds.icon = { Pane, Canvas };
+	snn.registerBlock( 'snn/icon', { Pane, Canvas } );
 } )( window.wp );

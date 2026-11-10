@@ -8,14 +8,14 @@
  *   TextField           a text or number field with the dynamic data button (lightning) and,
  *                       when given, the variables button; a live preview of the tags
  *
- * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes window.snnControls.
+ * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes snn.controls.
  * Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp ) {
 	const { createElement: h, createPortal, Fragment, useState, useEffect, useLayoutEffect, useRef } = wp.element;
 	const { __, sprintf } = wp.i18n;
 
-	const data = window.snnControlsData || {};
+	const data = snn.data.controls || {};
 	const dynamic = data.dynamic || { groups: {}, tags: [] };
 
 	/** The MDN page of a CSS property: the "?" after a row's title opens it in a new tab. */
@@ -33,7 +33,7 @@
 
 	/** The tooltip attributes of a control, for the key of its text (tooltips.js). Empty when there is no key. */
 	function tipAttr( key ) {
-		return key && window.snnTips ? window.snnTips.attr( key ) : {};
+		return key && snn.tips ? snn.tips.attr( key ) : {};
 	}
 
 	/** A small lightning bolt, the dynamic data mark. */
@@ -186,7 +186,7 @@
 						className: 'snn-seg-btn' + ( o.value === value ? ' is-on' : '' ),
 						'aria-pressed': o.value === value ? 'true' : 'false',
 						'aria-label': o.label,
-						...( o.tip ? tipAttr( o.tip ) : tip ? window.snnTips.optionAttr( o.label, tip ) : {} ),
+						...( o.tip ? tipAttr( o.tip ) : tip ? snn.tips.optionAttr( o.label, tip ) : {} ),
 						onClick: () => onChange( o.value ),
 					},
 					o.glyph || null,
@@ -1033,7 +1033,7 @@
 		);
 	}
 
-	window.snnControls = {
+	snn.controls = {
 		tipAttr,
 		AnimationPicker,
 		Bolt,

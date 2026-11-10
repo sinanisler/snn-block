@@ -34,11 +34,11 @@
 	const { useSelect } = wp.data;
 	const { createElement: h, Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
-	const data = window.snnControlsData || {};
+	const data = snn.data.controls || {};
 	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
 	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
-	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = window.snnBlockTools;
-	const { AnimationsPane, stateOf, canvasDataAnimate } = window.snnAnimationPane;
+	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
+	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
 	const { applyFormat, create, getActiveFormat, insert, insertObject, removeFormat, toggleFormat } = wp.richText;
@@ -170,7 +170,7 @@
 	};
 
 	/** The block definitions from PHP (blocks/<name>/block.php, see layout-blocks.php), set before this script runs. */
-	const defs = window.snnLayoutBlockDefs || [];
+	const defs = snn.data.definitions || [];
 
 	/**
 	 * The display and direction each block starts with, from its definition. Section and Container stack their
@@ -188,7 +188,7 @@
 		const own = layoutDefaults( name );
 		// The Style properties of the table (style-props.php): each an empty text attribute.
 		const style = {};
-		( window.snnStyleTable || [] ).forEach( ( row ) => {
+		( snn.data.styleTable || [] ).forEach( ( row ) => {
 			style[ row[ 0 ] ] = { type: 'string', default: '' };
 		} );
 		return Object.assign( {}, attributes, style, {
@@ -213,7 +213,7 @@
 	};
 
 	const TAG_OPTIONS = ( data.tags || [ 'section', 'div' ] ).map( ( t ) => ( { value: t, label: t } ) );
-	const TEXT_TAG_OPTIONS = ( ( ( window.snnLayoutBlockDefs || [] ).find( ( d ) => d.name === 'snn/text' ) || {} ).tags || [ 'p' ] ).map( ( t ) => ( { value: t, label: t } ) );
+	const TEXT_TAG_OPTIONS = ( ( ( snn.data.definitions || [] ).find( ( d ) => d.name === 'snn/text' ) || {} ).tags || [ 'p' ] ).map( ( t ) => ( { value: t, label: t } ) );
 	const POST_TYPE_OPTIONS = data.postTypes || [ { value: 'post', label: __( 'Post', 'snn' ) } ];
 	const ORDER_BY_OPTIONS = data.orderBy || [ { value: 'date', label: __( 'Date', 'snn' ) } ];
 	const ORDER_OPTIONS = [
@@ -292,7 +292,7 @@
 	 * and a value that is not a length is ''. signed: negative values allowed (gap, flex basis).
 	 */
 	function cssSize( v, signed ) {
-		return window.snnStyleProps.check( signed ? 'length' : 'size', v );
+		return snn.styleProps.check( signed ? 'length' : 'size', v );
 	}
 	/** An opacity from 0 to 100, written as 0 to 1, as the front end writes it. Anything else is empty. */
 	function opacityCss( v ) {
@@ -601,8 +601,8 @@
 		}
 
 		// The Style properties (spacing, sizing, typography, background, gradient, border, transform, filters, transitions).
-		window.snnStyleProps.declarations( a, window.snnStyleTable || [] ).forEach( ( d ) => {
-			css[ window.snnStyleProps.camel( d[ 0 ] ) ] = d[ 1 ];
+		snn.styleProps.declarations( a, snn.data.styleTable || [] ).forEach( ( d ) => {
+			css[ snn.styleProps.camel( d[ 0 ] ) ] = d[ 1 ];
 		} );
 
 		return Object.keys( css ).length ? css : undefined;
@@ -1172,7 +1172,7 @@
 		if ( LAYOUT_CSS[ k ] ) {
 			return LAYOUT_CSS[ k ];
 		}
-		const spec = ( window.snnStyleTable || [] ).find( ( row ) => row[ 0 ] === k );
+		const spec = ( snn.data.styleTable || [] ).find( ( row ) => row[ 0 ] === k );
 		return spec && spec[ 1 ] ? spec[ 1 ] : '';
 	}
 
@@ -1900,7 +1900,7 @@
 		if ( k === 'textTransform' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'icons', options: TEXT_TRANSFORM_OPTIONS } );
 		}
-		const spec = ( window.snnStyleTable || [] ).find( ( row ) => row[ 0 ] === k );
+		const spec = ( snn.data.styleTable || [] ).find( ( row ) => row[ 0 ] === k );
 		const type = STYLE_COLOUR.indexOf( k ) !== -1 ? 'color' : spec ? spec[ 2 ] : STYLE_EXTRA[ k ] || 'text';
 		// A keyword, or a size that also takes keywords (background size: cover, contain, auto), is a choice.
 		// Every row has an options list (empty for the sizes), so the test is for a list with items.
@@ -2087,7 +2087,7 @@
 
 		// Default: the element, the layout, the query loop, the item, the effects (planned), and the advanced fields.
 		// A block with a kind (Button, Icon, Code) has its own Content tab, from its folder's editor script (see kindOf).
-		const defaultPane = image ? h( window.snnImageBlock.ImagePane, { a, set } ) : kind ? h( kind.Pane, { a, set } ) : h(
+		const defaultPane = image ? h( snn.blocks[ 'snn/image' ].Pane, { a, set } ) : kind ? h( kind.Pane, { a, set } ) : h(
 			'div',
 			{ className: 'snn-pane' },
 			h(
@@ -2106,7 +2106,7 @@
 				)
 			),
 			// The a tag (Div, Container): the link's URL, new tab, rel and ARIA label (controls/link-fields.js).
-			link && 'a' === a.tagName && window.snnLinkFields ? h( window.snnLinkFields.LinkGroup, { a, set } ) : null,
+			link && 'a' === a.tagName && snn.linkFields ? h( snn.linkFields.LinkGroup, { a, set } ) : null,
 			h(
 				Group,
 				{ title: __( 'Layout', 'snn' ), tip: 'group.layout' },
@@ -2462,7 +2462,7 @@
 				const cssScoped = cssText ? cssScope( cssText ) : '';
 				const cssRules = cssScoped ? h( 'style', null, scopeCss( cssText, '.' + cssScoped ) ) : null;
 				// The overlay (Apply to: Overlay) is the ::before of the block's element, as on the front end.
-				const overlayPairs = window.snnStyleProps.overlay( effectiveValues( a, device ) );
+				const overlayPairs = snn.styleProps.overlay( effectiveValues( a, device ) );
 				const overlayClass = overlayPairs.length ? cssScope( 'overlay' + JSON.stringify( overlayPairs ) ) : '';
 				const overlayRule = overlayClass ? h( 'style', null, '.' + overlayClass + '::before{' + overlayPairs.map( ( d ) => d[ 0 ] + ':' + d[ 1 ] ).join( ';' ) + '}' ) : null;
 				const blockProps = useBlockProps( {
@@ -2499,7 +2499,7 @@
 						h( InspectorControls, null, h( Panel, { a, set, tag: def.tag, parent, title: def.title, device, base: layoutDefaults( def.name ), image: true, clientId } ) ),
 						cssRules,
 						overlayRule,
-						h( window.snnImageBlock.ImageCanvas, { a, tag: a.tagName, rootProps: blockProps, set } ),
+						h( snn.blocks[ 'snn/image' ].Canvas, { a, tag: a.tagName, rootProps: blockProps, set } ),
 						loopPreview
 					);
 				}
@@ -2565,11 +2565,11 @@
 		return tags.indexOf( tagName ) !== -1 ? tagName : def.tag;
 	}
 
-	/** The editor side of a block with a kind (window.snnBlockKinds, filled by blocks/<name>/<name>-editor.js), or null. */
+	/** The editor side of a block with a kind (snn.blocks, filled by blocks/<name>/editor.js), or null. */
 	function kindOf( def ) {
-		return def.kind && window.snnBlockKinds && window.snnBlockKinds[ def.kind ] ? window.snnBlockKinds[ def.kind ] : null;
+		return def.kind && snn.blocks[ def.name ] ? snn.blocks[ def.name ] : null;
 	}
 
 	// One block for each definition (blocks/<name>/block.php, in the order of FOLDERS in layout-blocks.php).
 	defs.forEach( ( def ) => registerLayout( def ) );
-} )( window.wp, window.snnControls, window.snnLayoutIcons );
+} )( window.wp, snn.controls, snn.layoutIcons );

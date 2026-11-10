@@ -1,11 +1,11 @@
 /**
  * The Link group, shared by the blocks that can be a link (Button and Icon today): URL (dynamic tags work), Open in
- * new tab, Rel and ARIA label. With a URL the block's element is an a (utilities/links.php). Exposes window.snnLinkFields.
+ * new tab, Rel and ARIA label. With a URL the block's element is an a (utilities/links.php). Exposes snn.linkFields.
  */
 ( function ( wp ) {
 	const { createElement: h } = wp.element;
 	const { __ } = wp.i18n;
-	const { Group, Row, SwitchRow, TextField } = window.snnControls;
+	const { Group, Row, SwitchRow, TextField } = snn.controls;
 
 	function LinkGroup( { a, set } ) {
 		const url = a.linkUrl || '';
@@ -35,5 +35,5 @@
 		);
 	}
 
-	window.snnLinkFields = { LinkGroup };
+	snn.linkFields = { LinkGroup };
 } )( window.wp );

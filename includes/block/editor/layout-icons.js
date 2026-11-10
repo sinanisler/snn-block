@@ -3,7 +3,7 @@
  * previews: docs/research/controls-screens-2026-11-05/lab/panel-v3.html). Each picture is 14 by 14 with filled
  * boxes and a line for the axis. A flex column turns its pictures a quarter turn (the rotated flag).
  *
- * Exposes window.snnLayoutIcons: main(value, rotated), cross(value, rotated), direction(value), reverse(), columns(n).
+ * Exposes snn.layoutIcons: main(value, rotated), cross(value, rotated), direction(value), reverse(), columns(n).
  * Uses wp.element only.
  */
 ( function ( wp ) {
@@ -76,7 +76,7 @@
 		);
 	}
 
-	window.snnLayoutIcons = {
+	snn.layoutIcons = {
 		main: ( value, rotated ) => ( MAIN[ value ] ? picture( MAIN[ value ], rotated ) : null ),
 		cross: ( value, rotated ) => ( CROSS[ value ] ? picture( CROSS[ value ], rotated ) : null ),
 		direction: ( value ) => picture( { line: null, boxes: DIRECTION[ value ] || DIRECTION.row }, false ),

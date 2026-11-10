@@ -3,17 +3,17 @@
  * button on the canvas, with its text written in place. The front end is ./button.php: keep the two in step.
  *
  * Loaded after controls.js, icon-picker.js and link-fields.js, before layout-blocks.js, which puts Pane in the Content
- * tab and Canvas in the element (window.snnBlockKinds.button).
+ * tab and Canvas in the element (snn.blocks['snn/button']).
  */
 ( function ( wp ) {
 	const { createElement: h } = wp.element;
 	const { __ } = wp.i18n;
 	const { RichText } = wp.blockEditor;
-	const { Group, Row, SwitchRow, Select, TextField } = window.snnControls;
-	const { IconField, IconGlyph, hasIcon } = window.snnIconPicker;
-	const { LinkGroup } = window.snnLinkFields;
-	const check = ( type, v ) => window.snnStyleProps.check( type, v );
-	const vars = () => ( window.snnControlsData && window.snnControlsData.variables ) || [];
+	const { Group, Row, SwitchRow, Select, TextField } = snn.controls;
+	const { IconField, IconGlyph, hasIcon } = snn.iconPicker;
+	const { LinkGroup } = snn.linkFields;
+	const check = ( type, v ) => snn.styleProps.check( type, v );
+	const vars = () => ( snn.data.controls && snn.data.controls.variables ) || [];
 
 	const TAG_OPTIONS = [ 'span', 'button', 'div' ].map( ( v ) => ( { value: v, label: v } ) );
 	const POSITION_OPTIONS = [
@@ -120,6 +120,5 @@
 		);
 	}
 
-	window.snnBlockKinds = window.snnBlockKinds || {};
-	window.snnBlockKinds.button = { Pane, Canvas };
+	snn.registerBlock( 'snn/button', { Pane, Canvas } );
 } )( window.wp );

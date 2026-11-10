@@ -12,7 +12,7 @@
  * The data written here is turned into the data-animate value by SNN_Animation::tweens_data_animate (animation.php).
  * toDataAnimate below writes the same text, for the canvas attribute and the preview.
  *
- * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes window.snnAnimationPane.
+ * Loaded in the block editor (see includes/block/layout-blocks.php). Exposes snn.animationPane.
  * Uses wp.element, wp.data, wp.blocks and wp.components, so it runs on the editor's own React and data store.
  */
 ( function ( wp, C ) {
@@ -22,9 +22,9 @@
 	const { dispatch, useSelect } = wp.data;
 	const { getBlockType } = wp.blocks;
 	const { Row, Select, Accordion, Switch, AnimationPicker, tipAttr } = C;
-	const DATA = window.snnAnimationData || {};
+	const DATA = snn.data.animation || {};
 	const EASES = DATA.eases || [ 'power2.out' ];
-	const PRESET_GROUPS = ( ( window.snnControlsData || {} ).animations || [] ).filter( ( g ) => g.label !== 'Scroll' );
+	const PRESET_GROUPS = ( ( snn.data.controls || {} ).animations || [] ).filter( ( g ) => g.label !== 'Scroll' );
 	// The label of each preset, for the bars.
 	const LABEL_OF = {};
 	PRESET_GROUPS.forEach( ( g ) => g.items.forEach( ( i ) => {
@@ -1098,10 +1098,10 @@
 		);
 	}
 
-	window.snnAnimationPane = {
+	snn.animationPane = {
 		AnimationsPane,
 		stateOf,
 		canvasDataAnimate,
 		toDataAnimate,
 	};
-} )( window.wp, window.snnControls );
+} )( window.wp, snn.controls );

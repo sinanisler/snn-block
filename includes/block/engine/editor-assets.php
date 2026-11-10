@@ -23,6 +23,7 @@ class SNN_Block_Editor_Assets {
 	 */
 	private static function scripts() {
 		$before = array(
+			'snn-core'           => 'includes/block/editor/snn.js',
 			'snn-tooltips'       => 'includes/block/controls/tooltips.js',
 			'snn-controls'       => 'includes/block/controls/controls.js',
 			'snn-layout-icons'   => 'includes/block/editor/layout-icons.js',
@@ -97,7 +98,7 @@ class SNN_Block_Editor_Assets {
 		}
 
 		// What the scripts read, set before the first of them runs.
-		wp_add_inline_script( 'snn-tooltips', self::data_script( $css_editor ), 'before' );
+		wp_add_inline_script( 'snn-core', self::data_script( $css_editor ), 'before' );
 	}
 
 	/** The data of the editor scripts, as one script: each line sets one of the globals they read. */
@@ -112,7 +113,7 @@ class SNN_Block_Editor_Assets {
 			}
 		}
 		$data = array(
-			'snnControlsData'        => array(
+			'controls'               => array(
 				'dynamic'    => SNN_Dynamic_Data::for_editor(),
 				'variables'  => self::variables(),
 				'postTypes'  => SNN_Query_Loop::post_type_options(),
@@ -122,19 +123,16 @@ class SNN_Block_Editor_Assets {
 				'orderBy'    => SNN_Query_Loop::order_by_options(),
 				'tags'       => SNN_Blocks::TAGS,
 			),
-			'snnAnimationData'       => SNN_Animation::editor_data(),
-			'snnBlockToolsData'      => SNN_Block_Tools::editor_data(),
-			'snnStyleTable'          => SNN_Style_Props::for_editor(),
-			'snnIconData'            => array( 'listsUrl' => add_query_arg( 'ver', SNN_Block_Tools::version( $lists ), SNN_URL . $lists ) ),
-			'snnBlockData'           => (object) $block_data,
+			'animation'              => SNN_Animation::editor_data(),
+			'blockTools'             => SNN_Block_Tools::editor_data(),
+			'styleTable'             => SNN_Style_Props::for_editor(),
+			'icon'                   => array( 'listsUrl' => add_query_arg( 'ver', SNN_Block_Tools::version( $lists ), SNN_URL . $lists ) ),
+			'blocks'                 => (object) $block_data,
 			// The block definitions, read by the editor script before it registers the blocks.
-			'snnLayoutBlockDefs'     => self::definitions(),
+			'definitions'            => self::definitions(),
 		);
-		$js = '';
-		foreach ( $data as $name => $value ) {
-			$js .= 'window.' . $name . ' = ' . wp_json_encode( $value, JSON_HEX_TAG ) . ";\n";
-		}
-		return $js;
+		// One object on window.snn.data: the namespace the editor scripts read (editor/snn.js adds to it).
+		return 'window.snn = window.snn || {}; window.snn.data = ' . wp_json_encode( $data, JSON_HEX_TAG ) . ';';
 	}
 
 	/** The definitions as the editor reads them: each with its own attributes. */

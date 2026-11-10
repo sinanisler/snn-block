@@ -3,13 +3,13 @@
  * overlay) and the picture on the canvas, and the photo search (Browse Pixabay, Browse Unsplash). The front end is drawn by ./image.php: keep the settings and the
  * picture style in step with it.
  *
- * Loaded after controls.js and before layout-blocks.js (includes/block/layout-blocks.php). Exposes window.snnImageBlock.
+ * Loaded after controls.js and before layout-blocks.js (includes/block/layout-blocks.php). Registers snn.blocks['snn/image'] and snn.imageBrowser (the photo search popup).
  * layout-blocks.js puts ImagePane in the Content tab of this block, and ImageCanvas in its element.
  */
 ( function ( wp ) {
 	const { createElement: h, createPortal, useEffect, useState } = wp.element;
 	const { __, sprintf } = wp.i18n;
-	const { Group, Row, SwitchRow, Select, TextField } = window.snnControls;
+	const { Group, Row, SwitchRow, Select, TextField } = snn.controls;
 	const PROVIDER_LABEL = { pixabay: 'Pixabay', unsplash: 'Unsplash' };
 	const PICK_PATH = '/snn/v1/images/pick';
 
@@ -373,7 +373,7 @@
 	 */
 	function ImagePane( { a, set } ) {
 		const [ browse, setBrowse ] = useState( null );
-		const providers = ( ( window.snnBlockData || {} ).image || {} ).providers || {};
+		const providers = ( ( snn.data.blocks || {} ).image || {} ).providers || {};
 		const sources = Array.isArray( a.sources ) ? a.sources : [];
 		const hasSources = sources.length > 0;
 		return h(
@@ -551,5 +551,6 @@
 		);
 	}
 
-	window.snnImageBlock = { ImagePane, ImageCanvas, ImageBrowser };
+	snn.registerBlock( 'snn/image', { Pane: ImagePane, Canvas: ImageCanvas } );
+	snn.imageBrowser = ImageBrowser;
 } )( window.wp );

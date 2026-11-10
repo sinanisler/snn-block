@@ -1,7 +1,7 @@
 /**
  * The editor's copy of SNN_Style_Props (includes/block/utilities/style-props.php): the same checks and the same
  * declarations, so the canvas shows what the front end writes. The table itself comes from PHP
- * (window.snnStyleTable, one row per property: attribute, css property or null, type, options).
+ * (snn.data.styleTable, one row per property: attribute, css property or null, type, options).
  * Keep check() and declarations() in step with the PHP.
  */
 ( function ( root ) {
@@ -295,5 +295,6 @@
 		return prop.replace( /-([a-z])/g, ( m, c ) => c.toUpperCase() );
 	}
 
-	root.snnStyleProps = { check, declarations, camel, overlay };
+	const snn = ( root.snn = root.snn || {} );
+	snn.styleProps = { check, declarations, camel, overlay };
 } )( typeof window !== 'undefined' ? window : globalThis );

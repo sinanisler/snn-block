@@ -7,12 +7,12 @@
  *
  * An icon value is { library, name } for a font icon, { library: 'svg', svg } for SVG code, or { library: 'svg', svgId }
  * for an SVG file. The libraries' stylesheets are loaded in the editor and its canvas by icons.php. The names come from
- * assets/icons/icon-lists.json, fetched when the picker first opens. Exposes window.snnIconPicker.
+ * assets/icons/icon-lists.json, fetched when the picker first opens. Exposes snn.iconPicker.
  */
 ( function ( wp ) {
 	const { createElement: h, createPortal, useEffect, useMemo, useState } = wp.element;
 	const { __ } = wp.i18n;
-	const data = window.snnIconData || {};
+	const data = snn.data.icon || {};
 
 	const LIBRARIES = [
 		{ id: 'fontawesome-solid', label: 'Font Awesome Solid', prefix: 'fa-solid' },
@@ -314,5 +314,5 @@
 		);
 	}
 
-	window.snnIconPicker = { IconField, IconModal, IconGlyph, hasIcon, iconClass };
+	snn.iconPicker = { IconField, IconModal, IconGlyph, hasIcon, iconClass };
 } )( window.wp );

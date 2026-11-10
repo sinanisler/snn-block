@@ -1,16 +1,16 @@
 /**
  * SNN Code block, the editor side: the Content tab (HTML, CSS and JavaScript in code editors, the HTML tag and Render
  * without wrapper, as the Bricks code element without PHP) and the code on the canvas. The canvas shows the HTML and
- * the CSS; the JavaScript runs on the front end only. The front end is ./code.php. Registers window.snnBlockKinds.code.
+ * the CSS; the JavaScript runs on the front end only. The front end is ./code.php. Registers snn.blocks['snn/code'].
  *
  * The code editors are the ones WordPress uses for its own code fields (wp.codeEditor, CodeMirror); their settings come
- * from window.snnBlockData.code (editor_data() in block.php). Without them (syntax highlighting off) the fields are textareas.
+ * from snn.data.blocks.code (editor_data() in block.php). Without them (syntax highlighting off) the fields are textareas.
  */
 ( function ( wp ) {
 	const { createElement: h, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
-	const { Group, Row, SwitchRow, Select } = window.snnControls;
-	const data = ( window.snnBlockData || {} ).code || {};
+	const { Group, Row, SwitchRow, Select } = snn.controls;
+	const data = ( snn.data.blocks || {} ).code || {};
 	// The empty box on the canvas (the canvas is an iframe, so its look is written here, as the Image block does).
 	const EMPTY = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 40, padding: '8px 12px', border: '1px dashed #8c8f94', color: '#646970', fontSize: 12, fontFamily: 'system-ui, sans-serif' };
 	const TAG_OPTIONS = [ 'div', 'section', 'span', 'header', 'footer', 'main', 'article', 'aside', 'nav' ].map( ( v ) => ( { value: v, label: v } ) );
@@ -101,6 +101,5 @@
 		return h( a.noWrapper ? 'div' : tag, { ...props, dangerouslySetInnerHTML: { __html: html } } );
 	}
 
-	window.snnBlockKinds = window.snnBlockKinds || {};
-	window.snnBlockKinds.code = { Pane, Canvas };
+	snn.registerBlock( 'snn/code', { Pane, Canvas } );
 } )( window.wp );

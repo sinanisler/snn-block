@@ -44,7 +44,7 @@
 		if ( Array.isArray( a.interactions ) && a.interactions.length ) {
 			kinds.push( 'interactions' );
 		}
-		if ( ( window.snnBlockToolsData || {} ).gsap && pane.stateOf( a ).tweens.length ) {
+		if ( ( snn.data.blockTools || {} ).gsap && pane.stateOf( a ).tweens.length ) {
 			kinds.push( 'animations' );
 		}
 		return kinds;
@@ -111,4 +111,4 @@
 	subscribe( schedule );
 	new MutationObserver( schedule ).observe( document.body, { childList: true, subtree: true } );
 	schedule();
-} )( window.wp, window.snnBlockTools, window.snnAnimationPane );
+} )( window.wp, snn.blockTools, snn.animationPane );

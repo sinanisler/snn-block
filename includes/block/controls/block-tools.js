@@ -13,13 +13,13 @@
  *
  * Loaded before layout-blocks.js (see includes/block/layout-blocks.php), which uses these parts in its panel.
  * The catalogs (conditions, triggers, actions) come from block-tools.php through snnBlockToolsData.
- * Exposes window.snnBlockTools. Uses wp.element only, so it runs on the editor's own React.
+ * Exposes snn.blockTools. Uses wp.element only, so it runs on the editor's own React.
  */
 ( function ( wp, C ) {
 	const { createElement: h, Fragment, useState, useRef } = wp.element;
 	const { __ } = wp.i18n;
 	const { Row, Select, TextField, tipAttr } = C;
-	const data = window.snnBlockToolsData || {};
+	const data = snn.data.blockTools || {};
 	const CATALOG = data.conditions || [];
 	const GROUPS = data.groups || {};
 	const CLASS_ACTIONS = data.classActions || [];
@@ -583,7 +583,7 @@
 		);
 	}
 
-	window.snnBlockTools = {
+	snn.blockTools = {
 		HeadIcons,
 		ClassesEditor,
 		AttributesEditor,
@@ -592,4 +592,4 @@
 		sanitizeId,
 		glyph,
 	};
-} )( window.wp, window.snnControls );
+} )( window.wp, snn.controls );

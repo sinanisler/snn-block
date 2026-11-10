@@ -1,9 +1,9 @@
 /**
  * The photo search under the featured image (Post panel): P for Pixabay and U for Unsplash, the same icons and popup as
- * the Image block (blocks/image/image-editor.js, window.snnImageBlock.ImageBrowser). A featured image must be a media
+ * the Image block (blocks/image/image-editor.js, snn.imageBrowser). A featured image must be a media
  * library item, so both providers import the chosen photo (the caption stays empty), and the post's
  * featured_media is set to it. Each icon shows when its key is saved and the user can upload files
- * (window.snnBlockData.image.featured, from the Image block's editor_data()).
+ * (snn.data.blocks.image.featured, from the Image block's editor_data()).
  */
 ( function ( wp ) {
 	const { createElement: h, Fragment, useState } = wp.element;
@@ -11,8 +11,8 @@
 
 	function SearchIcons( { onUpdateImage } ) {
 		const [ browse, setBrowse ] = useState( null );
-		const on = ( ( window.snnBlockData || {} ).image || {} ).featured || {};
-		const Browser = window.snnImageBlock && window.snnImageBlock.ImageBrowser;
+		const on = ( ( snn.data.blocks || {} ).image || {} ).featured || {};
+		const Browser = snn.imageBrowser;
 		if ( ! Browser || ( ! on.pixabay && ! on.unsplash ) ) {
 			return null;
 		}
