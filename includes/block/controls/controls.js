@@ -259,10 +259,20 @@
 	}
 
 	/** Closes a popover on an outside click or Escape. refs: the field and the popover, which sits in the body. */
-	function usePopoverClose( open, refs, close ) {
+	function usePopoverClose( open, refs, close, pop ) {
 		useEffect( () => {
 			if ( ! open ) {
 				return undefined;
+			}
+			// The control that opened the popover: Escape gives the focus back to it.
+			const opener = document.activeElement;
+			const box = pop && pop.current ? pop.current : null;
+			// Focus moves into the popover when it opens: its search box, else its first item, else its first control.
+			if ( box ) {
+				const first = box.querySelector( 'input[type="search"]' ) || box.querySelector( '.snn-pop-item' ) || focusables( box )[ 0 ];
+				if ( first ) {
+					first.focus();
+				}
 			}
 			const onDown = ( e ) => {
 				const inside = refs.some( ( r ) => r.current && r.current.contains( e.target ) );
@@ -273,6 +283,36 @@
 			const onKey = ( e ) => {
 				if ( e.key === 'Escape' ) {
 					close();
+					if ( opener && opener.isConnected ) {
+						opener.focus();
+					}
+					return;
+				}
+				if ( ! box ) {
+					return;
+				}
+				// Tab stays inside the popover while it is open: from its last control it goes to its first, and back.
+				if ( e.key === 'Tab' ) {
+					const list = focusables( box );
+					if ( ! list.length ) {
+						e.preventDefault();
+						return;
+					}
+					const at = list.indexOf( document.activeElement );
+					if ( e.shiftKey ? at <= 0 : at === -1 || at === list.length - 1 ) {
+						e.preventDefault();
+						list[ e.shiftKey ? list.length - 1 : 0 ].focus();
+					}
+					return;
+				}
+				// The arrow keys move between the search box and the items.
+				if ( ( e.key === 'ArrowDown' || e.key === 'ArrowUp' ) && box.contains( document.activeElement ) && document.activeElement.matches( '.snn-pop-item, input[type="search"]' ) ) {
+					const items = Array.from( box.querySelectorAll( 'input[type="search"], .snn-pop-item' ) ).filter( isShown );
+					const next = items[ items.indexOf( document.activeElement ) + ( e.key === 'ArrowDown' ? 1 : -1 ) ];
+					if ( next ) {
+						e.preventDefault();
+						next.focus();
+					}
 				}
 			};
 			document.addEventListener( 'mousedown', onDown );
@@ -282,6 +322,18 @@
 				document.removeEventListener( 'keydown', onKey );
 			};
 		}, [ open ] );
+	}
+
+	/** True when a node is drawn (a closed details part has no boxes). */
+	function isShown( el ) {
+		return el.getClientRects().length > 0;
+	}
+
+	/** The controls under a node that take the keyboard, in order, and are drawn. */
+	function focusables( root ) {
+		return Array.from( root.querySelectorAll( 'input, button, select, textarea, a[href], summary, [tabindex]' ) ).filter(
+			( el ) => ! el.disabled && el.type !== 'hidden' && isShown( el )
+		);
 	}
 
 	const POP_GAP = 4; // the space between a field and its popover
@@ -595,7 +647,7 @@
 			setOpen( false );
 			flush();
 		};
-		usePopoverClose( open, [ field, pop ], close );
+		usePopoverClose( open, [ field, pop ], close, pop );
 		usePopPlacement( open, field, pop );
 		useEffect( () => {
 			const el = input.current;
@@ -695,7 +747,7 @@
 		const preview = usePreview( current );
 		// A value the table rejects: the field shows the red mark and what is accepted (its tip), and the value is kept as typed.
 		const rejected = isRejected( type, current, options );
-		usePopoverClose( picker !== null, [ wrap, pop ], () => setPicker( null ) );
+		usePopoverClose( picker !== null, [ wrap, pop ], () => setPicker( null ), pop );
 		usePopPlacement( picker !== null, wrap, pop );
 
 		const insert = ( text ) => {
@@ -1009,7 +1061,7 @@
 		const wrap = useRef( null );
 		const pop = useRef( null );
 		usePopPlacement( open, wrap, pop );
-		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ) );
+		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ), pop );
 		const [ query, setQuery ] = useState( '' );
 		// The groups to offer: all of them, unless the caller passes its own (the GSAP pane leaves out Scroll).
 		const groups = groupsOf || data.animations || [];
@@ -1128,7 +1180,7 @@
 		const [ open, setOpen ] = useState( false );
 		const wrap = useRef( null );
 		const pop = useRef( null );
-		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ) );
+		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ), pop );
 		usePopPlacement( open, wrap, pop );
 		const pick = ( text ) => {
 			setOpen( false );
