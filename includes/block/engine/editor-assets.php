@@ -13,8 +13,15 @@ class SNN_Block_Editor_Assets {
 	/** The WordPress scripts the editor scripts use. Every script of ours gets them, so no block lists its own. */
 	const WP_DEPS = array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-data', 'wp-i18n', 'wp-rich-text', 'wp-api-fetch', 'wp-hooks', 'wp-plugins' );
 
+	/** The handle of the joined editor script (see bundle()). */
+	const BUNDLE = 'snn-editor';
+
+	/** The folder in the uploads folder where the joined editor script is kept. */
+	const CACHE_DIR = 'snn-block-cache';
+
 	public static function init() {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue' ) );
+		add_filter( 'pre_load_script_translations', array( __CLASS__, 'bundle_translations' ), 10, 4 );
 	}
 
 	/**
@@ -93,20 +100,110 @@ class SNN_Block_Editor_Assets {
 			$previous = $handle;
 		}
 
-		// The scripts load one after another, in the order of scripts(): each depends on the one before it.
-		$deps = self::WP_DEPS;
+		$scripts = self::scripts();
+		$deps    = self::WP_DEPS;
 		if ( $css_editor ) {
 			$deps[] = 'code-editor'; // wp.codeEditor, for the CSS group and the Code block.
 		}
-		foreach ( self::scripts() as $handle => $file ) {
-			wp_enqueue_script( $handle, SNN_URL . $file, $deps, SNN_Block_Tools::version( $file ), true );
-			// Each handle has its own translations: languages/snn-<locale>-<handle>.json, made by languages/make-js-translations.php.
-			wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
-			$deps = array( $handle );
+		$joined = self::bundle( $scripts );
+		if ( $joined ) {
+			// One request for every script: the joined file, with the translations of all of them (see bundle_translations()).
+			wp_enqueue_script( self::BUNDLE, $joined['url'], $deps, $joined['version'], true );
+			wp_set_script_translations( self::BUNDLE, 'snn', SNN_PATH . 'languages' );
+			$first = self::BUNDLE;
+		} else {
+			// No file could be written: the scripts load one after another, each after the one before it.
+			$first = 'snn-core';
+			foreach ( $scripts as $handle => $file ) {
+				wp_enqueue_script( $handle, SNN_URL . $file, $deps, SNN_Block_Tools::version( $file ), true );
+				// Each handle has its own translations: languages/snn-<locale>-<handle>.json, made by languages/make-js-translations.php.
+				wp_set_script_translations( $handle, 'snn', SNN_PATH . 'languages' );
+				$deps = array( $handle );
+			}
 		}
 
 		// What the scripts read, set before the first of them runs.
-		wp_add_inline_script( 'snn-core', self::data_script( $css_editor ), 'before' );
+		wp_add_inline_script( $first, self::data_script( $css_editor ), 'before' );
+	}
+
+	/**
+	 * The joined editor script: every script of scripts() in one file, in the same order. The file's name is a key of
+	 * the versions of its parts, so a change to any script makes a new file (no build step). Older files are removed.
+	 * Returns the URL and the version, or null when the file cannot be written.
+	 */
+	private static function bundle( array $scripts ) {
+		$parts = array();
+		foreach ( $scripts as $file ) {
+			$parts[] = $file . '@' . SNN_Block_Tools::version( $file );
+		}
+		$key    = substr( md5( implode( '|', $parts ) ), 0, 12 );
+		$name   = 'editor-' . $key . '.js';
+		$upload = wp_upload_dir( null, false );
+		if ( ! empty( $upload['error'] ) ) {
+			return null;
+		}
+		$dir  = wp_normalize_path( trailingslashit( $upload['basedir'] ) . self::CACHE_DIR );
+		$path = $dir . '/' . $name;
+		if ( ! file_exists( $path ) ) {
+			if ( ! wp_mkdir_p( $dir ) ) {
+				return null;
+			}
+			$code = '';
+			foreach ( $scripts as $file ) {
+				$source = file_get_contents( SNN_PATH . $file );
+				if ( false === $source ) {
+					return null;
+				}
+				$code .= '/* ' . $file . " */\n" . $source . "\n;\n";
+			}
+			// Written under a temporary name and renamed, so a request never reads half of the file.
+			$tmp = $path . '.' . wp_generate_password( 8, false ) . '.tmp';
+			if ( false === file_put_contents( $tmp, $code ) || ! rename( $tmp, $path ) ) {
+				@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				return null;
+			}
+			foreach ( (array) glob( $dir . '/editor-*.js' ) as $old ) {
+				if ( wp_normalize_path( $old ) !== $path ) {
+					unlink( $old );
+				}
+			}
+		}
+		return array(
+			'url'     => trailingslashit( $upload['baseurl'] ) . self::CACHE_DIR . '/' . $name,
+			'version' => $key,
+		);
+	}
+
+	/**
+	 * The translations of the joined script: the messages of each script's own file (languages/snn-<locale>-<handle>.json),
+	 * in one file. WordPress reads one file per handle, so the joined handle takes the others' messages from here.
+	 */
+	public static function bundle_translations( $json, $file, $handle, $domain ) {
+		if ( self::BUNDLE !== $handle || null !== $json ) {
+			return $json;
+		}
+		$locale   = determine_locale();
+		$messages = array();
+		foreach ( array_keys( self::scripts() ) as $part ) {
+			$path = SNN_PATH . 'languages/' . $domain . '-' . $locale . '-' . $part . '.json';
+			if ( ! is_readable( $path ) ) {
+				continue;
+			}
+			$data = json_decode( (string) file_get_contents( $path ), true );
+			if ( isset( $data['locale_data']['messages'] ) && is_array( $data['locale_data']['messages'] ) ) {
+				// The union, not array_merge(): a numeric msgid must keep its key.
+				$messages = $messages + $data['locale_data']['messages'];
+			}
+		}
+		if ( ! $messages ) {
+			return null;
+		}
+		return wp_json_encode(
+			array(
+				'domain'      => $domain,
+				'locale_data' => array( 'messages' => $messages ),
+			)
+		);
 	}
 
 	/** The data of the editor scripts, as one script: each line sets one of the globals they read. */
