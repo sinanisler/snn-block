@@ -151,23 +151,61 @@ class SNN_Style {
 		return $out;
 	}
 
+	/** The declarations as a property => value map, the last value of a property winning, as the browser reads them. */
+	private static function last_values( array $decls ) {
+		$map = array();
+		foreach ( $decls as $decl ) {
+			$colon = strpos( $decl, ':' );
+			if ( false !== $colon ) {
+				$map[ substr( $decl, 0, $colon ) ] = substr( $decl, $colon + 1 );
+			}
+		}
+		return $map;
+	}
+
 	/**
-	 * The media rules for the views that set their own values. Each rule holds the whole style of that view (the base,
-	 * then the views above it, then its own), because a rule for a narrower view must win over the base. Returns ''
-	 * when no view sets a value. The class is a placeholder until the caller fills it in.
+	 * The media rules for the views that set their own values. Each view's rule holds only the declarations that change
+	 * from the layer above it: the base rule for the first view, the view before it for the next. A value the layer above
+	 * already gives is left out. Returns '' when no view changes a value. The class is a placeholder until the caller
+	 * fills it in.
 	 */
 	public static function view_rules( array $a, array $dyn ) {
-		$own   = is_array( $a['responsive'] ?? null ) ? $a['responsive'] : array();
-		$css   = '';
-		$merge = $a;
+		$own    = is_array( $a['responsive'] ?? null ) ? $a['responsive'] : array();
+		$css    = '';
+		$merge  = $a;
+		// What the layer above prints: the base rule (no view flag), then each view's rule (with the view flag).
+		$above  = SNN_Style_Props::declarations( $a, $dyn, false );
+		$before = SNN_Style_Props::overlay( $a );
 		foreach ( self::VIEW_WIDTHS as $view => $width ) {
 			if ( empty( $own[ $view ] ) ) {
 				continue;
 			}
 			$merge = array_merge( $merge, $own[ $view ] );
-			// The view's overlay: its own ::before, or none when this view has no overlay (so a base overlay is off here).
-			$before = implode( ';', SNN_Style_Props::overlay( $merge ) );
-			$css   .= '@media (max-width:' . $width . 'px){.%CLASS%{' . self::style( $merge, $dyn, true ) . '}.%CLASS%::before{' . ( '' !== $before ? $before : 'content:none' ) . '}}';
+			$now   = SNN_Style_Props::declarations( $merge, $dyn, true );
+			$body  = '';
+			// A property is written when its last value differs from the layer above. A property can be written twice in one
+			// style (a fixed max-width sets the side margins, and an explicit margin after them); the last one counts, as in
+			// the browser, so the comparison is per property, not per declaration.
+			$above_values = self::last_values( $above );
+			$diff         = array();
+			foreach ( self::last_values( $now ) as $prop => $value ) {
+				if ( ! isset( $above_values[ $prop ] ) || $above_values[ $prop ] !== $value ) {
+					$diff[] = $prop . ':' . $value;
+				}
+			}
+			if ( $diff ) {
+				$body .= '.%CLASS%{' . implode( ';', $diff ) . '}';
+			}
+			// The view's overlay: its own ::before, or none when this view has no overlay but the layer above had one.
+			$overlay = SNN_Style_Props::overlay( $merge );
+			if ( $overlay !== $before ) {
+				$body .= '.%CLASS%::before{' . ( $overlay ? implode( ';', $overlay ) : 'content:none' ) . '}';
+			}
+			if ( '' !== $body ) {
+				$css .= '@media (max-width:' . $width . 'px){' . $body . '}';
+			}
+			$above  = $now;
+			$before = $overlay;
 		}
 		return $css;
 	}

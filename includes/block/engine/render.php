@@ -176,18 +176,26 @@ class SNN_Block_Render {
 		// The block's own class (wp-block-snn-section and so on) first, then the author's classes.
 		$classes = array_merge( array( SNN_Blocks::block_class( $name ) ), $custom );
 
-		// A view that sets its own values needs media rules, and an inline style would beat them. So the whole
-		// style goes into a class rule, followed by the media rules. Without per-view values the style stays inline.
-		$prefix = '';
-		$views  = SNN_Style::view_rules( $a, $dyn );
-		$before = implode( ';', SNN_Style_Props::overlay( $a ) );
-		if ( '' !== $views || '' !== $before ) {
-			$rule      = 'snn-r-' . substr( md5( $style . $views . $before ), 0, 10 );
+		// The style is a rule of the block's own class, in the page's style sheet (style-sheet.php): the declarations, the
+		// media rules of its views (only the values that change), and the overlay (the block's ::before, Apply to: Overlay).
+		// The class is a hash of the rule's text, so a block with the same style as another (a loop's items) shares it.
+		// The selector is the class twice: that is stronger than a theme's rule for one class, as an inline style was.
+		$prefix       = '';
+		$inline_style = '';
+		$views        = SNN_Style::view_rules( $a, $dyn );
+		$before       = implode( ';', SNN_Style_Props::overlay( $a ) );
+		if ( '' === $views && '' === $before && ! SNN_Style_Sheet::in_page() ) {
+			// Outside a page (a REST answer, a command-line render) a block with no view and no overlay keeps its inline style:
+			// there is no page sheet to print its rule in, and nothing else needs a rule.
+			$inline_style = $style;
+		} elseif ( '' !== $style || '' !== $views || '' !== $before ) {
+			$rule      = 'snn-s-' . substr( md5( $style . '|' . $views . '|' . $before ), 0, 10 );
+			$selector  = '.' . $rule . '.' . $rule;
 			$classes[] = $rule;
-			// The overlay is the block's ::before (Apply to: Overlay). Its rule sits beside the block's own rule.
-			$overlay   = '' !== $before ? '.' . $rule . '::before{' . $before . '}' : '';
-			$prefix    = self::loop_once( $rule, '<style>.' . $rule . '{' . $style . '}' . $overlay . str_replace( '%CLASS%', $rule, $views ) . '</style>' );
-			$style     = '';
+			$css       = ( '' !== $style ? $selector . '{' . $style . '}' : '' )
+				. ( '' !== $before ? $selector . '::before{' . $before . '}' : '' )
+				. str_replace( '%CLASS%', $rule . '.' . $rule, $views );
+			$prefix    = self::loop_once( $rule, SNN_Style_Sheet::add( $rule, $css ) );
 		}
 
 		$extra = array(
@@ -201,7 +209,7 @@ class SNN_Block_Render {
 		if ( '' !== $custom_css ) {
 			$custom_class    = 'snn-c-' . substr( md5( $custom_css ), 0, 10 );
 			$extra['class'] .= ' ' . $custom_class;
-			$prefix         .= self::loop_once( $custom_class, '<style>' . SNN_Style::scope_css( $custom_css, '.' . $custom_class ) . '</style>' );
+			$prefix         .= self::loop_once( $custom_class, SNN_Style_Sheet::add( $custom_class, SNN_Style::scope_css( $custom_css, '.' . $custom_class ) ) );
 		}
 		// The class's attributes (a link's href, target and rel) come before the custom ones, which may change them.
 		// get_block_wrapper_attributes escapes them.
@@ -226,11 +234,10 @@ class SNN_Block_Render {
 			SNN_Block_Tools::enqueue_front();
 		}
 		$attrs = get_block_wrapper_attributes( $extra );
-		// The style is written here, not through the wrapper: WordPress passes inline styles through its
-		// own list of CSS properties, which has no grid-auto-flow, so that declaration would be dropped.
-		// Every value in $style has already been checked by SNN_Style::style().
-		if ( '' !== $style ) {
-			$attrs .= ' style="' . esc_attr( $style ) . '"';
+		// Outside a page only (see above): written here, not through the wrapper, which would drop grid-auto-flow. Every value
+		// in it has already been checked by SNN_Style_Props::check().
+		if ( '' !== $inline_style ) {
+			$attrs .= ' style="' . esc_attr( $inline_style ) . '"';
 		}
 
 		$tag = $own['tag'];

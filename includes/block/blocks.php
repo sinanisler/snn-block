@@ -29,6 +29,7 @@ unset( $snn_feature );
 // The engine. The registry loads every blocks/<folder>/block.php.
 require_once __DIR__ . '/engine/style-props.php';
 require_once __DIR__ . '/engine/style.php';
+require_once __DIR__ . '/engine/style-sheet.php';
 require_once __DIR__ . '/engine/block.php';
 require_once __DIR__ . '/engine/registry.php';
 require_once __DIR__ . '/engine/render.php';
@@ -38,3 +39,4 @@ require_once __DIR__ . '/engine/editor-assets.php';
 SNN_Blocks::init();
 SNN_Block_Preview::init();
 SNN_Block_Editor_Assets::init();
+SNN_Style_Sheet::init();
