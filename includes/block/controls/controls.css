@@ -1802,6 +1802,34 @@
 	word-break: break-all;
 }
 
+/* Hover and keyboard focus (Phase 4, item 4.3). A hover changes the background of rows and icons only, and the
+ * disabled sections keep theirs. Every control in the panel has a focus ring for the keyboard (:focus-visible). */
+.snn-panel .snn-row:hover {
+	background: #f6f7f7;
+}
+
+.snn-panel .snn-seg-btn:not(.is-on):hover {
+	background: #f0f0f1;
+}
+
+.snn-panel .snn-views button:not([aria-pressed="true"]):hover {
+	background: #f0f0f1;
+}
+
+.snn-panel .snn-acc:not(.is-disabled) .snn-acc-head:hover,
+.snn-panel .snn-disc-head:hover {
+	background: #f6f7f7;
+}
+
+.snn-panel .snn-swatch-btn:focus-visible,
+.snn-panel .snn-anim-button:focus-visible,
+.snn-panel .snn-chip-x:focus-visible,
+.snn-panel .snn-stop-add:focus-visible,
+.snn-panel .snn-stop-remove:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
 .snn-swatch-btn:focus-within {
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
