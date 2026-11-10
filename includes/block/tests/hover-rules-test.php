@@ -83,6 +83,13 @@ $overlay = array(
 $overlay_css = SNN_Style::hover_rules( $overlay, $dyn );
 hover_check( 'a hover that removes the overlay sets its ::before to none', false !== strpos( $overlay_css, '.%CLASS%:hover::before{content:none}' ), $overlay_css );
 
+// The hover state's own CSS: %root% is the block in its hover state.
+$own_css      = array(
+	'hoverStyle' => array( 'css' => '%root% span { color: red; }' ),
+);
+$own_css_text = SNN_Style::hover_rules( $own_css, $dyn );
+hover_check( 'hover CSS: %root% is the block in its hover state', '.%CLASS%:hover span { color: red; }' === $own_css_text, $own_css_text );
+
 // Random cases: every rule is well formed (balanced braces, the placeholder, no empty block), and a block without a hover
 // value has no hover rule.
 mt_srand( 20261112 );

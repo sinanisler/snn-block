@@ -239,6 +239,11 @@ class SNN_Style {
 				$out[ $level ] = $own;
 			}
 		}
+		// The hover state's custom CSS: its rules, with %root% the block in its hover state (see hover_rules()).
+		$css = isset( $value['css'] ) && is_string( $value['css'] ) ? self::clean_css( $value['css'] ) : '';
+		if ( '' !== $css ) {
+			$out['css'] = $css;
+		}
 		return $out;
 	}
 
@@ -285,6 +290,10 @@ class SNN_Style {
 				continue;
 			}
 			$css .= null === $view ? $body : '@media (max-width:' . $views[ $view ] . 'px){' . $body . '}';
+		}
+		// The hover's own CSS: the rules of the state, with the block in its hover state for %root%.
+		if ( ! empty( $hover['css'] ) ) {
+			$css .= self::scope_css( $hover['css'], '.%CLASS%:hover' );
 		}
 		return $css;
 	}
