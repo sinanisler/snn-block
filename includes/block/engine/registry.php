@@ -40,7 +40,6 @@ class SNN_Blocks {
 		self::load();
 		add_action( 'init', array( __CLASS__, 'register' ) );
 		add_action( 'init', array( __CLASS__, 'register_assets' ) );
-		add_action( 'enqueue_block_assets', array( __CLASS__, 'enqueue_canvas_styles' ) );
 	}
 
 	/** The blocks folder, with a trailing slash. */
@@ -357,16 +356,13 @@ class SNN_Blocks {
 		}
 	}
 
-	/** The editor's canvas shows every block's look, so each style.css is loaded there. */
-	public static function enqueue_canvas_styles() {
-		if ( ! is_admin() ) {
-			return;
-		}
-		foreach ( array_keys( self::$classes ) as $folder ) {
-			if ( wp_style_is( self::handle( $folder ), 'registered' ) ) {
-				wp_enqueue_style( self::handle( $folder ) );
-			}
-		}
+	/**
+	 * The URL of a block's style.css, or '' when it has none. The editor's canvas loads it for each block of that type
+	 * when the block is drawn there (editor/canvas-styles.js), so the canvas never loads the style of a block it does not show.
+	 */
+	public static function style_url( $folder ) {
+		$css = self::file( $folder, 'style.css' );
+		return '' === $css ? '' : SNN_URL . $css . '?ver=' . SNN_Block_Tools::version( $css );
 	}
 
 	/** The block folders found, as folder => class. */

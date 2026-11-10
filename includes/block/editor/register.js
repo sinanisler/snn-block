@@ -134,6 +134,10 @@
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
 				const a = { ...saved, query: { ...QUERY_DEFAULTS, ...( saved.query || {} ) } };
+					// The block's style.css goes into the canvas the first time this type is drawn there (canvas-styles.js).
+					useEffect( () => {
+						snn.canvasStyles.use( def.name );
+					}, [ def.name ] );
 				// The parent's display and direction: Align self's pictures turn with them.
 				const parentId = useSelect( ( select ) => select( 'core/block-editor' ).getBlockRootClientId( clientId ), [ clientId ] );
 				const parentAttrs = useSelect(

@@ -31,6 +31,7 @@ class SNN_Block_Editor_Assets {
 	private static function scripts() {
 		$before = array(
 			'snn-core'           => 'includes/block/editor/snn.js',
+			'snn-canvas-styles'  => 'includes/block/editor/canvas-styles.js',
 			'snn-tooltips'       => 'includes/block/controls/tooltips.js',
 			'snn-controls'       => 'includes/block/controls/controls.js',
 			'snn-layout-icons'   => 'includes/block/editor/layout-icons.js',
@@ -246,6 +247,8 @@ class SNN_Block_Editor_Assets {
 		foreach ( SNN_Blocks::definitions() as $name => $def ) {
 			unset( $def['class'] );
 			$def['attributes'] = SNN_Blocks::attributes( $name );
+			// The block's style.css, which the canvas loads when it draws the block (editor/canvas-styles.js).
+			$def['styleUrl']   = SNN_Blocks::style_url( $def['folder'] );
 			$out[]             = $def;
 		}
 		return $out;
