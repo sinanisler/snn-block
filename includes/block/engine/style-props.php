@@ -272,7 +272,7 @@ class SNN_Style_Props {
 				}
 				return preg_match( '/^\d{1,3}$/', $v ) && (int) $v <= 100 ? (string) ( (int) $v / 100 ) : '';
 			case 'ratio':
-				return 'auto' === $v || preg_match( '/^\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/', $v ) || self::is_var( $v ) ? $v : '';
+				return 'auto' === $v || preg_match( '/^\d+(\.\d+)?(\s*\/\s*\d+(\.\d+)?)?$/', $v ) || self::is_var( $v ) ? $v : '';
 			case 'time':
 				return preg_match( '/^\d+(\.\d+)?m?s$/', $v ) || self::is_var( $v ) ? $v : '';
 			case 'color':

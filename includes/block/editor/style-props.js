@@ -119,7 +119,7 @@
 				}
 				return /^\d{1,3}$/.test( v ) && Number( v ) <= 100 ? String( Number( v ) / 100 ) : '';
 			case 'ratio':
-				return v === 'auto' || /^\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/.test( v ) || isVar( v ) ? v : '';
+				return v === 'auto' || /^\d+(\.\d+)?(\s*\/\s*\d+(\.\d+)?)?$/.test( v ) || isVar( v ) ? v : '';
 			case 'time':
 				return /^\d+(\.\d+)?m?s$/.test( v ) || isVar( v ) ? v : '';
 			case 'color':
