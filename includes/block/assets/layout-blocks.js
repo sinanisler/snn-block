@@ -1425,10 +1425,14 @@
 
 		/** The custom CSS as the front end prints it (clean_css in layout-blocks.php): no style or script tags, comments or imports, 4000 characters at most. */
 		function cleanCss( value ) {
-			return String( value || '' )
-				.slice( 0, 4000 )
-				.replace( /<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/gi, '' )
-				.trim();
+			let css = String( value || '' ).slice( 0, 4000 );
+			let before;
+			// Removed until nothing is left to remove, then any < that could open a tag becomes its CSS escape (as the PHP does).
+			do {
+				before = css;
+				css = css.replace( /<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/gi, '' );
+			} while ( css !== before );
+			return css.replace( /<(?=[A-Za-z\/!?])/g, '\\3c ' ).trim();
 		}
 
 		/** A class for one CSS text in the editor. The editor scopes the rules with it, as the front end scopes them with snn-c-<md5>. */
@@ -2293,6 +2297,20 @@
 		} );
 	}
 
+	/**
+	 * Which block holds each CSS ID: "scope|id" => clientId. A block puts its ID here when it is drawn and takes it out
+	 * when it goes. One lookup tells a block whether its ID is taken, so no block reads all the others. The scope is the
+	 * synced pattern the block is in ('' outside one): the same pattern used twice shares its blocks' attributes, so its
+	 * two copies can never have different IDs and are not compared with each other.
+	 */
+	const idOwners = new Map();
+
+	/** True when that block is still on the page with that ID (an entry can outlive its block by a moment). */
+	function holdsId( clientId, id ) {
+		const attrs = wp.data.select( 'core/block-editor' ).getBlockAttributes( clientId );
+		return !! attrs && attrs.htmlId === id;
+	}
+
 	/** A CSS ID for a block: 'snn-' and eight lowercase letters or digits. */
 	function newBlockId() {
 		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -2393,27 +2411,30 @@
 					( select ) => ( parentId ? select( 'core/block-editor' ).getBlockAttributes( parentId ) : null ),
 					[ parentId ]
 				);
-				// Another block with the same CSS ID (a copied block): this one gets a new ID below.
-				const duplicateId = useSelect(
-					( select ) => {
-						const id = a.htmlId;
-						if ( ! id ) {
-							return false;
-						}
-						const be = select( 'core/block-editor' );
-						return be
-							.getClientIdsWithDescendants()
-							.some( ( cid ) => cid !== clientId && ( be.getBlockAttributes( cid ) || {} ).htmlId === id );
-					},
-					[ clientId, a.htmlId ]
-				);
-				// Every block gets its CSS ID by default: a new one when it has none, and a new one when another
-				// block already has this one. The ID is saved with the block, so the interactions can find it.
+				// Every block gets its CSS ID by default: a new one when it has none, and a new one when another block
+				// already holds this one (a copy). The first block to hold an ID keeps it, so the original of a copy keeps
+				// its ID and its interactions still find it (see idOwners). The ID is saved with the block.
+				const idScope = useSelect( ( select ) => select( 'core/block-editor' ).getBlockParentsByBlockName( clientId, 'core/block', true )[ 0 ] || '', [ clientId ] );
 				useEffect( () => {
-					if ( ! a.htmlId || duplicateId ) {
+					const id = a.htmlId;
+					const key = idScope + '|' + id;
+					const owner = id ? idOwners.get( key ) : undefined;
+					if ( ! id || ( owner && owner !== clientId && holdsId( owner, id ) ) ) {
+						// Not an edit of the author's: no undo step, and a page that is only opened is not marked as changed.
+						const be = wp.data.dispatch( 'core/block-editor' );
+						if ( be.__unstableMarkNextChangeAsNotPersistent ) {
+							be.__unstableMarkNextChangeAsNotPersistent();
+						}
 						setAttributes( { htmlId: newBlockId() } );
+						return undefined;
 					}
-				}, [ a.htmlId, duplicateId ] );
+					idOwners.set( key, clientId );
+					return () => {
+						if ( idOwners.get( key ) === clientId ) {
+							idOwners.delete( key );
+						}
+					};
+				}, [ a.htmlId, idScope ] );
 				// The view the editor shows (Desktop, Tablet or Mobile): the values of that view are drawn on the canvas.
 				const device = useSelect( ( select ) => {
 					try {

@@ -275,7 +275,10 @@ class SNN_Style_Props {
 	 *
 	 * @return string[] "property:value" strings.
 	 */
-	public static function declarations( array $a ) {
+	public static function declarations( array $a, $dyn = null ) {
+		if ( is_array( $dyn ) ) {
+			$a = self::with_tags( $a, $dyn );
+		}
 		$out = array();
 		foreach ( self::TABLE as $key => $spec ) {
 			if ( null === $spec[0] ) {
@@ -313,6 +316,25 @@ class SNN_Style_Props {
 			$out[] = 'isolation:isolate';
 		}
 		return $out;
+	}
+
+	/**
+	 * The values with their dynamic tags filled in ({featured_image}, {cf_colour}), so a Style value can come from the
+	 * post, as the layout values do. The colour stops are JSON and are left as they are. A background image whose tag
+	 * gives a plain address is written as url(...), the form the image takes.
+	 */
+	public static function with_tags( array $a, array $dyn ) {
+		foreach ( self::TABLE as $key => $spec ) {
+			if ( 'stops' === $spec[1] || ! isset( $a[ $key ] ) || ! is_string( $a[ $key ] ) || false === strpos( $a[ $key ], '{' ) ) {
+				continue;
+			}
+			$value = trim( SNN_Dynamic_Data::render( $a[ $key ], $dyn, 'plain' ) );
+			if ( 'url' === $spec[1] && preg_match( '#^(https?://|/)[^"\'()\s<>]{1,500}$#', $value ) ) {
+				$value = 'url(' . $value . ')';
+			}
+			$a[ $key ] = $value;
+		}
+		return $a;
 	}
 
 	/** box-shadow: x, y, blur, spread and colour, each with a default. Empty when no part is set. */

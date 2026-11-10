@@ -447,8 +447,15 @@ class SNN_Layout_Blocks {
 	 */
 	public static function clean_css( $value ) {
 		$value = is_string( $value ) ? substr( $value, 0, 4000 ) : '';
-		$value = preg_replace( '/<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/i', '', $value );
-		return trim( (string) $value );
+		// Removed until nothing is left to remove: one pass would leave the tag that </st</style>yle> closes up into.
+		do {
+			$before = $value;
+			$value  = (string) preg_replace( '/<\/?\s*(style|script)[^>]*>|<!--|-->|@import[^;]*;?/i', '', $value );
+		} while ( $value !== $before );
+		// No markup at all: a < that could open or close a tag is written as its CSS escape, so nothing in the text
+		// can end the style element. A comparison in a media query (width < 600px) is followed by a space and stays.
+		$value = (string) preg_replace( '/<(?=[A-Za-z\/!?])/', '\\\\3c ', $value );
+		return trim( $value );
 	}
 
 	/**
@@ -813,7 +820,7 @@ class SNN_Layout_Blocks {
 		}
 
 		// The Style groups (spacing, sizing, typography, background, border, transform, filters, transitions).
-		return implode( ';', array_merge( $css, SNN_Style_Props::declarations( $a ) ) );
+		return implode( ';', array_merge( $css, SNN_Style_Props::declarations( $a, $dyn ) ) );
 	}
 
 	/** A length for spacing and width, as the Style groups take it (SNN_Style_Props::check). A bare number is px. Negative values are dropped. */
