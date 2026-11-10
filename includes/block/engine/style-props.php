@@ -50,6 +50,13 @@ class SNN_Style_Props {
 
 	/** attribute => [ css property or null, type, options, rules ]. The order is the order of the declarations. */
 	const TABLE = array(
+		// The icon and picture settings of the Icon, Button and Image blocks. They are CSS variables on the block: the icon and the
+		// picture read them (the blocks' style.css and icons.css), so a hover or a view sets them like any other value.
+		'iconSize'       => array( '--snn-icon-size', 'size', array(), array() ),
+		'iconColor'      => array( '--snn-icon-color', 'color', array(), array() ),
+		'iconGap'        => array( '--snn-icon-gap', 'size', array(), array() ),
+		'objectFit'      => array( '--snn-object-fit', 'keyword', array( 'fill', 'contain', 'cover', 'none', 'scale-down' ), array() ),
+		'objectPosition' => array( '--snn-object-position', 'text', array(), array() ),
 		// Layout: the display, the flex and grid settings, the item settings, then spacing, colour, width, opacity and overflow.
 		'display'          => array( 'display', 'keyword', self::DISPLAYS, array( 'default' => 'block', 'skip' => 'block' ) ),
 		'flexDirection'    => array( 'flex-direction', 'keyword', self::FLEX_DIRECTION, array( 'when' => 'flex', 'default' => 'row' ) ),

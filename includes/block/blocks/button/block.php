@@ -75,10 +75,6 @@ class SNN_Button_Block extends SNN_Block {
 		}
 		$css = array();
 		if ( $a['icon'] ) {
-			$gap = SNN_Style::size_value( SNN_Dynamic_Data::render( $a['iconGap'], $dyn, 'plain' ) );
-			if ( '' !== $gap ) {
-				$css[] = 'gap:' . $gap;
-			}
 			if ( $a['iconSpace'] ) {
 				$css[] = 'justify-content:space-between';
 			}
@@ -89,7 +85,7 @@ class SNN_Button_Block extends SNN_Block {
 	/** The text (tags filled in, the formats wp_kses_post allows) and the icon on its side. */
 	public static function render( array $a, array $dyn ) {
 		$text = '' !== $a['text'] ? '<span class="snn-button-text">' . wp_kses_post( SNN_Dynamic_Data::render( $a['text'], $dyn, 'html' ) ) . '</span>' : '';
-		$icon = SNN_Icons::html( $a['icon'], SNN_Icons::style( $a['iconSize'], $a['iconColor'] ) );
+		$icon = SNN_Icons::html( $a['icon'] );
 		return 'left' === $a['iconPosition'] ? $icon . $text : $text . $icon;
 	}
 }

@@ -52,15 +52,14 @@ class SNN_Icon_Block extends SNN_Block {
 		) + SNN_Block_Link::clean( $raw );
 	}
 
-	/** The tag (a with a link), the link attributes, and the size and colour on the element (the icon inherits them). */
+	/** The tag (a with a link) and the link attributes. The size and colour are CSS variables of the block (the table, style-props.php). */
 	public static function element( array $a, array $dyn ) {
 		$link = SNN_Block_Link::element_attrs( $a, $dyn );
 		$tag  = $link ? 'a' : ( 'a' === $a['tagName'] ? 'span' : $a['tagName'] );
-		$css  = SNN_Icons::style( SNN_Dynamic_Data::render( $a['iconSize'], $dyn, 'plain' ), $a['iconColor'] );
 		return array(
 			'tag'   => $tag,
 			'attrs' => $link ? $link : array(),
-			'style' => '' !== $css ? explode( ';', $css ) : array(),
+			'style' => array(),
 		);
 	}
 

@@ -235,12 +235,6 @@ class SNN_Image_Block extends SNN_Block {
 		$css = $a['stretch']
 			? array( 'vertical-align:top', 'width:100%', 'height:100%', 'max-width:100%' )
 			: array( 'vertical-align:top', 'max-width:100%', 'height:auto' );
-		if ( '' !== $a['objectFit'] ) {
-			$css[] = 'object-fit:' . $a['objectFit'];
-		}
-		if ( '' !== $a['objectPosition'] ) {
-			$css[] = 'object-position:' . $a['objectPosition'];
-		}
 		if ( '' !== $a['aspectRatio'] ) {
 			$css[] = 'aspect-ratio:' . $a['aspectRatio'];
 		}

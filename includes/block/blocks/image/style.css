@@ -1,1 +1,7 @@
 /* The look of the image block is set in its Style tab, not here. Nothing to add. */
+
+/* The picture reads its object fit and position from its block (the variables --snn-object-fit and --snn-object-position). */
+.wp-block-snn-image img {
+	object-fit: var(--snn-object-fit, fill);
+	object-position: var(--snn-object-position, 50% 50%);
+}

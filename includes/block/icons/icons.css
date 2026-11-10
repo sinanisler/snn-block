@@ -13,3 +13,10 @@
 	width: 1em;
 	height: 1em;
 }
+
+/* The icon glyph reads the size and colour of its block (the variables --snn-icon-size and --snn-icon-color, style-props.php). */
+.snn-icon {
+	font-size: var(--snn-icon-size, 1em);
+	color: var(--snn-icon-color, currentColor);
+	fill: currentColor;
+}
