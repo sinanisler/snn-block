@@ -33,7 +33,17 @@ class SNN_Block_Editor_List_View {
 	public static function enqueue() {
 		$width = (int) self::LIST_VIEW_WIDTH;
 		$css   = '@media (min-width: 782px) {'
-			. '.editor-list-view-sidebar{position:relative;width:var(--snn-lv-width,' . $width . 'px);min-width:200px;max-width:500px}'
+			. '.editor-list-view-sidebar,.editor-inserter-sidebar{position:relative;width:var(--snn-lv-width,' . $width . 'px);min-width:200px;max-width:500px}'
+			. '.editor-inserter-sidebar .block-editor-inserter__menu,.editor-inserter-sidebar .block-editor-inserter__main-area,.editor-inserter-sidebar .block-editor-tabbed-sidebar{width:100%}'
+			// A narrow inserter (under 260px): two block tiles per row instead of three, and tighter tabs.
+			. '.editor-inserter-sidebar{container:snn-ins/inline-size}'
+			. '@container snn-ins (max-width:259px){'
+			// WordPress groups the tiles three per row element; the rows flow as one list so two per row leaves no gaps.
+			. '.block-editor-block-types-list{display:flex;flex-wrap:wrap}'
+			. '.block-editor-block-types-list>[role=presentation]{display:contents}'
+			. '.block-editor-block-types-list__list-item{width:50%}'
+			. '.block-editor-tabbed-sidebar__tab{padding-left:8px;padding-right:8px}'
+			. '}'
 			. '.snn-lv-resize{position:absolute;top:0;right:-3px;bottom:0;width:6px;z-index:5;cursor:col-resize;touch-action:none}'
 			. '.snn-lv-resize::after{content:"";position:absolute;top:0;bottom:0;left:2px;width:2px;background:transparent;transition:background .15s}'
 			. '.snn-lv-resize:hover::after,.snn-lv-resize:focus-visible::after,.snn-lv-resizing .snn-lv-resize::after{background:var(--wp-admin-theme-color,#3858e9)}'

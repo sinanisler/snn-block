@@ -15,7 +15,8 @@
 	const DEF = 300;
 	const SCOPE = 'snn';
 	const KEY = 'listViewWidth';
-	const PANEL = '.editor-list-view-sidebar';
+	// The List View and the block inserter share the left column and one width.
+	const PANEL = '.editor-list-view-sidebar, .editor-inserter-sidebar';
 	const HANDLE = 'snn-lv-resize';
 	const { __ } = wp.i18n;
 
