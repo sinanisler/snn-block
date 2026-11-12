@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SNN_Block_Editor_List_View {
 
 	/** Width of the List View panel in pixels. */
-	const LIST_VIEW_WIDTH = 350;
+	const LIST_VIEW_WIDTH = 300;
 
 	public static function init() {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue' ) );

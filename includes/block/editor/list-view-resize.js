@@ -12,7 +12,7 @@
 ( function ( wp ) {
 	const MIN = 200;
 	const MAX = 500;
-	const DEF = 350;
+	const DEF = 300;
 	const SCOPE = 'snn';
 	const KEY = 'listViewWidth';
 	const PANEL = '.editor-list-view-sidebar';
