@@ -25,6 +25,8 @@ class SNN_Code_Block extends SNN_Block {
 			'icon'   => 'editor-code',
 			'order'  => 80,
 			'kind'   => 'code',
+			// Its look is its own CSS: no hover state.
+			'supports' => array( 'hover' => false ),
 			'layout' => array(
 				'display'       => 'block',
 				'flexDirection' => 'row',

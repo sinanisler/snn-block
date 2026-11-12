@@ -26,6 +26,7 @@ $scripts = array(
 	'snn-animation-pane'       => 'includes/block/controls/animation-pane.js',
 	'snn-icon-picker'          => 'includes/block/controls/icon-picker.js',
 	'snn-link-fields'          => 'includes/block/controls/link-fields.js',
+	'snn-media'                => 'includes/block/controls/media.js',
 	'snn-layout-blocks'        => 'includes/block/editor/register.js',
 	'snn-panel-shared'         => 'includes/block/editor/panel/shared.js',
 	'snn-panel-view'           => 'includes/block/editor/panel/view.js',

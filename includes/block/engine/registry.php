@@ -118,6 +118,8 @@ class SNN_Blocks {
 			'loop'     => false,
 			'link'     => false,
 			'style'    => true,
+			// The H button (the hover state of the Style values). Off for a block whose look is its own code.
+			'hover'    => true,
 		);
 		// A block that can be a link offers the a tag as well.
 		if ( $def['supports']['link'] && ! in_array( 'a', $def['tags'], true ) ) {

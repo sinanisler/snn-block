@@ -1,7 +1,7 @@
 /**
  * SNN Code block, the editor side: the Content tab (HTML, CSS and JavaScript in code editors, the HTML tag and Render
  * without wrapper, as the Bricks code element without PHP) and the code on the canvas. The canvas shows the HTML and
- * the CSS; the JavaScript runs on the front end only. The front end is ./code.php. Registers snn.blocks['snn/code'].
+ * the CSS; the JavaScript runs on the front end only. The front end is block.php in this folder. Registers snn.blocks['snn/code'].
  *
  * The code editors are the ones WordPress uses for its own code fields (wp.codeEditor, CodeMirror); their settings come
  * from snn.data.blocks.code (editor_data() in block.php). Without them (syntax highlighting off) the fields are textareas.
@@ -9,11 +9,10 @@
 ( function ( wp ) {
 	const { createElement: h, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
-	const { Group, Row, SwitchRow, Select } = snn.controls;
+	const { Group, SwitchRow } = snn.controls;
 	const data = ( snn.data.blocks || {} ).code || {};
 	// The empty box on the canvas (the canvas is an iframe, so its look is written here, as the Image block does).
 	const EMPTY = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 40, padding: '8px 12px', border: '1px dashed #8c8f94', color: '#646970', fontSize: 12, fontFamily: 'system-ui, sans-serif' };
-	const TAG_OPTIONS = [ 'div', 'section', 'span', 'header', 'footer', 'main', 'article', 'aside', 'nav' ].map( ( v ) => ( { value: v, label: v } ) );
 
 	/** One code field. mode: html, css or js (its settings in snnBlockData.code.editors). */
 	function CodeArea( { value, onChange, mode, label } ) {
@@ -57,7 +56,8 @@
 		);
 	}
 
-	function Pane( { a, set } ) {
+	function Pane( { a, set, pick, def } ) {
+		const { TagRow } = snn.panel;
 		return h(
 			'div',
 			{ className: 'snn-pane' },
@@ -71,14 +71,12 @@
 				h( CodeArea, { mode: 'css', label: 'CSS', value: a.cssCode, onChange: ( v ) => set( { cssCode: v } ) } ),
 				h( CodeArea, { mode: 'js', label: 'JavaScript', value: a.jsCode, onChange: ( v ) => set( { jsCode: v } ) } ),
 				h( 'p', { className: 'snn-code-note' }, __( 'The code is printed as written. JavaScript runs on the front end only.', 'snn' ) ),
-				h( SwitchRow, { label: __( 'No wrapper', 'snn' ), checked: !! a.noWrapper, onChange: ( v ) => set( { noWrapper: v } ) } ),
+				h( SwitchRow, { label: __( 'No wrapper', 'snn' ), checked: !! a.noWrapper, onChange: ( v ) => pick( { noWrapper: v } ) } ),
+				// Without the element nothing carries the block's ID, classes, Style values, custom attributes, interactions
+				// or animations: the front end prints the code alone (bare() in block.php). Conditions still apply.
 				a.noWrapper
-					? null
-					: h(
-							Row,
-							{ label: __( 'HTML tag', 'snn' ), changed: a.tagName !== 'div' },
-							h( Select, { value: a.tagName, options: TAG_OPTIONS, label: __( 'HTML tag', 'snn' ), onChange: ( v ) => set( { tagName: v } ) } )
-					  )
+					? h( 'p', { className: 'snn-code-note' }, __( 'No wrapper: the ID, classes, Style values, attributes, interactions and animations of this block are not printed. Conditions still apply.', 'snn' ) )
+					: h( TagRow, { a, set: pick, def } )
 			)
 		);
 	}

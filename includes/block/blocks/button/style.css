@@ -4,7 +4,7 @@
  * A button with the snn-plain class (the HTML converter gives it to every button it makes) has no starting look: the
  * design's own CSS draws it.
  */
-/* In the editor the button is .snn-button-root (button-editor.js), and it is also the block element (block-editor-block-list__block). */
+/* In the editor the button is .snn-button-root (editor.js in this folder), and it is also the block element (block-editor-block-list__block). */
 :where(.wp-block-snn-button:not(.block-editor-block-list__block):not(.snn-plain)),
 :where(.snn-button-root:not(.snn-plain)) {
 	align-items: center;

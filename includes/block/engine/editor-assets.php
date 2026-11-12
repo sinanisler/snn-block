@@ -40,6 +40,7 @@ class SNN_Block_Editor_Assets {
 			'snn-animation-pane' => 'includes/block/controls/animation-pane.js',
 			'snn-icon-picker'    => 'includes/block/controls/icon-picker.js',
 			'snn-link-fields'    => 'includes/block/controls/link-fields.js',
+			'snn-media'          => 'includes/block/controls/media.js',
 			// The panel: shared, then the parts that use it in order (each uses the ones before it).
 			'snn-panel-shared'        => 'includes/block/editor/panel/shared.js',
 			'snn-panel-view'          => 'includes/block/editor/panel/view.js',

@@ -6,22 +6,18 @@
 ( function ( wp ) {
 	const C = snn.controls;
 	const I = snn.layoutIcons;
-	const { createElement: h, Fragment, useState, useEffect, useRef, useLayoutEffect } = wp.element;
-	const { __, sprintf } = wp.i18n;
-	const { registerBlockType } = wp.blocks;
-	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
-	const { useSelect } = wp.data;
-	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
-	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
-	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
-	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
-	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
-	const { applyFormat, create, getActiveFormat, insert, insertObject, removeFormat, toggleFormat } = wp.richText;
+	const { createElement: h } = wp.element;
+	const { __ } = wp.i18n;
+	const { create } = wp.richText;
 	const data = snn.data.controls || {};
 	snn.panel = snn.panel || {};
 
-	const QUERY_DEFAULTS = {
+	/** The block definitions from PHP (blocks/<name>/block.php, see SNN_Blocks), set before this script runs. */
+	const defs = snn.data.definitions || [];
+
+	// The query defaults are PHP's (SNN_Query_Loop::defaults(), the registered default of every block's query); the list
+	// below is only the fallback for a page without definitions.
+	const QUERY_FALLBACK = {
 		enabled: false,
 		postType: 'post',
 		orderBy: 'date',
@@ -42,9 +38,8 @@
 		metaQuery: [],
 		isMain: false,
 	};
-
-	/** The block definitions from PHP (blocks/<name>/block.php, see layout-blocks.php), set before this script runs. */
-	const defs = snn.data.definitions || [];
+	const phpQuery = defs[ 0 ] && defs[ 0 ].attributes && defs[ 0 ].attributes.query ? defs[ 0 ].attributes.query.default : null;
+	const QUERY_DEFAULTS = { ...QUERY_FALLBACK, ...( phpQuery && typeof phpQuery === 'object' ? phpQuery : {} ) };
 
 	/** The defaults of one block's attributes: the values PHP registers (the definition's attributes, snn.data.definitions). */
 	function attrDefaults( name ) {
@@ -85,7 +80,7 @@
 
 	/**
 	 * True when the front end has a view rule for this device: Tablet with its own values, Mobile with its own or
-	 * Tablet's (the Tablet rule reaches Mobile widths too). Mirrors the empty() check in view_rules() in layout-blocks.php.
+	 * Tablet's (the Tablet rule reaches Mobile widths too). Mirrors the empty() check in view_rules() in engine/style.php.
 	 */
 	function hasViewRule( a, device ) {
 		const layers = device === 'Mobile' ? [ 'tablet', 'mobile' ] : device === 'Tablet' ? [ 'tablet' ] : [];
@@ -95,7 +90,7 @@
 		} );
 	}
 
-	/** The ID as the front end writes it: letters, digits, hyphen and underscore. Mirrors element() in layout-blocks.php. */
+	/** The ID as the front end writes it: letters, digits, hyphen and underscore. Mirrors element() in engine/render.php. */
 	function cleanId( v ) {
 		return String( v || '' ).replace( /[^A-Za-z0-9_-]/g, '' );
 	}

@@ -347,7 +347,7 @@ class SNN_Style {
 	/**
 	 * The custom CSS with the block's class in place of its name. %root% and selector both mean the block. selector
 	 * counts only where a rule names its selector (the text before a {), so .selector, #selector and a value such as
-	 * "selector" are left as they are. The editor's copy is scopeCss() in editor/layout-blocks.js: keep the two in step.
+	 * "selector" are left as they are. The editor's copy is scopeCss() in editor/panel/css-editor.js: keep the two in step.
 	 */
 	public static function scope_css( $css, $selector ) {
 		$parts = preg_split( '/([{};])/', $css, -1, PREG_SPLIT_DELIM_CAPTURE );

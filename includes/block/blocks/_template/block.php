@@ -14,6 +14,11 @@
  *
  * Settings only this block has go in attributes(), read in clean(), and are printed in render() (the inside) or
  * element() (the tag, attributes and declarations of the element around it).
+ *
+ * A setting that is a style value (a size, a colour, an object fit) is not an own attribute: use the property table's
+ * key (engine/style-props.php), so the engine cleans it per view and per hover state. The registry ignores an own
+ * attribute named like a shared or style one (SNN_Blocks::reserved_keys()). In clean(), use the shared helpers of
+ * SNN_Block: self::pick(), self::str(), self::text(), self::url(), self::flag().
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -41,7 +46,8 @@ class SNN_Template_Block extends SNN_Block {
 			'supports' => array(
 				'children' => false,               // true: the block holds inner blocks
 				'loop'     => false,               // true: the panel offers the Query group
-				'link'     => false,               // true: the element can be an a with a URL
+				'link'     => false,               // true: the element can be an a with a URL (the Link group)
+				'hover'    => true,                // false: no H button (no hover state for the Style values)
 			),
 		);
 	}

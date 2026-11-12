@@ -6,15 +6,11 @@
 ( function ( wp ) {
 	const C = snn.controls;
 	const I = snn.layoutIcons;
-	const { createElement: h, Fragment, useState, useEffect, useRef, useLayoutEffect } = wp.element;
-	const { __, sprintf } = wp.i18n;
-	const { registerBlockType } = wp.blocks;
-	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
+	const { createElement: h, Fragment, useState, useRef } = wp.element;
+	const { __ } = wp.i18n;
+	const { RichText } = wp.blockEditor;
 	const { useSelect } = wp.data;
-	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
-	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
-	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
+	const { Select, ToolbarPicker } = C;
 	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
 	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
 	const { applyFormat, create, getActiveFormat, insert, insertObject, removeFormat, toggleFormat } = wp.richText;

@@ -24,7 +24,7 @@ abstract class SNN_Block {
 	 *   category  the inserter's category
 	 *   layout    the display and flexDirection it starts with
 	 *   supports  children (inner blocks), loop (a query loop), link (the a tag with the Link group),
-	 *             style (true for every Style group, or a list of group names)
+	 *             style (true for every Style group, or a list of group names), hover (the H button, default true)
 	 *
 	 * @return array
 	 */

@@ -1,6 +1,6 @@
 /**
  * The photo search under the featured image (Post panel): P for Pixabay and U for Unsplash, the same icons and popup as
- * the Image block (blocks/image/image-editor.js, snn.imageBrowser). A featured image must be a media
+ * the shared media parts (controls/media.js, snn.imageBrowser). A featured image must be a media
  * library item, so both providers import the chosen photo (the caption stays empty), and the post's
  * featured_media is set to it. Each icon shows when its key is saved and the user can upload files
  * (snn.data.blocks.image.featured, from the Image block's editor_data()).

@@ -6,18 +6,13 @@
 ( function ( wp ) {
 	const C = snn.controls;
 	const I = snn.layoutIcons;
-	const { createElement: h, Fragment, useState, useEffect, useRef, useLayoutEffect } = wp.element;
-	const { __, sprintf } = wp.i18n;
-	const { registerBlockType } = wp.blocks;
-	const { InnerBlocks, InspectorControls, RichText, useBlockProps, useInnerBlocksProps } = wp.blockEditor;
-	const { useSelect } = wp.data;
-	const { main: mainPic, cross: crossPic, direction: directionPic, reverse: reversePic, columns: columnsPic } = I;
-	const { Row, SwitchRow, Accordion, Select, Segmented, TextField, Group, Disclosure, Dot, Switch, ViewRow, ownValue, inheritedValue, setValue, clearValue, effectiveValues, tipAttr, ToolbarPicker } = C;
+	const { createElement: h, Fragment, useState, useEffect } = wp.element;
+	const { __ } = wp.i18n;
+	const { Row, SwitchRow, Accordion, Select, Segmented, Group, Disclosure, Switch, effectiveValues, tipAttr, closeStep } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
-	const { AnimationsPane, stateOf, canvasDataAnimate } = snn.animationPane;
-	const { ColorPalette, MediaUpload, MediaUploadCheck } = wp.blockEditor;
-	const { Button, ColorPicker, Fill, Popover, ToolbarButton } = wp.components;
-	const { applyFormat, create, getActiveFormat, insert, insertObject, removeFormat, toggleFormat } = wp.richText;
+	const { AnimationsPane, stateOf } = snn.animationPane;
+	const { Button } = wp.components;
+	const { create } = wp.richText;
 	const data = snn.data.controls || {};
 	const { BoxModel, CssPane, Glyph, LayoutFields, POST_TYPE_OPTIONS, QueryFields, STYLE_PAGES, StyleRow, ViewSwitch, changedQuery, groupChanged, options } = snn.panel;
 
@@ -26,17 +21,8 @@
 	 * The block's Edit unmounts when another block is selected, so the place is kept here instead. The next block opens
 	 * where the last one was left. It lasts for the editor session; a reload starts on Content.
 	 */
-	/**
-	 * The place in the panel: the tab, the sub-panel (null, or conditions, interactions, animations) and the Style group.
-	 * The block's Edit unmounts when another block is selected, so the place is kept here instead. The next block opens
-	 * where the last one was left. It lasts for the editor session; a reload starts on Content.
-	 */
 	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout', hover: false };
 
-	/**
-	 * The layer the Style values are read from while the hover state is on: the block's hover values (base and views),
-	 * with the normal values as their inheritance (__inherit, see controls.js effectiveValues()).
-	 */
 	/**
 	 * A part of the Content tab that the hover state does not change: it is inert while the hover state is on (the wrapper
 	 * is dimmed by controls.css). The style rows of the same tab are outside it.
@@ -56,6 +42,10 @@
 		);
 	}
 
+	/**
+	 * The layer the Style values are read from while the hover state is on: the block's hover values (base and views),
+	 * with the normal values as their inheritance (__inherit, see controls.js effectiveValues()).
+	 */
 	function hoverLayer( a ) {
 		const hs = a.hoverStyle || {};
 		return { ...( hs.base || {} ), customCss: hs.css || '', responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
@@ -149,15 +139,8 @@
 			hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the layout settings change it. The settings below are not part of it, so they are off until H is turned off.', 'snn' ) ) : null,
 			layout,
 			h(
-				'div',
-				{
-					className: 'snn-content-rest',
-					ref: ( el ) => {
-						if ( el ) {
-							el.inert = !! hovering;
-						}
-					},
-				},
+				ContentRest,
+				{ hovering },
 				h(
 					Group,
 					{ title: __( 'Element', 'snn' ), tip: 'group.element' },
@@ -222,9 +205,9 @@
 		const [ sub, setSub ] = usePlace( 'sub' );
 		const [ stylePage, setStylePage ] = usePlace( 'stylePage' );
 		const [ hoverOn, setHoverOn ] = usePlace( 'hover' );
-		// The hover state is for the Style values. The Code block has none (its H button is not shown).
-		const isCode = def.name === 'snn/code';
-		const hovering = hoverOn && ! isCode;
+		// The hover state is for the Style values. A block with supports.hover false has none (its H button is not shown).
+		const noHover = def.supports && def.supports.hover === false;
+		const hovering = hoverOn && ! noHover;
 		// What the Style values are read and written as: the hover layer while the hover state is on, else the block itself.
 		const sa = hovering ? hoverLayer( a ) : a;
 		const sset = hovering ? hoverWriter( a, set ) : set;
@@ -281,7 +264,7 @@
 						}
 						setSub( v );
 					},
-					hover: isCode
+					hover: noHover
 						? undefined
 						: {
 								on: hovering,
@@ -299,7 +282,13 @@
 		);
 
 		// Content: the block's own pane, or the generic one. The advanced group comes after a pane of its own.
-		const own = parts && parts.Pane ? h( parts.Pane, { a, set, def, device, parent, base, clientId, styleA: sa, styleSet: sset, hovering } ) : null;
+		// pick: a discrete change of the block's own settings (a choice, a switch, an icon) is one undo step of its own;
+		// set stays for typing, so a run of typing in one field is one step.
+		const pick = ( patch ) => {
+			closeStep();
+			set( patch );
+		};
+		const own = parts && parts.Pane ? h( parts.Pane, { a, set, pick, def, device, parent, base, clientId, styleA: sa, styleSet: sset, hovering } ) : null;
 		const defaultPane = own
 			? h( Fragment, null, hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the style settings here change it. The other settings are not part of it, so they are off until H is turned off.', 'snn' ) ) : null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
 			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering } );
@@ -383,6 +372,34 @@
 		);
 	}
 
+	/**
+	 * True when a block setting differs from its registered default (base: the block's defaults, the Pane's base prop).
+	 * Objects and lists are compared by their JSON. This is what the blue dot of a Content row shows.
+	 */
+	function isChanged( a, base, key ) {
+		const v = a[ key ];
+		const d = base ? base[ key ] : undefined;
+		if ( v !== null && typeof v === 'object' ) {
+			return JSON.stringify( v ) !== JSON.stringify( d === undefined ? ( Array.isArray( v ) ? [] : {} ) : d );
+		}
+		return ( v === undefined ? '' : v ) !== ( d === undefined ? '' : d );
+	}
+
+	/**
+	 * The HTML tag row of a block's own Pane: the tags of its definition (def.tags, from block.php), without a for a
+	 * block that can be a link (its element is an a when a URL is set, see SNN_Block_Link). The dot compares with def.tag.
+	 */
+	function TagRow( { a, set, def } ) {
+		const linkable = def.supports && def.supports.link;
+		const tags = def.tags.filter( ( t ) => ! ( linkable && t === 'a' ) );
+		const value = tags.indexOf( a.tagName ) !== -1 ? a.tagName : def.tag;
+		return h(
+			Row,
+			{ label: __( 'HTML tag', 'snn' ), changed: value !== def.tag, tip: 'tagName' },
+			h( Select, { label: __( 'HTML tag', 'snn' ), tip: 'tagName', value, options: tags.map( ( t ) => ( { value: t, label: t } ) ), onChange: ( v ) => set( { tagName: v } ) } )
+		);
+	}
+
 	/** The query's badge text on the canvas: its title, its post type and its count. */
 	function badgeText( q ) {
 		const type = POST_TYPE_OPTIONS.find( ( o ) => o.value === q.postType );
@@ -390,5 +407,5 @@
 	}
 
 
-	Object.assign( snn.panel, { Panel, badgeText, ContentRest } );
+	Object.assign( snn.panel, { Panel, badgeText, ContentRest, TagRow, isChanged } );
 } )( window.wp );
