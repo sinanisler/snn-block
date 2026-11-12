@@ -19,7 +19,6 @@
 	const HANDLE = 'snn-lv-resize';
 	const { __ } = wp.i18n;
 
-	const swapped = () => !! ( window.snnPanelSwap && window.snnPanelSwap.isOn() );
 	const clamp =( n ) => Math.min( MAX, Math.max( MIN, Math.round( n ) ) );
 
 	function saved() {
@@ -72,15 +71,13 @@
 			}
 			e.preventDefault();
 			const rect = panel.getBoundingClientRect();
-			// Panels swapped (panel-swap.js): the panel is on the right and the handle on its left edge.
-			const flip = swapped();
 			let w = panel.offsetWidth;
 			try {
 				handle.setPointerCapture( e.pointerId );
 			} catch ( err ) {}
 			document.body.classList.add( 'snn-lv-resizing' );
 			const move = ( ev ) => {
-				w = set( flip ? rect.right - ev.clientX : ev.clientX - rect.left, false );
+				w = set( ev.clientX - rect.left, false );
 			};
 			const up = () => {
 				handle.removeEventListener( 'pointermove', move );
@@ -95,8 +92,7 @@
 		} );
 		handle.addEventListener( 'dblclick', () => set( DEF, true ) );
 		handle.addEventListener( 'keydown', ( e ) => {
-			// The arrow moves the edge: on the swapped side, Left makes the panel wider.
-			const step = ( e.shiftKey ? 50 : 10 ) * ( swapped() ? -1 : 1 );
+			const step = e.shiftKey ? 50 : 10;
 			if ( e.key === 'ArrowLeft' ) {
 				set( panel.offsetWidth - step, true );
 			} else if ( e.key === 'ArrowRight' ) {
