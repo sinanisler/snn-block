@@ -971,13 +971,16 @@
 	}
 
 	/**
-	 * Back to the block's default, with one set (so one undo step). On Desktop the base value is emptied: an empty value
-	 * is the default for every setting. On Tablet and Mobile the view's own value is taken back (clearValue).
+	 * Back to the block's default, with one set (so one undo step). On Desktop the base value becomes dflt: the
+	 * registered default of the setting (a Section's display is flex), or empty for a setting whose default is empty.
+	 * An empty value is not the default of every setting: the front end would fall back to the block's default while
+	 * the canvas read the empty value. On Tablet and Mobile the view's own value is taken back (clearValue).
 	 */
-	function resetValue( a, set, device, key ) {
+	function resetValue( a, set, device, key, dflt ) {
 		closeStep();
 		if ( device === 'Desktop' ) {
-			set( { [ key ]: '' } );
+			// A hover layer (__inherit) is taken back with an empty value: the hover state then shows the normal value.
+			set( { [ key ]: a.__inherit || dflt === undefined || dflt === null ? '' : dflt } );
 			return;
 		}
 		clearValue( a, set, device, key );

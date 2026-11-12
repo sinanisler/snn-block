@@ -186,7 +186,7 @@
 			closeStep();
 			setValue( a, set, device, 'flexDirection', patch );
 		};
-		const resetDirection = () => resetValue( a, set, device, 'flexDirection' );
+		const resetDirection = () => resetValue( a, set, device, 'flexDirection', base.flexDirection );
 		const rows = [
 			v( 'display', 'display', { label: __( 'Display', 'snn' ), kind: 'select', options: DISPLAY_OPTIONS, dflt: base.display } ),
 		];

@@ -242,10 +242,30 @@ class SNN_Blocks {
 		return $out;
 	}
 
-	/** The block's own attributes: its class's, and the link settings of a block that can be a link. */
+	/**
+	 * The names a block's own attributes may not use: the shared ones and every Style value of the property table.
+	 * A block that needs a style value (an icon size, an object fit) uses the table's key and lets the engine clean it.
+	 */
+	public static function reserved_keys( $name ) {
+		static $cache = array();
+		if ( ! isset( $cache[ $name ] ) ) {
+			$cache[ $name ] = array_keys( self::shared_attributes( self::definition( $name ) ) + SNN_Style_Props::attributes() );
+		}
+		return $cache[ $name ];
+	}
+
+	/**
+	 * The block's own attributes: its class's, and the link settings of a block that can be a link. A name that is
+	 * reserved (see reserved_keys()) is left out, with a notice for the developer: the engine's attribute wins.
+	 */
 	public static function own_attributes( $name ) {
-		$def = self::definition( $name );
-		$own = (array) call_user_func( array( $def['class'], 'attributes' ) );
+		$def      = self::definition( $name );
+		$own      = (array) call_user_func( array( $def['class'], 'attributes' ) );
+		$reserved = array_intersect_key( $own, array_flip( self::reserved_keys( $name ) ) );
+		if ( $reserved ) {
+			_doing_it_wrong( esc_html( $def['class'] ) . '::attributes', esc_html( 'Reserved attribute names: ' . implode( ', ', array_keys( $reserved ) ) ), '' );
+			$own = array_diff_key( $own, $reserved );
+		}
 		return $def['supports']['link'] ? $own + SNN_Block_Link::attributes() : $own;
 	}
 
@@ -294,8 +314,9 @@ class SNN_Blocks {
 		$out['conditions']       = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions']     = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
-		// The block's own settings, cleaned by its class.
-		$out = array_merge( $out, (array) call_user_func( array( $def['class'], 'clean' ), $attributes ) );
+		// The block's own settings, cleaned by its class. A reserved name from the class is ignored: the engine cleaned it above.
+		$own = (array) call_user_func( array( $def['class'], 'clean' ), $attributes );
+		$out = array_merge( $out, array_diff_key( $own, array_flip( self::reserved_keys( $block ) ) ) );
 		if ( $def['supports']['link'] ) {
 			$out = array_merge( $out, SNN_Block_Link::clean( $attributes ) );
 		}

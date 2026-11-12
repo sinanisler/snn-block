@@ -66,6 +66,36 @@ abstract class SNN_Block {
 		return true;
 	}
 
+	/* ------------------------------------------------------------------
+	 * Cleaning helpers for clean(): one way to read each kind of value, for every block.
+	 * ---------------------------------------------------------------- */
+
+	/** The value when it is one of the allowed strings, else the default. */
+	protected static function pick( $value, array $allowed, $default ) {
+		return is_string( $value ) && in_array( $value, $allowed, true ) ? $value : $default;
+	}
+
+	/** Any scalar as a string, kept as typed (a style-like value the property table reads later). '' for anything else. */
+	protected static function str( $value ) {
+		return is_scalar( $value ) ? (string) $value : '';
+	}
+
+	/** A plain text, sanitized, cut to $max characters (0: no limit). */
+	protected static function text( $value, $max = 0 ) {
+		$out = is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+		return $max ? mb_substr( $out, 0, $max ) : $out;
+	}
+
+	/** A URL, cleaned with esc_url_raw, at most 2000 characters. */
+	protected static function url( $value ) {
+		return is_string( $value ) ? mb_substr( esc_url_raw( $value ), 0, 2000 ) : '';
+	}
+
+	/** A switch: true for true, 1, '1' and 'true'. */
+	protected static function flag( $value ) {
+		return true === $value || 1 === $value || '1' === $value || 'true' === $value;
+	}
+
 	/** True when the inside is printed with no element around it. */
 	public static function bare( array $a ) {
 		return false;

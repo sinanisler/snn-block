@@ -17,9 +17,6 @@ class SNN_Image_Block extends SNN_Block {
 	/** The HTML tags the element offers. figure is the default. */
 	const TAGS = array( 'figure', 'div' );
 
-	/** Object fit: the CSS words. fill is the browser's own default. */
-	const OBJECT_FIT = array( 'fill', 'contain', 'cover', 'scale-down', 'none' );
-
 	const CAPTION = array( 'none', 'attachment', 'custom' );
 	const LOADING = array( 'lazy', 'eager' );
 
@@ -31,9 +28,6 @@ class SNN_Image_Block extends SNN_Block {
 
 	const MAX_SOURCES = 10;
 
-
-	/** Object position: one or two lengths or keywords, such as 50% 50% or center top. */
-	const POSITION = '/^(-?\d+(\.\d+)?(px|%|em|rem|vw|vh)?|left|right|top|bottom|center)(\s+(-?\d+(\.\d+)?(px|%|em|rem|vw|vh)?|left|right|top|bottom|center))?$/i';
 
 	/**
 	 * A custom media query: one or more (feature: value) conditions joined by and, with an optional media type first,
@@ -89,8 +83,6 @@ class SNN_Image_Block extends SNN_Block {
 			'imageDynamic'   => array( 'type' => 'string', 'default' => '' ),
 			'imageCustomUrl' => array( 'type' => 'string', 'default' => '' ),
 			'sources'        => array( 'type' => 'array', 'default' => array() ),
-			'objectFit'      => array( 'type' => 'string', 'default' => 'fill' ),
-			'objectPosition' => array( 'type' => 'string', 'default' => '50% 50%' ),
 			'captionType'    => array( 'type' => 'string', 'default' => 'attachment' ),
 			'captionCustom'  => array( 'type' => 'string', 'default' => '' ),
 			'loading'        => array( 'type' => 'string', 'default' => 'lazy' ),
@@ -116,8 +108,6 @@ class SNN_Image_Block extends SNN_Block {
 		$out['imageDynamic']   = self::text( $out['imageDynamic'], 300 );
 		$out['imageCustomUrl'] = self::text( $out['imageCustomUrl'], 2000 );
 		$out['sources']        = self::clean_sources( $out['sources'] );
-		$out['objectFit']      = self::pick( $out['objectFit'], self::OBJECT_FIT, 'fill' );
-		$out['objectPosition'] = self::matching( $out['objectPosition'], self::POSITION );
 		$out['captionType']    = self::pick( $out['captionType'], self::CAPTION, 'attachment' );
 		$out['captionCustom']  = self::text( $out['captionCustom'], 300 );
 		$out['loading']        = self::pick( $out['loading'], self::LOADING, 'lazy' );
@@ -365,25 +355,10 @@ class SNN_Image_Block extends SNN_Block {
 		return $out;
 	}
 
-	private static function pick( $value, array $allowed, $default ) {
-		return is_string( $value ) && in_array( $value, $allowed, true ) ? $value : $default;
-	}
-
 	/** The trimmed value when it matches the pattern, or '' when it does not. */
 	private static function matching( $value, $pattern ) {
 		$value = is_string( $value ) ? trim( $value ) : '';
 		return preg_match( $pattern, $value ) ? $value : '';
 	}
 
-	private static function text( $value, $max ) {
-		return is_scalar( $value ) ? mb_substr( sanitize_text_field( (string) $value ), 0, $max ) : '';
-	}
-
-	private static function url( $value ) {
-		return is_string( $value ) ? mb_substr( esc_url_raw( $value ), 0, 2000 ) : '';
-	}
-
-	private static function flag( $value ) {
-		return true === $value || 1 === $value || '1' === $value || 'true' === $value;
-	}
 }

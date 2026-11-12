@@ -32,24 +32,23 @@ class SNN_Icon_Block extends SNN_Block {
 				'display'       => 'inline-flex',
 				'flexDirection' => 'row',
 			),
+			// The Link group (SNN_Block_Link): the registry adds its attributes and cleans them.
+			'supports' => array( 'link' => true ),
 		);
 	}
 
 	public static function attributes() {
 		return array(
-			'icon'      => array( 'type' => 'object', 'default' => self::DEFAULT_ICON ),
-			'iconSize'  => array( 'type' => 'string', 'default' => '' ),
-			'iconColor' => array( 'type' => 'string', 'default' => '' ),
-		) + SNN_Block_Link::attributes();
+			'icon' => array( 'type' => 'object', 'default' => self::DEFAULT_ICON ),
+		);
 	}
 
 	public static function clean( $raw ) {
 		$raw = is_array( $raw ) ? $raw : array();
+		// The icon's size and colour are style values (the property table), cleaned by the engine.
 		return array(
-			'icon'      => SNN_Icons::clean( $raw['icon'] ?? self::DEFAULT_ICON ),
-			'iconSize'  => is_scalar( $raw['iconSize'] ?? '' ) ? (string) ( $raw['iconSize'] ?? '' ) : '',
-			'iconColor' => is_scalar( $raw['iconColor'] ?? '' ) ? (string) ( $raw['iconColor'] ?? '' ) : '',
-		) + SNN_Block_Link::clean( $raw );
+			'icon' => SNN_Icons::clean( $raw['icon'] ?? self::DEFAULT_ICON ),
+		);
 	}
 
 	/** The tag (a with a link) and the link attributes. The size and colour are CSS variables of the block (the table, style-props.php). */

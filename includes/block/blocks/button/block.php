@@ -33,6 +33,8 @@ class SNN_Button_Block extends SNN_Block {
 				'display'       => 'inline-flex',
 				'flexDirection' => 'row',
 			),
+			// The Link group (SNN_Block_Link): the registry adds its attributes and cleans them.
+			'supports' => array( 'link' => true ),
 		);
 	}
 
@@ -41,25 +43,19 @@ class SNN_Button_Block extends SNN_Block {
 			'text'         => array( 'type' => 'string', 'default' => 'Button' ),
 			'icon'         => array( 'type' => 'object', 'default' => array() ),
 			'iconPosition' => array( 'type' => 'string', 'default' => 'right' ),
-			'iconGap'      => array( 'type' => 'string', 'default' => '' ),
 			'iconSpace'    => array( 'type' => 'boolean', 'default' => false ),
-			'iconSize'     => array( 'type' => 'string', 'default' => '' ),
-			'iconColor'    => array( 'type' => 'string', 'default' => '' ),
-		) + SNN_Block_Link::attributes();
+		);
 	}
 
 	public static function clean( $raw ) {
 		$raw = is_array( $raw ) ? $raw : array();
-		$out = array(
+		// The icon's size, colour and gap are style values (the property table), cleaned by the engine.
+		return array(
 			'text'         => is_string( $raw['text'] ?? null ) ? $raw['text'] : 'Button',
 			'icon'         => SNN_Icons::clean( $raw['icon'] ?? array() ),
-			'iconPosition' => in_array( $raw['iconPosition'] ?? '', self::ICON_POSITION, true ) ? $raw['iconPosition'] : 'right',
-			'iconGap'      => is_scalar( $raw['iconGap'] ?? '' ) ? (string) ( $raw['iconGap'] ?? '' ) : '',
-			'iconSpace'    => true === ( $raw['iconSpace'] ?? false ),
-			'iconSize'     => is_scalar( $raw['iconSize'] ?? '' ) ? (string) ( $raw['iconSize'] ?? '' ) : '',
-			'iconColor'    => is_scalar( $raw['iconColor'] ?? '' ) ? (string) ( $raw['iconColor'] ?? '' ) : '',
+			'iconPosition' => self::pick( $raw['iconPosition'] ?? '', self::ICON_POSITION, 'right' ),
+			'iconSpace'    => self::flag( $raw['iconSpace'] ?? false ),
 		);
-		return $out + SNN_Block_Link::clean( $raw );
 	}
 
 	/**

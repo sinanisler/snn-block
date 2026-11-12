@@ -135,7 +135,7 @@
 			// store writes the chosen option as the stored value (a count becomes its template).
 			// A click on the icon that is set clears it, back to the default (one undo step). The fallback icon shown for an empty value is not stored, so choosing it sets it as before.
 				const picked = own !== undefined ? String( pick ? pick( own ) : own ) : null;
-				control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( pick ? pick( value ) : value ), options, onChange: ( x ) => ( picked !== null && picked === String( x ) ? resetValue( a, set, device, k ) : change( store ? store( x ) : x ) ) } );
+				control = h( Segmented, { label, tip: key, value: empty ? fallback || '' : String( pick ? pick( value ) : value ), options, onChange: ( x ) => ( picked !== null && picked === String( x ) ? resetValue( a, set, device, k, clearDefault ? '' : dflt ) : change( store ? store( x ) : x ) ) } );
 		} else if ( kind === 'switch' ) {
 			// A view's own off is '0' (an empty value would mean inherit). Desktop keeps the boolean.
 			control = h( Switch, { tip: key,
@@ -159,7 +159,7 @@
 				onChange: typed,
 			} );
 		}
-		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => resetValue( a, set, device, k ) }, control );
+		return h( ViewRow, { label, device, tip: key, css: cssNameOf( k ), own: own !== undefined, onReset: () => resetValue( a, set, device, k, clearDefault ? '' : dflt ) }, control );
 	}
 
 	function KeywordLength( { value, options, fallback, unit, label, tip, onKeyword, onLength } ) {
