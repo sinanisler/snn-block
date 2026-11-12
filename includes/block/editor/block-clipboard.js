@@ -1,5 +1,5 @@
 /**
- * Copy and paste for our blocks (snn/section, snn/container, snn/div and snn/text): the settings of one block go onto
+ * Copy and paste for our blocks (every snn/ block): the settings of one block go onto
  * any other of ours. The items sit in the block's settings menu, the ⋮ in the block toolbar and the right-click menu
  * of the List View and the canvas. Both are core's block settings menu, which takes items through the
  * BlockSettingsMenuControls fill.
@@ -35,21 +35,13 @@
 
 	const KEY = 'snn-block-clipboard';
 
-	// The attributes that are not styles: the block's identity (tag, CSS ID, classes), its content, its query loop, its
-	// custom attributes and the three kinds that are not styles (conditions, interactions and animations).
-	const NOT_STYLES = [
-		'tagName',
-		'htmlId',
-		'cssClasses',
-		'content',
-		'query',
-		'customAttributes',
-		'conditions',
-		'interactions',
-		'animation',
-		'gsapTweens',
-		'gsapScroll',
-	];
+	// The attributes that are styles: every key of the property table (the layout and Style values, snn.data.styleTable),
+	// the values per view, the hover state and the custom CSS. Anything else is the block's identity or content (the tag,
+	// the ID, a button's text, an image, a Code block's scripts) and is never copied as a style, whatever the block.
+	const STYLE_EXTRA = [ 'responsive', 'hoverStyle', 'customCss' ];
+	function isStyleKey( key ) {
+		return STYLE_EXTRA.indexOf( key ) !== -1 || ( snn.data.styleTable || [] ).some( ( row ) => row[ 0 ] === key );
+	}
 
 	// The clipboard: { styles: {...}, conditions: [...], interactions: [...], animations: { gsapTweens, gsapScroll, animation } }.
 	// A kind is missing or empty when nothing of it is on the clipboard. The copy of this page is kept in memory, so the
@@ -101,7 +93,7 @@
 			read: ( attrs ) => {
 				const out = {};
 				Object.keys( attrs ).forEach( ( key ) => {
-					if ( NOT_STYLES.indexOf( key ) === -1 ) {
+					if ( isStyleKey( key ) ) {
 						out[ key ] = clone( attrs[ key ] );
 					}
 				} );
@@ -111,7 +103,7 @@
 			attributes: ( clip ) => {
 				const out = {};
 				Object.keys( clip.styles ).forEach( ( key ) => {
-					if ( NOT_STYLES.indexOf( key ) === -1 ) {
+					if ( isStyleKey( key ) ) {
 						out[ key ] = clone( clip.styles[ key ] );
 					}
 				} );
