@@ -13,10 +13,10 @@ class SNN_Icon_Block extends SNN_Block {
 
 	const TAGS = array( 'span', 'div', 'a' );
 
-	/** The icon a new block starts with, as in Bricks. */
+	/** The icon a new block starts with, a Font Awesome heart. */
 	const DEFAULT_ICON = array(
-		'library' => 'themify',
-		'name'    => 'ti-star',
+		'library' => 'fontawesome-solid',
+		'name'    => 'fa-heart',
 	);
 
 	public static function definition() {

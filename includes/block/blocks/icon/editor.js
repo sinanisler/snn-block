@@ -14,7 +14,7 @@
 
 	function Pane( { a, set, pick, def, base, styleA, styleSet, device, hovering } ) {
 		// The colour and size are style values: on the hover state while it is on (styleA, styleSet), and per view like the others.
-		// The dot of the icon compares with the registered default icon (the star), so a new block shows none.
+		// The dot of the icon compares with the registered default icon (the heart), so a new block shows none.
 		const { ViewValue: V, ContentRest: Rest, TagRow, isChanged } = snn.panel;
 		const sa = styleA || a;
 		const sset = styleSet || set;
