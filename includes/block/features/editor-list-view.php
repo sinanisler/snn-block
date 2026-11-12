@@ -3,9 +3,10 @@
  * Block editor: the List View panel (the panel on the left of the editor).
  *
  * Width: WordPress sets this panel to 350px in its own stylesheet (.editor-list-view-sidebar, from a
- * 782px screen up). WordPress has no setting for it, and the panel cannot be resized by
- * dragging. This file sets the width to LIST_VIEW_WIDTH in the block editor only. The front
- * end is not affected. Below 782px the panel fills the screen, so no width is set there.
+ * 782px screen up) and has no way to resize it. This file sets the width from the CSS variable
+ * --snn-lv-width (default LIST_VIEW_WIDTH), and editor/list-view-resize.js adds a drag handle on
+ * the panel's right edge that sets it between 200px and 500px, saved per user. Block editor
+ * only. Below 782px the panel fills the screen, so no width is set there.
  *
  * Badges: an icon at the right of a block's row for each feature it uses (enqueue_badges).
  */
@@ -17,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SNN_Block_Editor_List_View {
 
 	/** Width of the List View panel in pixels. */
-	const LIST_VIEW_WIDTH = 300;
+	const LIST_VIEW_WIDTH = 350;
 
 	public static function init() {
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue' ) );
@@ -31,11 +32,24 @@ class SNN_Block_Editor_List_View {
 	 */
 	public static function enqueue() {
 		$width = (int) self::LIST_VIEW_WIDTH;
-		$css   = '@media (min-width: 782px) { .editor-list-view-sidebar { width: ' . $width . 'px; } }';
+		$css   = '@media (min-width: 782px) {'
+			. '.editor-list-view-sidebar{position:relative;width:var(--snn-lv-width,' . $width . 'px);min-width:200px;max-width:500px}'
+			. '.snn-lv-resize{position:absolute;top:0;right:-3px;bottom:0;width:6px;z-index:5;cursor:col-resize;touch-action:none}'
+			. '.snn-lv-resize::after{content:"";position:absolute;top:0;bottom:0;left:2px;width:2px;background:transparent;transition:background .15s}'
+			. '.snn-lv-resize:hover::after,.snn-lv-resize:focus-visible::after,.snn-lv-resizing .snn-lv-resize::after{background:var(--wp-admin-theme-color,#3858e9)}'
+			. '.snn-lv-resize:focus{outline:none}'
+			. '.snn-lv-resizing{cursor:col-resize;user-select:none}'
+			. '.snn-lv-resizing iframe{pointer-events:none}'
+			. '}'
+			. '@media (max-width: 781px) { .snn-lv-resize { display: none; } }';
 
 		wp_register_style( 'snn-editor-list-view', false, array( 'wp-editor' ) );
 		wp_enqueue_style( 'snn-editor-list-view' );
 		wp_add_inline_style( 'snn-editor-list-view', $css );
+
+		$js = 'includes/block/editor/list-view-resize.js';
+		wp_enqueue_script( 'snn-list-view-resize', SNN_URL . $js, array( 'wp-data', 'wp-dom-ready', 'wp-i18n', 'wp-preferences' ), SNN_Block_Tools::version( $js ), true );
+		wp_set_script_translations( 'snn-list-view-resize', 'snn', SNN_PATH . 'languages' );
 	}
 
 	/**

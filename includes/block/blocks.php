@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Features: each is on its own, so the order only follows what a file uses at load time.
-foreach ( array( 'fonts', 'editor-settings', 'editor-list-view', 'block-defaults', 'global-styles', 'page-styles', 'page-title', 'dynamic-data', 'query-loop', 'animation', 'block-tools', 'image-search', 'icons', 'links' ) as $snn_feature ) {
+foreach ( array( 'fonts', 'editor-settings', 'editor-list-view', 'editor-panel-swap', 'block-defaults', 'global-styles', 'page-styles', 'page-title', 'dynamic-data', 'query-loop', 'animation', 'block-tools', 'image-search', 'icons', 'links' ) as $snn_feature ) {
 	require_once __DIR__ . '/features/' . $snn_feature . '.php';
 }
 unset( $snn_feature );
