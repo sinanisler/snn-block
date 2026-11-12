@@ -231,6 +231,8 @@ class SNN_Block_Editor_Assets {
 				'tags'       => SNN_Blocks::TAGS,
 			),
 			'breakpoints'            => SNN_Style::view_widths(),
+			// The element states the panel's state menu offers, id => selector (SNN_Style::STATES).
+			'states'                 => SNN_Style::STATES,
 			'animation'              => SNN_Animation::editor_data(),
 			'blockTools'             => SNN_Block_Tools::editor_data(),
 			'styleTable'             => SNN_Style_Props::for_editor(),

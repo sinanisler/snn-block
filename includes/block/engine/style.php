@@ -248,13 +248,70 @@ class SNN_Style {
 	}
 
 	/**
-	 * The hover rules: what a block's hover state changes, on the base and on each view. A hover value wins over the
-	 * normal value of its level, and a hover of a view wins over the base hover. The rule for a level holds only the
-	 * declarations that differ from the normal style of that level (the same comparison as view_rules()). Written with
-	 * the placeholder %CLASS% for the block's class, as view_rules() is. Returns '' when no hover value is set.
+	 * The element states besides hover, in the order their rules are printed (a later state wins where two apply at
+	 * once: a pressed button is also hovered, so Active comes after Hover). Hover keeps its own attribute (hoverStyle);
+	 * the others are kept in the states attribute: states = array( 'focus' => array( 'base' => ..., 'css' => ... ) ).
+	 * The editor's state menu reads this list (SNN_Block_Editor_Assets).
 	 */
+	const STATES = array(
+		'first'        => ':first-child',
+		'last'         => ':last-child',
+		'odd'          => ':nth-child(odd)',
+		'even'         => ':nth-child(even)',
+		'hover'        => ':hover',
+		'focus-within' => ':focus-within',
+		'focus'        => ':focus-visible',
+		'active'       => ':active',
+	);
+
+	/** The states attribute, cleaned: each known state other than hover, cleaned as a hover is. */
+	public static function clean_states( $value ) {
+		$out = array();
+		if ( ! is_array( $value ) ) {
+			return $out;
+		}
+		foreach ( array_keys( self::STATES ) as $id ) {
+			if ( 'hover' !== $id && isset( $value[ $id ] ) ) {
+				$state = self::clean_hover( $value[ $id ] );
+				if ( $state ) {
+					$out[ $id ] = $state;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/** The values of one state: hoverStyle for hover, the states attribute for the others. */
+	public static function state_values( array $a, $id ) {
+		if ( 'hover' === $id ) {
+			return $a['hoverStyle'] ?? array();
+		}
+		return $a['states'][ $id ] ?? array();
+	}
+
+	/** The hover rules (see state_rules()). */
 	public static function hover_rules( array $a, array $dyn ) {
-		$hover = self::clean_hover( $a['hoverStyle'] ?? array() );
+		return self::state_rules( $a, $dyn, 'hover' );
+	}
+
+	/** The rules of every state the block sets, in the order of STATES. */
+	public static function all_state_rules( array $a, array $dyn ) {
+		$css = '';
+		foreach ( array_keys( self::STATES ) as $id ) {
+			$css .= self::state_rules( $a, $dyn, $id );
+		}
+		return $css;
+	}
+
+	/**
+	 * The rules of one state: what it changes, on the base and on each view. A state value wins over the normal value of
+	 * its level, and a state value of a view wins over the state's base value. The rule for a level holds only the
+	 * declarations that differ from the normal style of that level (the same comparison as view_rules()). Written with
+	 * the placeholder %CLASS% for the block's class, as view_rules() is. Returns '' when the state sets nothing.
+	 */
+	public static function state_rules( array $a, array $dyn, $id ) {
+		$pseudo = self::STATES[ $id ] ?? '';
+		$hover  = '' === $pseudo ? array() : self::clean_hover( self::state_values( $a, $id ) );
 		if ( ! $hover ) {
 			return '';
 		}
@@ -265,8 +322,8 @@ class SNN_Style {
 		$tab   = $hover['tablet'] ?? array();
 		$mob   = $hover['mobile'] ?? array();
 		// Each level is compared with the layers that apply below it at the same width, in the browser's order: the normal
-		// values of the level, then the base hover (a hover rule is more specific than the normal rules), then the hover of
-		// the views above. The rule of a level holds what it changes on those.
+		// values of the level, then the state's base (a state rule is more specific than the normal rules), then the state
+		// of the views above. The rule of a level holds what it changes on those.
 		$normal_tablet = array_merge( $a, $own['tablet'] ?? array() );
 		$normal_mobile = array_merge( $normal_tablet, $own['mobile'] ?? array() );
 		$lower_tablet  = array_merge( $normal_tablet, $base );
@@ -281,23 +338,22 @@ class SNN_Style {
 			list( $decls, $before ) = self::hover_parts( $normal, $hovered, $dyn, $is_view );
 			$body = '';
 			if ( '' !== $decls ) {
-				$body .= '.%CLASS%:hover{' . $decls . '}';
+				$body .= '.%CLASS%' . $pseudo . '{' . $decls . '}';
 			}
 			if ( '' !== $before ) {
-				$body .= '.%CLASS%:hover::before{' . $before . '}';
+				$body .= '.%CLASS%' . $pseudo . '::before{' . $before . '}';
 			}
 			if ( '' === $body ) {
 				continue;
 			}
 			$css .= null === $view ? $body : '@media (max-width:' . $views[ $view ] . 'px){' . $body . '}';
 		}
-		// The hover's own CSS: the rules of the state, with the block in its hover state for %root%.
+		// The state's own CSS: its rules, with the block in that state for %root%.
 		if ( ! empty( $hover['css'] ) ) {
-			$css .= self::scope_css( $hover['css'], '.%CLASS%:hover' );
+			$css .= self::scope_css( $hover['css'], '.%CLASS%' . $pseudo );
 		}
 		return $css;
 	}
-
 	/**
 	 * What a hover changes on one level, as two parts: the declarations of the block, and the declarations of its ::before
 	 * (the overlay). A property is written when its last value differs from the normal level's last value. Both are ''

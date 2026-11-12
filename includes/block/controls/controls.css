@@ -1853,3 +1853,121 @@
 .snn-panel .snn-content-rest[inert] {
 	opacity: 0.5;
 }
+
+/* The ID bar of the header (Bricks's selector bar is the model): the block's ID, the state chip while a state is edited,
+   and the states button that opens the state menu. */
+.snn-state-bar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.snn-state-id {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	height: 26px;
+	padding: 0 4px 0 8px;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	background: #fff;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 11px;
+	color: #50575e;
+}
+
+.snn-state-hash {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.snn-state-chip {
+	flex: 0 0 auto;
+	padding: 1px 6px;
+	border-radius: 2px;
+	background: #d26a0a;
+	color: #fff;
+	white-space: nowrap;
+}
+
+.snn-state-clear {
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	margin: 0 0 0 auto;
+	padding: 0;
+	border: 0;
+	border-radius: 2px;
+	background: none;
+	color: #50575e;
+	font-size: 15px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.snn-state-clear:hover,
+.snn-state-clear:focus-visible {
+	background: #f0f0f1;
+	color: #1e1e1e;
+}
+
+/* While a state is edited the bar and its button are orange, so the state is hard to miss. */
+.snn-state-bar.is-state .snn-state-id {
+	border-color: #d26a0a;
+}
+
+.snn-state-bar.is-state .snn-state-btn.is-on {
+	background: #d26a0a;
+	border-color: #d26a0a;
+}
+
+.snn-state-pop {
+	min-width: 220px;
+	padding: 4px 0;
+}
+
+.snn-state-group {
+	padding: 6px 10px 2px;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #757575;
+}
+
+.snn-pop-item.snn-state-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+}
+
+.snn-state-name {
+	flex: 1 1 auto;
+	text-align: left;
+}
+
+.snn-state-sel {
+	padding: 0;
+	background: none;
+	font-size: 10px;
+	color: #757575;
+}
+
+.snn-state-used {
+	flex: 0 0 auto;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #2271b1;
+}
+
+.snn-state-item.is-on {
+	color: #d26a0a;
+	font-weight: 600;
+}

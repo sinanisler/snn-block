@@ -24,6 +24,7 @@
 		'head.interactions': [ 'Interactions', 'Run an action when a trigger happens, such as a click.' ],
 		'head.animations': [ 'Animations', 'Play animations on the front end.' ],
 		'head.hover': [ 'Hover state', 'Style values set now apply when the mouse is over the block. A dot shows the block has one.' ],
+		'head.states': [ 'States', 'Style the block in a state: hover, focus, active, or first, last, odd and even. The chip in the ID bar shows the state you edit; the x goes back to Normal. A dot shows the block has state values.' ],
 		'tab.content': [ 'Content', 'Tag, layout, query loop and advanced settings.' ],
 		'tab.style': [ 'Style', 'Colours, sizes, text, borders and effects.' ],
 

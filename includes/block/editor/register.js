@@ -195,11 +195,19 @@
 				// The hover state of this view, as a rule of the canvas (the front end's hover rule, style.php hover_rules()). An inline
 				// style would beat it, so while a block has a hover value its normal style moves into a rule too (a class written twice).
 				const hoverLevel = device === 'Tablet' ? 'tablet' : device === 'Mobile' ? 'mobile' : 'base';
-				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.hoverStyle || {} ) );
-				const hoverText = snn.styleProps.hoverRules( a, hoverKey + '.' + hoverKey, hoverLevel, true );
-				// The hover state's own CSS: %root% is the block in its hover state (or the forced one, while the panel holds it).
-				const hoverOwn = a.hoverStyle && a.hoverStyle.css ? scopeCss( a.hoverStyle.css, ':is(.' + hoverKey + '.' + hoverKey + ':hover,.' + hoverKey + '.' + hoverKey + '.snn-force-hover)' ) : '';
-				const hoverAll = hoverText + hoverOwn;
+				// Every element state is drawn the same way, in the order of SNN_Style::STATES (a later state wins), each with
+				// its own forced class (snn-force-focus and so on) for the state the panel holds on.
+				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.hoverStyle || {} ) + JSON.stringify( a.states || {} ) );
+				const stateSelectors = ( snn.data && snn.data.states ) || { hover: ':hover' };
+				const hoverAll = Object.keys( stateSelectors )
+					.map( ( id ) => {
+						const own = snn.styleProps.stateValues( a, id );
+						const k = '.' + hoverKey + '.' + hoverKey;
+						// The state's own CSS: %root% is the block in that state (or the forced one, while the panel holds it).
+						const ownCss = own.css ? scopeCss( own.css, ':is(' + k + stateSelectors[ id ] + ',' + k + '.snn-force-' + id + ')' ) : '';
+						return snn.styleProps.hoverRules( a, hoverKey + '.' + hoverKey, hoverLevel, true, id ) + ownCss;
+					} )
+					.join( '' );
 				const hoverClass = hoverAll ? hoverKey : '';
 				const normalText = Object.keys( ownStyle ).length ? '.' + hoverKey + '.' + hoverKey + '{' + Object.keys( ownStyle ).map( ( k ) => k.replace( /[A-Z]/g, ( m ) => '-' + m.toLowerCase() ) + ':' + ownStyle[ k ] ).join( ';' ) + '}' : '';
 				const hoverRule = hoverAll ? h( 'style', null, normalText + hoverAll ) : null;

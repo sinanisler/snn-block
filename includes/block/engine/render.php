@@ -184,7 +184,7 @@ class SNN_Block_Render {
 		$inline_style = '';
 		$views        = SNN_Style::view_rules( $a, $dyn );
 		$before       = implode( ';', SNN_Style_Props::overlay( $a ) );
-		$hover        = SNN_Style::hover_rules( $a, $dyn );
+		$hover        = SNN_Style::all_state_rules( $a, $dyn );
 		if ( '' === $views && '' === $before && '' === $hover && ! SNN_Style_Sheet::in_page() ) {
 			// Outside a page (a REST answer, a command-line render) a block with no view and no overlay keeps its inline style:
 			// there is no page sheet to print its rule in, and nothing else needs a rule.

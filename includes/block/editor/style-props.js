@@ -499,14 +499,28 @@
 		return [ diff.join( ';' ), on !== oh ? ( oh || 'content:none' ) : '' ];
 	}
 
+	/** The values of one state: hoverStyle for hover, the states attribute for the others (SNN_Style::state_values()). */
+	function stateValues( a, id ) {
+		if ( id === 'hover' ) {
+			return a.hoverStyle || {};
+		}
+		return ( a.states && a.states[ id ] ) || {};
+	}
+
 	/**
 	 * The hover rule of one level of a block, for the editor's canvas (which draws one view at a time, so there is no media
 	 * rule): level is 'base', 'tablet' or 'mobile'. cls is the block's class (written twice, as the front end does).
 	 * forced adds the editor's class for a hover that is held on (snn-force-hover), so the panel can show the hover state.
 	 * The same layers as hover_rules() in style.php.
 	 */
-	function hoverRules( a, cls, level, forced ) {
-		const hs = a.hoverStyle || {};
+	function hoverRules( a, cls, level, forced, id ) {
+		const state = id || 'hover';
+		const pseudoOf = ( snn.data && snn.data.states ) || { hover: ':hover' };
+		const sel = pseudoOf[ state ];
+		if ( ! sel ) {
+			return '';
+		}
+		const hs = stateValues( a, state );
 		const base = cleanLevel( hs.base );
 		const tab = cleanLevel( hs.tablet );
 		const mob = cleanLevel( hs.mobile );
@@ -524,7 +538,7 @@
 			mobile: Object.assign( {}, lower.mobile, mob ),
 		};
 		const [ decls, before ] = hoverParts( lower[ level ], hovered[ level ], level !== 'base' );
-		const pick = ( pseudo ) => ( forced ? '.' + cls + ':hover' + pseudo + ',.' + cls + '.snn-force-hover' + pseudo : '.' + cls + ':hover' + pseudo );
+		const pick = ( pseudo ) => ( forced ? '.' + cls + sel + pseudo + ',.' + cls + '.snn-force-' + state + pseudo : '.' + cls + sel + pseudo );
 		let out = '';
 		if ( decls ) {
 			out += pick( '' ) + '{' + decls + '}';
@@ -535,5 +549,5 @@
 		return out;
 	}
 
-	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf, step, hoverRules, cleanLevel };
+	snn.styleProps = { check, declarations, camel, overlay, styleObject, gridWord, displayOf, step, hoverRules, stateValues, cleanLevel };
 } )( typeof window !== 'undefined' ? window : globalThis );

@@ -7,7 +7,7 @@
 	const C = snn.controls;
 	const I = snn.layoutIcons;
 	const { createElement: h, Fragment, useState, useEffect } = wp.element;
-	const { __ } = wp.i18n;
+	const { __, sprintf } = wp.i18n;
 	const { Row, SwitchRow, Accordion, Select, Segmented, Group, Disclosure, Switch, effectiveValues, tipAttr, closeStep } = C;
 	const { HeadIcons, ClassesEditor, AttributesEditor, ConditionsEditor, InteractionsEditor } = snn.blockTools;
 	const { AnimationsPane, stateOf } = snn.animationPane;
@@ -21,7 +21,7 @@
 	 * The block's Edit unmounts when another block is selected, so the place is kept here instead. The next block opens
 	 * where the last one was left. It lasts for the editor session; a reload starts on Content.
 	 */
-	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout', hover: false };
+	const panelPlace = { tab: 'default', sub: null, stylePage: 'layout', state: '' };
 
 	/**
 	 * A part of the Content tab that the hover state does not change: it is inert while the hover state is on (the wrapper
@@ -43,21 +43,22 @@
 	}
 
 	/**
-	 * The layer the Style values are read from while the hover state is on: the block's hover values (base and views),
-	 * with the normal values as their inheritance (__inherit, see controls.js effectiveValues()).
+	 * The layer the Style values are read from while a state is on (hover, focus and the others of SNN_Style::STATES):
+	 * the state's values (base and views), with the normal values as their inheritance (__inherit, see controls.js
+	 * effectiveValues()).
 	 */
-	function hoverLayer( a ) {
-		const hs = a.hoverStyle || {};
+	function stateLayer( a, id ) {
+		const hs = snn.styleProps.stateValues( a, id );
 		return { ...( hs.base || {} ), customCss: hs.css || '', responsive: { tablet: hs.tablet || {}, mobile: hs.mobile || {} }, __inherit: a };
 	}
 
 	/**
-	 * Writes a Style value to the hover state, in the shape hoverStyle keeps: a base value, or a view's values (the
-	 * responsive shape the panel's helpers write). One set is one undo step.
+	 * Writes a Style value to a state, in the shape a state keeps: a base value, or a view's values (the responsive shape
+	 * the panel's helpers write). Hover goes to hoverStyle, the other states to the states attribute. One set is one undo step.
 	 */
-	function hoverWriter( a, set ) {
+	function stateWriter( a, set, id ) {
 		return ( patch ) => {
-			const hs = a.hoverStyle || {};
+			const hs = snn.styleProps.stateValues( a, id );
 			const next = { base: { ...( hs.base || {} ) }, tablet: { ...( hs.tablet || {} ) }, mobile: { ...( hs.mobile || {} ) }, css: hs.css || '' };
 			Object.keys( patch ).forEach( ( k ) => {
 				if ( k === 'customCss' ) {
@@ -72,14 +73,141 @@
 					next.base[ k ] = patch[ k ];
 				}
 			} );
-			set( { hoverStyle: next } );
+			if ( id === 'hover' ) {
+				set( { hoverStyle: next } );
+				return;
+			}
+			const states = { ...( a.states || {} ) };
+			if ( stateUsed( next ) ) {
+				states[ id ] = next;
+			} else {
+				delete states[ id ];
+			}
+			set( { states } );
 		};
 	}
 
-	/** True when the block has a hover value on any level (its H button shows a dot). */
-	function hasHover( a ) {
-		const hs = a.hoverStyle || {};
-		return !! hs.css || [ 'base', 'tablet', 'mobile' ].some( ( v ) => Object.keys( hs[ v ] || {} ).length > 0 );
+	/** True when a state's values set anything on any level. */
+	function stateUsed( hs ) {
+		return !! ( hs && ( hs.css || [ 'base', 'tablet', 'mobile' ].some( ( v ) => Object.keys( hs[ v ] || {} ).length > 0 ) ) );
+	}
+
+	/** The states the menu offers, id => selector (SNN_Style::STATES). */
+	function stateSelectors() {
+		return ( snn.data && snn.data.states ) || { hover: ':hover' };
+	}
+
+	/** The states the block sets something in (their menu items show a dot). */
+	function usedStates( a ) {
+		return Object.keys( stateSelectors() ).filter( ( id ) => stateUsed( snn.styleProps.stateValues( a, id ) ) );
+	}
+
+	/** The groups and names of the state menu. A state the server adds without a name here shows its selector. */
+	const STATE_MENU = [
+		{ title: __( 'Common', 'snn' ), ids: [ 'hover', 'focus', 'active', 'focus-within' ] },
+		{ title: __( 'Structure', 'snn' ), ids: [ 'first', 'last', 'odd', 'even' ] },
+	];
+	const STATE_NAMES = {
+		hover: __( 'Hover', 'snn' ),
+		focus: __( 'Focus', 'snn' ),
+		active: __( 'Active', 'snn' ),
+		'focus-within': __( 'Focus inside', 'snn' ),
+		first: __( 'First', 'snn' ),
+		last: __( 'Last', 'snn' ),
+		odd: __( 'Odd', 'snn' ),
+		even: __( 'Even', 'snn' ),
+	};
+
+	/** The cursor glyph of the states button (the Bricks selector button is the model). */
+	function CursorGlyph() {
+		return h(
+			'svg',
+			{ viewBox: '0 0 24 24', width: 14, height: 14, 'aria-hidden': 'true', focusable: 'false' },
+			h( 'path', { d: 'M2.8 2.8l8.4 19.1a.75.75 0 0 0 1.4-.1l1.9-7.2a1.5 1.5 0 0 1 1.1-1.1l7.2-1.9a.75.75 0 0 0 .1-1.4L3.8 1.8a.75.75 0 0 0-1 1z', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinejoin: 'round' } )
+		);
+	}
+
+	/**
+	 * The ID bar of the header: the block's ID (read only: IDs are set by themselves), the state being edited as a chip
+	 * with its selector and an x back to Normal, and the states button that opens the state menu. disabled: the block
+	 * has no states (supports.hover false); the bar then shows the ID only.
+	 */
+	function StateBar( { id, state, used, disabled, onPick } ) {
+		const { usePopoverClose, usePopPlacement, inBody } = C;
+		const [ open, setOpen ] = useState( false );
+		const wrap = wp.element.useRef( null );
+		const pop = wp.element.useRef( null );
+		usePopoverClose( open, [ wrap, pop ], () => setOpen( false ), pop );
+		usePopPlacement( open, wrap, pop );
+		const selectors = stateSelectors();
+		const pick = ( v ) => {
+			setOpen( false );
+			onPick( v );
+		};
+		const item = ( sid ) =>
+			h(
+				'button',
+				{
+					key: sid,
+					type: 'button',
+					className: 'snn-pop-item snn-state-item' + ( state === sid ? ' is-on' : '' ),
+					'aria-pressed': state === sid ? 'true' : 'false',
+					onClick: () => pick( state === sid ? '' : sid ),
+				},
+				h( 'span', { className: 'snn-state-name' }, STATE_NAMES[ sid ] || selectors[ sid ] ),
+				h( 'code', { className: 'snn-state-sel' }, selectors[ sid ] ),
+				used.indexOf( sid ) !== -1 ? h( 'span', { className: 'snn-state-used', 'aria-label': __( 'Has values', 'snn' ) } ) : null
+			);
+		const known = STATE_MENU.reduce( ( all, g ) => all.concat( g.ids ), [] );
+		const other = Object.keys( selectors ).filter( ( sid ) => known.indexOf( sid ) === -1 );
+		const groups = STATE_MENU.concat( other.length ? [ { title: __( 'Other', 'snn' ), ids: other } ] : [] );
+		return h(
+			'div',
+			{ className: 'snn-state-bar' + ( state ? ' is-state' : '' ), ref: wrap },
+			h(
+				'div',
+				{ className: 'snn-state-id' },
+				h( 'span', { className: 'snn-state-hash' }, '#' + ( id || '' ) ),
+				state ? h( 'span', { className: 'snn-state-chip', title: STATE_NAMES[ state ] || '' }, selectors[ state ] || state ) : null,
+				state
+					? h( 'button', { type: 'button', className: 'snn-state-clear', 'aria-label': __( 'Back to Normal', 'snn' ), onClick: () => onPick( '' ) }, '×' )
+					: null
+			),
+			disabled
+				? null
+				: h(
+						'button',
+						{
+							type: 'button',
+							className: 'snn-bt-head-btn snn-state-btn' + ( open || state ? ' is-on' : '' ) + ( used.length ? ' is-used' : '' ),
+							'aria-label': __( 'States', 'snn' ),
+							'aria-expanded': open ? 'true' : 'false',
+							...tipAttr( 'head.states' ),
+							onClick: () => setOpen( ! open ),
+						},
+						h( CursorGlyph ),
+						used.length ? h( 'span', { className: 'snn-bt-head-dot', 'aria-hidden': 'true' } ) : null
+				  ),
+			open
+				? inBody(
+						h(
+							'div',
+							{ className: 'snn-pop snn-panel snn-state-pop', ref: pop, role: 'dialog', 'aria-label': __( 'States', 'snn' ) },
+							state
+								? h( 'button', { type: 'button', className: 'snn-pop-item snn-state-item', onClick: () => pick( '' ) }, h( 'span', { className: 'snn-state-name' }, __( 'Normal', 'snn' ) ) )
+								: null,
+							groups.map( ( g ) =>
+								h(
+									Fragment,
+									{ key: g.title },
+									h( 'div', { className: 'snn-state-group' }, g.title ),
+									g.ids.filter( ( sid ) => selectors[ sid ] ).map( item )
+								)
+							)
+						)
+				  )
+				: null
+		);
 	}
 
 	/** A panel state kept across blocks (see panelPlace): the same pair as useState, and the new value is saved. */
@@ -119,13 +247,13 @@
 	 * The Content tab of a block without its own pane: its element (the tag), its link (the a tag), its layout (only the
 	 * layout blocks that hold children: Section, Container, Div) and its query loop (only the blocks that offer one).
 	 */
-	function GenericPane( { a, set, def, parent, device, base, layoutA, layoutSet, hovering } ) {
+	function GenericPane( { a, set, def, parent, device, base, layoutA, layoutSet, hovering, stateLabel } ) {
 		const [ openQuery, setOpenQuery ] = useState( false );
 		const q = a.query;
 		const setQ = ( patch ) => set( { query: { ...q, ...patch } } );
 		const LinkGroup = snn.linkFields && snn.linkFields.LinkGroup;
 		// The layout settings are style values: while the hover state is on they are its values (layoutA, layoutSet). The
-		// other settings here are not part of the hover state, so they are inert until H is off (the wrapper below).
+		// other settings here are not part of the state, so they are inert until the panel is back on Normal (the wrapper below).
 		const layout = def.supports.children
 			? h(
 					Group,
@@ -136,7 +264,7 @@
 		return h(
 			'div',
 			{ className: 'snn-pane' },
-			hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the layout settings change it. The settings below are not part of it, so they are off until H is turned off.', 'snn' ) ) : null,
+			hovering ? h( 'p', { className: 'snn-hint' }, sprintf( /* translators: %s: a state name, such as Hover */ __( 'The %s state is on: the layout settings change it. The settings below are not part of it, so they are off until you go back to Normal.', 'snn' ), stateLabel ) ) : null,
 			layout,
 			h(
 				ContentRest,
@@ -204,13 +332,16 @@
 		const [ tab, setTab ] = usePlace( 'tab' );
 		const [ sub, setSub ] = usePlace( 'sub' );
 		const [ stylePage, setStylePage ] = usePlace( 'stylePage' );
-		const [ hoverOn, setHoverOn ] = usePlace( 'hover' );
-		// The hover state is for the Style values. A block with supports.hover false has none (its H button is not shown).
+		const [ stateOn, setStateOn ] = usePlace( 'state' );
+		// The states are for the Style values. A block with supports.hover false has none (its states button is not shown).
 		const noHover = def.supports && def.supports.hover === false;
-		const hovering = hoverOn && ! noHover;
-		// What the Style values are read and written as: the hover layer while the hover state is on, else the block itself.
-		const sa = hovering ? hoverLayer( a ) : a;
-		const sset = hovering ? hoverWriter( a, set ) : set;
+		const stateNow = ! noHover && stateOn && stateSelectors()[ stateOn ] ? stateOn : '';
+		// True while any state is edited (the name is kept: the block panes read it as "a state is on").
+		const hovering = !! stateNow;
+		// What the Style values are read and written as: the state's layer while a state is on, else the block itself.
+		const sa = hovering ? stateLayer( a, stateNow ) : a;
+		const sset = hovering ? stateWriter( a, set, stateNow ) : set;
+		const stateLabel = hovering ? STATE_NAMES[ stateNow ] || stateSelectors()[ stateNow ] : '';
 		const tabNow = tab;
 		// The canvas draws the hover state of this block while it is on: a class the canvas's hover rule also matches
 		// (register.js). Set again when the block's hover values change, since a re-render of the block can reset its class.
@@ -221,9 +352,13 @@
 			if ( ! el ) {
 				return undefined;
 			}
-			el.classList.toggle( 'snn-force-hover', !! hovering );
-			return () => el.classList.remove( 'snn-force-hover' );
-		}, [ hovering, clientId, a.hoverStyle ] );
+			if ( ! stateNow ) {
+				return undefined;
+			}
+			const cls = 'snn-force-' + stateNow;
+			el.classList.add( cls );
+			return () => el.classList.remove( cls );
+		}, [ stateNow, clientId, a.hoverStyle, a.states ] );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
 		const gsapCount = stateOf( a ).tweens.length;
@@ -260,24 +395,24 @@
 					open: sub,
 					onOpen: ( v ) => {
 						if ( v ) {
-							setHoverOn( false );
+							setStateOn( '' );
 						}
 						setSub( v );
 					},
-					hover: noHover
-						? undefined
-						: {
-								on: hovering,
-								used: hasHover( a ),
-								onToggle: () => {
-									if ( ! hovering ) {
-										setSub( null );
-									}
-									setHoverOn( ! hovering );
-								},
-						  },
 				} )
 			),
+			h( StateBar, {
+				id: a.htmlId,
+				state: stateNow,
+				used: noHover ? [] : usedStates( a ),
+				disabled: noHover,
+				onPick: ( v ) => {
+					if ( v ) {
+						setSub( null );
+					}
+					setStateOn( v );
+				},
+			} ),
 			h( ViewSwitch, null )
 		);
 
@@ -290,8 +425,8 @@
 		};
 		const own = parts && parts.Pane ? h( parts.Pane, { a, set, pick, def, device, parent, base, clientId, styleA: sa, styleSet: sset, hovering } ) : null;
 		const defaultPane = own
-			? h( Fragment, null, hovering ? h( 'p', { className: 'snn-hint' }, __( 'The hover state is on: the style settings here change it. The other settings are not part of it, so they are off until H is turned off.', 'snn' ) ) : null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
-			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering } );
+			? h( Fragment, null, hovering ? h( 'p', { className: 'snn-hint' }, sprintf( /* translators: %s: a state name, such as Hover */ __( 'The %s state is on: the style settings here change it. The other settings are not part of it, so they are off until you go back to Normal.', 'snn' ), stateLabel ) ) : null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
+			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering, stateLabel } );
 
 		// Style: one group at a time, chosen on the rail of icons (as Bricks does). The group's sections follow, one
 		// under another. Every value is per view: a view shows the value it sets, or the one it inherits.
@@ -328,7 +463,7 @@
 				'div',
 				{ className: 'snn-page-head' },
 				h( 'span', Object.assign( { className: 'snn-page-title' }, tipAttr( 'style.' + page.id ) ), page.label ),
-				hovering ? h( 'span', { className: 'snn-hover-badge' }, __( 'Hover state', 'snn' ) ) : null
+				hovering ? h( 'span', { className: 'snn-hover-badge' }, sprintf( /* translators: %s: a state name, such as Hover */ __( '%s state', 'snn' ), stateLabel ) ) : null
 			),
 			page.kind === 'css'
 				? h( CssPane, { a: sa, set: sset, editor: data.cssEditor } )

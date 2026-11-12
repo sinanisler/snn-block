@@ -38,7 +38,7 @@
 	// The attributes that are styles: every key of the property table (the layout and Style values, snn.data.styleTable),
 	// the values per view, the hover state and the custom CSS. Anything else is the block's identity or content (the tag,
 	// the ID, a button's text, an image, a Code block's scripts) and is never copied as a style, whatever the block.
-	const STYLE_EXTRA = [ 'responsive', 'hoverStyle', 'customCss' ];
+	const STYLE_EXTRA = [ 'responsive', 'hoverStyle', 'states', 'customCss' ];
 	function isStyleKey( key ) {
 		return STYLE_EXTRA.indexOf( key ) !== -1 || ( snn.data.styleTable || [] ).some( ( row ) => row[ 0 ] === key );
 	}

@@ -1185,5 +1185,9 @@
 		resetValue,
 		closeStep,
 		typingStep,
+		// The popover parts, for a menu outside this file (the panel's state menu): close, placement, drawn in the body.
+		usePopoverClose,
+		usePopPlacement,
+		inBody,
 	};
 } )( window.wp );
