@@ -75,12 +75,16 @@ class SNN_Block_Render {
 			if ( $limit && $index >= $limit ) {
 				break;
 			}
+			// The loop's own keys, and core's postId and postType, so a core block inside (Post Title, Post Featured Image)
+			// shows this item's post as it does in the core query loop.
 			$loop_ctx = array_merge(
 				$ctx,
 				array(
 					SNN_Blocks::CONTEXT_POST  => $post->ID,
 					SNN_Blocks::CONTEXT_INDEX => $index,
 					SNN_Blocks::CONTEXT_COUNT => $found['found'],
+					'postId'                  => $post->ID,
+					'postType'                => $post->post_type,
 				)
 			);
 			$items[] = (string) SNN_Dynamic_Data::with_post(
@@ -89,26 +93,83 @@ class SNN_Block_Render {
 					if ( ! SNN_Block_Tools::passes( $a['conditions'], self::dynamic_context( $loop_ctx ) ) ) {
 						return '';
 					}
-					return self::element( $a, $block->name, $loop_ctx, self::inner( $block, $a, $loop_ctx ) );
+					return self::element( $a, $block->name, $loop_ctx, self::inner( $block, $a, $loop_ctx, $loop_ctx ) );
 				}
 			);
 		}
 		return $items;
 	}
 
-	/** The inner blocks, rendered with the given context (the loop's post, index and count). */
-	private static function children( $block, array $ctx ) {
+	/**
+	 * The inner blocks, rendered once, as WordPress renders the inner blocks of a block: with the context of every block
+	 * around them (core's postId and postType, a synced pattern's overrides, what our blocks provide) and through the
+	 * filters pre_render_block, render_block_data and render_block_context. Our blocks skip WordPress's own pass
+	 * (skip_inner_blocks, see SNN_Blocks::register()), so this is the only one.
+	 *
+	 * In a loop item ($loop: the loop's keys for this post) each child is made again with those keys added to its
+	 * context, so the item's blocks read the item's post. Outside a loop the children WordPress made are rendered as they are.
+	 */
+	private static function children( $block, array $loop = array() ) {
 		$html = '';
+		if ( ! $block->inner_blocks ) {
+			return $html;
+		}
+		$child_ctx = null;
+		if ( $loop ) {
+			// What the children would get: the context around this block, what it provides, then the loop's keys.
+			$child_ctx = array_merge( self::available_context( $block ), self::provided_context( $block ), $loop );
+		}
 		foreach ( $block->inner_blocks as $inner ) {
-			$html .= ( new WP_Block( $inner->parsed_block, $ctx ) )->render();
+			$child = null === $child_ctx ? $inner : new WP_Block( $inner->parsed_block, $child_ctx );
+			$pre   = apply_filters( 'pre_render_block', null, $child->parsed_block, $block );
+			if ( null !== $pre ) {
+				$html .= $pre;
+				continue;
+			}
+			$source     = $child->parsed_block;
+			$source_ctx = $child->context;
+			$child->parsed_block = apply_filters( 'render_block_data', $child->parsed_block, $source, $block );
+			$child->context      = apply_filters( 'render_block_context', $child->context, $child->parsed_block, $block );
+			if ( $child->context !== $source_ctx ) {
+				$child->refresh_context_dependents();
+			} elseif ( $child->parsed_block !== $source ) {
+				$child->refresh_parsed_block_dependents();
+			}
+			$html .= $child->render();
+			// Outside a loop the child is WordPress's own object: put it back as it was, so a second render of this block
+			// (a block printed twice) starts from the saved block again.
+			if ( null === $child_ctx ) {
+				$child->parsed_block = $source;
+				$child->context      = $source_ctx;
+			}
 		}
 		return $html;
 	}
 
+	/** The context a block was made with (everything the blocks around it gave). WordPress keeps it protected. */
+	private static function available_context( WP_Block $block ) {
+		$read = function () {
+			return is_array( $this->available_context ?? null ) ? $this->available_context : array();
+		};
+		return array_merge( $read->call( $block ), (array) $block->context );
+	}
+
+	/** What a block provides to its children: its definition's provides, read from its attributes. */
+	private static function provided_context( WP_Block $block ) {
+		$out = array();
+		$provides = $block->block_type && is_array( $block->block_type->provides_context ) ? $block->block_type->provides_context : array();
+		foreach ( $provides as $name => $attribute ) {
+			if ( array_key_exists( $attribute, (array) $block->attributes ) ) {
+				$out[ $name ] = $block->attributes[ $attribute ];
+			}
+		}
+		return $out;
+	}
+
 	/** What goes inside the element: what the block's class prints, or the inner blocks when it prints none (null). */
-	private static function inner( $block, array $a, array $ctx ) {
+	private static function inner( $block, array $a, array $ctx, array $loop = array() ) {
 		$html = call_user_func( array( SNN_Blocks::class_of( $block->name ), 'render' ), $a, self::dynamic_context( $ctx ) );
-		return null === $html ? self::children( $block, $ctx ) : (string) $html;
+		return null === $html ? self::children( $block, $loop ) : (string) $html;
 	}
 
 	/** A style element, or nothing when the loop being rendered has printed the rule of this class already. */
@@ -246,12 +307,17 @@ class SNN_Block_Render {
 		return $prefix . '<' . $tag . ' ' . $attrs . '>' . $inner . '</' . $tag . '>';
 	}
 
-	/** The context the dynamic tags read: the loop's post, index and count. */
+	/**
+	 * The context the dynamic tags read: the loop's post, index and count. Outside our loop the post is core's postId
+	 * when a template or the core query loop gives one. 'context' holds every context value the block received, for its
+	 * class (a parent's provided values).
+	 */
 	public static function dynamic_context( array $ctx ) {
 		return array(
-			'post_id' => (int) ( $ctx[ SNN_Blocks::CONTEXT_POST ] ?? 0 ),
+			'post_id' => (int) ( $ctx[ SNN_Blocks::CONTEXT_POST ] ?? ( $ctx['postId'] ?? 0 ) ),
 			'index'   => $ctx[ SNN_Blocks::CONTEXT_INDEX ] ?? null,
 			'count'   => $ctx[ SNN_Blocks::CONTEXT_COUNT ] ?? null,
+			'context' => $ctx,
 		);
 	}
 }

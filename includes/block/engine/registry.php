@@ -100,15 +100,32 @@ class SNN_Blocks {
 			return null;
 		}
 		$def += array(
-			'title'    => $def['name'],
-			'tag'      => 'div',
-			'tags'     => self::TAGS,
-			'icon'     => 'block-default',
-			'category' => 'design',
-			'order'    => 100,
-			'layout'   => array(),
-			'supports' => array(),
+			'title'         => $def['name'],
+			'tag'           => 'div',
+			'tags'          => self::TAGS,
+			'icon'          => 'block-default',
+			'category'      => 'design',
+			'order'         => 100,
+			'layout'        => array(),
+			'supports'      => array(),
+			// Nesting and context (see SNN_Block::definition()).
+			'parent'        => array(),
+			'ancestor'      => array(),
+			'allowedBlocks' => null,
+			'template'      => array(),
+			'templateLock'  => false,
+			'provides'      => array(),
+			'context'       => array(),
 		);
+		$def['parent']   = array_values( array_filter( (array) $def['parent'], 'is_string' ) );
+		$def['ancestor'] = array_values( array_filter( (array) $def['ancestor'], 'is_string' ) );
+		if ( null !== $def['allowedBlocks'] ) {
+			$def['allowedBlocks'] = array_values( array_filter( (array) $def['allowedBlocks'], 'is_string' ) );
+		}
+		$def['template']     = is_array( $def['template'] ) ? array_values( $def['template'] ) : array();
+		$def['templateLock'] = in_array( $def['templateLock'], array( 'all', 'insert', 'contentOnly' ), true ) ? $def['templateLock'] : false;
+		$def['provides']     = array_filter( (array) $def['provides'], 'is_string' );
+		$def['context']      = array_values( array_filter( (array) $def['context'], 'is_string' ) );
 		$def['layout']  += array(
 			'display'       => 'block',
 			'flexDirection' => 'row',
@@ -152,14 +169,30 @@ class SNN_Blocks {
 	}
 
 	public static function register() {
-		foreach ( array_keys( self::definitions() ) as $name ) {
+		foreach ( self::definitions() as $name => $def ) {
+			$nesting = array_filter(
+				array(
+					'parent'         => $def['parent'],
+					'ancestor'       => $def['ancestor'],
+					'allowed_blocks' => $def['allowedBlocks'],
+				),
+				function ( $v ) {
+					return null !== $v && array() !== $v;
+				}
+			);
 			register_block_type(
 				$name,
-				array(
-					'attributes'      => self::attributes( $name ),
-					'render_callback' => array( 'SNN_Block_Render', 'render' ),
-					// A loop passes its post and index to the blocks inside it, down the tree.
-					'uses_context'    => array( self::CONTEXT_POST, self::CONTEXT_INDEX, self::CONTEXT_COUNT ),
+				$nesting + array(
+					'attributes'       => self::attributes( $name ),
+					'render_callback'  => array( 'SNN_Block_Render', 'render' ),
+					// The engine renders the inner blocks itself, once (SNN_Block_Render::children()). Without this WordPress
+					// renders them first as well, for a $content our callback never uses: twice per level, so a block eight
+					// levels deep was rendered 128 times.
+					'skip_inner_blocks' => true,
+					// A loop passes its post and index to the blocks inside it, down the tree. postId and postType are core's
+					// (a template or the core query loop gives them). A block's own context names come after.
+					'uses_context'     => array_values( array_unique( array_merge( array( self::CONTEXT_POST, self::CONTEXT_INDEX, self::CONTEXT_COUNT, 'postId', 'postType' ), $def['context'] ) ) ),
+					'provides_context' => $def['provides'],
 					// The core panels are off: our own inspector has these settings.
 					'supports'        => array(
 						'html'            => false,

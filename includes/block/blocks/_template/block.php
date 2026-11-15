@@ -49,6 +49,14 @@ class SNN_Template_Block extends SNN_Block {
 				'link'     => false,               // true: the element can be an a with a URL (the Link group)
 				'hover'    => true,                // false: no H button (no hover state for the Style values)
 			),
+			// Optional nesting and context (SNN_Block::definition() lists them all), for example a tab inside tabs:
+			// 'parent'        => array( 'snn/tabs' ),           // may sit only directly in these
+			// 'ancestor'      => array(),                       // must sit somewhere inside one of these
+			// 'allowedBlocks' => array( 'snn/text' ),           // its children may only be these (with children)
+			// 'template'      => array( array( 'snn/text', array( 'content' => 'Title' ) ) ), // the children it starts with
+			// 'templateLock'  => false,                         // 'all', 'insert' or 'contentOnly'
+			// 'provides'      => array( 'snn/tabsId' => 'htmlId' ), // context name => attribute, for the blocks inside
+			// 'context'       => array( 'snn/tabsId' ),         // context names it reads: $dyn['context'] in render()
 		);
 	}
 

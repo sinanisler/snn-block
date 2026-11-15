@@ -101,7 +101,37 @@
 	 */
 	function registerLayout( def ) {
 		const parts = snn.blocks[ def.name ] || {};
+		// Nesting and context from the definition (SNN_Block::definition()): WordPress enforces these in the editor. A key
+		// left empty is not passed, so the block may go anywhere and hold any block.
+		const nesting = {};
+		if ( def.parent && def.parent.length ) {
+			nesting.parent = def.parent;
+		}
+		if ( def.ancestor && def.ancestor.length ) {
+			nesting.ancestor = def.ancestor;
+		}
+		if ( Array.isArray( def.allowedBlocks ) ) {
+			nesting.allowedBlocks = def.allowedBlocks;
+		}
+		if ( def.provides && Object.keys( def.provides ).length ) {
+			nesting.providesContext = def.provides;
+		}
+		if ( def.context && def.context.length ) {
+			nesting.usesContext = def.context;
+		}
+		// The inner blocks settings: the starting children, the lock and the children allowed.
+		const innerOptions = { __unstableDisableLayoutClassNames: true };
+		if ( def.template && def.template.length ) {
+			innerOptions.template = def.template;
+		}
+		if ( def.templateLock ) {
+			innerOptions.templateLock = def.templateLock;
+		}
+		if ( Array.isArray( def.allowedBlocks ) ) {
+			innerOptions.allowedBlocks = def.allowedBlocks;
+		}
 		registerBlockType( def.name, {
+			...nesting,
 			apiVersion: 3,
 			title: def.title,
 			category: def.category || 'design',
@@ -127,7 +157,7 @@
 				position: false,
 			},
 			attributes: def.attributes || {},
-			edit: function Edit( { attributes: saved, setAttributes, clientId } ) {
+			edit: function Edit( { attributes: saved, setAttributes, clientId, context } ) {
 				// WordPress does not merge defaults into an object attribute, so a query saved
 				// with some keys missing gets the missing ones here (as the PHP side does).
 				const a = { ...saved, query: { ...QUERY_DEFAULTS, ...( saved.query || {} ) } };
@@ -219,11 +249,11 @@
 				} );
 				// The children of a layout block go straight into the block's element (no list element between).
 				// The layout class names are off: our blocks do not use them.
-				const innerProps = useInnerBlocksProps( blockProps, { __unstableDisableLayoutClassNames: true } );
+				const innerProps = useInnerBlocksProps( blockProps, innerOptions );
 				const set = ( patch ) => setAttributes( patch );
 				// With the query loop on, the loop's other items are drawn after the block (see LoopPreview).
 				const loopPreview = a.query.enabled ? h( LoopPreview, { clientId } ) : null;
-				const inspector = h( InspectorControls, null, h( Panel, { a, set, def, parts, parent, device, base: layoutDefaults( def.name ), clientId } ) );
+				const inspector = h( InspectorControls, null, h( Panel, { a, set, def, parts, parent, device, base: layoutDefaults( def.name ), clientId, context: context || {} } ) );
 
 				// A block with its own canvas (Text, Image, Button, Icon, Code and the others): the canvas draws the block.
 				if ( parts.Canvas ) {
@@ -234,7 +264,7 @@
 						cssRules,
 						overlayRule,
 						hoverRule,
-						h( parts.Canvas, { a, tag: a.tagName, rootProps: blockProps, set, def, clientId, device } ),
+						h( parts.Canvas, { a, tag: a.tagName, rootProps: blockProps, set, def, clientId, device, context: context || {} } ),
 						loopPreview
 					);
 				}

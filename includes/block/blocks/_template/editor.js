@@ -11,7 +11,8 @@
  * The media parts (picture slot, media library, photo search) come from snn.media (controls/media.js).
  *
  * The Pane gets: a (the attributes), set (typing), pick (a discrete change: a choice, a switch, an icon; one undo step),
- * def (the definition), base (the registered defaults), and for style values styleA, styleSet, device and hovering.
+ * def (the definition), base (the registered defaults), context (the values of the definition's context names, from the
+ * blocks around it), and for style values styleA, styleSet, device and hovering. The Canvas gets context too.
  *
  * Keep the canvas in step with block.php (the front end).
  */

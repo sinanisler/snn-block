@@ -26,6 +26,19 @@ abstract class SNN_Block {
 	 *   supports  children (inner blocks), loop (a query loop), link (the a tag with the Link group),
 	 *             style (true for every Style group, or a list of group names), hover (the H button, default true)
 	 *
+	 * Nesting (each is optional; WordPress enforces them in the editor):
+	 *   parent         the blocks this one may sit directly in, such as array( 'snn/tabs' ). Empty: anywhere.
+	 *   ancestor       the blocks this one must sit somewhere inside. Empty: anywhere.
+	 *   allowedBlocks  the blocks its children may be (a block with children). Null: any block.
+	 *   template       the children a new block starts with: array( array( 'snn/text', array( 'content' => 'Hi' ) ), ... ),
+	 *                  each item [ name, attributes, children ], as WordPress writes an inner blocks template.
+	 *   templateLock   false, 'all', 'insert' or 'contentOnly', as WordPress takes it.
+	 *
+	 * Context (values a block hands to the blocks inside it, at any depth):
+	 *   provides       context name => attribute name: array( 'snn/tabsId' => 'htmlId' ). Name it snn/<something>.
+	 *   context        the context names this block reads (besides the loop's): array( 'snn/tabsId' ). The values are
+	 *                  in $dyn['context'] in element() and render(), and in the context prop of the editor's parts.
+	 *
 	 * @return array
 	 */
 	abstract public static function definition();
@@ -45,7 +58,8 @@ abstract class SNN_Block {
 	 * (declarations, written before the Style groups' so those win). Any key may be left out.
 	 *
 	 * @param array $a   The cleaned attributes.
-	 * @param array $dyn The context the dynamic tags read (post_id, index, count).
+	 * @param array $dyn The context the dynamic tags read (post_id, index, count), and 'context': the block's context
+	 *                   values (the names in its definition's context, from the blocks around it).
 	 */
 	public static function element( array $a, array $dyn ) {
 		return array();

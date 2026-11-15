@@ -327,7 +327,7 @@
 	 * group (flex and grid) is there for every block. Conditions, Interactions and Animations open on their own, in
 	 * place of the whole panel.
 	 */
-	function Panel( { a, set, def, parts, parent, device, base, clientId } ) {
+	function Panel( { a, set, def, parts, parent, device, base, clientId, context } ) {
 		// The tab, the sub-panel and the Style group are kept across blocks (see panelPlace).
 		const [ tab, setTab ] = usePlace( 'tab' );
 		const [ sub, setSub ] = usePlace( 'sub' );
@@ -423,7 +423,7 @@
 			closeStep();
 			set( patch );
 		};
-		const own = parts && parts.Pane ? h( parts.Pane, { a, set, pick, def, device, parent, base, clientId, styleA: sa, styleSet: sset, hovering } ) : null;
+		const own = parts && parts.Pane ? h( parts.Pane, { a, set, pick, def, device, parent, base, clientId, context, styleA: sa, styleSet: sset, hovering } ) : null;
 		const defaultPane = own
 			? h( Fragment, null, hovering ? h( 'p', { className: 'snn-hint' }, sprintf( /* translators: %s: a state name, such as Hover */ __( 'The %s state is on: the style settings here change it. The other settings are not part of it, so they are off until you go back to Normal.', 'snn' ), stateLabel ) ) : null, own, h( 'div', { className: 'snn-pane' }, h( AdvancedGroup, { a, set } ) ) )
 			: h( GenericPane, { a, set, def, parent, device, base, layoutA: sa, layoutSet: sset, hovering, stateLabel } );
