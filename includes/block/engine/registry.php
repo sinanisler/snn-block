@@ -260,18 +260,18 @@ class SNN_Blocks {
 			'overflow'         => array( 'type' => 'string', 'default' => '' ),
 			// The values a view sets for itself: responsive = array( 'tablet' => array( 'gap' => '16' ), 'mobile' => ... ).
 			'responsive'       => array( 'type' => 'object', 'default' => array() ),
-			// The hover state: hoverStyle = array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ... ), see SNN_Style::hover_rules().
-			'hoverStyle'       => array( 'type' => 'object', 'default' => array() ),
-			// The other element states (focus, active, first and the rest of SNN_Style::STATES), each in the shape of hoverStyle.
+			// The element states (hover, focus, first and the rest of SNN_Style::STATES), one layer each:
+			// states = array( 'hover' => array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ..., 'css' => '' ) ).
 			'states'           => array( 'type' => 'object', 'default' => array() ),
 			'conditions'       => array( 'type' => 'array', 'default' => array() ),
 			'interactions'     => array( 'type' => 'array', 'default' => array() ),
-			'animation'        => array( 'type' => 'array', 'default' => array() ),
 			// The GSAP timeline of the pane: tweens (start, duration, stagger, ease, from and to) and the Scroll Trigger.
 			'gsapTweens'       => array( 'type' => 'array', 'default' => array() ),
 			'gsapScroll'       => array( 'type' => 'object', 'default' => array() ),
 			'customCss'        => array( 'type' => 'string', 'default' => '' ),
 			'customAttributes' => array( 'type' => 'array', 'default' => array() ),
+			// The engine version the attributes were written in; 1 (the default) means before versions. See migrations.php.
+			SNN_Block_Migrations::KEY => array( 'type' => 'integer', 'default' => 1 ),
 		);
 		// Every block can be printed once per post: a stored query renders on any block, as it always has. The panel
 		// offers the Query group only where supports.loop is set.
@@ -317,6 +317,8 @@ class SNN_Blocks {
 		$block      = isset( self::definitions()[ $name ] ) ? $name : 'snn/div';
 		$def        = self::definition( $block );
 		$defaults   = self::attributes( $block );
+		// An older block is brought to the current shape first, so nothing below reads an old key (migrations.php).
+		$attributes = SNN_Block_Migrations::run( $attributes, $def['class'] );
 
 		$out = array();
 		foreach ( $defaults as $key => $spec ) {
@@ -341,17 +343,16 @@ class SNN_Blocks {
 				$out[ $key ] = is_scalar( $out[ $key ] ) ? (string) $out[ $key ] : '';
 			}
 		}
-		$out['animation']        = SNN_Animation::clean_tokens( $out['animation'] );
 		$out['gsapTweens']       = SNN_Animation::clean_tweens( $out['gsapTweens'] );
 		$out['gsapScroll']       = SNN_Animation::clean_scroll( $out['gsapScroll'] );
 		$out['customCss']        = SNN_Style::clean_css( $out['customCss'] );
 		$out['customAttributes'] = self::clean_attributes( $out['customAttributes'] );
 		$out['responsive']       = SNN_Style::clean_responsive( $out['responsive'] );
-		$out['hoverStyle']       = SNN_Style::clean_hover( $out['hoverStyle'] );
 		$out['states']           = SNN_Style::clean_states( $out['states'] );
 		$out['conditions']       = SNN_Block_Tools::sanitize_conditions( $out['conditions'] );
 		$out['interactions']     = SNN_Block_Tools::sanitize_interactions( $out['interactions'] );
 		$out['query'] = SNN_Query_Loop::sanitize( $out['query'] );
+		$out[ SNN_Block_Migrations::KEY ] = SNN_Block_Migrations::VERSION;
 		// The block's own settings, cleaned by its class. A reserved name from the class is ignored: the engine cleaned it above.
 		$own = (array) call_user_func( array( $def['class'], 'clean' ), $attributes );
 		$out = array_merge( $out, array_diff_key( $own, array_flip( self::reserved_keys( $block ) ) ) );

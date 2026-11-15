@@ -12,9 +12,9 @@
  * again. In the editor the panel's pane (controls/animation-pane.js) plays the block's animations on the canvas as a
  * preview; the canvas itself does not play them.
  *
- * A block keeps its animations in two ways. The pane writes tweens (gsapTweens, with gsapScroll for the Scroll
+ * A block keeps its animations as tweens. The pane writes them (gsapTweens, with gsapScroll for the Scroll
  * Trigger): a timeline with a start, duration, stagger, ease and from and to values per tween. The older list
- * (animation, presets only) still renders when a block has no tweens.
+ * (animation, presets only) is migrated into one tween (engine/migrations.php).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -83,11 +83,6 @@ class SNN_Animation {
 			}
 		}
 		return $out;
-	}
-
-	/** The data-animate value for a block: its tokens, separated by commas, as the runtime reads them. */
-	public static function data_animate( array $tokens ) {
-		return implode( ',', self::clean_tokens( $tokens ) );
 	}
 
 	/**
@@ -181,13 +176,9 @@ class SNN_Animation {
 		return implode( ';', $segments );
 	}
 
-	/** The data-animate value of a block: its tweens when it has any, otherwise the older list of presets. */
+	/** The data-animate value of a block: its tweens (the older preset list is migrated into them, engine/migrations.php). */
 	public static function block_data_animate( array $attributes ) {
-		$tweens = isset( $attributes['gsapTweens'] ) ? self::tweens_data_animate( $attributes['gsapTweens'], $attributes['gsapScroll'] ?? array() ) : '';
-		if ( '' !== $tweens ) {
-			return $tweens;
-		}
-		return self::data_animate( $attributes['animation'] ?? array() );
+		return isset( $attributes['gsapTweens'] ) ? self::tweens_data_animate( $attributes['gsapTweens'], $attributes['gsapScroll'] ?? array() ) : '';
 	}
 
 	/** What the pane needs from the server: the easings, in the order it lists them, and the property names. */

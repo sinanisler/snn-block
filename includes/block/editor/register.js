@@ -127,6 +127,11 @@
 		if ( Array.isArray( def.allowedBlocks ) ) {
 			innerOptions.allowedBlocks = def.allowedBlocks;
 		}
+		const save = def.supports.children
+			? function Save() {
+					return h( InnerBlocks.Content, null );
+			  }
+			: () => null;
 		registerBlockType( def.name, {
 			...nesting,
 			apiVersion: 3,
@@ -192,6 +197,17 @@
 						}
 					};
 				}, [ a.htmlId, idScope ] );
+				// A new block is written in the current shape: it gets the current version, as an old block does when it is
+				// migrated (migrations.js). Not an edit of the author's: no undo step, and the page is not marked as changed.
+				useEffect( () => {
+					if ( snn.migrations.needs( a ) ) {
+						const be = wp.data.dispatch( 'core/block-editor' );
+						if ( be.__unstableMarkNextChangeAsNotPersistent ) {
+							be.__unstableMarkNextChangeAsNotPersistent();
+						}
+						setAttributes( { [ snn.migrations.KEY ]: snn.migrations.VERSION } );
+					}
+				}, [ a[ snn.migrations.KEY ] ] );
 				// The view the editor shows (Desktop, Tablet or Mobile): the values of that view are drawn on the canvas.
 				const device = useSelect( ( select ) => {
 					try {
@@ -224,7 +240,7 @@
 				const hoverLevel = device === 'Tablet' ? 'tablet' : device === 'Mobile' ? 'mobile' : 'base';
 				// Every element state is drawn the same way, in the order of SNN_Style::STATES (a later state wins), each with
 				// its own forced class (snn-force-focus and so on) for the state the panel holds on.
-				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.hoverStyle || {} ) + JSON.stringify( a.states || {} ) );
+				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.states || {} ) );
 				const stateSelectors = ( snn.data && snn.data.states ) || { hover: ':hover' };
 				const hoverAll = Object.keys( stateSelectors )
 					.map( ( id ) => {
@@ -285,11 +301,18 @@
 			},
 			// A block with children keeps them in its saved markup (a save of null would drop them). Every other block saves
 			// nothing: its settings are attributes, and PHP renders the block (includes/block/engine/render.php).
-			save: def.supports.children
-				? function Save() {
-						return h( InnerBlocks.Content, null );
-				  }
-				: () => null,
+			save,
+			// An older block is brought to the current shape when the editor loads it (editor/migrations.js, the copy of
+			// engine/migrations.php). The entry declares the old attributes so the parser hands them to the steps, and is
+			// eligible for every block whose version is older; its save is the current one, so the block stays valid.
+			deprecated: [
+				{
+					attributes: { ...snn.migrations.LEGACY_ATTRIBUTES, ...( def.attributes || {} ) },
+					isEligible: ( raw ) => snn.migrations.needs( raw ),
+					migrate: ( attrs, innerBlocks ) => [ snn.migrations.run( attrs, def.name ), innerBlocks ],
+					save,
+				},
+			],
 		} );
 	}
 

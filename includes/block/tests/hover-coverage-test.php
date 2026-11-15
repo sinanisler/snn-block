@@ -75,7 +75,7 @@ $samples = array(
 
 // The composed groups: each prints its property when one of its keys is a hover value.
 $groups = array(
-	'gradient'   => array( array( 'gradientType' => 'linear', 'gradientColor1' => '#000000', 'gradientColor2' => '#ffffff', 'gradientApply' => 'background' ), 'background-image:' ),
+	'gradient'   => array( array( 'gradientType' => 'linear', 'gradientStops' => '[{"color":"#000000"},{"color":"#ffffff"}]', 'gradientApply' => 'background' ), 'background-image:' ),
 	'box shadow' => array( array( 'boxShadowX' => '2px', 'boxShadowY' => '4px', 'boxShadowColor' => '#000000' ), 'box-shadow:' ),
 	'transform'  => array( array( 'translateX' => '10px', 'rotate' => '45' ), 'transform:' ),
 	'filter'     => array( array( 'filterBlur' => '4px', 'filterGrayscale' => '50' ), 'filter:' ),
@@ -89,7 +89,7 @@ $failed  = array();
 /** Checks one hover value: printed by the rule of the level (base or tablet). */
 function coverage_check( $level, $hover_values, $needle, $label, &$pass, &$fail, &$failed, $display = 'flex' ) {
 	$hover = 'base' === $level ? array( 'base' => $hover_values ) : array( 'tablet' => $hover_values );
-	$out   = SNN_Style::hover_rules( array( 'display' => $display, 'flexWrap' => 'wrap', 'hoverStyle' => $hover ), array() );
+	$out   = SNN_Style::hover_rules( array( 'display' => $display, 'flexWrap' => 'wrap', 'states' => array( 'hover' => $hover ) ), array() );
 	if ( false !== strpos( $out, $needle ) ) {
 		++$pass;
 		return true;

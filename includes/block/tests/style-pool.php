@@ -74,7 +74,5 @@ return array(
 	'gradientType'    => array( 'linear', 'radial', '' ),
 	'gradientAngle'   => array( '90', '' ),
 	'gradientStops'   => array( '[{"color":"#fff","stop":"0"},{"color":"#000","stop":"100"}]', '[{"color":"#fff"}]', 'not json', '' ),
-	'gradientColor1'  => array( '#f00', '' ),
-	'gradientColor2'  => array( '#00f', '' ),
 	'transitionDuration' => array( '300ms', '0.5s', 'bad', '' ),
 );

@@ -304,16 +304,9 @@
 
 	/** The gradient as a CSS image. '' when it has no two colours. The same as gradient_value() in PHP. */
 	function gradientValue( a ) {
-		let stops = gradientStops( a );
+		const stops = gradientStops( a );
 		if ( ! stops.length ) {
-			const c1 = check( 'color', a.gradientColor1 );
-			const c2 = check( 'color', a.gradientColor2 );
-			if ( ! c1 || ! c2 ) {
-				return '';
-			}
-			const s1 = check( 'percent', a.gradientStop1 );
-			const s2 = check( 'percent', a.gradientStop2 );
-			stops = [ c1 + ' ' + ( s1 || '0' ) + '%', c2 + ' ' + ( s2 || '100' ) + '%' ];
+			return '';
 		}
 		const list = stops.join( ', ' );
 		if ( a.gradientType === 'radial' ) {
@@ -499,11 +492,8 @@
 		return [ diff.join( ';' ), on !== oh ? ( oh || 'content:none' ) : '' ];
 	}
 
-	/** The values of one state: hoverStyle for hover, the states attribute for the others (SNN_Style::state_values()). */
+	/** The values of one state, from the states attribute (SNN_Style::state_values()). */
 	function stateValues( a, id ) {
-		if ( id === 'hover' ) {
-			return a.hoverStyle || {};
-		}
 		return ( a.states && a.states[ id ] ) || {};
 	}
 

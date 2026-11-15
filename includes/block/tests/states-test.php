@@ -2,7 +2,7 @@
 /**
  * Test of the element states (SNN_Style::STATES, state_rules(), clean_states()): each state is written with its own
  * selector, on the base and on a view, in the order of the table, and unknown states or empty values are dropped.
- * Hover still comes from hoverStyle.
+ * Hover is one of the states (it moved there from hoverStyle in version 2, see migrations-test.php).
  *
  * Run from the command line, with WordPress at SNN_WP_LOAD (the path to wp-load.php):
  *   php includes/block/tests/states-test.php
@@ -40,8 +40,8 @@ check( 'active tablet rule', false !== strpos( $css, '@media (max-width:' . $tab
 
 // 3. Order: first, then hover, then active (a later state wins).
 $a   = array(
-	'hoverStyle' => array( 'base' => array( 'color' => '#111111' ) ),
 	'states'     => array(
+		'hover'  => array( 'base' => array( 'color' => '#111111' ) ),
 		'active' => array( 'base' => array( 'color' => '#222222' ) ),
 		'first'  => array( 'base' => array( 'color' => '#333333' ) ),
 	),
@@ -52,7 +52,7 @@ $p2  = strpos( $css, ':hover{' );
 $p3  = strpos( $css, ':active{' );
 check( 'order first < hover < active', false !== $p1 && false !== $p2 && false !== $p3 && $p1 < $p2 && $p2 < $p3, $css );
 
-// 4. clean_states drops hover (it lives in hoverStyle), unknown states, and states with nothing set.
+// 4. clean_states keeps hover with the other states, and drops unknown states and states with nothing set.
 $clean = SNN_Style::clean_states(
 	array(
 		'hover'   => array( 'base' => array( 'color' => '#000000' ) ),
@@ -61,7 +61,7 @@ $clean = SNN_Style::clean_states(
 		'odd'     => array( 'base' => array( 'color' => '#abcdef', 'notAKey' => 'x' ) ),
 	)
 );
-check( 'clean keeps only odd', array( 'odd' ) === array_keys( $clean ), wp_json_encode( $clean ) );
+check( 'clean keeps odd and hover, in the order of STATES', array( 'odd', 'hover' ) === array_keys( $clean ), wp_json_encode( $clean ) );
 check( 'clean drops unknown keys', array( 'color' => '#abcdef' ) === ( $clean['odd']['base'] ?? null ), wp_json_encode( $clean ) );
 
 // 5. A state's own CSS is scoped to the block in that state.

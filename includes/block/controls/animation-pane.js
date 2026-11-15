@@ -146,64 +146,16 @@
 			.join( ';' );
 	}
 
-	/** An old start or end value (50%, 100px) as the runtime's own text (top 50%, top+=100px). */
-	function legacyPosition( v ) {
-		if ( /^\d+(\.\d+)?%$/.test( v ) ) {
-			return 'top ' + v;
-		}
-		if ( /^\d+(\.\d+)?(px)?$/i.test( v ) ) {
-			return 'top+=' + v;
-		}
-		return v;
-	}
-
-	/**
-	 * The older list of presets (block attribute animation) as tweens: the Scroll Trigger options move into the
-	 * Scroll Trigger switches, the other presets become one tween that starts at 0 and lasts 1 s, as before.
-	 */
-	function fromLegacy( tokens ) {
-		const scroll = { ...DEFAULT_SCROLL };
-		const presets = [];
-		( tokens || [] ).forEach( ( tok ) => {
-			const t = String( tok ).trim();
-			if ( t === 'scroll:false' ) {
-				scroll.on = false;
-			} else if ( t === 'markers:true' ) {
-				scroll.markers = true;
-			} else if ( t === 'loop:true' ) {
-				scroll.loop = true;
-			} else if ( t === 'once:true' ) {
-				scroll.once = true;
-			} else if ( /^scrub:/.test( t ) ) {
-				scroll.scrub = true;
-			} else if ( /^start:/.test( t ) ) {
-				scroll.start = legacyPosition( t.slice( 6 ) );
-			} else if ( /^end:/.test( t ) ) {
-				scroll.end = legacyPosition( t.slice( 4 ) );
-			} else if ( ! /^pin:/.test( t ) ) {
-				presets.push( t );
-			}
-		} );
-		const tweens = presets.length ? [ { presets, start: 0, duration: 1, stagger: 0, ease: 'power1.out', from: {}, to: {} } ] : [];
-		return { tweens, scroll };
-	}
-
-	/** What the pane shows for a block: its tweens and Scroll Trigger, or the older presets converted to them. */
+	/** What the pane shows for a block: its tweens and Scroll Trigger (an older preset list is migrated into them, editor/migrations.js). */
 	function stateOf( a ) {
 		const scroll = { ...DEFAULT_SCROLL, ...( a.gsapScroll && typeof a.gsapScroll === 'object' ? a.gsapScroll : {} ) };
 		const tweens = Array.isArray( a.gsapTweens ) ? a.gsapTweens : [];
-		if ( tweens.length || ! Array.isArray( a.animation ) || ! a.animation.length ) {
-			return { tweens, scroll, legacy: false };
-		}
-		return { ...fromLegacy( a.animation ), legacy: true };
+		return { tweens, scroll };
 	}
 
 	/** The data-animate of the canvas element (the editor's copy of the front end attribute). */
 	function canvasDataAnimate( a ) {
 		const st = stateOf( a );
-		if ( st.legacy ) {
-			return a.animation.join( ',' );
-		}
 		return toDataAnimate( st.tweens, st.scroll ) || undefined;
 	}
 
@@ -517,7 +469,7 @@
 
 	/** Writes a block's animations and Scroll Trigger (the attributes the sub-panel writes for the selected block). */
 	function writeTweens( clientId, tweens, scroll ) {
-		dispatch( 'core/block-editor' ).updateBlockAttributes( clientId, { gsapTweens: tweens, gsapScroll: scroll, animation: [] } );
+		dispatch( 'core/block-editor' ).updateBlockAttributes( clientId, { gsapTweens: tweens, gsapScroll: scroll } );
 	}
 
 	/* ------------------------------------------------------------------

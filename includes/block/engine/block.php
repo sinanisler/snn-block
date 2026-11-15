@@ -48,6 +48,15 @@ abstract class SNN_Block {
 		return array();
 	}
 
+	/**
+	 * The block's own steps from an older shape to the current one: the raw attributes, written in version $from, in the
+	 * current shape. The engine's steps have run already (engine/migrations.php). Safe to run on attributes already in the
+	 * current shape. The editor's copy goes in the block's editor.js: snn.registerBlock( name, { migrate } ).
+	 */
+	public static function migrate( array $raw, $from ) {
+		return $raw;
+	}
+
 	/** The block's own attributes, cleaned: the right type, allowed values, and the defaults for anything missing. */
 	public static function clean( $raw ) {
 		return array();

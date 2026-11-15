@@ -25,8 +25,8 @@
 	 * canvas and the front end show the same thing (the browser's default until a length is typed).
 	 */
 	/**
-	 * The stops a view shows: its saved list (JSON), or, with nothing saved, the two colour fields from before the
-	 * repeater, or two empty stops. The list is written whole, so a stop is never saved without its colour.
+	 * The stops a view shows: its saved list (JSON), or, with nothing saved, two empty stops. The list is written whole,
+	 * so a stop is never saved without its colour.
 	 */
 	function stopsOf( raw, a ) {
 		try {
@@ -38,10 +38,7 @@
 				} );
 			}
 		} catch ( e ) {
-			// Not a list: the stops from before the repeater show instead.
-		}
-		if ( a.gradientColor1 || a.gradientColor2 ) {
-			return [ { color: str( a.gradientColor1 ), stop: str( a.gradientStop1 ) }, { color: str( a.gradientColor2 ), stop: str( a.gradientStop2 ) } ];
+			// Not a list: two empty stops show instead.
 		}
 		return [ { color: '', stop: '' }, { color: '', stop: '' } ];
 	}
@@ -214,8 +211,6 @@
 			id: 'gradient',
 			label: __( 'Gradient', 'snn' ),
 			glyph: 'gradient',
-			// The two colour fields from before the repeater: no row now, but a saved value still counts for the rail dot.
-			also: [ 'gradientColor1', 'gradientStop1', 'gradientColor2', 'gradientStop2' ],
 			sections: [
 				{ tip: 'sec.gradient', title: __( 'Gradient', 'snn' ), rows: [ 'gradientApply', 'gradientType', 'gradientAngle', 'gradientStops' ] },
 			],
@@ -316,7 +311,7 @@
 		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
 		color: __( 'Colour', 'snn' ), fontFamily: __( 'Font family', 'snn' ), fontSize: __( 'Font size', 'snn' ), fontWeight: __( 'Font weight', 'snn' ), fontStyle: __( 'Font style', 'snn' ), lineHeight: __( 'Line height', 'snn' ), letterSpacing: __( 'Letter spacing', 'snn' ), textAlign: __( 'Text align', 'snn' ), textTransform: __( 'Text transform', 'snn' ), textDecoration: __( 'Decoration', 'snn' ), textWrap: __( 'Text wrap', 'snn' ), whiteSpace: __( 'White space', 'snn' ), textShadow: __( 'Text shadow', 'snn' ),
 		backgroundColor: __( 'Colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
-		gradientApply: __( 'Apply to', 'snn' ), gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ), gradientColor1: __( 'Colour 1', 'snn' ), gradientStop1: __( 'Stop 1', 'snn' ), gradientColor2: __( 'Colour 2', 'snn' ), gradientStop2: __( 'Stop 2', 'snn' ),
+		gradientApply: __( 'Apply to', 'snn' ), gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ),
 		borderWidth: __( 'Border width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
 		boxShadowX: __( 'Shadow x', 'snn' ), boxShadowY: __( 'Shadow y', 'snn' ), boxShadowBlur: __( 'Shadow blur', 'snn' ), boxShadowSpread: __( 'Shadow spread', 'snn' ), boxShadowColor: __( 'Shadow colour', 'snn' ),
 		transformOrigin: __( 'Origin', 'snn' ), translateX: __( 'Move x', 'snn' ), translateY: __( 'Move y', 'snn' ), rotate: __( 'Rotate', 'snn' ), scale: __( 'Scale', 'snn' ), skewX: __( 'Skew x', 'snn' ), skewY: __( 'Skew y', 'snn' ),
@@ -325,7 +320,7 @@
 	};
 
 	/** The unit a row shows after its field (sizes show px). */
-	const STYLE_UNIT = { opacity: '%', gradientAngle: 'deg', gradientStop1: '%', gradientStop2: '%', rotate: 'deg', skewX: 'deg', skewY: 'deg', filterBrightness: '%', filterContrast: '%', filterGrayscale: '%', filterInvert: '%', filterSaturate: '%', filterSepia: '%', filterHueRotate: 'deg' };
+	const STYLE_UNIT = { opacity: '%', gradientAngle: 'deg', rotate: 'deg', skewX: 'deg', skewY: 'deg', filterBrightness: '%', filterContrast: '%', filterGrayscale: '%', filterInvert: '%', filterSaturate: '%', filterSepia: '%', filterHueRotate: 'deg' };
 
 	/** The rows that are colours, whatever the table says (the background colour is a view value). */
 	const STYLE_COLOUR = [ 'backgroundColor' ];
@@ -410,7 +405,7 @@ function pageKeys( page ) {
 		if ( page.kind === 'css' ) {
 			return !! a.customCss;
 		}
-		return pageKeys( page ).concat( page.also || [] ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
+		return pageKeys( page ).some( ( k ) => ALL_VIEWS.some( ( d ) => setHere( a, d, k ) !== undefined ) );
 	}
 
 	/**

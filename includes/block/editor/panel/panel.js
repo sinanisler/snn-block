@@ -54,7 +54,7 @@
 
 	/**
 	 * Writes a Style value to a state, in the shape a state keeps: a base value, or a view's values (the responsive shape
-	 * the panel's helpers write). Hover goes to hoverStyle, the other states to the states attribute. One set is one undo step.
+	 * the panel's helpers write), in the states attribute. One set is one undo step.
 	 */
 	function stateWriter( a, set, id ) {
 		return ( patch ) => {
@@ -73,10 +73,6 @@
 					next.base[ k ] = patch[ k ];
 				}
 			} );
-			if ( id === 'hover' ) {
-				set( { hoverStyle: next } );
-				return;
-			}
 			const states = { ...( a.states || {} ) };
 			if ( stateUsed( next ) ) {
 				states[ id ] = next;
@@ -358,7 +354,7 @@
 			const cls = 'snn-force-' + stateNow;
 			el.classList.add( cls );
 			return () => el.classList.remove( cls );
-		}, [ stateNow, clientId, a.hoverStyle, a.states ] );
+		}, [ stateNow, clientId, a.states ] );
 		const conditions = Array.isArray( a.conditions ) ? a.conditions : [];
 		const interactions = Array.isArray( a.interactions ) ? a.interactions : [];
 		const gsapCount = stateOf( a ).tweens.length;
@@ -492,7 +488,7 @@
 					sub === 'conditions'
 						? h( ConditionsEditor, { sets: conditions, onChange: ( v ) => set( { conditions: v } ) } )
 						: sub === 'animations'
-							? h( AnimationsPane, { attrs: a, clientId, title: def.title, onChange: ( v ) => set( { gsapTweens: v.tweens, gsapScroll: v.scroll, animation: [] } ) } )
+							? h( AnimationsPane, { attrs: a, clientId, title: def.title, onChange: ( v ) => set( { gsapTweens: v.tweens, gsapScroll: v.scroll } ) } )
 							: h( InteractionsEditor, { items: interactions, onChange: ( v ) => set( { interactions: v } ) } )
 				)
 			);

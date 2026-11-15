@@ -210,22 +210,24 @@ class SNN_Style {
 	}
 
 	/* ------------------------------------------------------------------
-	 * Hover state
+	 * Element states
 	 * ---------------------------------------------------------------- */
 
-	/** The levels a hover value can be set on: the base, and the views (the same widths as the views). */
-	const HOVER_LEVELS = array( 'base', 'tablet', 'mobile' );
+	/** The levels a state value can be set on: the base, and the views (the same widths as the views). */
+	const STATE_LEVELS = array( 'base', 'tablet', 'mobile' );
 
 	/**
-	 * The values a hover state sets: hoverStyle = array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ... ).
-	 * Only the table's keys, and only values that are not empty. The values are checked where they are written.
+	 * One state's values, cleaned: array( 'base' => array( key => value ), 'tablet' => ..., 'mobile' => ..., 'css' => '' ).
+	 * Only the table's keys, and only values that are not empty. The values are checked where they are written. The css
+	 * is the state's custom CSS, with %root% the block in that state (see state_rules()). This is the shape of a style
+	 * layer: a global class will keep its values the same way.
 	 */
-	public static function clean_hover( $value ) {
+	public static function clean_state( $value ) {
 		$out = array();
 		if ( ! is_array( $value ) ) {
 			return $out;
 		}
-		foreach ( self::HOVER_LEVELS as $level ) {
+		foreach ( self::STATE_LEVELS as $level ) {
 			if ( ! isset( $value[ $level ] ) || ! is_array( $value[ $level ] ) ) {
 				continue;
 			}
@@ -239,7 +241,6 @@ class SNN_Style {
 				$out[ $level ] = $own;
 			}
 		}
-		// The hover state's custom CSS: its rules, with %root% the block in its hover state (see hover_rules()).
 		$css = isset( $value['css'] ) && is_string( $value['css'] ) ? self::clean_css( $value['css'] ) : '';
 		if ( '' !== $css ) {
 			$out['css'] = $css;
@@ -248,10 +249,9 @@ class SNN_Style {
 	}
 
 	/**
-	 * The element states besides hover, in the order their rules are printed (a later state wins where two apply at
-	 * once: a pressed button is also hovered, so Active comes after Hover). Hover keeps its own attribute (hoverStyle);
-	 * the others are kept in the states attribute: states = array( 'focus' => array( 'base' => ..., 'css' => ... ) ).
-	 * The editor's state menu reads this list (SNN_Block_Editor_Assets).
+	 * The element states, in the order their rules are printed (a later state wins where two apply at once: a pressed
+	 * button is also hovered, so Active comes after Hover). Each is kept in the states attribute:
+	 * states = array( 'hover' => array( 'base' => ..., 'css' => ... ), 'focus' => ... ). The editor's state menu reads this list.
 	 */
 	const STATES = array(
 		'first'        => ':first-child',
@@ -264,15 +264,15 @@ class SNN_Style {
 		'active'       => ':active',
 	);
 
-	/** The states attribute, cleaned: each known state other than hover, cleaned as a hover is. */
+	/** The states attribute, cleaned: each known state, cleaned by clean_state(); a state that sets nothing is left out. */
 	public static function clean_states( $value ) {
 		$out = array();
 		if ( ! is_array( $value ) ) {
 			return $out;
 		}
 		foreach ( array_keys( self::STATES ) as $id ) {
-			if ( 'hover' !== $id && isset( $value[ $id ] ) ) {
-				$state = self::clean_hover( $value[ $id ] );
+			if ( isset( $value[ $id ] ) ) {
+				$state = self::clean_state( $value[ $id ] );
 				if ( $state ) {
 					$out[ $id ] = $state;
 				}
@@ -281,12 +281,9 @@ class SNN_Style {
 		return $out;
 	}
 
-	/** The values of one state: hoverStyle for hover, the states attribute for the others. */
+	/** The values of one state. */
 	public static function state_values( array $a, $id ) {
-		if ( 'hover' === $id ) {
-			return $a['hoverStyle'] ?? array();
-		}
-		return $a['states'][ $id ] ?? array();
+		return isset( $a['states'][ $id ] ) && is_array( $a['states'][ $id ] ) ? $a['states'][ $id ] : array();
 	}
 
 	/** The hover rules (see state_rules()). */
@@ -311,7 +308,7 @@ class SNN_Style {
 	 */
 	public static function state_rules( array $a, array $dyn, $id ) {
 		$pseudo = self::STATES[ $id ] ?? '';
-		$hover  = '' === $pseudo ? array() : self::clean_hover( self::state_values( $a, $id ) );
+		$hover  = '' === $pseudo ? array() : self::clean_state( self::state_values( $a, $id ) );
 		if ( ! $hover ) {
 			return '';
 		}

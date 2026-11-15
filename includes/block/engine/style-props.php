@@ -156,16 +156,12 @@ class SNN_Style_Props {
 		'backgroundSize'    => array( 'background-size', 'keywordlength', array( 'cover', 'contain', 'auto' ), array() ),
 		'backgroundPosition' => array( 'background-position', 'text', array(), array() ),
 		'backgroundRepeat'  => array( 'background-repeat', 'keyword', array( 'no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'space', 'round' ), array() ),
-		// Gradient (composed into background-image): the type, the angle, the colour stops (a JSON list, the repeater), and
-		// the two colour stops from before the repeater (kept, so saved blocks render the same)
+		// Gradient (composed into background-image): where it applies, the type, the colour stops (a JSON list, the repeater)
+		// and the angle. The two colour fields from before the repeater are migrated into the stops (engine/migrations.php).
 		'gradientApply'     => array( null, 'keyword', array( 'background', 'overlay', 'text' ), array() ),
 		'gradientType'      => array( null, 'keyword', array( 'linear', 'radial' ), array() ),
 		'gradientStops'     => array( null, 'stops', array(), array() ),
 		'gradientAngle'     => array( null, 'number', array(), array() ),
-		'gradientColor1'    => array( null, 'color', array(), array() ),
-		'gradientStop1'     => array( null, 'percent', array(), array() ),
-		'gradientColor2'    => array( null, 'color', array(), array() ),
-		'gradientStop2'     => array( null, 'percent', array(), array() ),
 		// Border
 		'borderWidth'       => array( 'border-width', 'size', array(), array() ),
 		'borderStyle'       => array( 'border-style', 'keyword', array( 'none', 'solid', 'dashed', 'dotted', 'double' ), array() ),
@@ -653,17 +649,7 @@ class SNN_Style_Props {
 	private static function gradient_value( array $a ) {
 		$stops = self::gradient_stops( $a );
 		if ( ! $stops ) {
-			$c1 = self::check( 'color', $a['gradientColor1'] ?? '' );
-			$c2 = self::check( 'color', $a['gradientColor2'] ?? '' );
-			if ( '' === $c1 || '' === $c2 ) {
-				return '';
-			}
-			$s1    = self::check( 'percent', $a['gradientStop1'] ?? '' );
-			$s2    = self::check( 'percent', $a['gradientStop2'] ?? '' );
-			$stops = array(
-				$c1 . ' ' . ( '' === $s1 ? '0' : $s1 ) . '%',
-				$c2 . ' ' . ( '' === $s2 ? '100' : $s2 ) . '%',
-			);
+			return '';
 		}
 		$list = implode( ', ', $stops );
 		if ( 'radial' === ( $a['gradientType'] ?? '' ) ) {

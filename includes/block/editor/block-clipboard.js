@@ -36,14 +36,14 @@
 	const KEY = 'snn-block-clipboard';
 
 	// The attributes that are styles: every key of the property table (the layout and Style values, snn.data.styleTable),
-	// the values per view, the hover state and the custom CSS. Anything else is the block's identity or content (the tag,
+	// the values per view, the element states and the custom CSS. Anything else is the block's identity or content (the tag,
 	// the ID, a button's text, an image, a Code block's scripts) and is never copied as a style, whatever the block.
-	const STYLE_EXTRA = [ 'responsive', 'hoverStyle', 'states', 'customCss' ];
+	const STYLE_EXTRA = [ 'responsive', 'states', 'customCss' ];
 	function isStyleKey( key ) {
 		return STYLE_EXTRA.indexOf( key ) !== -1 || ( snn.data.styleTable || [] ).some( ( row ) => row[ 0 ] === key );
 	}
 
-	// The clipboard: { styles: {...}, conditions: [...], interactions: [...], animations: { gsapTweens, gsapScroll, animation } }.
+	// The clipboard: { styles: {...}, conditions: [...], interactions: [...], animations: { gsapTweens, gsapScroll } }.
 	// A kind is missing or empty when nothing of it is on the clipboard. The copy of this page is kept in memory, so the
 	// clipboard still works when the browser keeps no storage.
 	let memory = {};
@@ -130,13 +130,11 @@
 			read: ( attrs ) => ( {
 				gsapTweens: clone( attrs.gsapTweens || [] ),
 				gsapScroll: clone( attrs.gsapScroll || {} ),
-				animation: clone( attrs.animation || [] ),
 			} ),
-			has: ( clip ) => !! clip.animations && ( ( clip.animations.gsapTweens || [] ).length > 0 || ( clip.animations.animation || [] ).length > 0 ),
+			has: ( clip ) => !! clip.animations && ( ( clip.animations.gsapTweens || [] ).length > 0 ),
 			attributes: ( clip ) => ( {
 				gsapTweens: clone( clip.animations.gsapTweens || [] ),
 				gsapScroll: clone( clip.animations.gsapScroll || {} ),
-				animation: clone( clip.animations.animation || [] ),
 			} ),
 		},
 	};

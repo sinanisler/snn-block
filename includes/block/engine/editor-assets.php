@@ -31,6 +31,7 @@ class SNN_Block_Editor_Assets {
 	private static function scripts() {
 		$before = array(
 			'snn-core'           => 'includes/block/editor/snn.js',
+			'snn-migrations'     => 'includes/block/editor/migrations.js',
 			'snn-canvas-styles'  => 'includes/block/editor/canvas-styles.js',
 			'snn-tooltips'       => 'includes/block/controls/tooltips.js',
 			'snn-controls'       => 'includes/block/controls/controls.js',
@@ -233,6 +234,8 @@ class SNN_Block_Editor_Assets {
 			'breakpoints'            => SNN_Style::view_widths(),
 			// The element states the panel's state menu offers, id => selector (SNN_Style::STATES).
 			'states'                 => SNN_Style::STATES,
+			// The attribute shape version and its key (engine/migrations.php), for editor/migrations.js.
+			'migrations'             => array( 'version' => SNN_Block_Migrations::VERSION, 'key' => SNN_Block_Migrations::KEY ),
 			'animation'              => SNN_Animation::editor_data(),
 			'blockTools'             => SNN_Block_Tools::editor_data(),
 			'styleTable'             => SNN_Style_Props::for_editor(),

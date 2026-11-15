@@ -30,6 +30,7 @@ unset( $snn_feature );
 require_once __DIR__ . '/engine/style-props.php';
 require_once __DIR__ . '/engine/style.php';
 require_once __DIR__ . '/engine/style-sheet.php';
+require_once __DIR__ . '/engine/migrations.php';
 require_once __DIR__ . '/engine/block.php';
 require_once __DIR__ . '/engine/registry.php';
 require_once __DIR__ . '/engine/render.php';
