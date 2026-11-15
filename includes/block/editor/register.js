@@ -26,13 +26,10 @@
 	 * the parent's flex or grid, as on the front end.
 	 */
 	function LoopPreview( { clientId } ) {
-		const markup = useSelect(
-			( select ) => {
-				const block = select( 'core/block-editor' ).getBlock( clientId );
-				return block ? wp.blocks.serialize( block ) : '';
-			},
-			[ clientId ]
-		);
+		// The block itself is selected (the store gives the same object until the block or a child changes); its markup is
+		// made only then. Serializing inside the selector ran on every change anywhere in the editor, for every loop block.
+		const block = useSelect( ( select ) => select( 'core/block-editor' ).getBlock( clientId ), [ clientId ] );
+		const markup = wp.element.useMemo( () => ( block ? wp.blocks.serialize( block ) : '' ), [ block ] );
 		const postId = useSelect( ( select ) => {
 			try {
 				return select( 'core/editor' ).getCurrentPostId() || 0;
