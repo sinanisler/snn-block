@@ -282,7 +282,8 @@ class SNN_Dynamic_Data {
 			if ( strlen( $tag ) === 3 ) {
 				return null;
 			}
-			return self::t( $post ? self::scalar( get_post_meta( $post->ID, substr( $tag, 3 ), true ) ) : '' );
+			$key = substr( $tag, 3 );
+			return self::t( $post && self::meta_allowed( $key, 'post' ) ? self::scalar( get_post_meta( $post->ID, $key, true ) ) : '' );
 		}
 
 		switch ( $tag ) {
@@ -331,6 +332,11 @@ class SNN_Dynamic_Data {
 				if ( ! $post ) {
 					return self::h( '' );
 				}
+				// A password-protected post shows a notice until the visitor has given the password. Not the password form:
+				// tag output goes through wp_kses_post, which removes form fields.
+				if ( post_password_required( $post ) ) {
+					return self::t( __( 'This content is password protected.', 'snn' ) );
+				}
 				return self::h( (string) self::with_post( $post, function () use ( $post ) {
 					return apply_filters( 'the_content', $post->post_content );
 				} ) );
@@ -338,7 +344,8 @@ class SNN_Dynamic_Data {
 				if ( ! $post ) {
 					return self::t( '' );
 				}
-				if ( '' !== $arg && ctype_digit( $arg ) ) {
+				// A password-protected post: core's own text (get_the_excerpt() says there is no excerpt), never its content.
+				if ( '' !== $arg && ctype_digit( $arg ) && ! post_password_required( $post ) ) {
 					$source = '' !== $post->post_excerpt ? $post->post_excerpt : $post->post_content;
 					return self::t( wp_trim_words( wp_strip_all_tags( $source ), (int) $arg ) );
 				}
@@ -433,7 +440,7 @@ class SNN_Dynamic_Data {
 			case 'term_description':
 				return self::h( $term ? wp_kses_post( $term->description ) : '' );
 			case 'term_meta':
-				return self::t( $term && '' !== $arg ? self::scalar( get_term_meta( $term->term_id, $arg, true ) ) : '' );
+				return self::t( $term && '' !== $arg && self::meta_allowed( $arg, 'term' ) ? self::scalar( get_term_meta( $term->term_id, $arg, true ) ) : '' );
 
 			// Date
 			case 'current_date':
@@ -555,9 +562,26 @@ class SNN_Dynamic_Data {
 			case 'archive_url':
 				return (string) get_author_posts_url( $user->ID, $user->user_nicename );
 			case 'meta':
-				return '' !== $arg ? self::scalar( get_user_meta( $user->ID, $arg, true ) ) : '';
+				return '' !== $arg && self::meta_allowed( $arg, 'user' ) ? self::scalar( get_user_meta( $user->ID, $arg, true ) ) : '';
 		}
 		return '';
+	}
+
+	/**
+	 * True when a meta tag may print this key. Protected keys (they start with an underscore, or a plugin marks them
+	 * protected) are never printed: they hold the site's own data, not content. For a user, a key that holds access
+	 * (capabilities, user level, session tokens) or names a password, token, secret or key is refused as well, since
+	 * the author tags print another person's meta on a public page. The filter snn/dynamic_data/meta_allowed can open
+	 * or close a key ($allowed, $key, $type: post, term or user).
+	 */
+	public static function meta_allowed( $key, $type ) {
+		$key = (string) $key;
+		$ok  = '' !== $key && ! is_protected_meta( $key, $type );
+		if ( $ok && 'user' === $type ) {
+			// wp_capabilities and wp_2_capabilities alike: the table prefix comes first, so the ends are matched.
+			$ok = ! preg_match( '/capabilities$|user_level$|session_tokens|pass|token|secret|(^|_)keys?($|_)/i', $key );
+		}
+		return (bool) apply_filters( 'snn/dynamic_data/meta_allowed', $ok, $key, $type );
 	}
 
 	/** {format_date:2026-01-31 @from:Y-m-d @to:d/m/Y}: read the date, print it in the new format. */

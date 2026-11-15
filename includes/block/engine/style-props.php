@@ -515,12 +515,27 @@ class SNN_Style_Props {
 
 	/**
 	 * The values with their dynamic tags filled in ({featured_image}, {cf_colour}), so a Style value can come from the
-	 * post, as the layout values do. The colour stops are JSON and are left as they are. A background image whose tag
-	 * gives a plain address is written as url(...), the form the image takes.
+	 * post, as the layout values do. The colour stops are JSON: the tags in each stop's colour and position are filled
+	 * in, and the list is written back as JSON. A background image whose tag gives a plain address is written as url(...),
+	 * the form the image takes.
 	 */
 	public static function with_tags( array $a, array $dyn ) {
 		foreach ( self::TABLE as $key => $spec ) {
-			if ( 'stops' === $spec[1] || ! isset( $a[ $key ] ) || ! is_string( $a[ $key ] ) || false === strpos( $a[ $key ], '{' ) ) {
+			if ( ! isset( $a[ $key ] ) || ! is_string( $a[ $key ] ) || false === strpos( $a[ $key ], '{' ) ) {
+				continue;
+			}
+			if ( 'stops' === $spec[1] ) {
+				$list = json_decode( $a[ $key ], true );
+				if ( is_array( $list ) ) {
+					foreach ( $list as $i => $item ) {
+						foreach ( array( 'color', 'stop' ) as $part ) {
+							if ( is_array( $item ) && isset( $item[ $part ] ) && is_string( $item[ $part ] ) ) {
+								$list[ $i ][ $part ] = trim( SNN_Dynamic_Data::render( $item[ $part ], $dyn, 'plain' ) );
+							}
+						}
+					}
+					$a[ $key ] = (string) wp_json_encode( $list );
+				}
 				continue;
 			}
 			$value = trim( SNN_Dynamic_Data::render( $a[ $key ], $dyn, 'plain' ) );

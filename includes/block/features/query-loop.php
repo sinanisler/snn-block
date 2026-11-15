@@ -72,7 +72,7 @@ class SNN_Query_Loop {
 		$out['ignoreSticky'] = ! empty( $input['ignoreSticky'] );
 
 		$post_type         = isset( $input['postType'] ) && is_string( $input['postType'] ) ? sanitize_key( $input['postType'] ) : 'post';
-		$out['postType']   = post_type_exists( $post_type ) ? $post_type : 'post';
+		$out['postType']   = self::allowed_post_type( $post_type ) ? $post_type : 'post';
 		$order_by          = $input['orderBy'] ?? 'date';
 		$out['orderBy']    = is_string( $order_by ) && array_key_exists( $order_by, self::ORDER_BY ) ? $order_by : 'date';
 		$order             = isset( $input['order'] ) && is_string( $input['order'] ) ? strtoupper( $input['order'] ) : 'DESC';
@@ -140,6 +140,16 @@ class SNN_Query_Loop {
 		return $out;
 	}
 
+	/**
+	 * True when a loop may list this post type: one that visitors can view (is_post_type_viewable: public, or publicly
+	 * queryable). The site's own private types (code snippets, logs, agent history) are never listed, whatever a block
+	 * stores. The filter snn/query_loop/allowed_post_type can open another type.
+	 */
+	public static function allowed_post_type( $post_type ) {
+		$ok = is_string( $post_type ) && post_type_exists( $post_type ) && is_post_type_viewable( $post_type );
+		return (bool) apply_filters( 'snn/query_loop/allowed_post_type', $ok, $post_type );
+	}
+
 	/** The Order by field's options, in the editor's labels. */
 	public static function order_by_options() {
 		return array(
@@ -184,7 +194,7 @@ class SNN_Query_Loop {
 		};
 
 		$post_type = isset( $query['postType'] ) ? sanitize_key( $query['postType'] ) : 'post';
-		if ( ! post_type_exists( $post_type ) ) {
+		if ( ! self::allowed_post_type( $post_type ) ) {
 			$post_type = 'post';
 		}
 
