@@ -268,7 +268,7 @@ function snn_block_schema() {
         'justifySelf'    => SNN_Style::JUSTIFY_SELF,
         'overflow'       => SNN_Style::OVERFLOW,
         'iconPosition'   => SNN_Button_Block::ICON_POSITION,
-        'objectFit'      => SNN_Image_Block::OBJECT_FIT,
+        'objectFit'      => SNN_Style_Props::TABLE['objectFit'][2],
         'captionType'    => SNN_Image_Block::CAPTION,
         'loading'        => SNN_Image_Block::LOADING,
         'linkTo'         => SNN_Image_Block::LINK,
