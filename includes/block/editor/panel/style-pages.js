@@ -17,6 +17,8 @@
 		{ value: 'visible', label: __( 'Visible', 'snn' ) },
 		{ value: 'hidden', label: __( 'Hidden', 'snn' ) },
 		{ value: 'clip', label: __( 'Clip', 'snn' ) },
+		{ value: 'auto', label: __( 'Auto (scroll when needed)', 'snn' ) },
+		{ value: 'scroll', label: __( 'Scroll', 'snn' ) },
 	];
 
 	/**
@@ -184,7 +186,7 @@
 				{ tip: 'sec.spacing', title: __( 'Spacing', 'snn' ), rows: [ BOX_MARGIN, BOX_PADDING, 'gap' ] },
 				{ tip: 'sec.sizing', title: __( 'Sizing', 'snn' ), rows: [ 'width', 'minWidth', 'maxWidth', 'maxWidthOff', 'height', 'minHeight', 'maxHeight', 'aspectRatio' ] },
 				{ tip: 'sec.positioning', title: __( 'Positioning', 'snn' ), rows: [ 'position', 'top', 'right', 'bottom', 'left', 'zIndex', 'scrollSnapAlign' ] },
-				{ tip: 'sec.misc', title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
+				{ tip: 'sec.misc', title: __( 'Misc', 'snn' ), rows: [ 'opacity', 'overflow', 'overflowX', 'overflowY', 'visibility', 'cursor', 'isolation', 'mixBlendMode', 'pointerEvents', 'perspective', 'perspectiveOrigin' ] },
 			],
 		},
 		{
@@ -220,7 +222,7 @@
 			label: __( 'Border', 'snn' ),
 			glyph: 'border',
 			sections: [
-				{ tip: 'sec.border', title: __( 'Border', 'snn' ), rows: [ 'borderWidth', 'borderStyle', 'borderColor', 'borderRadius' ] },
+				{ tip: 'sec.border', title: __( 'Border', 'snn' ), rows: [ 'borderWidth', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle', 'borderColor', 'borderRadius' ] },
 				{ tip: 'sec.shadow', title: __( 'Box shadow', 'snn' ), rows: [ 'boxShadowX', 'boxShadowY', 'boxShadowBlur', 'boxShadowSpread', 'boxShadowColor' ] },
 			],
 		},
@@ -308,11 +310,11 @@
 		paddingTop: __( 'Padding top', 'snn' ), paddingBottom: __( 'Padding bottom', 'snn' ), paddingLeft: __( 'Padding left', 'snn' ), paddingRight: __( 'Padding right', 'snn' ), gap: __( 'Gap', 'snn' ),
 		width: __( 'Width', 'snn' ), minWidth: __( 'Min. width', 'snn' ), maxWidth: __( 'Max. width', 'snn' ), height: __( 'Height', 'snn' ), minHeight: __( 'Min. height', 'snn' ), maxHeight: __( 'Max. height', 'snn' ), aspectRatio: __( 'Aspect ratio', 'snn' ),
 		position: __( 'Position', 'snn' ), top: __( 'Top', 'snn' ), right: __( 'Right', 'snn' ), bottom: __( 'Bottom', 'snn' ), left: __( 'Left', 'snn' ), zIndex: __( 'Z-index', 'snn' ), scrollSnapAlign: __( 'Scroll snap', 'snn' ),
-		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
+		opacity: __( 'Opacity', 'snn' ), overflow: __( 'Overflow', 'snn' ), overflowX: __( 'Overflow X', 'snn' ), overflowY: __( 'Overflow Y', 'snn' ), visibility: __( 'Visibility', 'snn' ), cursor: __( 'Cursor', 'snn' ), isolation: __( 'Isolation', 'snn' ), mixBlendMode: __( 'Blend mode', 'snn' ), pointerEvents: __( 'Pointer events', 'snn' ), perspective: __( 'Perspective', 'snn' ), perspectiveOrigin: __( 'Perspective origin', 'snn' ),
 		color: __( 'Colour', 'snn' ), fontFamily: __( 'Font family', 'snn' ), fontSize: __( 'Font size', 'snn' ), fontWeight: __( 'Font weight', 'snn' ), fontStyle: __( 'Font style', 'snn' ), lineHeight: __( 'Line height', 'snn' ), letterSpacing: __( 'Letter spacing', 'snn' ), textAlign: __( 'Text align', 'snn' ), textTransform: __( 'Text transform', 'snn' ), textDecoration: __( 'Decoration', 'snn' ), textWrap: __( 'Text wrap', 'snn' ), whiteSpace: __( 'White space', 'snn' ), textShadow: __( 'Text shadow', 'snn' ),
 		backgroundColor: __( 'Colour', 'snn' ), backgroundImage: __( 'Image URL', 'snn' ), backgroundSize: __( 'Size', 'snn' ), backgroundPosition: __( 'Position', 'snn' ), backgroundRepeat: __( 'Repeat', 'snn' ),
 		gradientApply: __( 'Apply to', 'snn' ), gradientType: __( 'Type', 'snn' ), gradientAngle: __( 'Angle', 'snn' ),
-		borderWidth: __( 'Border width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
+		borderWidth: __( 'Border width', 'snn' ), borderTopWidth: __( 'Top width', 'snn' ), borderRightWidth: __( 'Right width', 'snn' ), borderBottomWidth: __( 'Bottom width', 'snn' ), borderLeftWidth: __( 'Left width', 'snn' ), borderStyle: __( 'Border style', 'snn' ), borderColor: __( 'Border colour', 'snn' ), borderRadius: __( 'Radius', 'snn' ),
 		boxShadowX: __( 'Shadow x', 'snn' ), boxShadowY: __( 'Shadow y', 'snn' ), boxShadowBlur: __( 'Shadow blur', 'snn' ), boxShadowSpread: __( 'Shadow spread', 'snn' ), boxShadowColor: __( 'Shadow colour', 'snn' ),
 		transformOrigin: __( 'Origin', 'snn' ), translateX: __( 'Move x', 'snn' ), translateY: __( 'Move y', 'snn' ), rotate: __( 'Rotate', 'snn' ), scale: __( 'Scale', 'snn' ), skewX: __( 'Skew x', 'snn' ), skewY: __( 'Skew y', 'snn' ),
 		filterBlur: __( 'Blur', 'snn' ), filterBrightness: __( 'Brightness', 'snn' ), filterContrast: __( 'Contrast', 'snn' ), filterGrayscale: __( 'Grayscale', 'snn' ), filterHueRotate: __( 'Hue rotate', 'snn' ), filterInvert: __( 'Invert', 'snn' ), filterSaturate: __( 'Saturate', 'snn' ), filterSepia: __( 'Sepia', 'snn' ),
@@ -357,7 +359,7 @@
 				},
 			} );
 		}
-		if ( k === 'overflow' ) {
+		if ( k === 'overflow' || k === 'overflowX' || k === 'overflowY' ) {
 			return h( ViewValue, { a, set, device, k, label, kind: 'select', options: OVERFLOW_OPTIONS } );
 		}
 		if ( k === 'textAlign' ) {

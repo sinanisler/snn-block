@@ -46,7 +46,7 @@ class SNN_Style_Props {
 	const GRID_FLOW      = array( 'row', 'column' );
 	const ALIGN_SELF     = array( 'auto', 'stretch', 'flex-start', 'center', 'flex-end', 'baseline' );
 	const JUSTIFY_SELF   = array( 'stretch', 'flex-start', 'center', 'flex-end' );
-	const OVERFLOW       = array( 'visible', 'hidden', 'clip' );
+	const OVERFLOW       = array( 'visible', 'hidden', 'clip', 'auto', 'scroll' );
 
 	/** attribute => [ css property or null, type, options, rules ]. The order is the order of the declarations. */
 	const TABLE = array(
@@ -78,16 +78,16 @@ class SNN_Style_Props {
 		'gap'              => array( 'gap', 'length', array(), array( 'when' => 'box' ) ),
 		'columnGap'        => array( 'column-gap', 'length', array(), array( 'when' => 'box' ) ),
 		'rowGap'           => array( 'row-gap', 'length', array(), array( 'when' => 'box' ) ),
-		'alignSelf'        => array( 'align-self', 'keyword', self::ALIGN_SELF, array( 'when' => 'box', 'gridWord' => 'always' ) ),
-		'justifySelf'      => array( 'justify-self', 'keyword', self::JUSTIFY_SELF, array( 'when' => 'grid', 'gridWord' => true ) ),
+		'alignSelf'        => array( 'align-self', 'keyword', self::ALIGN_SELF, array( 'gridWord' => 'always' ) ),
+		'justifySelf'      => array( 'justify-self', 'keyword', self::JUSTIFY_SELF, array( 'gridWord' => 'always' ) ),
 		'order'            => array( 'order', 'order', array(), array() ),
-		'flexGrow'         => array( 'flex-grow', 'flexnumber', array(), array( 'when' => 'flex' ) ),
-		'flexShrink'       => array( 'flex-shrink', 'flexnumber', array(), array( 'when' => 'flex' ) ),
-		'flexBasis'        => array( 'flex-basis', 'lengthauto', array(), array( 'when' => 'flex' ) ),
-		'gridArea'         => array( 'grid-area', 'ident', array(), array( 'when' => 'grid' ) ),
-		'columnStart'      => array( null, 'line', array(), array( 'when' => 'grid', 'compose' => 'placement_column' ) ),
+		'flexGrow'         => array( 'flex-grow', 'flexnumber', array(), array() ),
+		'flexShrink'       => array( 'flex-shrink', 'flexnumber', array(), array() ),
+		'flexBasis'        => array( 'flex-basis', 'lengthauto', array(), array() ),
+		'gridArea'         => array( 'grid-area', 'ident', array(), array() ),
+		'columnStart'      => array( null, 'line', array(), array( 'compose' => 'placement_column' ) ),
 		'columnSpan'       => array( null, 'span', array(), array() ),
-		'rowStart'         => array( null, 'line', array(), array( 'when' => 'grid', 'compose' => 'placement_row' ) ),
+		'rowStart'         => array( null, 'line', array(), array( 'compose' => 'placement_row' ) ),
 		'rowSpan'          => array( null, 'span', array(), array() ),
 		'backgroundColor'  => array( 'background-color', 'color', array(), array() ),
 		'paddingTop'       => array( 'padding-top', 'size', array(), array() ),
@@ -97,6 +97,9 @@ class SNN_Style_Props {
 		'maxWidthOff'      => array( null, 'flag', array(), array() ),
 		'opacity'          => array( 'opacity', 'opacity', array(), array() ),
 		'overflow'         => array( 'overflow', 'keyword', self::OVERFLOW, array() ),
+		// One axis only: a row that scrolls sideways (a carousel) while the other axis stays as it is.
+		'overflowX'        => array( 'overflow-x', 'keyword', self::OVERFLOW, array() ),
+		'overflowY'        => array( 'overflow-y', 'keyword', self::OVERFLOW, array() ),
 		// Spacing
 		'marginTop'         => array( 'margin-top', 'margin', array(), array() ),
 		'marginRight'       => array( 'margin-right', 'margin', array(), array() ),
@@ -164,6 +167,11 @@ class SNN_Style_Props {
 		'gradientAngle'     => array( null, 'number', array(), array() ),
 		// Border
 		'borderWidth'       => array( 'border-width', 'size', array(), array() ),
+		// One side: written after Border width, so a side wins over it (a top line only: width 0 and top 1px, or top 1px alone).
+		'borderTopWidth'    => array( 'border-top-width', 'size', array(), array() ),
+		'borderRightWidth'  => array( 'border-right-width', 'size', array(), array() ),
+		'borderBottomWidth' => array( 'border-bottom-width', 'size', array(), array() ),
+		'borderLeftWidth'   => array( 'border-left-width', 'size', array(), array() ),
 		'borderStyle'       => array( 'border-style', 'keyword', array( 'none', 'solid', 'dashed', 'dotted', 'double' ), array() ),
 		'borderColor'       => array( 'border-color', 'color', array(), array() ),
 		'borderRadius'      => array( 'border-radius', 'size', array(), array() ),

@@ -168,6 +168,10 @@
 		const box = flex || grid;
 		const wrapped = shown.flexWrap !== 'nowrap';
 		const parentFlex = parent.display === 'flex' || parent.display === 'inline-flex';
+		const parentGrid = parent.display === 'grid' || parent.display === 'inline-grid';
+		// An item setting belongs to the parent's layout: a grid card inside a flex row still grows and shrinks.
+		const flexItem = flex || parentFlex;
+		const gridItem = grid || parentGrid;
 		const reverse = /reverse$/.test( flexDirection );
 		const flow = flexDirection.replace( /-reverse$/, '' );
 		const directionOwn = viewOwn( a, device, 'flexDirection', base.flexDirection ) !== undefined;
@@ -221,8 +225,8 @@
 			);
 		}
 
-		// Align self is for a flex or grid box. Its pictures turn when the parent is a flex column (the parent's cross axis).
-		if ( box ) {
+		// Align self is for an item of a flex or grid parent (or a box itself). Its pictures turn when the parent is a flex column.
+		if ( box || parentFlex || parentGrid ) {
 			const turnedSelf = parentFlex && /^column/.test( parent.flexDirection || '' );
 			rows.push(
 				v( 'align-self', 'alignSelf', { label: __( 'Align self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.alignSelf, ALIGN_SELF_PICS ), ( x ) => crossPic( x, turnedSelf ) ), fallback: 'auto' } )
@@ -249,16 +253,16 @@
 			);
 		}
 
-		// The item settings follow the display, as the flex and grid settings do: grow, shrink and basis for flex, and the
-		// place in the grid for grid. Order is for every display (the front end renders the same rules).
-		if ( flex ) {
+		// The item settings follow the parent's display (and the block's own, as before): grow, shrink and basis in a flex
+		// parent, the place in the grid in a grid parent. They are printed whatever the block's own display is.
+		if ( flexItem ) {
 			rows.push(
 				v( 'grow', 'flexGrow', { label: __( 'Flex grow', 'snn' ), placeholder: '0', inputMode: 'decimal' } ),
 				v( 'shrink', 'flexShrink', { label: __( 'Flex shrink', 'snn' ), placeholder: '1', inputMode: 'decimal' } ),
 				v( 'basis', 'flexBasis', { label: __( 'Flex basis', 'snn' ), placeholder: __( 'auto', 'snn' ), kind: 'size' } )
 			);
 		}
-		if ( grid ) {
+		if ( gridItem ) {
 			rows.push(
 				v( 'justify-self', 'justifySelf', { label: __( 'Justify self', 'snn' ), kind: 'icons', options: options( picked( CHOICES.cell, ALIGN_PICS ), ( x ) => crossPic( x, true ) ), fallback: 'stretch' } ),
 				v( 'column-start', 'columnStart', { label: __( 'Column start', 'snn' ), placeholder: __( 'auto', 'snn' ), inputMode: 'numeric' } ),
