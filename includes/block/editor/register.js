@@ -240,7 +240,9 @@
 				const hoverLevel = device === 'Tablet' ? 'tablet' : device === 'Mobile' ? 'mobile' : 'base';
 				// Every element state is drawn the same way, in the order of SNN_Style::STATES (a later state wins), each with
 				// its own forced class (snn-force-focus and so on) for the state the panel holds on.
-				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.states || {} ) );
+				// The key holds the normal style too: that style moves into the same rule, so two blocks with the same hover
+				// but a different normal style (padding, gap) must not share a class, or the last one drawn wins for both.
+				const hoverKey = cssScope( 'hover' + hoverLevel + JSON.stringify( a.states || {} ) + JSON.stringify( ownStyle ) );
 				const stateSelectors = ( snn.data && snn.data.states ) || { hover: ':hover' };
 				const hoverAll = Object.keys( stateSelectors )
 					.map( ( id ) => {
